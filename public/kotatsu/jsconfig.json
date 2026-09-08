@@ -1,0 +1,42 @@
+{
+    // `noResolve` is what keeps this project small: without it, one
+    // `import { saveSettingsDebounced } from '../../script.js'` drags all of
+    // public/ into a checkJs program. Core stays out; its imports type as `any`.
+    //
+    // Lit is the one dependency that cannot live with that. Components extend
+    // `LitElement`, so an untyped base class costs every inherited HTMLElement
+    // member. Two things below fix it, and both are load-bearing (verified by
+    // removing each in turn):
+    //   1. `shell/lit.d.ts` shadows `shell/lit.js` for the type checker. The .js
+    //      facade re-exports from `public/lib.js`, the webpack vendor entry, which
+    //      `noResolve` will never pull in.
+    //   2. Lit's own declaration files are named in `include`, because `noResolve`
+    //      also blocks `from 'lit'` from ADDING them; listing them puts them in the
+    //      program so the specifier can link. `exclude: []` is required alongside:
+    //      TypeScript's default exclude drops node_modules from include globs.
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true,
+        "noEmit": true,
+        "target": "ES2023",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "noResolve": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictBindCallApply": true,
+        "allowSyntheticDefaultImports": true,
+        "allowUmdGlobalAccess": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true
+    },
+    "include": [
+        "**/*.js",
+        "**/*.d.ts",
+        "../../node_modules/lit/**/*.d.ts",
+        "../../node_modules/lit-element/**/*.d.ts",
+        "../../node_modules/lit-html/**/*.d.ts",
+        "../../node_modules/@lit/reactive-element/**/*.d.ts"
+    ],
+    "exclude": []
+}

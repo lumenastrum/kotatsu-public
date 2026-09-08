@@ -1,0 +1,587 @@
+/*
+ * Kotatsu shell v0 — the rails frame (slice A). docs/shell-v0.md.
+ *
+ * The grid, the slot containers, and the walk-backs that keep core's implicit
+ * three-column layout from fighting an explicit one. Everything inside the slots
+ * belongs to another sheet: `shell-topbar.css` (E), `shell-left.css` (B),
+ * `shell-right.css` (C), `shell-center.css` (D). This file owns track sizes,
+ * surfaces and borders; those own their contents.
+ *
+ * §5 (rail collapse) arrived later, with variant wardrobe v0 slice C
+ * (docs/variant-wardrobe-v0.md §3). It lives here for the same reason: a
+ * collapsed rail IS a track size, and the two rail width tokens this file
+ * already derives everything from are the entire mechanism.
+ *
+ * Every rule is gated on `body[data-k-layout="rails"]`. Classic must stay
+ * pixel-identical, so a rule that matches without that attribute is a bug. There
+ * is exactly ONE exception, a `display: none` on a shell-only node — the
+ * `#k-shell` default, which is what makes the skeleton inert under classic in
+ * the first place. There were two until settings v0.1 retired `#k-settings-scrim`
+ * along with the drawer-rack reveal it backed (§4).
+ *
+ * Every `:hover` is paired with an explicit `:focus-visible`. initDynamicStyles()
+ * (dynamic-styles.js:188-202) synthesizes a focus twin for any hover rule missing
+ * one and appends it late, which changes cascade order at runtime; writing the
+ * twin here keeps the order ours (recon 6C).
+ *
+ * Load order: linked after css/kotatsu-chrome.css (so --k-ghost-hover and the
+ * chrome-local recipes resolve) and before css/mobile-styles.css.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. THE FRAME
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Inert under classic. This is the one ungated rule in the file. */
+#k-shell {
+    display: none;
+}
+
+body[data-k-layout="rails"] {
+    /* Sheet-local derivations, the css/kotatsu-chrome.css §2 pattern. The border
+       reads the UNPINNED peer --k-chrome-border, not --k-border: applyThemeColor()
+       can inline-pin --k-border onto :root from a legacy theme JSON, and an inline
+       pin outranks every body[data-k-theme] rule (tokens.css:79-83). Chrome that
+       must stay pack-switchable derives from the peer. */
+    --k-frame-border-color: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+    --k-frame-hairline: 1px;
+    --k-frame-scrim: color-mix(in srgb, var(--k-scrim) 60%, transparent);
+
+    /* The gutter assumption, made honest (recon 5.1). Six rules across style.css,
+       logprobs.css, toggle-dependent.css and the expressions extension compute a
+       panel width as `(100vw - --sheldWidth) / 2` — that formula IS core's implicit
+       three-column layout. Rather than rewrite six call sites, --sheldWidth is
+       redefined to the real centre track so the formula keeps telling the truth,
+       and applyChatWidth() (power-user.js:1087/1096) keeps working.
+
+       Declared on `body`, not `:root`, deliberately: applyChatWidth writes
+       --sheldWidth as an INLINE style on documentElement. A body-level declaration
+       is a different element, so it simply overrides the inherited value for the
+       whole subtree instead of losing a specificity contest with an inline pin. */
+    --sheldWidth: calc(100vw - var(--k-rail-left-width) - var(--k-rail-right-width));
+    --sheldWidth: calc(100dvw - var(--k-rail-left-width) - var(--k-rail-right-width));
+}
+
+/* Fixed to the viewport rather than placed in flow: the frame's geometry must not
+   depend on what else <body> happens to contain (#preloader, #bg1, the hidden
+   #top-bar, the parked drawer rack). z-index 30 is #sheld's own rung from the core
+   ladder (style.css:797), so popups (9999), the drawer rack (3005), .fillLeft /
+   .fillRight (3000) and #movingDivs > div (4000) all still paint above the shell
+   exactly as they do over #sheld today. */
+body[data-k-layout="rails"] #k-shell {
+    display: grid;
+    grid-template-rows: var(--k-topbar-pill-height) minmax(0, 1fr);
+    position: fixed;
+    inset: 0;
+    /* Not redundant with `inset: 0`: the shell's containing block is NOT the
+       viewport. style.css puts `-webkit-transform: translateZ(0)` on <html>
+       (the chrome flicker fix), and a transformed element is the containing
+       block for fixed-position descendants. At <=1000px, mobile-styles.css
+       sets `body { position: fixed }`, body stops contributing height, <html>
+       collapses to 0px — and `inset: 0` against that box painted the whole
+       shell 0px tall (total blackout below the top bar, found 2026-08-25 in
+       an 864px embedded pane). With top/bottom/height over-constrained,
+       height wins: the shell sizes to the viewport in both regimes. At
+       desktop widths <html> spans the viewport anyway, so this is a no-op
+       by arithmetic. A real narrow-width layout stays a v0 non-goal
+       (docs/shell-v0.md) — this only guarantees the frame paints. */
+    width: 100dvw;
+    height: 100dvh;
+    z-index: 30;
+    min-width: 0;
+    min-height: 0;
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] #k-topbar {
+    grid-row: 1;
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+    border-bottom: var(--k-frame-hairline) solid var(--k-frame-border-color);
+    background: var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] #k-frame {
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: var(--k-rail-left-width) minmax(0, 1fr) var(--k-rail-right-width);
+    min-width: 0;
+    min-height: 0;
+}
+
+/* `min-*: 0` on all three tracks is load-bearing, not defensive: a grid item's
+   automatic minimum size is its content, so one long chat line or one wide panel
+   would otherwise push a track past its declared width and blow out the frame. */
+body[data-k-layout="rails"] #k-rail-left,
+body[data-k-layout="rails"] #k-rail-right {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] #k-rail-left {
+    border-right: var(--k-frame-hairline) solid var(--k-frame-border-color);
+}
+
+body[data-k-layout="rails"] #k-rail-right {
+    border-left: var(--k-frame-hairline) solid var(--k-frame-border-color);
+}
+
+body[data-k-layout="rails"] #k-center {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. #sheld IN THE GRID
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Core positions #sheld absolutely against the viewport with a hand-computed
+   width, height and left offset (style.css:781-801). Inside the centre track all
+   of that is wrong and all of it has to go — the grid places it now. Neutralized
+   rather than overridden value-by-value so nothing survives to argue with slice D.
+   Specificity is (1,1,1) against core's (1,0,0). */
+body[data-k-layout="rails"] #sheld {
+    position: static;
+    inset: auto;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    margin: 0;
+    flex: 1 1 auto;
+}
+
+/* #chat is the scroller. Its core max-height is a viewport calculation that no
+   longer describes anything, and a flex item needs min-height: 0 before it will
+   scroll instead of growing.
+   BREADCRUMB for slice D: #chat carries `backdrop-filter` (style.css:880), which
+   makes it a containing block for any `position: fixed` descendant — the bug class
+   already documented and fixed once at kotatsu-chrome.css:522-535 by moving the
+   blur to a ::before. Nothing in the frame trips it today (#options and the wand
+   menu are Popper-anchored from OUTSIDE #sheld), so the blur is left alone here.
+   Move it to ::before in shell-center.css the moment the centre column gains a
+   fixed-position child. */
+body[data-k-layout="rails"] #chat {
+    max-height: none;
+    min-height: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. SLOT PLACEHOLDERS
+   ───────────────────────────────────────────────────────────────────────────
+   What a slot shows when its component has not shipped or failed to load. Quiet
+   on purpose: a missing rail should read as "not here yet", not as an error.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-slot-placeholder {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    justify-content: center;
+    padding: 12px 14px;
+    min-width: 0;
+    color: var(--k-text-faint);
+    font-family: var(--k-font-ui);
+    font-size: 11.5px;
+}
+
+body[data-k-layout="rails"] .k-slot-placeholder-title {
+    color: var(--k-text-muted);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 10.5px;
+}
+
+body[data-k-layout="rails"] .k-slot-placeholder-note {
+    color: var(--k-text-faint);
+}
+
+/* The top bar's placeholder is a row, and it carries the only guaranteed way into
+   the settings overlay when <k-topbar> is absent. */
+body[data-k-layout="rails"] .k-topbar-placeholder {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 auto;
+    padding-block: 0;
+}
+
+body[data-k-layout="rails"] .k-topbar-placeholder .k-slot-placeholder-note {
+    flex: 1 1 auto;
+}
+
+body[data-k-layout="rails"] .k-placeholder-settings {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    border: var(--k-frame-hairline) solid var(--k-frame-border-color);
+    border-radius: var(--k-radius-md);
+    background: transparent;
+    color: var(--k-text-muted);
+    font-family: var(--k-font-ui);
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: color var(--k-motion), background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-placeholder-settings:hover,
+body[data-k-layout="rails"] .k-placeholder-settings:focus-visible {
+    color: var(--k-accent-bright);
+    background-color: var(--k-ghost-hover);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. THE PARKED DRAWER RACK
+   ───────────────────────────────────────────────────────────────────────────
+   Under rails the nine drawers are parked, not deleted. `<k-settings-modal>`
+   BORROWS the controls it curates out of the hidden rack a tab at a time and
+   puts every one of them back on close, so the rack itself never has to come
+   forward — which is the entire point of parking rather than rebuilding.
+
+   ONE rule, and it is the load-bearing one: delete it and the rack reappears
+   over the chat. Until settings v0.1 there were five more, all of them
+   scaffolding for a REVEAL that no longer exists. The rack could be shown as a
+   holder-as-sheet over its own 2999 scrim (`.k-settings-open`), which needed a
+   `display: flex` twin here, a `#k-settings-scrim` node in index.html, two
+   rules to paint it, and a `position: fixed` re-anchor for every
+   `.drawer-content` inside it — without which 401px of User Settings ran off
+   the right edge at 3440x1440 (smoke 2026-08-25 P1). The modal draws its own
+   sheet at 4090/4091 and its own panel geometry
+   (kotatsu/settings/settings-modal.css §6), so the reveal and everything
+   holding it up retired together, in one slice.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] #top-settings-holder {
+    display: none;
+}
+
+/* ── The layout switch (v0) ──────────────────────────────────────────────────
+   A Kotatsu-owned strip. It used to be `#k-layout-switch`, injected into the end
+   of the revealed drawer rack by the rails settings overlay; settings v0 slice B
+   moved it into the settings modal's Appearance tab, the container's rack
+   geometry went with the rack, and v0.1 deleted the overlay module outright.
+   The BUTTON dressing below is unchanged and still live —
+   `<k-settings-modal>` reuses `.k-layout-option` verbatim so the strip looks the
+   same wherever it is mounted, and settings-modal.css only supplies the new
+   container. */
+body[data-k-layout="rails"] .k-layout-option {
+    padding: 3px 9px;
+    border: none;
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    color: var(--k-text-muted);
+    font-family: var(--k-font-ui);
+    font-size: 11.5px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: color var(--k-motion), background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-layout-option:hover,
+body[data-k-layout="rails"] .k-layout-option:focus-visible {
+    color: var(--k-accent-bright);
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-layout-option[aria-pressed="true"] {
+    color: var(--k-rose);
+    background-color: color-mix(in srgb, var(--k-rose) 12%, transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. RAIL COLLAPSE — the reader-squish fix (variant wardrobe v0 slice C)
+   ───────────────────────────────────────────────────────────────────────────
+   docs/variant-wardrobe-v0.md §3. On a vertical monitor a fixed 280/1fr/340
+   leaves no prose width, so either rail can be dismissed.
+
+   The whole mechanism is ONE token override per side. §1 already derives both
+   the grid tracks (#k-frame) and --sheldWidth from --k-rail-left-width /
+   --k-rail-right-width, so overriding the width token on <body> re-sizes the
+   track AND keeps the six `(100vw - --sheldWidth) / 2` gutter call sites honest
+   with no second code path. The override lives on the same element as the
+   --sheldWidth declaration (body) deliberately: custom properties resolve
+   against the winning value on the element itself, so the calc() picks up the
+   collapsed width regardless of declaration order.
+
+   `--k-rail-collapsed-w` is a hook with a built-in default, not a :root token.
+   A pack may not invent token names (docs/theme-packs-v0.md:83-85), so the
+   fallback form is what a user.css or a pack's sheet.css can reach to leave a
+   sliver of rail behind instead of nothing. Declaring it in tokens.css would
+   have added two more names to Blue Hour's mirror for no call site.
+
+   VISIBILITY, NEVER DISPLAY. The rail element keeps its box; only its contents
+   go `visibility: hidden`. `display: none` would tear the relocated `.drawer`
+   wrapper (#left-nav-panel — #WorldInfo and #rm_extensions_block docked here too
+   until settings v0.1 slice G) out of layout and, worse, invite core's own
+   predicates to disagree about what is open. Hidden-by-visibility keeps every node, every class and every jQuery
+   handler exactly as it was, drops the subtree out of the tab order and out of
+   hit-testing, and restores on expand with no state to replay. Nothing here
+   touches `.openDrawer` / `.pinnedOpen` / `.k-docked`, so the three
+   RossAscends count-guards (`.openDrawer:not(.k-docked)`,
+   scripts/RossAscends-mods.js:66) and the Escape cascade (:1223-1280) see the
+   same document they saw before the collapse.
+
+   No transition on the collapse itself: the track width comes from a custom
+   property, which does not interpolate without @property, and animating
+   grid-template-columns through var() would only produce a jump with extra
+   frames. The handle's own colours still transition.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] {
+    /* Slice-local geometry, the §1 pattern (--k-frame-*): declared on the gated
+       body rule rather than :root so it stays out of the pack mirror. */
+    --k-rail-handle-w: 16px;
+    --k-rail-handle-h: 64px;
+    --k-rail-handle-rest: 0.5;
+}
+
+body[data-k-layout="rails"][data-k-rail-left="collapsed"] {
+    --k-rail-left-width: var(--k-rail-collapsed-w, 0px);
+}
+
+body[data-k-layout="rails"][data-k-rail-right="collapsed"] {
+    --k-rail-right-width: var(--k-rail-collapsed-w, 0px);
+}
+
+/* The hairline goes with the rail. `box-sizing: border-box` is global
+   (style.css:147), so a 1px border inside a 0px track would floor the used
+   width at 1px and leave --sheldWidth one pixel optimistic. The handle is the
+   edge now. */
+body[data-k-layout="rails"][data-k-rail-left="collapsed"] #k-rail-left {
+    border-right-width: 0;
+}
+
+body[data-k-layout="rails"][data-k-rail-right="collapsed"] #k-rail-right {
+    border-left-width: 0;
+}
+
+/* The interior, not the rail. Applied to the children so the rail element
+   itself stays a plain (zero-width, clipped) grid item. */
+body[data-k-layout="rails"][data-k-rail-left="collapsed"] #k-rail-left > *,
+body[data-k-layout="rails"][data-k-rail-right="collapsed"] #k-rail-right > * {
+    visibility: hidden;
+}
+
+/* ── The handles ─────────────────────────────────────────────────────────────
+   One button per side, appended to #k-shell by kotatsu/shell/rail-collapse.js
+   and removed on unmount, so classic never renders one. Children of #k-shell
+   rather than of #k-frame on purpose: #k-shell is already `position: fixed`
+   and therefore already a containing block for absolutely positioned
+   descendants, so hosting the handles there adds no new containing block for
+   anything inside the centre track to resolve against.
+
+   Anchoring is the same trick as the collapse itself — `left:
+   var(--k-rail-left-width)` puts the handle on the rail's inner edge while the
+   rail is open and slides it to the screen edge the moment the token collapses
+   to zero. One position, both states, no second rule: the "floating reopen
+   chevron pinned to that screen edge" the spec asks for IS the resting handle
+   with a zero-width rail behind it.
+
+   The topbar row is excluded from the centring so the handle reads as centred
+   on the frame rather than on the viewport. */
+
+body[data-k-layout="rails"] .k-rail-handle {
+    position: absolute;
+    top: calc(50% + var(--k-topbar-pill-height) / 2);
+    /* Above #sheld's rung (30) — the handle protrudes into the centre track and
+       must win the hit-test against centre content (the welcome panel sat on it
+       at z 2, live-caught by shell-qa). Below the settings overlay (2999). */
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: var(--k-rail-handle-w);
+    height: var(--k-rail-handle-h);
+    margin: 0;
+    padding: 0;
+    border: var(--k-frame-hairline) solid var(--k-frame-border-color);
+    background: var(--k-surface-2);
+    color: var(--k-text-muted);
+    opacity: var(--k-rail-handle-rest);
+    cursor: pointer;
+    transition: color var(--k-motion), background-color var(--k-motion), opacity var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rail-handle[data-k-rail-side="left"] {
+    left: var(--k-rail-left-width);
+    transform: translateY(-50%);
+    border-left: 0;
+    border-radius: 0 var(--k-radius-md) var(--k-radius-md) 0;
+}
+
+body[data-k-layout="rails"] .k-rail-handle[data-k-rail-side="right"] {
+    right: var(--k-rail-right-width);
+    transform: translateY(-50%);
+    border-right: 0;
+    border-radius: var(--k-radius-md) 0 0 var(--k-radius-md);
+}
+
+body[data-k-layout="rails"] .k-rail-handle:hover,
+body[data-k-layout="rails"] .k-rail-handle:focus-visible {
+    background-color: var(--k-ghost-hover);
+    color: var(--k-accent-bright);
+    opacity: 1;
+}
+
+body[data-k-layout="rails"] .k-rail-handle:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: -1px;
+}
+
+/* A collapsed rail's handle is the only way back, so it stops being quiet. */
+body[data-k-layout="rails"][data-k-rail-left="collapsed"] .k-rail-handle[data-k-rail-side="left"],
+body[data-k-layout="rails"][data-k-rail-right="collapsed"] .k-rail-handle[data-k-rail-side="right"] {
+    opacity: 1;
+}
+
+body[data-k-layout="rails"] .k-rail-handle__icon {
+    display: block;
+    flex: 0 0 auto;
+    color: inherit;
+}
+
+/* The chevron points where the rail's inner edge is about to move. The markup
+   ships one glyph (pointing left) and the two states that need it pointing
+   right are mirrored here: left rail already collapsed (expand → edge moves
+   right) and right rail still open (collapse → edge moves right). `:not()`
+   rather than `[data-k-rail-right="open"]` so a missing attribute degrades to
+   the open reading instead of to no arrow at all. */
+body[data-k-layout="rails"][data-k-rail-left="collapsed"] .k-rail-handle[data-k-rail-side="left"] .k-rail-handle__icon,
+body[data-k-layout="rails"]:not([data-k-rail-right="collapsed"]) .k-rail-handle[data-k-rail-side="right"] .k-rail-handle__icon {
+    transform: scaleX(-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"] .k-rail-handle {
+        transition: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. BODY-CLASS SURVIVORS (recon 4.3)
+   ───────────────────────────────────────────────────────────────────────────
+   Audit of the 24 body-class toggles against the rails grid, by what they
+   actually select:
+
+   - `waifuMode` REPOSITIONS #sheld (toggle-dependent.css:394, mobile-styles.css:447)
+     and rounds #chat. The #sheld half fights the grid directly and is neutralized
+     below; the #chat corner is cosmetic and left alone. Its #top-bar rule
+     (:389) is moot — #top-bar is display:none in both layouts.
+   - `charListGrid` only ever selects inside #rm_print_characters_block — the
+     roster, which lives in a drawer. It is slice C's business when the roster
+     docks, and harmless to the frame. Left alone.
+   - `bubblechat` and `documentstyle` only select `.mes` and its children inside
+     #chat. Message-level, not container-level: slice D's business, and correct
+     to keep working under rails. Left alone.
+   - `movingUI` gates style.css:5626-5635 and the drag machinery. Rails simply
+     never invokes MovingUI (docs/shell-v0.md non-goals; recon 3.3 holds the
+     removal order), and #sheld is `position: static` here, so a saved inline
+     drag state has nothing to move. Left alone.
+
+   Only one of the four named in the recon actually needed gating.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"].waifuMode #sheld {
+    height: auto;
+    top: auto;
+    bottom: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7. RESPONSIVE WALK-BACK
+   ───────────────────────────────────────────────────────────────────────────
+   css/mobile-styles.css loads AFTER this sheet and, below 1000px, pins
+   `#sheld { width: 100dvw !important; left: 0 !important }` (:306-315). That
+   cannot be out-specified, only out-!important-ed — the same situation
+   css/kotatsu-chrome.css:1400-1432 already handles for the floating pill, and
+   the same answer: the walk-back lives with the shape being walked back, not in
+   mobile-styles.css.
+
+   Mobile rails is an explicit non-goal for v0 (docs/shell-v0.md). This does not
+   make the frame responsive; it only stops the mobile sheet from tearing #sheld
+   out of the grid it is now placed by.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 1000px) {
+    body[data-k-layout="rails"] #sheld {
+        width: auto !important;
+        max-width: none;
+        left: auto !important;
+        right: auto;
+        top: auto;
+        resize: none !important;
+    }
+}
+
+/* ── The containing-block repair ─────────────────────────────────────────────
+   style.css transforms <html> (`-webkit-transform: translateZ(0)`, the chrome
+   flicker fix), which makes it the containing block for EVERY fixed-position
+   descendant. At <=1000px mobile-styles.css sets `body { position: fixed }`,
+   body stops contributing height, and <html> collapses to 0px — so every fixed
+   surface under rails resolves against a 0-height box. The shell frame painted
+   0px tall (hardened at #k-shell above), the settings scrim collapsed, and the
+   card studio centered itself against zero: `top: 50%` of nothing minus half
+   its own height put the whole sheet 353px ABOVE the viewport (found
+   2026-08-25 — "create character does nothing" at 864px; it opened perfectly,
+   off-screen).
+
+   One rule retires the class of bugs: give <html> the viewport back and every
+   `inset: 0` / `top: 50%` on every current and future fixed surface resolves
+   correctly. Gated through :has() so the attribute discipline travels — this
+   matches only while rails is mounted; classic keeps upstream's geometry
+   untouched (its fixed dialogs live in the top layer, which no ancestor
+   transform can reach). The #k-shell width/height above stays as belt to this
+   brace. */
+html:has(body[data-k-layout="rails"]) {
+    height: 100vh;
+    height: 100dvh;
+}
+
+/* ── View state: home runs full-bleed ────────────────────────────────────────
+   `data-k-view` is written by kotatsu/shell/view-state.js — "home" when no chat
+   is loaded, "chat" otherwise — and this section is the whole mechanism, the
+   same split rail-collapse uses. The rails serve an active chat; on home the
+   gallery IS the character list and the continue strip IS recents, so both
+   columns hand their width back to the hearth.
+
+   Same declarations as the collapse rules above, NOT the `data-k-rail-*`
+   attributes: view state must never write over the user's persisted collapse
+   choice. These sit after the collapse section on purpose — equal specificity,
+   so source order lets "home" zero a rail even if a stored `collapsed` state
+   ever grows a nonzero --k-rail-collapsed-w.
+
+   The handles hide too: on home there is no rail to expand, and a floating
+   chevron at the screen edge would be a door onto a column that is not there. */
+body[data-k-layout="rails"][data-k-view="home"] {
+    --k-rail-left-width: 0px;
+    --k-rail-right-width: 0px;
+}
+
+body[data-k-layout="rails"][data-k-view="home"] #k-rail-left {
+    border-right-width: 0;
+}
+
+body[data-k-layout="rails"][data-k-view="home"] #k-rail-right {
+    border-left-width: 0;
+}
+
+body[data-k-layout="rails"][data-k-view="home"] #k-rail-left > *,
+body[data-k-layout="rails"][data-k-view="home"] #k-rail-right > * {
+    visibility: hidden;
+}
+
+body[data-k-layout="rails"][data-k-view="home"] .k-rail-handle {
+    display: none;
+}

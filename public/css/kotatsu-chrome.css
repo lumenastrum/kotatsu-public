@@ -1,0 +1,1534 @@
+/*
+ * Kotatsu chrome — SPEC §4 target 1, design doc §7 ("the structural sheet").
+ *
+ * The 35 rules of `docs/theme-port-inventory.md` bucket (b): the parts of the
+ * Blue Hour look that CANNOT be expressed as token values, because core either
+ * has no rule to receive them or ships a conflicting one. Everything here is
+ * written against `--k-*` (css/tokens.css) so a second sheet — Sparkle today,
+ * anything later — inherits the SHAPE and swaps only the palette.
+ *
+ * Each ported rule is tagged with its inventory rule number, e.g. `[14]`, so the
+ * census stays auditable against the blob it came from.
+ *
+ * Load order: linked AFTER style.css and the feature sheets (so it can override
+ * core chrome) and BEFORE css/mobile-styles.css (so the responsive layer still
+ * wins on small screens) and css/user.css (so the user always wins). A theme's
+ * `custom_css` is injected into `#custom-style` at the very end of <head>
+ * (power-user.js:1147-1158) and therefore still outranks everything here.
+ *
+ * ABI: no DOM id is removed or renamed. `#top-bar` is hidden, not deleted — the
+ * element and its CONTRACT.md siblings stay in the document.
+ *
+ * :focus-visible: every focus-capable hover state is paired explicitly.
+ * `initDynamicStyles()` appends synthesized focus rules late, so an omitted
+ * twin can change cascade order at runtime. WebKit scrollbar pseudo-elements
+ * cannot receive focus and are explicitly skipped by that synthesizer.
+ *
+ * MovingUI: `loadMovingUIState()` (power-user.js:1835-1858) writes inline
+ * top/left/right on five of the seven draggable panels, which would beat the
+ * anchoring rules in §7 below. Kotatsu ships no saved MovingUI state and
+ * MovingUI is a scheduled removal, so there is no live collision — documented,
+ * not worked around with `!important`.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. FONTS — self-hosted, no @import
+   ───────────────────────────────────────────────────────────────────────────
+   Blue Hour pulled three families from a Google Fonts `@import` at the top of
+   its custom_css. Two problems with shipping that in core: `power-user.js:2459`
+   gates any custom_css containing `@import` behind a confirm popup, and a
+   default theme must not make a third-party network request on boot. So the
+   faces are vendored under `public/webfonts/kotatsu/`.
+
+   Provenance: fetched from the Google Fonts css2 API (fonts.gstatic.com),
+   `latin` + `latin-ext` subsets only. All three families are SIL Open Font
+   License 1.1.
+     - Newsreader    — variable (opsz 6..72, wght 200..800), roman + italic
+     - IBM Plex Sans — variable (wght 100..700)
+     - IBM Plex Mono — static, 400 + 500 (no variable cut is published)
+   Newsreader and IBM Plex Sans are variable, so ONE file per style/subset
+   covers every weight; the 400/500/600 instances the API emits all resolve to
+   the same binary. 10 files, ~604 KB total.
+
+   The Blue Hour blob used Fraunces as a display face for character names,
+   section headers and popup titles. Andres chose Newsreader 500 instead on
+   2026-08-23: one serif voice, with no fourth webfont to ship.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Newsreader — the prose face (chat, edit, character card copy) ────────── */
+@font-face {
+    font-family: 'Newsreader';
+    src: url('../webfonts/kotatsu/newsreader-latin.woff2') format('woff2');
+    font-weight: 200 800;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Newsreader';
+    src: url('../webfonts/kotatsu/newsreader-latin-ext.woff2') format('woff2');
+    font-weight: 200 800;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Newsreader';
+    src: url('../webfonts/kotatsu/newsreader-italic-latin.woff2') format('woff2');
+    font-weight: 200 800;
+    font-style: italic;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Newsreader';
+    src: url('../webfonts/kotatsu/newsreader-italic-latin-ext.woff2') format('woff2');
+    font-weight: 200 800;
+    font-style: italic;
+    font-display: swap;
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ── IBM Plex Sans — the UI face (chrome, labels, names, titles) ──────────── */
+@font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('../webfonts/kotatsu/ibmplexsans-latin.woff2') format('woff2');
+    font-weight: 100 700;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('../webfonts/kotatsu/ibmplexsans-latin-ext.woff2') format('woff2');
+    font-weight: 100 700;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ── IBM Plex Mono — the meta / code face ─────────────────────────────────── */
+@font-face {
+    font-family: 'IBM Plex Mono';
+    src: url('../webfonts/kotatsu/ibmplexmono-400-latin.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'IBM Plex Mono';
+    src: url('../webfonts/kotatsu/ibmplexmono-400-latin-ext.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'IBM Plex Mono';
+    src: url('../webfonts/kotatsu/ibmplexmono-500-latin.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'IBM Plex Mono';
+    src: url('../webfonts/kotatsu/ibmplexmono-500-latin-ext.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. ROOT — font stacks, chrome recipes, core-var reconciliations
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+    /* ── Font tokens ─────────────────────────────────────────────────────────
+       tokens.css declares these pointed at the bundled Noto families, because a
+       token sheet may not own an @font-face. They resolve to the real faces
+       here, and the two core font names derive from them so every existing
+       `var(--mainFontFamily)` / `var(--monoFontFamily)` call site in core CSS
+       becomes a consumption point without being edited. */
+    --k-font-prose: 'Newsreader', 'Noto Sans', Georgia, serif;
+    --k-font-ui: 'IBM Plex Sans', 'Noto Sans', system-ui, sans-serif;
+    --k-font-mono: 'IBM Plex Mono', 'Noto Sans Mono', 'Courier New', Consolas, monospace;
+
+    --mainFontFamily: var(--k-font-ui);
+    --monoFontFamily: var(--k-font-mono);
+
+    /* ── Reading size ────────────────────────────────────────────────────────
+       The prose-only scale (reader-polish v0 finding 1). §3 multiplies
+       `--mainFontSize` by it on `.mes_text` / `.mes_reasoning`, and under rails
+       css/shell-center.css multiplies the reading column by the same number, so
+       the type grows and the measure holds at ~75 characters per line. Sheet-
+       local, not a theme token: it is the USER's setting
+       (`power_user.kotatsu_prose_scale`, kotatsu/theme/prose-scale.js), written
+       as `body[data-k-prose-scale]` and stepped in §3, and a pack has no business
+       pinning how large someone reads. Core's `font_scale` stays the whole-UI
+       knob — it inflates every rail and pill along with the text, which is
+       exactly what a reader on a 3440 monitor does not want. */
+    --k-prose-scale: 1;
+
+    /* ── Top bar geometry ────────────────────────────────────────────────────
+       [12] Blue Hour flattened core's `--topBarBlockSize` calc() chain
+       (style.css:119-122) to a constant, because the pill is a fixed height that
+       no longer tracks the icon font size. Core keeps the name; the value comes
+       off the substrate. The block size is the pill plus its top inset plus an
+       equal gap below, so #sheld starts clear of the pill. */
+    --topBarBlockSize: var(--k-topbar-height);
+
+    /* ── Chrome fills ────────────────────────────────────────────────────────
+       Blue Hour painted three near-identical vertical gradients: 94/92 for the
+       floating bar and compose pill, 96/94 for drawer cards, 97/96 for popups
+       and menus. Reconciled to two — the 2% difference between the card and
+       modal stops is below the perceptual floor, and two recipes is one fewer
+       thing for a second sheet to keep in sync.
+
+       `--k-chrome-fill` rides over the chat and stays translucent enough for the
+       blur behind it to read. `--k-panel-fill` is for surfaces that must be
+       legible over arbitrary content. */
+    --k-chrome-fill: linear-gradient(180deg,
+            color-mix(in srgb, var(--k-surface-2) 94%, transparent),
+            color-mix(in srgb, var(--k-ground-deep) 92%, transparent));
+    --k-panel-fill: linear-gradient(180deg,
+            color-mix(in srgb, var(--k-surface-2) 97%, transparent),
+            color-mix(in srgb, var(--k-ground-deep) 96%, transparent));
+
+    /* Interior card layer (inline drawers, roster entries, inset fields). */
+    --k-inset-fill: color-mix(in srgb, var(--k-surface-sunken) 55%, transparent);
+    --k-inset-border: color-mix(in srgb, var(--k-chrome-border) 28%, transparent);
+    /* Ghost hover wash — one accent tint reused by every ghost control. */
+    --k-ghost-hover: color-mix(in srgb, var(--k-accent) 10%, transparent);
+
+    /* ── Ambient backdrop ────────────────────────────────────────────────────
+       [11] Core `body` (style.css:157-175) sets `background-color` only, so the
+       three glow ellipses need a background-image. Painted on `body`, not on a
+       new element, so a background image chosen in ST (inline on #bg1) covers it
+       naturally. Exposed as a token so a sheet can replace the whole recipe
+       rather than only re-tinting the three glows.
+
+       The top stop reads --k-backdrop-top, NOT --k-surface: the compat map
+       writes `blur_tint_color` into --k-surface and that value carries its
+       own alpha, which collapsed the sweep into a flat wash over an
+       identically-colored body background. Caught by a live computed-style
+       read (--k-surface resolves to rgba(15, 18, 27, 0.82) at runtime), not
+       by review. */
+    --k-app-backdrop:
+        radial-gradient(ellipse 75% 60% at 85% -12%, color-mix(in srgb, var(--k-glow-dawn) 48%, transparent), transparent 64%),
+        radial-gradient(ellipse 65% 52% at 4% 112%, color-mix(in srgb, var(--k-glow-rose) 42%, transparent), transparent 64%),
+        radial-gradient(ellipse 40% 30% at 50% 118%, color-mix(in srgb, var(--k-glow-deep) 22%, transparent), transparent 70%),
+        linear-gradient(175deg, var(--k-backdrop-top) 0%, var(--k-ground) 100%);
+
+    /* ── Checkbox tick + slider thumb ────────────────────────────────────────
+       Core derives `--SmartThemeCheckboxTickColor` from a pure-CSS luminance
+       calc over the body text color (style.css:94-97). With a light
+       `main_text_color` that calc resolves to pure black, which is why the blob
+       had to override the tick by hand. The token replaces the calc outright, so
+       both consumers — the tick (style.css:4088) and the range thumb
+       (style.css:4311) — become theme-reachable. The channel vars the calc reads
+       are still written by applyThemeColor(); they simply stop being consumed. */
+    --SmartThemeCheckboxTickColor: var(--k-checkbox-tick);
+
+    /* ── Avatar radii ────────────────────────────────────────────────────────
+       [152] [153] Only expressible as values because slice A split the
+       overloaded `--avatar-base-border-radius` (it used to double as the ring
+       WIDTH and the gutter in 13 places). Now that it is radius-only, the
+       square/rounded looks are token assignments and the `!important` duel with
+       toggle-dependent.css:50-58 disappears.
+
+       `--big-avatar-border-factor` is re-scaled at the same time: it multiplies
+       the base radius (toggle-dependent.css:181), so raising the base from 2px
+       to 6px without it would have taken big-avatar corners from 10px to 30px.
+       6px x 1.6667 lands back on --k-radius-lg. */
+    --avatar-base-border-radius: var(--k-radius-sm);
+    --avatar-base-border-radius-rounded: var(--k-radius-xl);
+    /* Circle mode was the one of the three still carrying a literal in
+       style.css; --k-radius-round existed for it and had no consumer. */
+    --avatar-base-border-radius-round: var(--k-radius-round);
+    --big-avatar-border-factor: 1.6667;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. TYPOGRAPHY — the consumption path for the three font tokens
+   ───────────────────────────────────────────────────────────────────────────
+   `--mainFontFamily` above puts the UI face on every core call site. What is
+   left is the reading surface: prose renders in the prose face, metadata in
+   mono. `.mes_text` is paired with `.mes_reasoning` throughout, matching core's
+   own pairing (style.css:383-430, 589-614) — Blue Hour styled only `.mes_text`,
+   so its tables, quotes, lists and headings never reached reasoning blocks.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The four reading sizes (§2 `--k-prose-scale`). M is the 15px the 2026-08-24 A/B was
+   tuned at and writes no attribute at all, so the default is byte-identical; S is a hair
+   under it for dense readers; L and XL are the ultrawide sizes — 18px and 20px at the
+   default `font_scale`. The user's `font_scale` still multiplies underneath. */
+body[data-k-prose-scale="s"] {
+    --k-prose-scale: 0.933;
+}
+
+body[data-k-prose-scale="l"] {
+    --k-prose-scale: 1.2;
+}
+
+body[data-k-prose-scale="xl"] {
+    --k-prose-scale: 1.333;
+}
+
+.mes_text,
+.mes_reasoning {
+    font-family: var(--k-font-prose);
+    /* Reading size: the prose-only scale over core's `--mainFontSize` (§2). At 1 this
+       is exactly the size the block inherited from body before. */
+    font-size: calc(var(--mainFontSize) * var(--k-prose-scale));
+    /* Prose has its own text token (tokens.css) so a pack can take the glare off hours of
+       reading without dimming every label in the chrome — Sparkle does (reader-polish v0
+       finding 6). Blue Hour's default resolves to `--k-text`, unchanged. The reasoning
+       aside re-declares its own colour further down and keeps it. */
+    color: var(--k-text-prose);
+    line-height: var(--k-mes-line-height);
+    /* Declared here so the token wins the specificity tie against core's
+       style.css:1528 `.mes_text, .mes_reasoning { font-weight: 500 }` — this
+       sheet links later. 450 on the variable face: presence on dark ground
+       without medium-weight fatigue over long sessions. */
+    font-weight: var(--k-mes-weight);
+}
+
+.mes_text p,
+.mes_reasoning p {
+    /* The gap must clearly exceed the leading (~0.65em at lh 1.65) or
+       paragraphs read as one slab — the 2026-08-24 legibility A/B. */
+    margin-bottom: var(--k-mes-para-gap);
+    /* Chromium's paragraph-aware line breaker: no single-word orphan lines,
+       calmer rag. Inert where unsupported. */
+    text-wrap: pretty;
+}
+
+/* Composing and editing use the same face as the prose they produce. The blob
+   named `#scenario_textarea` here; the live element is `#scenario_pole`
+   (index.html:6595) — inventory §2f, dead-ID fragment. */
+#send_textarea,
+.edit_textarea,
+#description_textarea,
+#firstmessage_textarea,
+#personality_textarea,
+#scenario_pole,
+#creator_notes_textarea {
+    font-family: var(--k-font-prose);
+    line-height: 1.6;
+}
+
+/* Metadata: timestamps, counters, filenames, the thinking line. */
+.timestamp,
+.mesIDDisplay,
+.mes_timer,
+.tokenCounterDisplay,
+.ch_additional_info,
+.select_chat_block_filename,
+.paginationjs .paginationjs-nav,
+.mes_reasoning_header,
+.neo-range-input {
+    font-family: var(--k-font-mono);
+}
+
+/* Shared title baseline. Blue Hour's six former Fraunces sites are retargeted
+   immediately below. */
+.name_text,
+.ch_name,
+.toast-title,
+.inline-drawer-toggle.inline-drawer-header,
+.drawer-content h3,
+.drawer-content h4,
+.popup h3,
+.popup h4,
+#dialogue_popup h3,
+#select_chat_popup h3 {
+    font-family: var(--k-font-ui);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* Newsreader's variable face has a real 500 cut for the display voice.
+   Trimmed 2026-08-25: drawer headers, drawer h3/h4 and toast titles left this
+   list — they are MENU furniture, not editorial moments, and serif at their
+   sizes read "cursive-ish" (Andres's ick, upheld). They keep the UI baseline
+   from the rule above. The display voice stays where a NAME is being said:
+   nameplates and popup titles. */
+.name_text,
+.ch_name,
+.popup h3,
+.popup h4,
+#dialogue_popup h3,
+#select_chat_popup h3 {
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. CODE SURFACE — the var-driven hljs palette
+   ───────────────────────────────────────────────────────────────────────────
+   `css/bright.min.css` is a vendored, var-free sheet with 49 selectors and 12
+   hardcoded hex values. Blue Hour overrode 38 of them and six neon declarations
+   leaked through on specificity — most visibly `.hljs-title.function_` (0,2,0),
+   which beat the theme's `.hljs-title` (0,1,0) and painted EVERY function name
+   in every code block Bright cyan.
+
+   This block mirrors Bright's selector groups exactly, one for one, all 49, so
+   nothing can leak: identical specificity plus later source order wins every
+   tie. The vendored file is left byte-untouched on purpose so it stays trivially
+   mergeable from upstream.
+
+   Values come from tokens.css `--k-code-*`, which slice A sized to cover the
+   full 49 (including the leaks). Two selectors Bright does not ship —
+   `.hljs-selector-class` and `.hljs-selector-pseudo` — are folded into the
+   keyword group, matching what the blob did.
+
+   Untouched: `body[data-stscript-style] .hljs.language-stscript`
+   (style.css:1976-2035) is the STscript sub-palette and outranks all of this by
+   design.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+pre code.hljs {
+    display: block;
+    overflow-x: auto;
+    padding: 1em;
+}
+
+code.hljs {
+    padding: 3px 5px;
+}
+
+.hljs {
+    color: var(--k-code-text);
+    background: var(--k-code-bg);
+}
+
+.hljs ::selection,
+.hljs::selection {
+    background-color: var(--k-code-selection-bg);
+    color: var(--k-code-selection-text);
+}
+
+.hljs-comment {
+    color: var(--k-code-comment);
+    font-style: italic;
+}
+
+.hljs-tag {
+    color: var(--k-code-tag);
+}
+
+.hljs-operator,
+.hljs-punctuation,
+.hljs-subst {
+    color: var(--k-code-punctuation);
+}
+
+.hljs-operator {
+    opacity: 0.7;
+}
+
+.hljs-bullet,
+.hljs-deletion,
+.hljs-name,
+.hljs-selector-tag,
+.hljs-template-variable,
+.hljs-variable {
+    color: var(--k-code-variable);
+}
+
+.hljs-attr,
+.hljs-link,
+.hljs-literal,
+.hljs-number,
+.hljs-symbol,
+.hljs-variable.constant_ {
+    color: var(--k-code-attr);
+}
+
+.hljs-class .hljs-title,
+.hljs-title,
+.hljs-title.class_ {
+    color: var(--k-code-title);
+}
+
+.hljs-strong {
+    font-weight: 700;
+    color: var(--k-code-strong);
+}
+
+.hljs-addition,
+.hljs-code,
+.hljs-string,
+.hljs-title.class_.inherited__ {
+    color: var(--k-code-string);
+}
+
+.hljs-built_in,
+.hljs-doctag,
+.hljs-keyword.hljs-atrule,
+.hljs-quote,
+.hljs-regexp {
+    color: var(--k-code-builtin);
+}
+
+.hljs-attribute,
+.hljs-section {
+    color: var(--k-code-section);
+}
+
+/* The leak that mattered most: a function name is a title, not a third color. */
+.hljs-function .hljs-title,
+.hljs-title.function_,
+.ruby .hljs-property {
+    color: var(--k-code-function);
+}
+
+.hljs-keyword,
+.hljs-selector-class,
+.hljs-selector-pseudo {
+    color: var(--k-code-keyword);
+}
+
+.diff .hljs-meta,
+.hljs-template-tag,
+.hljs-type {
+    color: var(--k-code-type);
+}
+
+/* Bright pairs the italic with a magenta the blob dropped; emphasis now takes
+   the theme's own italics color, which is what an <em> reads as everywhere else. */
+.hljs-emphasis {
+    color: var(--k-code-emphasis);
+    font-style: italic;
+}
+
+.hljs-meta {
+    color: var(--k-code-meta);
+}
+
+.hljs-meta .hljs-keyword {
+    color: var(--k-code-meta-keyword);
+    font-weight: 700;
+}
+
+/* `#include <…>`, decorators — orange in Bright, a string everywhere else. */
+.hljs-meta .hljs-string {
+    color: var(--k-code-meta-string);
+}
+
+.hljs-meta-keyword {
+    color: var(--k-code-meta);
+    font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. AMBIENT BACKDROP — [11]
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body {
+    background-image: var(--k-app-backdrop);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. FLOATING PILL TOP BAR — [13] [14] [15] [17] [18]
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* [13] The stock full-bleed bar is suppressed, not removed. `#top-bar` is one of
+   the 59 frozen CONTRACT.md ids; hidden is not deleted, so every extension that
+   queries or appends to it still finds it. */
+#top-bar {
+    display: none;
+}
+
+/* [14] The drawer strip becomes a centered pill. Core sets
+   `width: var(--sheldWidth); height: var(--topBarBlockSize)` at
+   style.css:5469-5477, which is a full-width flex strip glued to the chat width. */
+#top-settings-holder {
+    height: var(--k-topbar-pill-height);
+    width: min(96vw, 1400px);
+    margin: var(--k-topbar-pill-inset) auto 0;
+    padding: 0 18px;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: var(--k-chrome-fill);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: var(--k-radius-xl);
+    box-shadow: var(--k-elev-2);
+}
+
+/* [15] THE load-bearing rule of this whole port. The blur lives on a pseudo
+   element, never on the bar itself: `backdrop-filter` establishes a containing
+   block, and `#top-settings-holder` contains the `position: fixed` drawer
+   panels. Move this to the parent and every drawer clamps to the pill's height.
+   `z-index: -1` keeps the pseudo behind the icons without a stacking context. */
+#top-settings-holder::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--k-radius-xl);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    z-index: -1;
+}
+
+/* [17] Core gives `.drawer` `width: 100%` (style.css:5484-5490), which in a pill
+   makes every drawer fight for the same full width. */
+#top-settings-holder .drawer {
+    flex: 0 0 auto;
+    width: auto;
+}
+
+/* [18] Icon geometry: core sizes drawer icons off `--topBarIconSize` with a
+   1px/3px pad (style.css:5492-5497), which is a strip metric, not a pill one.
+   The resting/hover/open colors ride along because core declares no color for
+   `.drawer-icon` at all — there is no token call site to inherit from. */
+#top-settings-holder .drawer-icon {
+    font-size: 17px;
+    width: auto;
+    height: auto;
+    padding: 6px 9px;
+    border-radius: var(--k-radius-md);
+    color: var(--k-text-muted);
+    transition: color var(--k-motion), background-color var(--k-motion);
+}
+
+#top-settings-holder .drawer-icon:hover,
+#top-settings-holder .drawer-icon:focus-visible {
+    color: var(--k-accent-bright);
+    background-color: var(--k-ghost-hover);
+}
+
+#top-settings-holder .drawer-icon.openIcon {
+    color: var(--k-rose);
+    background-color: color-mix(in srgb, var(--k-rose) 10%, transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7. DETACHED SIDE PANELS & DRAWER CARDS — [16] [24] [25] [26] [27] [38] [143]
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* [16] The fixed panels anchor below the floating pill instead of below the old
+   bar — five of the seven hardcode their own `top` rather than reading
+   `--topBarBlockSize`. */
+#left-nav-panel,
+#right-nav-panel,
+#floatingPrompt,
+#cfgConfig,
+#logprobsViewer {
+    top: var(--topBarBlockSize);
+}
+
+/* [16] [24] Side panels keep the blob's softer fill, lift and blur; popup and
+   menu surfaces retain the stronger modal recipe. */
+#left-nav-panel,
+#right-nav-panel,
+#floatingPrompt,
+#cfgConfig,
+#logprobsViewer,
+.drawer-content {
+    background: var(--k-panel-fill-soft);
+    backdrop-filter: blur(var(--k-blur-panel));
+    -webkit-backdrop-filter: blur(var(--k-blur-panel));
+    box-shadow: var(--k-elev-3-soft);
+}
+
+/* [25] [26] …and breathe off the viewport edges rather than sitting flush. */
+#left-nav-panel,
+#floatingPrompt,
+#cfgConfig,
+#logprobsViewer {
+    left: 8px;
+}
+
+#right-nav-panel {
+    right: 8px;
+}
+
+/* [24] Drawer contents become floating cards matching the pill. Core sets
+   `padding: 5px` and a flat `--SmartThemeBlurTintColor` fill
+   (style.css:5556-5582). The blur is safe on this element — a `.drawer-content`
+   has no `position: fixed` descendants. */
+.drawer-content {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: var(--k-radius-xl);
+    margin-top: 6px;
+    padding: 12px;
+}
+
+/* [27] An interior card layer core has no rule for: settings sections stop being
+   a flat run of collapsibles and become stacked cards. */
+.drawer-content .inline-drawer {
+    background: var(--k-inset-fill);
+    border: 1px solid var(--k-inset-border);
+    border-radius: var(--k-radius-lg);
+    padding: 4px 12px 10px;
+    margin: 10px 0 4px;
+}
+
+.inline-drawer-toggle.inline-drawer-header {
+    color: var(--k-accent-bright);
+    letter-spacing: 0.03em;
+    padding: 10px 4px;
+}
+
+.drawer-content h3,
+.drawer-content h4 {
+    color: var(--k-text-strong);
+    letter-spacing: 0.03em;
+}
+
+/* [38] Section title rows (e.g. "UI Theme" + its import/export buttons) are
+   floated by core; un-float them so the row spans the card. */
+.drawer-content h4.title_restorable {
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 8px;
+}
+
+/* [143] The wand menu is the hamburger's twin — same card, same ghost rows. */
+#extensionsMenu {
+    background: var(--k-panel-fill);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: var(--k-radius-xl);
+    box-shadow: var(--k-elev-3);
+    padding: 6px;
+    gap: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. COMPOSE PILL — [30] [31] [32] [33] [34] [36] [37]
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* [30] Detach the compose bar from the chat's bottom edge. */
+#form_sheld {
+    margin: 8px 0 10px;
+}
+
+/* [31] …and round it into a pill. Core welds it to the chat with
+   `border-radius: 0 0 10px 10px` (style.css:903-912). This carried the blob's
+   only genuine `!important`; it is not needed here, because a later sheet at
+   equal specificity already wins. */
+#send_form {
+    border-radius: var(--k-radius-xl);
+    background: var(--k-chrome-fill);
+    border: 1px solid var(--SmartThemeBorderColor);
+    box-shadow: var(--k-elev-2);
+    padding: 4px 10px 6px;
+}
+
+/* [32] [33] Quick Replies is a built-in extension
+   (scripts/extensions/quick-reply/), so its buttons are core-owned DOM and
+   belong to the compose pill's ghost-button vocabulary. The third-party
+   GuidedGenerations twins of these rules stay out — Kotatsu does not ship
+   selectors for DOM it does not own. */
+#send_form .qr--button {
+    background: transparent;
+    border: none;
+    border-radius: var(--k-radius-md);
+    color: var(--k-text-muted);
+    transition: color var(--k-motion), background-color var(--k-motion);
+}
+
+#send_form .qr--button:hover,
+#send_form .qr--button:focus-visible {
+    color: var(--k-accent-bright);
+    background-color: var(--k-ghost-hover);
+}
+
+/* [34] The input-row icons are sized off `--bottomFormIconSize`, a metric built
+   for the welded bar. Slim them to pill scale. */
+#options_button,
+#extensionsMenuButton {
+    font-size: 18px;
+    width: auto;
+    height: auto;
+    padding: 6px 8px;
+    color: var(--k-text-muted);
+}
+
+#options_button:hover,
+#extensionsMenuButton:hover,
+#options_button:focus-visible,
+#extensionsMenuButton:focus-visible {
+    color: var(--k-accent-bright);
+}
+
+/* [36] Same geometry for the send button. The blob split this across two rules
+   196 lines apart ([9] and [36]); merged here, per inventory §2f. */
+#send_but {
+    font-size: 18px;
+    padding: 6px 8px;
+    color: var(--k-rose);
+}
+
+/* [37] With the icons no longer full-height, the flanks need centering. */
+#leftSendForm,
+#rightSendForm {
+    align-items: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9. READING SURFACE — [74] [75] [81] [83] [84] [100] [104] [105] [114] [118]
+                        [119]
+   ───────────────────────────────────────────────────────────────────────────
+   Every selector here is paired `.mes_text` / `.mes_reasoning`. Core pairs them
+   in eight places and Blue Hour paired them in none, so reasoning blocks fell
+   back to stock in the middle of a themed chat. The pairing is the fix, and it
+   is free.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* [74] [75] The thinking toggle reads as a bare metadata line, not a chip: the
+   stock header already paints a panel and the chevron docks inside it at
+   right: 7px, so the right padding has to stay. */
+.mes_reasoning_details {
+    margin: 2px 0 8px;
+}
+
+.mes_reasoning_summary {
+    list-style: none;
+    width: fit-content;
+    cursor: pointer;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.mes_reasoning_header {
+    margin: 0;
+    padding: 3px 24px 3px 8px;
+    border-radius: var(--k-radius-md);
+    background-color: transparent;
+    font-size: 0.72em;
+    letter-spacing: 0.04em;
+    color: var(--k-text-faint);
+    transition: color var(--k-motion), background-color var(--k-motion);
+}
+
+.mes_reasoning_header:hover,
+.mes_reasoning_header:focus-visible {
+    color: var(--k-accent-bright);
+    background-color: color-mix(in srgb, var(--k-accent) 8%, transparent);
+}
+
+.mes_reasoning_details[open] .mes_reasoning_header {
+    color: var(--k-text-reasoning);
+}
+
+/* [81] Reasoning as an aside: an accent-edged block, deliberately distinct from
+   the quote-edged blockquote below so the two never read as the same thing. */
+.mes_reasoning {
+    margin: 8px 0 2px;
+    padding: 10px 14px;
+    background: color-mix(in srgb, var(--k-surface-sunken) 35%, transparent);
+    border-left: 2px solid color-mix(in srgb, var(--k-accent) 40%, transparent);
+    border-radius: 0 var(--k-radius-lg) var(--k-radius-lg) 0;
+    font-style: italic;
+    color: var(--k-text-reasoning);
+    line-height: 1.7;
+}
+
+/* Inline code — an accent chip, not a slab. */
+.mes_text code,
+.mes_reasoning code {
+    font-family: var(--k-font-mono);
+    font-size: 0.82em;
+    background: var(--k-ghost-hover);
+    border: 1px solid color-mix(in srgb, var(--k-accent) 22%, transparent);
+    border-radius: var(--k-radius-xs);
+    padding: 0.08em 0.4em;
+    color: var(--k-accent-bright);
+}
+
+/* [83] `position: relative` is load-bearing: ST absolutely positions the
+   `.code-copy` button (style.css:5518-5529) and without a positioned ancestor it
+   escapes to the nearest one. */
+.mes_text pre,
+.mes_reasoning pre {
+    position: relative;
+    background: color-mix(in srgb, var(--k-ground-deep) 75%, transparent);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: var(--k-radius-lg);
+    margin: 10px 0;
+}
+
+/* [84] The block's chrome moves to the `pre`; the `code` is just text. */
+.mes_text pre code,
+.mes_reasoning pre code {
+    display: block;
+    background: transparent;
+    border: none;
+    border-radius: var(--k-radius-lg);
+    padding: 12px 14px;
+    font-size: 0.8em;
+    line-height: 1.65;
+    color: var(--k-code-text);
+}
+
+/* [98] Core positions the copy control; the theme supplies its quiet-to-bright
+   treatment without disturbing that geometry. */
+.code-copy {
+    color: var(--k-text-muted);
+    opacity: var(--k-code-copy-opacity-rest);
+    border-radius: var(--k-radius-sm);
+    transition: color var(--k-motion), opacity var(--k-motion);
+}
+
+.code-copy:hover,
+.code-copy:focus-visible {
+    color: var(--k-accent-bright);
+    opacity: var(--k-code-copy-opacity-active);
+}
+
+/* [100] Core gives blockquotes a `--black30a` fill and a 3px quote-color edge
+   (style.css:589-595); the aside treatment needs the rounded outer corner and
+   the sunken surface instead of a flat black wash. */
+.mes_text blockquote,
+.mes_reasoning blockquote {
+    margin: 10px 0;
+    padding: 8px 14px;
+    background: color-mix(in srgb, var(--k-surface-sunken) 35%, transparent);
+    border-left: 2px solid color-mix(in srgb, var(--k-quote) 45%, transparent);
+    border-radius: 0 var(--k-radius-lg) var(--k-radius-lg) 0;
+    color: var(--k-text-quote);
+}
+
+.mes_text blockquote p:last-child,
+.mes_reasoning blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+/* Links — a quiet underline that wakes on hover. */
+.mes_text a,
+.mes_reasoning a {
+    color: var(--k-accent);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--k-accent) 40%, transparent);
+    text-underline-offset: 3px;
+    transition: color var(--k-motion), text-decoration-color var(--k-motion);
+}
+
+.mes_text a:hover,
+.mes_reasoning a:hover,
+.mes_text a:focus-visible,
+.mes_reasoning a:focus-visible {
+    color: var(--k-accent-bright);
+    text-decoration-color: color-mix(in srgb, var(--k-accent-bright) 70%, transparent);
+}
+
+/* [104] Core sets `border-collapse: collapse` (style.css:383-388), which makes a
+   rounded table border impossible — collapsed borders paint over the corner
+   radius. `separate` + `overflow: hidden` is the only way to get card corners. */
+.mes_text table,
+.mes_reasoning table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 30%, transparent);
+    border-radius: var(--k-radius-lg);
+    overflow: hidden;
+    margin: 10px 0;
+    font-size: 0.92em;
+}
+
+/* [105] Core declares `border: 1px solid` on td/th with NO color
+   (style.css:390-396), so both inherit `currentColor` — table rules render in
+   the body text color and no token can reach them. Replaced with explicit
+   single-direction rules. */
+.mes_text th,
+.mes_reasoning th {
+    font-family: var(--k-font-prose);
+    font-weight: 600;
+    text-align: left;
+    color: var(--k-text-strong);
+    background: color-mix(in srgb, var(--k-surface-sunken) 60%, transparent);
+    border: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--k-accent) 45%, transparent);
+    padding: 6px 12px;
+}
+
+.mes_text td,
+.mes_reasoning td {
+    border: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--k-chrome-border) 22%, transparent);
+    padding: 6px 12px;
+}
+
+.mes_text tbody tr:last-child td,
+.mes_reasoning tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.mes_text tbody tr:nth-child(even),
+.mes_reasoning tbody tr:nth-child(even) {
+    background: color-mix(in srgb, var(--k-surface-sunken) 30%, transparent);
+}
+
+/* Headings stay in the prose face — a deliberate choice, not an oversight. */
+.mes_text h1,
+.mes_text h2,
+.mes_text h3,
+.mes_text h4,
+.mes_reasoning h1,
+.mes_reasoning h2,
+.mes_reasoning h3,
+.mes_reasoning h4 {
+    font-family: var(--k-font-prose);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--k-text-strong);
+    margin: 14px 0 8px;
+}
+
+.mes_text h1,
+.mes_reasoning h1 {
+    font-size: 1.45em;
+}
+
+.mes_text h2,
+.mes_reasoning h2 {
+    font-size: 1.28em;
+}
+
+.mes_text h3,
+.mes_reasoning h3 {
+    font-size: 1.14em;
+}
+
+.mes_text h4,
+.mes_reasoning h4 {
+    font-size: 1.05em;
+}
+
+/* [114] Core only dims the stock rule to `opacity: 0.4` (style.css:1543-1545).
+   An editorial divider has to be built, not dimmed. */
+.mes_text hr,
+.mes_reasoning hr {
+    border: none;
+    height: 1px;
+    width: 70%;
+    margin: 18px auto;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--k-accent) 45%, transparent), transparent);
+    opacity: 1;
+}
+
+.mes_text ul,
+.mes_text ol,
+.mes_reasoning ul,
+.mes_reasoning ol {
+    margin: 6px 0 10px;
+    padding-left: 1.4em;
+}
+
+.mes_text li,
+.mes_reasoning li {
+    margin: 3px 0;
+}
+
+.mes_text li::marker,
+.mes_reasoning li::marker {
+    color: var(--k-text-muted);
+}
+
+/* [118] [119] Core hangs a literal `drop-shadow(0 0 2px black)` on message
+   buttons (style.css:4485) — a filter no theme can reach. Ghost chips instead. */
+.mes_button,
+.extraMesButtons>div {
+    filter: none;
+    opacity: 0.45;
+    color: var(--k-text-muted);
+    padding: 2px 5px;
+    border-radius: var(--k-radius-sm);
+    transition: opacity var(--k-motion), color var(--k-motion), background-color var(--k-motion);
+}
+
+.mes_button:hover,
+.extraMesButtons>div:hover,
+.mes_button:focus-visible,
+.extraMesButtons>div:focus-visible {
+    opacity: 1;
+    color: var(--k-accent-bright);
+    background-color: var(--k-ghost-hover);
+}
+
+/* Edit mode wears the same card as the code block it sits beside. */
+.edit_textarea {
+    background: var(--k-inset-fill);
+    border: 1px solid color-mix(in srgb, var(--k-accent) 35%, transparent);
+    border-radius: var(--k-radius-lg);
+    padding: 8px 10px;
+    color: var(--k-text);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   10. SCROLLBARS — [121] [123]
+   ───────────────────────────────────────────────────────────────────────────
+   Core paints the thumb with `--grey7070a` over a `--black50a` inset ring
+   (style.css:196-217) and hovers the track with a literal
+   `rgba(126, 126, 126, 0.2)` (style.css:180) — a neutral grey chosen precisely
+   so it would not clash with any theme, which means it matches none of them.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-track:hover {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb:vertical,
+::-webkit-scrollbar-thumb:horizontal {
+    background-color: color-mix(in srgb, var(--k-accent) 25%, transparent);
+    box-shadow: none;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    border-radius: var(--k-radius-lg);
+}
+
+::-webkit-scrollbar-thumb:vertical:hover,
+::-webkit-scrollbar-thumb:horizontal:hover {
+    background-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
+}
+
+/* Firefox. Everything above is `::-webkit-scrollbar`, which Gecko does not RENDER — Firefox
+   was shipping the stock white system bar over every theme. The standard properties fix it,
+   but they cannot simply be added alongside: the moment `scrollbar-color` computes to
+   anything but `auto`, Chromium DISABLES `::-webkit-scrollbar` styling wholesale and falls
+   back to basic colored bars. And the obvious gate is a trap, measured live:
+   `@supports not selector(::-webkit-scrollbar)` is FALSE in Firefox too, because Gecko
+   PARSES the webkit selector for webcompat while styling nothing with it. `-moz-appearance`
+   is the one syntax only Gecko accepts, so it is the gate. One state only (no hover pseudo
+   exists for `scrollbar-color`), so the thumb sits between the webkit rest (25%) and hover
+   (45%) mixes. `scrollbar-color` inherits from the root; `scrollbar-width` does not, hence
+   the `*` — at zero specificity, so every existing `scrollbar-width: none` still wins. */
+@supports (-moz-appearance: none) {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--k-accent) 35%, transparent) transparent;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   11. TOASTS — one card, a semantic left edge
+   ───────────────────────────────────────────────────────────────────────────
+   Slice A killed the four raw hex at style.css:4018-4030 by mixing each status
+   token into the card fill. The design calls for the opposite reading: ONE
+   neutral card with the status carried on a left edge. That is more legible
+   (body copy sits on a constant background at a known contrast) and it is one
+   declaration per status instead of one palette per status.
+
+   The variant selectors have to be restated at `body #toast-container .toast-x`
+   (1,2,0) because that is exactly what core uses; a bare `.toast-x` would lose.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body #toast-container>div {
+    background-color: color-mix(in srgb, var(--k-surface-2) 97%, transparent);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: var(--k-radius-xl);
+    box-shadow: var(--k-elev-3);
+    opacity: 1;
+    color: var(--k-text);
+}
+
+body #toast-container .toast-info {
+    background-color: color-mix(in srgb, var(--k-surface-2) 97%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--k-info) 80%, transparent);
+}
+
+body #toast-container .toast-success {
+    background-color: color-mix(in srgb, var(--k-surface-2) 97%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--k-success) 80%, transparent);
+}
+
+body #toast-container .toast-warning {
+    background-color: color-mix(in srgb, var(--k-surface-2) 97%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--k-warning) 80%, transparent);
+}
+
+body #toast-container .toast-error {
+    background-color: color-mix(in srgb, var(--k-surface-2) 97%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--k-danger) 80%, transparent);
+}
+
+.toast-message {
+    /* UI face since 2026-08-25 — a toast is a status line, not literature. */
+    font-family: var(--k-font-ui);
+    font-size: 0.95em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   12. POPUP CHROME — the deferred --k-radius-xl and accent-ring consumers
+   ───────────────────────────────────────────────────────────────────────────
+   Slice A minted `--k-radius-xl` (12 uses in the blob, tied for most-used) and
+   `--k-ring-*` without consumers. The cards above are most of the answer; the
+   modal surfaces are the rest.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#dialogue_popup,
+#select_chat_popup {
+    background: var(--k-panel-fill);
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 35%, transparent);
+    border-radius: var(--k-radius-xl);
+    box-shadow: var(--k-elev-4);
+}
+
+#options {
+    background: var(--k-panel-fill);
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 35%, transparent);
+    border-radius: var(--k-radius-xl);
+    box-shadow: var(--k-elev-3);
+    padding: 6px;
+}
+
+#options a {
+    border-radius: var(--k-radius-md);
+    padding: 6px 10px;
+    transition: background-color var(--k-motion), color var(--k-motion);
+}
+
+/* The current chat branch has to be spottable mid-scroll — this is the soft
+   ring's reason to exist. */
+#select_chat_popup .select_chat_block[highlight="true"] {
+    background: color-mix(in srgb, var(--k-rose) 7%, transparent);
+    border: 1px solid color-mix(in srgb, var(--k-rose) 65%, transparent);
+    box-shadow: var(--k-ring-soft);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   13. CHECKBOXES & SLIDER THUMB — [140] [141] [142]
+   ───────────────────────────────────────────────────────────────────────────
+   Core fills the box with `var(--SmartThemeBodyColor)` — the BODY TEXT color as
+   a background — and derives the tick as its luminance inverse. On any theme
+   with light body text that is a pale well with a black tick, which is why the
+   `--k-checkbox-tick` override in §2 needs the well ported alongside it: a rose
+   tick on a pale-lavender well would be worse than the black one it replaces.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+input[type="checkbox"] {
+    background-color: color-mix(in srgb, var(--k-surface-sunken) 70%, transparent);
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    border-radius: var(--k-radius-xs);
+    outline: none;
+    filter: none;
+}
+
+input[type="checkbox"]::before {
+    box-shadow: inset 1em 1em var(--k-checkbox-tick);
+}
+
+input[type="checkbox"]:checked {
+    border-color: color-mix(in srgb, var(--k-checkbox-tick) 60%, transparent);
+    background-color: color-mix(in srgb, var(--k-checkbox-tick) 10%, transparent);
+}
+
+/* The range thumb reads the same channel (style.css:4311), so it inherits the
+   tick color for free; the halo is what makes it look intentional. */
+input[type="range"]::-webkit-slider-thumb {
+    box-shadow: var(--k-ring-thumb);
+    transition: box-shadow var(--k-motion);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover,
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+    box-shadow: var(--k-ring-thumb-hover);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   14. AVATARS — [147] [154]
+   ───────────────────────────────────────────────────────────────────────────
+   [152] and [153] are token assignments in §2 — they stopped needing rules the
+   moment `--avatar-base-border-radius` became radius-only.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* [147] A hover the eye can feel without the layout moving. */
+#chat .mes .avatar {
+    transition: transform var(--k-avatar-motion);
+}
+
+#chat .mes .avatar:hover,
+#chat .mes .avatar:focus-visible {
+    transform: translateY(-1px) scale(1.02);
+}
+
+/* [154] Rectangular mode means a PORTRAIT CARD at 2:3, not a taller square.
+   Core's factors (toggle-dependent.css:2-4) give 60x90 from a 50x50 base; 72x108
+   is the size that actually shows character art. Scoped to chat so the roster
+   and persona pickers keep the core sizing. */
+body.big-avatars #chat .mes .avatar,
+body.big-avatars #chat .mes .avatar img {
+    width: 72px;
+    height: 108px;
+    border-radius: var(--k-radius-lg);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   15. SLICE C — PALETTE CONSUMPTION
+   ───────────────────────────────────────────────────────────────────────────
+   Bucket-(a) palette/type effects and bucket-(b) token receivers that core did
+   not expose. Existing core receivers stay in their owning sheets; this section
+   is only for selectors that had no declaration to edit in place.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* [1] Was Blue Hour's inherited reading face (prose on <body>, UI restored per
+   call site). Retired 2026-08-25: the assumption "form controls keep the UI face
+   through core's explicit declarations" held for controls and leaked for
+   everything without one — a census found 68 <small> hints, bare label spans,
+   links and section headers in the settings rack all inheriting the serif
+   ("cursive-ish" at 11px, Andres's words, and he's right). The document
+   defaults to the FUNCTIONAL face now; the reading voice is opt-in where §3
+   assigns it explicitly (.mes_text/.mes_reasoning, the compose textareas). */
+body {
+    font-family: var(--k-font-ui);
+}
+
+/* [4] [5] Names and message metadata had font hooks but no palette receivers. */
+.name_text {
+    font-size: 1.1em;
+    color: var(--k-text-strong);
+}
+
+.timestamp,
+.mes .mesIDDisplay,
+.mes .mes_timer,
+.mes .tokenCounterDisplay {
+    font-family: var(--k-font-mono);
+    font-size: 0.72em;
+    color: var(--k-text-faint);
+}
+
+/* [10] Resting swipe affordances. */
+.swipe_right,
+.swipe_left {
+    color: var(--k-text-muted);
+}
+
+/* [21] [22] [23] User/bot distinction: rose for the character, lavender for
+   the user, including the user's name. */
+#chat .mes[is_user="false"] {
+    border-left: 2px solid color-mix(in srgb, var(--k-rose) 50%, transparent);
+}
+
+#chat .mes[is_user="true"] {
+    border-left: 2px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+}
+
+#chat .mes[is_user="true"] .name_text {
+    color: var(--k-accent-bright);
+}
+
+/* [47] [48] Character roster cards. */
+#rm_print_characters_block .entity_block {
+    background: color-mix(in srgb, var(--k-surface-sunken) 35%, transparent);
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 18%, transparent);
+    border-radius: var(--k-radius-lg);
+    margin-bottom: 4px;
+    padding: 6px 8px;
+    transition: background-color var(--k-motion), border-color var(--k-motion);
+}
+
+#rm_print_characters_block .entity_block:hover,
+#rm_print_characters_block .entity_block:focus-visible {
+    background: color-mix(in srgb, var(--k-accent) 10%, transparent);
+    border-color: color-mix(in srgb, var(--k-accent) 35%, transparent);
+}
+
+/* [50] Character-card secondary metadata. */
+.ch_additional_info {
+    font-family: var(--k-font-mono);
+    font-size: 0.7em;
+    color: var(--k-text-faint);
+}
+
+/* [62] Popup titles receive Blue Hour's stronger title color and tracking;
+   display family and weight are assigned in §3. */
+.popup h3,
+.popup h4,
+#dialogue_popup h3,
+#select_chat_popup h3 {
+    letter-spacing: 0.03em;
+    color: var(--k-text-strong);
+}
+
+/* [66] Options-menu rows. */
+#options a:hover,
+#options a:focus-visible {
+    background-color: color-mix(in srgb, var(--k-accent) 12%, transparent);
+    color: var(--k-text-strong);
+}
+
+/* [69] [71] Chat filenames and the highlighted branch. */
+.select_chat_block_filename {
+    font-family: var(--k-font-mono);
+    font-size: 0.78em;
+    color: var(--k-accent-bright);
+}
+
+.select_chat_block[highlight="true"] .select_chat_block_filename {
+    color: var(--k-rose);
+}
+
+/* [79] [80] Reasoning actions are ghost controls, not full menu buttons. Match
+   the disabled exclusions so core's high-specificity generic hover cannot win. */
+.mes_reasoning_actions .menu_button {
+    background: transparent;
+    border: none;
+    color: var(--k-text-muted);
+}
+
+.mes_reasoning_actions .menu_button:not(.disabled):not([disabled]):hover,
+.mes_reasoning_actions .menu_button:not(.disabled):not([disabled]):focus-visible {
+    background-color: var(--k-ghost-hover);
+    color: var(--k-accent-bright);
+}
+
+/* [130] Toast titles were wired to the UI title treatment but not its color. */
+.toast-title {
+    color: var(--k-text-strong);
+}
+
+/* [144] [145] [146] Extension-menu rows and their leading glyphs. */
+body #extensionsMenu .list-group-item,
+body #extensionsMenu>div:not(.extension_container) {
+    border: none;
+    border-radius: var(--k-radius-md);
+    padding: 6px 10px;
+    background: transparent;
+    color: var(--k-text);
+    transition: background-color var(--k-motion), color var(--k-motion);
+}
+
+body #extensionsMenu .list-group-item:hover,
+body #extensionsMenu>div:not(.extension_container):hover,
+body #extensionsMenu .list-group-item:focus-visible,
+body #extensionsMenu>div:not(.extension_container):focus-visible {
+    background-color: color-mix(in srgb, var(--k-accent) 12%, transparent);
+    color: var(--k-text-strong);
+}
+
+#extensionsMenu .extensionsMenuExtensionButton {
+    color: var(--k-text-muted);
+}
+
+/* [149] [150] [151] Chat-avatar ring and first elevation consumer. */
+#chat .mes .avatar img {
+    border: 1px solid color-mix(in srgb, var(--k-accent) 45%, transparent);
+    box-shadow: var(--k-elev-1);
+}
+
+#chat .mes[is_user="false"] .avatar img {
+    border-color: color-mix(in srgb, var(--k-rose) 55%, transparent);
+}
+
+#chat .mes[is_user="true"] .avatar img {
+    border-color: color-mix(in srgb, var(--k-accent) 60%, transparent);
+}
+
+/* [155] [156] Portrait-card shadows: lift plus a speaker-colored halo. */
+body.big-avatars #chat .mes[is_user="false"] .avatar img {
+    box-shadow: var(--k-avatar-bot-shadow);
+}
+
+body.big-avatars #chat .mes[is_user="true"] .avatar img {
+    box-shadow: var(--k-avatar-user-shadow);
+}
+
+/* [157] [158] Timestamp model icon. */
+#chat .mes .timestamp-icon {
+    height: 11px;
+    color: var(--k-text-faint);
+    opacity: 0.55;
+    transition: opacity var(--k-motion), color var(--k-motion);
+}
+
+#chat .mes .timestamp-icon:hover,
+#chat .mes .timestamp-icon:focus-visible {
+    opacity: 1;
+    color: var(--k-accent-bright);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   16. RESPONSIVE GUARD
+   ───────────────────────────────────────────────────────────────────────────
+   css/mobile-styles.css loads AFTER this sheet and pins the bar to
+   `position: fixed; width: 100vw` below 1000px. A 100vw pill with rounded
+   corners and side borders is not a pill, it is a mistake — so under the same
+   breakpoint the chrome flattens back into a bar. Declared here rather than in
+   mobile-styles.css because it is this sheet's shape being walked back.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 1000px) {
+    :root {
+        --topBarBlockSize: var(--k-topbar-pill-height);
+    }
+
+    #top-settings-holder {
+        margin: 0 auto;
+        padding: 0 8px;
+        gap: 6px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    #top-settings-holder::before {
+        border-radius: 0;
+    }
+
+    #left-nav-panel,
+    #floatingPrompt,
+    #cfgConfig,
+    #logprobsViewer {
+        left: 0;
+    }
+
+    #right-nav-panel {
+        right: 0;
+    }
+
+    #form_sheld {
+        margin: 0;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   17. TOGGLE PANELS — the class that replaced an inline-style toggle
+   ───────────────────────────────────────────────────────────────────────────
+   script.js's #option_settings handler ("Toggle Panels", reachable as /panels)
+   used to write inline `display` onto #top-bar and #top-settings-holder and
+   read those inline values back as its own state. Inline styles on shell
+   containers outrank every sheet — the exact hazard a CSS-driven layout cannot
+   survive — so the state moved to `body.k-panels-hidden` and the handler just
+   toggles the class.
+
+   These three declarations are the inline writes they replace, one for one.
+   #top-bar is already `display: none` in [13]; it is restated here so the
+   class stays truthful on its own terms. The old handler also assigned
+   `backgroundColor = ''` in both branches, which was a no-op, and is dropped.
+   The 10px corner is `--k-radius-lg`, which is 10px in Blue Hour — identical
+   today, and correctly pack-relative from here on.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body.k-panels-hidden #top-bar,
+body.k-panels-hidden #top-settings-holder {
+    display: none;
+}
+
+/* Wins over body.waifuMode #chat (toggle-dependent.css:401) on source order at
+   equal specificity, which is what the inline style did before. */
+body.k-panels-hidden #chat {
+    border-radius: var(--k-radius-lg);
+}

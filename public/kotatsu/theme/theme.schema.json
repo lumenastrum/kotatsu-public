@@ -1,0 +1,115 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "/kotatsu/theme/theme.schema.json",
+    "title": "Kotatsu theme pack manifest v0",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "id",
+        "name",
+        "version",
+        "tokens"
+    ],
+    "properties": {
+        "$schema": {
+            "type": "string",
+            "minLength": 1
+        },
+        "id": {
+            "$ref": "#/$defs/packId"
+        },
+        "name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "version": {
+            "const": 1
+        },
+        "extends": {
+            "$ref": "#/$defs/packId"
+        },
+        "tokens": {
+            "type": "object",
+            "propertyNames": {
+                "pattern": "^--k-[a-z0-9-]+$"
+            },
+            "additionalProperties": {
+                "type": "string",
+                "minLength": 1
+            }
+        },
+        "assets": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "fonts": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "family",
+                            "src"
+                        ],
+                        "properties": {
+                            "family": {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            "src": {
+                                "$ref": "#/$defs/localPath"
+                            },
+                            "weight": {
+                                "type": "string",
+                                "minLength": 1,
+                                "pattern": "^[A-Za-z0-9 .%+-]+$"
+                            },
+                            "style": {
+                                "type": "string",
+                                "minLength": 1,
+                                "pattern": "^[A-Za-z0-9 .%+-]+$"
+                            }
+                        }
+                    }
+                },
+                "backdrop": {
+                    "$ref": "#/$defs/localPath"
+                }
+            }
+        },
+        "sheet": {
+            "$ref": "#/$defs/localPath"
+        },
+        "layout": {
+            "type": "object"
+        },
+        "variants": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "nameplate": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "metadata": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        }
+    },
+    "$defs": {
+        "packId": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+        },
+        "localPath": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!\\s)(?![?#])(?![A-Za-z][A-Za-z0-9+.-]*:)(?!/)(?!.*%)(?!.*[\\u0000-\\u001F\\u007F])(?!.*//)(?!.*\\\\)(?!.*(?:^|/)\\.{1,2}(?:/|$)).*[^/\\s]$"
+        }
+    }
+}

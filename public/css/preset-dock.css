@@ -1,0 +1,141 @@
+/*
+ * Preset dock v0 — the Paged Dock (docs/preset-dock-v0.md).
+ *
+ * Every rule here is gated on `.k-docked`: under the classic layout the strip
+ * vanishes and no filter applies, so classic renders the stock panel. The
+ * component (`kotatsu/shell/components/k-preset-pages.js`) only writes
+ * attributes; this sheet does every hide.
+ *
+ * The filter hides TAGGED blocks that don't match the active page. Untagged
+ * content is untouchable by construction — the selector requires
+ * `data-k-dock-sect`, so unknown blocks (other APIs, extension injections)
+ * show on every page rather than ever being lost.
+ */
+
+/* ── The strip ─────────────────────────────────────────────────────────── */
+
+k-preset-pages {
+    display: none;
+}
+
+#left-nav-panel.k-docked k-preset-pages {
+    display: block;
+    padding: 8px 10px 2px 10px;
+}
+
+#left-nav-panel.k-docked .k-pp-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-ground-deep);
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+}
+
+#left-nav-panel.k-docked .k-pp-seg {
+    margin: 0;
+    padding: 5px 0;
+    border: 1px solid transparent;
+    border-radius: var(--k-radius-pill);
+    background: none;
+    font-size: 12px;
+    line-height: 1.2;
+    color: var(--k-text-muted);
+    cursor: pointer;
+    transition: color var(--k-motion), background-color var(--k-motion);
+}
+
+#left-nav-panel.k-docked .k-pp-seg:hover {
+    color: var(--k-text);
+}
+
+#left-nav-panel.k-docked .k-pp-seg:focus-visible {
+    outline: 1px solid var(--k-accent);
+    outline-offset: 1px;
+}
+
+#left-nav-panel.k-docked .k-pp-seg.is-active {
+    background-color: var(--k-surface);
+    border-color: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+    color: var(--k-text-strong);
+    font-weight: 500;
+}
+
+/* ── The page filter ───────────────────────────────────────────────────── */
+
+/* !important on purpose: core toggles per-model sampler visibility with
+   jQuery .show(), which writes INLINE display on the very blocks these rules
+   filter. The page filter must outrank that inline style or the samplers the
+   current model supports leak onto every page (measured live: Claude's
+   temp/top-k/top-p survived the sauce page). */
+#left-nav-panel.k-docked[data-k-dock-page='sauce'] [data-k-dock-sect]:not([data-k-dock-sect='sauce']),
+#left-nav-panel.k-docked[data-k-dock-page='dials'] [data-k-dock-sect]:not([data-k-dock-sect='dials']),
+#left-nav-panel.k-docked[data-k-dock-page='rack'] [data-k-dock-sect]:not([data-k-dock-sect='rack']) {
+    display: none !important;
+}
+
+/* ── Retired chrome while paged ────────────────────────────────────────────
+   The floating "click slider numbers" hint overlapped dock content (it is a
+   panel-level overlay) and instructs instead of affording. Classic keeps it. */
+
+#left-nav-panel.k-docked[data-k-dock-page] #clickSlidersTips {
+    display: none !important;
+}
+
+/* The floating "?" onboarding link overlaps the strip's Rack segment in the
+   dock. Classic keeps it. */
+#left-nav-panel.k-docked[data-k-dock-page] > .topRightInset {
+    display: none !important;
+}
+
+/* The stock drawer pin ("Locked = AI Configuration panel will stay open") is
+   inert while docked — k-tab-rail pins the panel open by construction — and at
+   24px it out-shouts every real control on the page. Classic keeps it. */
+#left-nav-panel.k-docked[data-k-dock-page] #lm_button_panel_pin_div {
+    display: none !important;
+}
+
+/* ── Groomed preset ops while paged ────────────────────────────────────────
+   The preset block's seven ops buttons are `.menu_button_icon` with NO label.
+   Upstream uses that class for icon+label AND icon-only, so rechrome-controls'
+   icon-square rule — keyed on fa-on-the-button and excluding
+   `.menu_button_icon` as "icon plus label" — misses them, and each wears 14px
+   text pads around a lone 15px glyph (45.6px capsules, measured). At the
+   rail's width the header cluster then WRAPS and the delete button orphans
+   onto a second row — the "arbitrarily sized" read.
+
+   Squared to the button min-height, the pill radius reads as a circle, both
+   clusters land on one scale, and every row fits where it was designed to.
+   Scoped to the dock: the identity-card slice (ladder item 1) replaces these
+   clusters wholesale, and the sitewide `.menu_button_icon`-without-a-label gap
+   is rechrome-controls' errata to close. `:has(span)` fences the icon+label
+   shape so an upstream addition keeps its horizontal pad. */
+#left-nav-panel.k-docked #openai_api-presets .menu_button.menu_button_icon:not(:has(span)) {
+    width: var(--k-rc-btn-min-h, 30px);
+    min-width: var(--k-rc-btn-min-h, 30px);
+    padding: 0;
+    justify-content: center;
+}
+
+/* The two-pixel war: the header title (177px measured) plus four squared
+   buttons (129px) beat the 304px row by exactly 2px, and stock's wrapping
+   cluster answered by orphaning delete onto a second row. Nowrap the cluster
+   — controls never degrade — tighten its gap, and let the TITLE ellipsize
+   instead: the static label is the right element to lose that fight, and at
+   current metrics it does not have to. */
+#left-nav-panel.k-docked #openai_api-presets .title_restorable > strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#left-nav-panel.k-docked #openai_api-presets .title_restorable > .flex-container {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    /* !important because the cluster wears stock's `.gap3px` utility, which is
+       `gap: 3px !important` (st-tailwind.css:133) — the third documented reason
+       this sheet carries the hammer, and still the only kind. */
+    gap: 1px !important;
+}

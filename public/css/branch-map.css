@@ -1,0 +1,775 @@
+/*
+ * Kotatsu branch panel v0 — the map overlay (slice D).
+ *
+ * Owns the INSIDE and the OUTSIDE of `<k-branch-map variant="overlay">`: unlike
+ * the shell sheets, this component has no host slot in index.html, so its own
+ * fixed-position frame lives here too.
+ *
+ * Discipline (docs/branch-panel-v0.md §"The map", docs/shell-v0.md §"The slot
+ * contract"):
+ * - Colours, radii and motion come from `--k-*` only — never a literal. Packs
+ *   skin the map for free. Slice-local geometry is declared once, up top, in the
+ *   `--k-bm-*` namespace (the sheet-local pattern `css/shell-left.css` uses for
+ *   `--k-rl-*`).
+ * - Every `:hover` has an explicit `:focus-visible` twin, because
+ *   `initDynamicStyles()` (dynamic-styles.js:188-202) otherwise synthesizes one
+ *   late and reorders the cascade under us.
+ * - Four of these custom properties are READ BACK BY THE COMPONENT
+ *   (`#readGeometry()`): `--k-bm-row-h`, `--k-bm-section-gap`, `--k-bm-indent`
+ *   and `--k-bm-stem`. They are the virtualization's arithmetic, so a pack may
+ *   retune them but they must stay px-valued and must stay in sync with the row
+ *   box below.
+ *
+ * NOT gated on `body[data-k-layout="rails"]`, and that is deliberate. The map is
+ * a Kotatsu overlay rather than a rails slot: the `--k-*` tokens live on `:root`
+ * (css/tokens.css), the store is layout-independent, and the keyboard door
+ * (Ctrl+Shift+B) has to work wherever the reader is. Every selector is scoped to
+ * the custom element instead, which under classic simply never exists.
+ *
+ * Load order: linked after the shell sheets (so `--k-ghost-hover`,
+ * `--k-inset-fill` and `--k-inset-border` resolve) and before
+ * `css/mobile-styles.css`, so the responsive layer still wins.
+ */
+
+k-branch-map[variant="overlay"] {
+    /* ── Geometry the component reads back. Keep px. ─────────────────────────
+       `--k-bm-stem` is the x of a DEPTH-0 MARKER'S CENTRE, not a left inset:
+       every connector springs from a parent marker, and each row's
+       `padding-inline-start` is derived from it (`stem + depth × indent − 8`,
+       where 8 is half the .k-bm-twist box below). Mirrored by
+       GEOMETRY_FALLBACK in k-branch-map.js — change both together. */
+    --k-bm-row-h: 30px;
+    --k-bm-section-gap: 14px;
+    --k-bm-indent: 20px;
+    --k-bm-stem: 20px;
+
+    /* ── Slice-local shape ───────────────────────────────────────────────── */
+    --k-bm-sheet-inset-block: 3vh;
+    --k-bm-sheet-inset-inline: 3vw;
+    --k-bm-sheet-max-w: 1400px;
+    --k-bm-head-h: 52px;
+    --k-bm-foot-h: 30px;
+    --k-bm-card-w: 340px;
+    --k-bm-pad: 14px;
+    --k-bm-gap: 8px;
+
+    --k-bm-name-size: 12.5px;
+    --k-bm-meta-size: 11px;
+    --k-bm-chip-size: 10px;
+    --k-bm-quiet-size: 12px;
+
+    --k-bm-hairline: 1px;
+    --k-bm-dim-opacity: 0.34;
+
+    /* Above every in-page core surface (#options 29999, style.css:1097) and
+       below toastr / the boot loader (999999). Core popups are showModal()
+       dialogs and live in the top layer, so a confirm always paints over this.
+       Mirrored by MAP_Z_INDEX in k-branch-map.js. */
+    --k-bm-z: 30000;
+
+    position: fixed;
+    inset: 0;
+    z-index: var(--k-bm-z);
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding: var(--k-bm-sheet-inset-block) var(--k-bm-sheet-inset-inline);
+    background-color: color-mix(in srgb, var(--k-scrim) 62%, transparent);
+    backdrop-filter: blur(var(--k-blur-panel));
+    -webkit-backdrop-filter: blur(var(--k-blur-panel));
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. THE SHEET
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+k-branch-map[variant="overlay"] .k-bm-sheet {
+    flex: 1 1 auto;
+    max-inline-size: var(--k-bm-sheet-max-w);
+    min-inline-size: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: var(--k-bm-hairline) solid color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
+    border-radius: var(--k-radius-xl);
+    background: var(--k-surface);
+    box-shadow: var(--k-elev-4);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+k-branch-map[variant="overlay"] .k-bm-head {
+    flex: 0 0 auto;
+    block-size: var(--k-bm-head-h);
+    display: flex;
+    align-items: center;
+    gap: var(--k-bm-pad);
+    padding-inline: var(--k-bm-pad);
+    border-block-end: var(--k-bm-hairline) solid color-mix(in srgb, var(--k-chrome-border) 26%, transparent);
+    background: var(--k-surface-2);
+}
+
+k-branch-map[variant="overlay"] .k-bm-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: 14px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-title-text {
+    white-space: nowrap;
+}
+
+k-branch-map[variant="overlay"] .k-bm-search {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-inline: 10px;
+    block-size: 30px;
+    border: var(--k-bm-hairline) solid var(--k-inset-border);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-inset-fill);
+    color: var(--k-text-dim);
+    transition: border-color var(--k-motion), color var(--k-motion);
+}
+
+k-branch-map[variant="overlay"] .k-bm-search:focus-within {
+    border-color: color-mix(in srgb, var(--k-accent) 55%, transparent);
+    color: var(--k-text);
+}
+
+k-branch-map[variant="overlay"] .k-bm-search-input {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--k-text);
+    font: inherit;
+    font-size: var(--k-bm-name-size);
+}
+
+k-branch-map[variant="overlay"] .k-bm-search-input::placeholder {
+    color: var(--k-text-faint);
+}
+
+/* Chrome paints its own clear button over the token palette. */
+k-branch-map[variant="overlay"] .k-bm-search-input::-webkit-search-cancel-button {
+    appearance: none;
+}
+
+k-branch-map[variant="overlay"] .k-bm-count {
+    flex: 0 0 auto;
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-bm-meta-size);
+    white-space: nowrap;
+}
+
+k-branch-map[variant="overlay"] .k-bm-close {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 26px;
+    block-size: 26px;
+    margin: 0;
+    padding: 0;
+    appearance: none;
+    border: var(--k-bm-hairline) solid transparent;
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    color: var(--k-text-muted);
+    font: inherit;
+    cursor: pointer;
+    transition: background-color var(--k-motion), color var(--k-motion), border-color var(--k-motion);
+}
+
+k-branch-map[variant="overlay"] .k-bm-close:hover,
+k-branch-map[variant="overlay"] .k-bm-close:focus-visible {
+    background: var(--k-ghost-hover);
+    border-color: color-mix(in srgb, var(--k-chrome-border) 38%, transparent);
+    color: var(--k-text-strong);
+}
+
+k-branch-map[variant="overlay"] .k-bm-close:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: 1px;
+}
+
+/* ── Body ────────────────────────────────────────────────────────────────── */
+
+k-branch-map[variant="overlay"] .k-bm-body {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    display: flex;
+    align-items: stretch;
+}
+
+k-branch-map[variant="overlay"] .k-bm-scroll {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    /* INLINE padding only. Block padding would offset the canvas from the scroll
+       origin, and `#scrollRowIntoView` / `#syncWindow` compare a section's `top`
+       against `scrollTop` directly — the whole point of fixed-height rows is
+       that the arithmetic needs no measurement pass. The trailing section gap
+       supplies the bottom breathing room. */
+    padding-inline: var(--k-bm-pad);
+    padding-block: 0;
+    /* `content-visibility` would fight the absolute layout; the component's own
+       windowing is the virtualization and needs no help from the compositor. */
+    contain: layout paint;
+}
+
+k-branch-map[variant="overlay"] .k-bm-scroll--quiet {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+k-branch-map[variant="overlay"] .k-bm-canvas {
+    position: relative;
+    inline-size: 100%;
+}
+
+k-branch-map[variant="overlay"] .k-bm-section {
+    position: absolute;
+    inset-inline: 0;
+    /* `top` and `height` are inline, from the measured layout. */
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. CONNECTORS — one SVG per rendered section, painted behind the rows
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+k-branch-map[variant="overlay"] .k-bm-links {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    pointer-events: none;
+    overflow: visible;
+}
+
+k-branch-map[variant="overlay"] .k-bm-link {
+    fill: none;
+    stroke: color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    stroke-width: 1.2;
+    stroke-linecap: round;
+}
+
+/* doc decision 1: an adopted link was re-derived from content, not read off a
+   stored name. It must never look as solid as a header link. */
+k-branch-map[variant="overlay"] .k-bm-link.is-adopted {
+    stroke-dasharray: 2 3;
+    stroke: color-mix(in srgb, var(--k-warning) 45%, transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. ROWS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+k-branch-map[variant="overlay"] .k-bm-row {
+    position: absolute;
+    inset-inline: 0;
+    block-size: var(--k-bm-row-h);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-inline-end: 10px;
+    border-radius: var(--k-radius-sm);
+    color: var(--k-text-dim);
+    cursor: pointer;
+    user-select: none;
+    transition: background-color var(--k-motion), color var(--k-motion), opacity var(--k-motion);
+    /* `padding-inline-start` is inline, from depth × indent. */
+}
+
+k-branch-map[variant="overlay"] .k-bm-row:hover,
+k-branch-map[variant="overlay"] .k-bm-row:focus-visible {
+    background-color: var(--k-ghost-hover);
+    color: var(--k-text);
+}
+
+k-branch-map[variant="overlay"] .k-bm-row.is-selected {
+    background-color: color-mix(in srgb, var(--k-accent) 16%, transparent);
+    color: var(--k-text-strong);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k-accent) 40%, transparent);
+}
+
+/* The active chat's ancestry, root → … → open chat. */
+k-branch-map[variant="overlay"] .k-bm-row.is-lineage {
+    color: var(--k-text);
+}
+
+k-branch-map[variant="overlay"] .k-bm-row.is-lineage .k-bm-name {
+    font-weight: 600;
+}
+
+k-branch-map[variant="overlay"] .k-bm-row.is-active {
+    color: var(--k-rose-bright);
+}
+
+k-branch-map[variant="overlay"] .k-bm-row.is-active .k-bm-name::after {
+    content: "";
+    display: inline-block;
+    inline-size: 5px;
+    block-size: 5px;
+    margin-inline-start: 6px;
+    border-radius: var(--k-radius-round);
+    background: var(--k-rose);
+    vertical-align: middle;
+}
+
+/* Search: matches lit, everything else dimmed rather than removed — the shape
+   of the forest is the point, so the non-matches stay on screen. */
+k-branch-map[variant="overlay"] .k-bm-row.is-dim {
+    opacity: var(--k-bm-dim-opacity);
+}
+
+k-branch-map[variant="overlay"] .k-bm-row.is-hit .k-bm-name {
+    color: var(--k-accent-bright);
+}
+
+k-branch-map[variant="overlay"] .k-bm-twist {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 16px;
+    block-size: 16px;
+    margin: 0;
+    padding: 0;
+    appearance: none;
+    border: 0;
+    border-radius: var(--k-radius-xs);
+    background: transparent;
+    color: var(--k-text-faint);
+    font: inherit;
+    cursor: pointer;
+    transition: color var(--k-motion), background-color var(--k-motion), transform var(--k-motion);
+}
+
+k-branch-map[variant="overlay"] .k-bm-twist:hover,
+k-branch-map[variant="overlay"] .k-bm-twist:focus-visible {
+    background: var(--k-ghost-hover);
+    color: var(--k-text-strong);
+}
+
+k-branch-map[variant="overlay"] .k-bm-twist.is-open {
+    transform: rotate(90deg);
+    color: var(--k-text-dim);
+}
+
+k-branch-map[variant="overlay"] .k-bm-twist--leaf {
+    cursor: default;
+}
+
+k-branch-map[variant="overlay"] .k-bm-name {
+    flex: 0 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--k-bm-name-size);
+}
+
+k-branch-map[variant="overlay"] .k-bm-fork {
+    flex: 0 0 auto;
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-bm-meta-size);
+}
+
+k-branch-map[variant="overlay"] .k-bm-forknote {
+    flex: 0 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--k-text-muted);
+    font-size: var(--k-bm-meta-size);
+    font-style: italic;
+}
+
+k-branch-map[variant="overlay"] .k-bm-chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding-inline: 5px;
+    block-size: 15px;
+    border: var(--k-bm-hairline) solid transparent;
+    border-radius: var(--k-radius-pill);
+    font-size: var(--k-bm-chip-size);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+k-branch-map[variant="overlay"] .k-bm-chip--checkpoint {
+    border-color: color-mix(in srgb, var(--k-success) 35%, transparent);
+    color: var(--k-success);
+    font-family: var(--k-font-mono);
+    text-transform: none;
+}
+
+k-branch-map[variant="overlay"] .k-bm-chip--adopted {
+    border-color: color-mix(in srgb, var(--k-warning) 35%, transparent);
+    color: var(--k-warning);
+}
+
+k-branch-map[variant="overlay"] .k-bm-chip--unlinked {
+    border-color: color-mix(in srgb, var(--k-danger) 35%, transparent);
+    color: var(--k-danger);
+}
+
+/* The ghost parent: displayed because it is what the file says, muted because
+   it is not on disk (doc decision 5 — we display honestly, we do not repair). */
+k-branch-map[variant="overlay"] .k-bm-ghost {
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    text-transform: none;
+}
+
+k-branch-map[variant="overlay"] .k-bm-meta {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-bm-meta-size);
+}
+
+/* The count sits before the recency column, so only the first of the pair may
+   claim the auto margin. */
+k-branch-map[variant="overlay"] .k-bm-meta--count + .k-bm-meta {
+    margin-inline-start: 8px;
+    min-inline-size: 28px;
+    text-align: end;
+}
+
+k-branch-map[variant="overlay"] .k-bm-icon {
+    flex: 0 0 auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. QUIET STATES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+k-branch-map[variant="overlay"] .k-bm-quiet {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+    color: var(--k-text-muted);
+    font-size: var(--k-bm-quiet-size);
+}
+
+k-branch-map[variant="overlay"] .k-bm-quiet-title {
+    color: var(--k-text);
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: 15px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-quiet-note {
+    max-inline-size: 46ch;
+    color: var(--k-text-faint);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. NODE CARD
+   ───────────────────────────────────────────────────────────────────────────
+   A side panel inside the overlay rather than a floating popover: the forest is
+   a virtualized scroller, so a card anchored to a row would have to be
+   re-positioned on every scroll frame — exactly the per-frame work the
+   Timelines autopsy indicted. A fixed column never moves.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+k-branch-map[variant="overlay"] .k-bm-card {
+    flex: 0 0 var(--k-bm-card-w);
+    inline-size: var(--k-bm-card-w);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: auto;
+    padding: var(--k-bm-pad);
+    border-inline-start: var(--k-bm-hairline) solid color-mix(in srgb, var(--k-chrome-border) 26%, transparent);
+    background: var(--k-surface-2);
+}
+
+k-branch-map[variant="overlay"] .k-bm-card-head {
+    display: flex;
+    align-items: center;
+    gap: var(--k-bm-gap);
+}
+
+k-branch-map[variant="overlay"] .k-bm-card-title {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: 14px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-rename-input {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    block-size: 26px;
+    padding-inline: 8px;
+    border: var(--k-bm-hairline) solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    border-radius: var(--k-radius-sm);
+    background: var(--k-inset-fill);
+    color: var(--k-text-strong);
+    font: inherit;
+    font-size: var(--k-bm-name-size);
+}
+
+k-branch-map[variant="overlay"] .k-bm-card-error {
+    margin: 0;
+    color: var(--k-danger);
+    font-size: var(--k-bm-meta-size);
+}
+
+k-branch-map[variant="overlay"] .k-bm-card-label {
+    display: block;
+    margin-block-end: 4px;
+    color: var(--k-text-faint);
+    font-size: var(--k-bm-chip-size);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+k-branch-map[variant="overlay"] .k-bm-facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 3px 10px;
+    margin: 0;
+    font-size: var(--k-bm-meta-size);
+}
+
+k-branch-map[variant="overlay"] .k-bm-facts dt {
+    color: var(--k-text-faint);
+    white-space: nowrap;
+}
+
+k-branch-map[variant="overlay"] .k-bm-facts dd {
+    margin: 0;
+    color: var(--k-text);
+    overflow-wrap: anywhere;
+}
+
+k-branch-map[variant="overlay"] .k-bm-dim {
+    color: var(--k-text-faint);
+}
+
+k-branch-map[variant="overlay"] .k-bm-link-btn {
+    margin: 0;
+    padding: 0;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--k-accent-bright);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    transition: color var(--k-motion);
+}
+
+k-branch-map[variant="overlay"] .k-bm-link-btn:hover,
+k-branch-map[variant="overlay"] .k-bm-link-btn:focus-visible {
+    color: var(--k-rose-bright);
+    text-decoration: underline;
+}
+
+k-branch-map[variant="overlay"] .k-bm-checkpoints ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-checkpoints li {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--k-success);
+    font-size: var(--k-bm-meta-size);
+}
+
+k-branch-map[variant="overlay"] .k-bm-cp-name {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--k-text);
+}
+
+k-branch-map[variant="overlay"] .k-bm-preview {
+    margin: 0;
+    padding: 8px 10px;
+    border: var(--k-bm-hairline) solid var(--k-inset-border);
+    border-radius: var(--k-radius-sm);
+    background: var(--k-inset-fill);
+    color: var(--k-text-quote);
+    font-family: var(--k-font-prose);
+    font-size: 12px;
+    line-height: 1.45;
+    /* Plain text, no markdown: decision 9 keeps renderers out of hot paths. */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+k-branch-map[variant="overlay"] .k-bm-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-block-start: auto;
+    padding-block-start: 6px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-action {
+    flex: 0 0 auto;
+    block-size: 26px;
+    padding-inline: 10px;
+    appearance: none;
+    border: var(--k-bm-hairline) solid var(--k-inset-border);
+    border-radius: var(--k-radius-sm);
+    background: var(--k-inset-fill);
+    color: var(--k-text);
+    font: inherit;
+    font-size: var(--k-bm-meta-size);
+    cursor: pointer;
+    transition: background-color var(--k-motion), color var(--k-motion), border-color var(--k-motion);
+}
+
+k-branch-map[variant="overlay"] .k-bm-action:hover,
+k-branch-map[variant="overlay"] .k-bm-action:focus-visible {
+    background: var(--k-ghost-hover);
+    border-color: color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
+    color: var(--k-text-strong);
+}
+
+k-branch-map[variant="overlay"] .k-bm-action:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: 1px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-action[disabled] {
+    opacity: 0.45;
+    cursor: default;
+}
+
+k-branch-map[variant="overlay"] .k-bm-action--primary {
+    border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
+    color: var(--k-accent-bright);
+}
+
+k-branch-map[variant="overlay"] .k-bm-action--danger:hover,
+k-branch-map[variant="overlay"] .k-bm-action--danger:focus-visible {
+    border-color: color-mix(in srgb, var(--k-danger) 45%, transparent);
+    color: var(--k-danger);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. FOOTER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+k-branch-map[variant="overlay"] .k-bm-foot {
+    flex: 0 0 auto;
+    block-size: var(--k-bm-foot-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--k-bm-pad);
+    padding-inline: var(--k-bm-pad);
+    border-block-start: var(--k-bm-hairline) solid color-mix(in srgb, var(--k-chrome-border) 26%, transparent);
+    background: var(--k-surface-2);
+    color: var(--k-text-faint);
+    font-size: var(--k-bm-chip-size);
+}
+
+k-branch-map[variant="overlay"] .k-bm-foot-keys,
+k-branch-map[variant="overlay"] .k-bm-foot-build {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+k-branch-map[variant="overlay"] .k-bm-foot-build {
+    font-family: var(--k-font-mono);
+}
+
+/* The delete confirm's body — a real element, never an innerHTML string, since
+   a chat name is user data (popup.js:534 assigns string content to innerHTML). */
+.k-bm-confirm-name {
+    margin: 0 0 6px;
+    font-family: var(--k-font-mono);
+    color: var(--k-text-strong);
+    overflow-wrap: anywhere;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7. NARROW VIEWPORTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+    k-branch-map[variant="overlay"] {
+        --k-bm-sheet-inset-block: 0;
+        --k-bm-sheet-inset-inline: 0;
+        --k-bm-card-w: 100%;
+    }
+
+    k-branch-map[variant="overlay"] .k-bm-sheet {
+        border-radius: 0;
+        border: 0;
+    }
+
+    k-branch-map[variant="overlay"] .k-bm-body {
+        flex-direction: column;
+    }
+
+    k-branch-map[variant="overlay"] .k-bm-card {
+        flex: 0 0 auto;
+        max-block-size: 45%;
+        border-inline-start: 0;
+        border-block-start: var(--k-bm-hairline) solid color-mix(in srgb, var(--k-chrome-border) 26%, transparent);
+    }
+
+    k-branch-map[variant="overlay"] .k-bm-foot-keys {
+        display: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. MOTION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+    k-branch-map[variant="overlay"] .k-bm-row,
+    k-branch-map[variant="overlay"] .k-bm-twist,
+    k-branch-map[variant="overlay"] .k-bm-action,
+    k-branch-map[variant="overlay"] .k-bm-close,
+    k-branch-map[variant="overlay"] .k-bm-link-btn,
+    k-branch-map[variant="overlay"] .k-bm-search {
+        transition: none;
+    }
+}

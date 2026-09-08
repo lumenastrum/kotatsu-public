@@ -1,0 +1,14 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Kotatsu bubble hearth: the big-surface glyph (splash, welcome, login).
+       Chat bubble outline, warm heart. Transparent ground — sits on any
+       dark surface. Raster twin: img/logo.png. Canon: docs/brand.md -->
+  <defs>
+    <radialGradient id="k-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#dca9a4" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#dca9a4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M18 12 h28 a8 8 0 0 1 8 8 v20 a8 8 0 0 1 -8 8 h-20 l-10 8 v-8 a8 8 0 0 1 -6 -7.7 v-20.3 a8 8 0 0 1 8 -8z" fill="none" stroke="#9aa4d2" stroke-width="5" stroke-linejoin="round"/>
+  <ellipse cx="32" cy="30" rx="12" ry="8" fill="url(#k-glow)"/>
+  <circle cx="32" cy="30" r="6.5" fill="#dca9a4"/>
+</svg>

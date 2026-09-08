@@ -1,0 +1,455 @@
+/*
+ * rechrome-rack.css — rechrome v0 slice D (docs/rechrome-v0.md).
+ *
+ * Andres's brief for the batch was "no more chonky drop-down bars and buttons".
+ * This sheet takes the SETTINGS RACK INTERIOR: the nine parked drawers, whose
+ * controls <k-settings-modal> borrows a tab at a time, and the same anatomy as
+ * it appears in the right rail, where shell-right.css
+ * docks #left-nav-panel node-for-node (shell-right.css:246 — #WorldInfo and
+ * #rm_extensions_block docked there too until settings v0.1 slice G moved them
+ * into the modal). One anatomy, several hosts — which is why EVERYTHING here
+ * carries the PLAIN `body[data-k-layout="rails"]` gate and nothing carries a
+ * surface-state class. §2 used to be the exception: two `.k-settings-open` rules
+ * that promoted the revealed rack's shadow while it floated over its own scrim.
+ * Settings v0.1 retired that reveal, so the exception went with it.
+ *
+ * ── The third host (settings v0.1 slice F) ───────────────────────────────────
+ * The settings modal adopts five whole stock regions, and three of them —
+ * #persona-suite, #wiTopBlock, #world_popup — travel OUT of a `.drawer-content`
+ * and would lose every descendant rule below. So the interior selectors read
+ * `:is(.drawer-content, .k-set-block)`: same anatomy, one more host, no
+ * specificity change (both arms are classes). The loudest thing it saves is the
+ * paginationjs `font-family` fallback at :436, which exists specifically because
+ * personas.js:314-315 passes `<` / `>` as nav text — see the note at :421-425.
+ * Adding a fourth host means adding its class to those `:is()` lists, the same
+ * deliberate subtraction/addition discipline shell-right.css:220-224 keeps.
+ *
+ * ── What this sheet owns ─────────────────────────────────────────────────────
+ *   1. The drawer icon strip inside #top-settings-holder — resting legibility.
+ *   2. (retired with the overlay — see the tombstone below.)
+ *   3. `.inline-drawer` headers, rows and chevrons inside drawer content.
+ *   4. Section headings and banners: `.standoutHeader`, `#user-settings-block h4`,
+ *      `#extensions_settings{,2}` drawer headers, and `.drawer-content h4`.
+ *   5. `hr` separators inside drawer content.
+ *   6. Pagination page buttons inside drawer content.
+ *
+ * ── Anatomy copied ───────────────────────────────────────────────────────────
+ * The house control language, as already written: `.k-studio-label` /
+ * `.k-studio-eyebrow` (studio.css:322, :464) are the 11px / 0.11em / 700 tracked
+ * micro-caps; `--k-studio-ui-size` (12.5px) is the row voice; `.k-studio-sheet`
+ * (studio.css:120) is the fill + hairline + `--k-radius-xl` + `--k-elev-4` sheet
+ * recipe; `--k-studio-hairline` and shell-frame.css's `--k-frame-border-color`
+ * are the same unpinned-peer hairline, restated here as `--k-rack-hairline`.
+ * Ghost hover is `--k-ghost-hover` (kotatsu-chrome.css:198), the wash every ghost
+ * control in the app already uses.
+ *
+ * ── What this sheet does NOT touch, on purpose ───────────────────────────────
+ * kotatsu-chrome.css §7 (:579-671) already made `.drawer-content` a floating
+ * card and `.drawer-content .inline-drawer` an inset card: fill, border, radius,
+ * padding, margins, `.drawer-content h3/h4` color, `h4.title_restorable`. Those
+ * are not restated and not fought. Specifically LEFT to §7: the card's own
+ * `border: 1px solid var(--SmartThemeBorderColor)` (a legacy theme JSON pinning
+ * --k-border is the one lever such a theme still has over the rack's frame, and
+ * swapping it for the unpinned peer would silently take that away), and the
+ * `--k-accent-bright` row color. §6 (:504-577) owns the drawer-icon geometry and
+ * its hover/open colors; only the resting `opacity` ramp is left over, and that
+ * is §1 below.
+ *
+ * `.drawer-content h3` is deliberately untouched: it is the drawer's TITLE
+ * ("API", "World Info", "User Settings" — index.html:2356, :4752, :4954), the one
+ * place in the rack that should keep the Newsreader display voice that
+ * kotatsu-chrome.css §3 gives it. `h4` is a different animal — index.html uses it
+ * ~120 times as a FIELD LABEL ("API key", "Claude Model", "Server URL"), which is
+ * exactly the `.k-studio-label` role, so h4 is what becomes micro-caps.
+ *
+ * `<select>` is slice A's (`css/rechrome-controls.css`), including
+ * `.paginationjs-size-changer select` (style.css:6035) — the one pagination part
+ * this sheet skips.
+ *
+ * ── Drawer machinery: recolor, never re-plumb (doc contract §4) ──────────────
+ * Two independent mechanisms write layout properties on this DOM at runtime, and
+ * neither may be contradicted:
+ *   - `.openDrawer` / `.closedDrawer` on `.drawer-content` is toggled by the
+ *     click-outside cascade and doNavbarIconClick (script.js:12544-12545) and is
+ *     read as a count-guard. No `display` or `visibility` is written here.
+ *   - `.inline-drawer-content` is animated by jQuery `slideToggle()`
+ *     (script.js:12560) and set outright by `toggleDrawer()` (utils.js:2546-2550).
+ *     slideToggle inlines `display`, `overflow`, `height`, `margin-top/bottom` and
+ *     `padding-top/bottom` for the length of the animation and restores the
+ *     computed values it captured. So `.inline-drawer-content` gets NO rule at
+ *     all in this sheet — not even vertical padding, which slideToggle would
+ *     capture and replay. Its inset framing is the parent `.inline-drawer` card
+ *     (kotatsu-chrome.css:633), which slideToggle never touches.
+ *
+ * ── Walk-backs ───────────────────────────────────────────────────────────────
+ * Two `filter:` declarations, both walked back with a plain `filter: none` and
+ * NOT with `!important` (this sheet out-specifies both, and neither stock rule
+ * carries `!important`):
+ *   - `.inline-drawer-icon { filter: brightness(75%) }` (style.css:5557) — a
+ *     dimmer standing in for a color token, replaced by `--k-text-muted` in §3.
+ *   - `…inline-drawer-header:hover { filter: brightness(150%) }` (style.css:5471)
+ *     — a brightener standing in for a hover state, replaced by an accent color
+ *     and an accent hairline in §4.
+ * This sheet contains no `!important` at all.
+ *
+ * :focus-visible: every `:hover` below is written with its twin, because
+ * `initDynamicStyles()` (dynamic-styles.js:188-202) otherwise synthesizes one
+ * late and reorders the cascade (recon §6C). The elements that can actually take
+ * focus do so because a11y.js:6-20 and keyboard.js:1-29 list `.drawer-icon`,
+ * `.inline-drawer-icon` and `.paginationjs-pages li a` as interactables and give
+ * them a tabindex; the `.interactable` outline (style.css:310-312) is what paints
+ * the ring, so no ring is invented here.
+ *
+ * Hit targets: nothing below shrinks one. The chevron box in §3 is re-derived
+ * from core's own formula so it is byte-identical at every `--fontScale`, and the
+ * pagination buttons in §6 grow in `em` so they stay ≥ stock at every scale.
+ *
+ * Load order: linked from index.html after css/studio.css and before
+ * css/mobile-styles.css, last of the four rechrome slices (A→D). Later source
+ * order is what settles the ties against kotatsu-chrome.css §7.
+ */
+
+body[data-k-layout="rails"] {
+    /* Sheet-local parameters, the css/studio.css `--k-studio-*` pattern. Not added
+       to css/tokens.css on purpose: `npm run theme:check -- <pack> --drift`
+       compares tokens.css `:root` against every pack manifest, so a `:root`
+       addition forces an edit to every shipped pack for parameters no pack has an
+       opinion about yet. A pack's own sheet.css is prefixed
+       `body[data-k-theme="<id>"]`, ties on specificity with the blocks below and
+       is injected later, so a pack override still wins. */
+
+    /* The unpinned-peer hairline. Same recipe as --k-studio-hairline
+       (studio.css:168) and --k-frame-border-color (shell-frame.css:45): reads
+       --k-chrome-border, NOT --k-border, because applyThemeColor() can inline-pin
+       --k-border onto :root from a legacy theme JSON and an inline pin outranks
+       every sheet rule. */
+    --k-rack-hairline: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+    --k-rack-hairline-hot: color-mix(in srgb, var(--k-accent) 40%, transparent);
+
+    /* Type. Floor 11px, the studio's own floor. */
+    --k-rack-label-size: 11px;
+    --k-rack-label-track: 0.11em;
+    --k-rack-row-size: 12.5px;
+
+    /* Chevron: core sizes `.inline-drawer-icon` at `calc(var(--mainFontSize) *
+       1.5)` (style.css:5554) and Font Awesome pins `line-height: 1`
+       (fontawesome.min.css), so stock's box is exactly a 1.5em square that tracks
+       the user's --fontScale knob. --k-rack-icon-box restates that square as the
+       HIT TARGET while --k-rack-icon-glyph draws a smaller mark inside it: the
+       chonk goes, the target does not move, at any font scale. */
+    --k-rack-icon-box: calc(var(--mainFontSize) * 1.5);
+    --k-rack-icon-glyph: calc(var(--mainFontSize) * 1.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. THE DRAWER ICON STRIP — the leftover opacity ramp
+   ───────────────────────────────────────────────────────────────────────────
+   kotatsu-chrome.css §6 (:558-577) already gives `#top-settings-holder
+   .drawer-icon` its pill geometry, its `--k-text-muted` rest color, its
+   accent + `--k-ghost-hover` hover/focus pair and its `--k-rose` open state. What
+   it never reached is `.drawer-icon.closedIcon { opacity: 0.3 }`
+   (style.css:5523-5526), which still multiplies all of it down to a ghost. On the
+   old full-bleed bar a 30% icon was ambient furniture; wherever the rack is the
+   surface a reader came for, nine barely-visible glyphs is the single biggest
+   legibility hole in it.
+
+   Opacity, not display — the class is drawer machinery (script.js:12544 toggles
+   `closedIcon`/`openIcon` in lockstep with `closedDrawer`/`openDrawer`), so it is
+   read, never rewritten. The state stays perfectly legible without the dimmer:
+   §6 already paints the open icon rose on a rose wash.
+
+   Gated on the layout only. Under rails the rack is parked outright
+   (shell-frame.css §4) and nothing reveals it any more, so this paints for
+   nobody today — but a probe, or a later surface that shows the rack another
+   way, must see the same skin, not stock.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] #top-settings-holder .drawer-icon.closedIcon {
+    opacity: 1;
+}
+
+/* The stock `.closedIcon:hover { opacity: 1 }` (style.css:5528-5530) becomes a
+   no-op above, which is the point: hover feedback is §6's color + wash, one
+   channel instead of two disagreeing. The twin is written anyway so the pair is
+   explicit in source and initDynamicStyles has nothing to synthesize. */
+body[data-k-layout="rails"] #top-settings-holder .drawer-icon.closedIcon:hover,
+body[data-k-layout="rails"] #top-settings-holder .drawer-icon.closedIcon:focus-visible {
+    opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. THE REVEALED SHEET — RETIRED (settings v0.1)
+   ───────────────────────────────────────────────────────────────────────────
+   Two rules lived here, and both were about a STATE rather than about the
+   rack: while `.k-settings-open` was on <body> the parked rack floated over
+   its own scrim as a modal sheet, so its shadow was promoted a rung
+   (--k-elev-3 on the holder, --k-elev-4 on the open drawer). Settings v0.1
+   deleted that reveal outright — <k-settings-modal> borrows the controls it
+   curates instead of showing the rack — so the state is unreachable and the
+   rules went with it. They were the only `.k-settings-open` selectors in this
+   sheet, which is why the header can now say EVERY rule here is gated on the
+   layout and nothing else.
+
+   The number stays vacant on purpose: §3 through §6 are cited by name a dozen
+   times in the comments below, and renaming them to close a gap would cost
+   more accuracy than the gap costs tidiness.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. INLINE DRAWERS — the collapsible rows every settings drawer is built from
+   ───────────────────────────────────────────────────────────────────────────
+   kotatsu-chrome.css §7 (:633-645) already turned `.drawer-content
+   .inline-drawer` into an inset card and gave its header `--k-accent-bright`,
+   `letter-spacing: 0.03em` and `padding: 10px 4px`. What is left is the TYPE and
+   the CHEVRON.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The row voice. A collapsible settings row is a row, not a heading, so it takes
+   the house row metric — `--k-studio-ui-size`'s 12.5px in the UI face — rather
+   than the display face kotatsu-chrome.css §3 (:326-336) hands the whole title
+   family. The weight moves 500 → 600 with it: §3's 500 is `--k-display-weight`,
+   the Newsreader instance; 600 is what that same block (:318-320) already
+   specifies for the UI face.
+
+   `:not(.standoutHeader)` because a header that also carries `.standoutHeader` is
+   a section BANNER, and §4 below owns those. Without the exclusion this rule
+   (four classes) would beat the bare `.standoutHeader` banner rule (three) and
+   quietly demote #WorldInfo's and #right-nav-panel's section titles to rows.
+   Color is NOT set: `--k-accent-bright` is §7's, and this sheet does not relitigate
+   it. */
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .inline-drawer-toggle.inline-drawer-header:not(.standoutHeader) {
+    font-family: var(--k-font-ui);
+    font-size: var(--k-rack-row-size);
+    font-weight: 600;
+}
+
+/* The chevron. Stock is a 1.5em glyph dimmed to 75% by a `filter`
+   (style.css:5550-5558) — a brightness knob standing in for a color token, which
+   is exactly what a theme pack cannot reach. WALK-BACK: `filter: none`, and the
+   color becomes the same `--k-text-muted` → `--k-accent-bright` pair every other
+   ghost affordance in the app uses. No `!important` needed: stock is (0,1,0), this
+   is (0,3,1).
+
+   Geometry restates stock's box (see --k-rack-icon-box) and centres a smaller mark
+   in it with `line-height` + `text-align`, NOT by switching the element to flex —
+   `display` stays exactly as core wrote it on drawer machinery, and a block with
+   `width == height == line-height` centres a single glyph just as well.
+
+   `border-radius` is only the shape of the `.interactable` focus outline
+   (style.css:305-312, which hardcodes 5px); the token is the house's nearest stop. */
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .inline-drawer-icon {
+    width: var(--k-rack-icon-box);
+    height: var(--k-rack-icon-box);
+    line-height: var(--k-rack-icon-box);
+    text-align: center;
+    font-size: var(--k-rack-icon-glyph);
+    color: var(--k-text-muted);
+    border-radius: var(--k-radius-sm);
+    filter: none;
+    transition: color var(--k-motion);
+}
+
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .inline-drawer-icon:hover,
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .inline-drawer-icon:focus-visible {
+    color: var(--k-accent-bright);
+}
+
+/* The whole header row is the click target (script.js:12550), so the chevron
+   answers to a hover anywhere on it, not just on itself. Written as a descendant
+   pair rather than as `:focus-within` deliberately: a header may contain a
+   `.text_pole` that takes focus for its own reasons (script.js:12551 guards the
+   click handler against exactly that), and a section title should not light up
+   because someone tabbed into a field inside its own header. */
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .inline-drawer-header:hover .inline-drawer-icon,
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .inline-drawer-header:focus-visible .inline-drawer-icon {
+    color: var(--k-accent-bright);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. SECTION HEADINGS & BANNERS — the gradient that has to go
+   ───────────────────────────────────────────────────────────────────────────
+   style.css:5428-5438 paints ONE recipe onto three different families at once:
+
+       #extensions_settings  .inline-drawer-toggle.inline-drawer-header,
+       #extensions_settings2 .inline-drawer-toggle.inline-drawer-header,
+       #user-settings-block h4,
+       .standoutHeader
+       { background-image: linear-gradient(348deg, …4 stops…);
+         border: 1px solid …; border-radius: 10px; padding: 2px 5px; }
+
+   A four-stop 348° gradient inside a 10px pill, stacked a dozen deep down a
+   settings column: this is the chonky bar of the brief, in its purest form. The
+   house says a section heading is a tracked micro-caps label over a hairline —
+   `.k-studio-eyebrow` (studio.css:160-166) and the section rules the studio sheet
+   draws with `border-bottom: 1px solid var(--k-studio-hairline)` (:310).
+
+   All four selectors are restated here at higher specificity, so nothing leaks:
+   the two `#extensions_settings*` ones need the id to be reached at all, and the
+   ids are also what lets the banner voice out-rank §3's row voice on a header
+   that is both.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] #extensions_settings .inline-drawer-toggle.inline-drawer-header,
+body[data-k-layout="rails"] #extensions_settings2 .inline-drawer-toggle.inline-drawer-header,
+body[data-k-layout="rails"] #user-settings-block h4,
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .standoutHeader {
+    background-image: none;
+    background-color: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--k-rack-hairline);
+    border-radius: 0;
+    /* Stock is `transition: all var(--animation-duration-2x)` (style.css:5437).
+       Narrowed to the three channels that actually change; the duration already
+       agrees, because core derives --animation-duration from --k-motion-duration
+       (tokens.css:194-198). */
+    transition: color var(--k-motion), border-color var(--k-motion), background-color var(--k-motion);
+}
+
+/* The banner voice: micro-caps in the accent, `.k-studio-eyebrow`'s exact role.
+   `font-family` is set because kotatsu-chrome.css §3 (:326-336) puts the display
+   face on `.drawer-content h4` and on every `.inline-drawer-header`; micro-caps is
+   a UI-face idiom and Newsreader does not wear it. */
+body[data-k-layout="rails"] #extensions_settings .inline-drawer-toggle.inline-drawer-header,
+body[data-k-layout="rails"] #extensions_settings2 .inline-drawer-toggle.inline-drawer-header,
+body[data-k-layout="rails"] #user-settings-block h4,
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .standoutHeader {
+    color: var(--k-accent);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-rack-label-size);
+    font-weight: 700;
+    letter-spacing: var(--k-rack-label-track);
+    text-transform: uppercase;
+}
+
+/* Padding only for the banners that are NOT click targets. A `.standoutHeader`
+   that is also an `.inline-drawer-header` keeps kotatsu-chrome.css §7's
+   `10px 4px` (:641-645) untouched, so no hit target shrinks. For the rest,
+   stock's `2px 5px` would leave the new hairline 2px under the text; the inline
+   padding goes to 0 so the label aligns to the card's own edge, which is what the
+   studio's section heads do. */
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .standoutHeader:not(.inline-drawer-header),
+body[data-k-layout="rails"] #user-settings-block h4:not(.inline-drawer-header) {
+    padding: 4px 0 5px;
+}
+
+/* WALK-BACK: `filter: brightness(150%)` (style.css:5468-5472) — a brightener
+   standing in for a hover state, which cannot be themed and which also lightens
+   the border and any button riding in a `.title_restorable` row. Replaced by an
+   accent color and a hot hairline. No `!important`: stock is (0,3,0)/(1,3,0),
+   these are (0,4,1)/(1,4,1). */
+body[data-k-layout="rails"] #extensions_settings .inline-drawer-toggle.inline-drawer-header:hover,
+body[data-k-layout="rails"] #extensions_settings .inline-drawer-toggle.inline-drawer-header:focus-visible,
+body[data-k-layout="rails"] #extensions_settings2 .inline-drawer-toggle.inline-drawer-header:hover,
+body[data-k-layout="rails"] #extensions_settings2 .inline-drawer-toggle.inline-drawer-header:focus-visible,
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .standoutHeader.inline-drawer-header:hover,
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .standoutHeader.inline-drawer-header:focus-visible {
+    filter: none;
+    color: var(--k-accent-bright);
+    border-bottom-color: var(--k-rack-hairline-hot);
+}
+
+/* The field-label voice. index.html uses `h4` roughly 120 times inside the rack as
+   the label above a control — "API key", "Claude Model", "Server URL",
+   "Mirostat" — which is `.k-studio-label` (studio.css:462-470) exactly: 11px, 700,
+   tracked, muted, uppercase. Lower specificity than the banner block above on
+   purpose, so `#user-settings-block`'s h4s (which carry the banner gradient in
+   stock and therefore read as section heads) keep the accent instead.
+
+   kotatsu-chrome.css §7 (:647-651) gives these `--k-text-strong` at
+   `letter-spacing: 0.03em`; a 15px near-white h4 above every field is what makes
+   the API drawer read as a wall. This is the one §7 declaration this sheet
+   deliberately supersedes, and it supersedes it for the whole `h4` family at once
+   so the result stays one voice.
+
+   `h3` is untouched — see the sheet header. */
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) h4 {
+    color: var(--k-text-muted);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-rack-label-size);
+    font-weight: 700;
+    letter-spacing: var(--k-rack-label-track);
+    text-transform: uppercase;
+}
+
+/* `h4.title_restorable` is a label with buttons parked at its right end
+   (kotatsu-chrome.css:653-661 un-floats the row). At 11px the label no longer
+   shares a baseline with the buttons, so the row centres them instead. Geometry
+   only — §7 keeps owning the width, gap and margins. */
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) h4.title_restorable {
+    align-items: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. SEPARATORS — the last gradient in the rack
+   ───────────────────────────────────────────────────────────────────────────
+   Core draws `hr` as a horizontal gradient of the BODY TEXT color faded to
+   transparent at both ends, at `opacity: 0.2` (style.css:749-756). Inside a
+   settings card that is a smudge, not a rule, and it tracks the text color rather
+   than the border color, so a pack retinting its hairlines cannot move it. Flat
+   hairline, full opacity, one token.
+
+   Scoped to `.drawer-content`: `.options-content hr` (style.css:1140),
+   `.swipe_picker_div hr` (:4788) and `.mes_text hr` (kotatsu-chrome.css:978) are
+   other surfaces and other slices.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) hr {
+    background-image: none;
+    background-color: var(--k-rack-hairline);
+    opacity: 1;
+    /* Stock 5px reads as a hyphen between two dense stacks. */
+    margin: 10px 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. PAGINATION — page buttons inside the rack
+   ───────────────────────────────────────────────────────────────────────────
+   Persona Management, World Info, the model lists and both group-member lists all
+   paginate inside a `.drawer-content`. style.css:6042-6069 already carries the
+   Kotatsu tokens for these (`--k-text-muted`, an inset-recipe border,
+   `--k-radius-sm`, a `--k-rose` active state), so the paint is done. Three things
+   are not:
+
+   1. The hover is `opacity: 0.8 → 1` with no `:focus-visible` twin, even though
+      keyboard.js:9 makes these interactables. The opacity RAMP is left exactly as
+      stock — `.disabled a { opacity: 0.5 }` (style.css:6066) rides the same
+      channel and out-specifying it here would light disabled pages back up. The
+      hover gains color and a wash instead, which is what the rest of the app does.
+   2. `padding: 0.25em` on a one-digit link is a ~15px target. It grows in `em`,
+      so it is ≥ stock at every `--fontScale`, and `min-width` keeps "1" and "12"
+      the same size.
+   3. `font-family: 'Font Awesome 6 Free'` with no fallback (style.css:6044), while
+      every page button's content is ordinary text — the digits, and the `<` / `>`
+      that scripts/personas.js:314, world-info.js:2407 and the model lists pass as
+      `prevText`/`nextText`. Font Awesome has no glyphs for any of it, so the whole
+      control renders in the UA's default serif today. The FA family stays FIRST so
+      an extension shipping a real FA glyph here is unaffected; the UI face is
+      added behind it as the fallback that was missing.
+
+   `.paginationjs-size-changer select` is slice A's — no `<select>` is touched here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .paginationjs-pages ul li a {
+    min-width: 1.7em;
+    padding: 0.3em 0.5em;
+    text-align: center;
+    font-family: 'Font Awesome 6 Free', var(--k-font-ui);
+    transition: color var(--k-motion), background-color var(--k-motion), border-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .paginationjs-pages ul li a:hover,
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .paginationjs-pages ul li a:focus-visible {
+    color: var(--k-accent-bright);
+    background: var(--k-ghost-hover);
+    border-color: var(--k-rack-hairline-hot);
+}
+
+/* `li.disabled a` keeps stock's 0.5 and `cursor: not-allowed`; it must not answer
+   to the hover above, which would otherwise promise a page that is not there.
+   Restated at hover/focus specificity to hold that line. */
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .paginationjs-pages ul li.disabled a:hover,
+body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .paginationjs-pages ul li.disabled a:focus-visible {
+    color: var(--k-text-muted);
+    background: transparent;
+    border-color: var(--k-rack-hairline);
+}

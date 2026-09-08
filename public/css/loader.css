@@ -1,0 +1,114 @@
+#preloader {
+    position: fixed;
+    margin: 0;
+    padding: 0;
+    top: 0;
+    left: 0;
+    z-index: 999999;
+    width: 100vw;
+    height: 100vh;
+    width: 100dvw;
+    height: 100dvh;
+    background-color: var(--SmartThemeBlurTintColor);
+    color: var(--SmartThemeBodyColor);
+    /*for some reason the full screen blur does not work on iOS*/
+    backdrop-filter: blur(30px);
+    opacity: 1;
+}
+
+/* The dark room the lantern glows in. Full-bleed and opaque on purpose: the
+   default character avatar is also a hearth, and a translucent overlay let it
+   ghost through beside the loader's own mark — two hearths, clipping. */
+#loader {
+    --spinner-size: 112px;
+    position: fixed;
+    inset: 0;
+    background-color: var(--k-ground, #0e1119);
+    transition: filter var(--animation-duration-2x) ease-out, opacity var(--animation-duration-2x) ease-out;
+}
+
+#load-spinner {
+    transition: all var(--animation-duration-2x) ease-out;
+    opacity: 1;
+    top: calc(50% - var(--spinner-size) / 2);
+    left: calc(50% - var(--spinner-size) / 2);
+    position: absolute;
+    width: var(--spinner-size);
+    height: var(--spinner-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#load-spinner svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* The hearth breathes — glow and dot swell like a lantern settling. */
+#load-spinner .k-loader-glow,
+#load-spinner .k-loader-dot {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: k-loader-breathe 2.2s ease-in-out infinite alternate;
+}
+
+#load-spinner .k-loader-glow {
+    animation-delay: -1.1s;
+}
+
+@keyframes k-loader-breathe {
+    from {
+        opacity: 0.45;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1.08);
+    }
+}
+
+#load-word {
+    position: absolute;
+    top: calc(50% + var(--spinner-size) / 2 + 8px);
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 1.1em;
+    letter-spacing: 0.04em;
+    opacity: 0.9;
+    color: var(--k-accent-bright, inherit);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    #load-spinner .k-loader-glow,
+    #load-spinner .k-loader-dot {
+        animation: none;
+    }
+}
+
+/* Action loader toast styles */
+.action-loader-toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.action-loader-message {
+    flex: 1;
+}
+
+.action-loader-stop {
+    cursor: pointer;
+    font-size: 1.2em;
+    opacity: 0.8;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.action-loader-stop:hover {
+    opacity: 1;
+    color: color-mix(in srgb, currentColor 40%, #e74c3c 60%);
+}

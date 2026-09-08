@@ -1,0 +1,22 @@
+<svg viewBox="0 0 236 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Kotatsu wordmark: "k(dot)tatsu" — stroke-drawn letterforms sharing the
+       monogram's DNA (stroke 8, round caps), the rose dot replacing the o.
+       Baseline 52, x-height top 30. No font dependency. Canon: docs/brand.md -->
+  <defs>
+    <radialGradient id="k-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#dca9a4" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#dca9a4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g fill="none" stroke="#b6bee2" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 12 v40 M14 34 l20 -18 M19.5 29.5 l16 22.5"/>
+    <path d="M68 18 v27 a7 7 0 0 0 7 7 M58 30 h19"/>
+    <circle cx="98" cy="42" r="9"/>
+    <path d="M107 33 v19"/>
+    <path d="M126 18 v27 a7 7 0 0 0 7 7 M116 30 h19"/>
+    <path d="M162 34 a8 7 0 0 0 -15 2.5 c0 7 15 3 15 10.5 a8 7 0 0 1 -15 2.5"/>
+    <path d="M178 30 v13 a9 9 0 0 0 18 0 v-13 M196 43 v9"/>
+  </g>
+  <ellipse cx="45" cy="42" rx="11" ry="9" fill="url(#k-glow)"/>
+  <circle cx="45" cy="42" r="7" fill="#dca9a4"/>
+</svg>

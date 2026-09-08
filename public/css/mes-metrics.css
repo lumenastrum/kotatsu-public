@@ -1,0 +1,145 @@
+/*
+ * mes-metrics.css — the per-message metrics bar (docs/metrics-native-v0.md §5).
+ *
+ * Owns the inside of `<k-mes-metrics variant="bar">`, a light-DOM child of `.mes_block` mounted
+ * directly after `.ch_name` by public/kotatsu/metrics/bar.js. The element only exists on rows
+ * whose message carries usage, so with no usage anywhere on screen this sheet paints nothing at
+ * all — the same inertness mes-variants.css has, and the reason the parity baselines (a
+ * synthetic corpus with no usage) needed no re-capture for this slice.
+ *
+ * Link order is load-bearing: this sheet comes AFTER css/mes-variants.css in index.html. The
+ * wardrobe's metadata-axis rules name `k-mes-metrics` among the chrome family they fade, and
+ * the two must not fight over which one last set `opacity` on a hovered row.
+ *
+ * Discipline (docs/shell-v0.md §"The slot contract", css/prompt-list.css's header):
+ * - Colours and motion come from `--k-*` only, never a literal. The state colours are declared
+ *   ONCE, on a bare `:root`, in the `--k-metrics-*` namespace: a theme pack retints the whole
+ *   readout by redeclaring six custom properties and shipping no JS (SPEC §13).
+ * - Blue Hour is the default by DERIVATION, not by hex. `--k-success` / `--k-warning` /
+ *   `--k-danger` already are the Blue Hour status palette (css/tokens.css §Status), so a pack
+ *   that retints those gets a coherent metrics bar for free and one that wants the bar alone
+ *   moved still has its own six knobs.
+ * - Slice-local geometry lives in the same namespace, declared once, up top.
+ * - ZERO `!important`.
+ * - Motion is an affordance, never information: the fill's width transition is wrapped in
+ *   `prefers-reduced-motion: no-preference` and the bar reads identically without it.
+ */
+
+:root {
+    /* ── Geometry ────────────────────────────────────────────────────────
+       The track is a FIXED 64×4. A proportional one would make two adjacent
+       messages incomparable at a glance, which is the entire job of a gauge. */
+    --k-metrics-track-w: 64px;
+    --k-metrics-track-h: 4px;
+    --k-metrics-gap: 12px;
+    --k-metrics-chip-gap: 5px;
+    --k-metrics-size: 0.72em;
+
+    /* ── Chrome ──────────────────────────────────────────────────────── */
+    /* Same rank as the timestamp and token counter — this is the fifth readout
+       of that family, not a fifth thing competing with the message. */
+    --k-metrics-fg: var(--k-text-faint);
+    --k-metrics-track-bg: color-mix(in srgb, var(--k-border) 40%, transparent);
+
+    /* ── Context states ──────────────────────────────────────────────── */
+    --k-metrics-ok: var(--k-success);
+    --k-metrics-warm: var(--k-warning);
+    --k-metrics-crit: var(--k-danger);
+
+    /* ── Cache verdicts ──────────────────────────────────────────────── */
+    --k-metrics-healthy: var(--k-success);
+    --k-metrics-priming: var(--k-accent);
+    --k-metrics-busted: var(--k-danger);
+
+    /* The state the extension never styled: "this provider reports no cache
+       figures". It has to read as an absence, not as a fourth verdict. */
+    --k-metrics-na: var(--k-text-dim);
+}
+
+/* ── The bar ─────────────────────────────────────────────────────────────
+   An unknown element is `display: inline` until told otherwise, so the layout
+   box is declared here rather than inherited from anything. */
+k-mes-metrics[variant="bar"] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--k-metrics-gap);
+    margin: 2px 0 4px;
+    font-family: var(--k-font-mono);
+    font-size: var(--k-metrics-size);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.4;
+    color: var(--k-metrics-fg);
+    /* The chips are inert in v0 — no clicks, no focus, nothing for
+       metadata-reveal.js's IGNORED_SELECTORS to have to know about. Text stays
+       selectable; only the pointer affordance is withheld. */
+    cursor: default;
+}
+
+k-mes-metrics[variant="bar"] .k-metrics__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--k-metrics-chip-gap);
+    white-space: nowrap;
+}
+
+k-mes-metrics[variant="bar"] .k-metrics__icon {
+    flex: 0 0 auto;
+    /* Optical centring against a mono digit's baseline. */
+    transform: translateY(0.5px);
+}
+
+/* ── The context gauge ───────────────────────────────────────────────── */
+k-mes-metrics[variant="bar"] .k-metrics__track {
+    flex: 0 0 auto;
+    width: var(--k-metrics-track-w);
+    height: var(--k-metrics-track-h);
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-metrics-track-bg);
+    overflow: hidden;
+}
+
+k-mes-metrics[variant="bar"] .k-metrics__fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background-color: currentColor;
+}
+
+/* ── State colouring ─────────────────────────────────────────────────────
+   One declaration per state on the chip, inherited by both its icon and its
+   fill through `currentColor`. */
+k-mes-metrics[variant="bar"] .k-metrics__chip[data-state="ok"] { color: var(--k-metrics-ok); }
+k-mes-metrics[variant="bar"] .k-metrics__chip[data-state="warm"] { color: var(--k-metrics-warm); }
+k-mes-metrics[variant="bar"] .k-metrics__chip[data-state="crit"] { color: var(--k-metrics-crit); }
+k-mes-metrics[variant="bar"] .k-metrics__chip[data-state="healthy"] { color: var(--k-metrics-healthy); }
+k-mes-metrics[variant="bar"] .k-metrics__chip[data-state="priming"] { color: var(--k-metrics-priming); }
+k-mes-metrics[variant="bar"] .k-metrics__chip[data-state="busted"] { color: var(--k-metrics-busted); }
+
+/* `--na`: the honest absence. Dimmer than every verdict and italic on the face,
+   so a glance never mistakes "not reported" for a measured result. */
+k-mes-metrics[variant="bar"] .k-metrics__chip[data-state="na"] {
+    color: var(--k-metrics-na);
+    opacity: 0.75;
+}
+
+k-mes-metrics[variant="bar"] .k-metrics__chip[data-state="na"] .k-metrics__text {
+    font-style: italic;
+}
+
+/* The numbers stay at the bar's own rank; only the icon, the fill and the
+   verdict word carry the state colour. A row of three coloured numbers would
+   out-shout the message it annotates. */
+k-mes-metrics[variant="bar"] .k-metrics__ctx .k-metrics__text {
+    color: var(--k-metrics-fg);
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────
+   The only animated property in this sheet. It exists so a repaint of an
+   already-mounted bar (a sweep after a chat reload) slides instead of jumping;
+   the value is identical either way. */
+@media (prefers-reduced-motion: no-preference) {
+    k-mes-metrics[variant="bar"] .k-metrics__fill {
+        transition: width var(--k-motion), background-color var(--k-motion);
+    }
+}

@@ -1,0 +1,832 @@
+/*
+ * Kotatsu prompt manager v0 — the list (slice B).
+ *
+ * Owns the inside of `<k-prompt-list variant="list">`, which mounts into core's
+ * `#completion_prompt_manager` (index.html:2300). The host is a core-owned block
+ * inside the Chat Completion drawer, so this sheet styles only the custom
+ * element and its own descendants — it never reaches out at the drawer.
+ *
+ * Discipline (docs/prompt-manager-v0.md, docs/shell-v0.md §"The slot contract"):
+ * - Colours, radii and motion come from `--k-*` only, never a literal. Packs
+ *   skin the list for free. Slice-local geometry is declared once, up top, in
+ *   the `--k-pl-*` namespace (the sheet-local pattern css/shell-left.css uses
+ *   for `--k-rl-*` and css/branch-map.css for `--k-bm-*`).
+ * - Every `:hover` has an explicit `:focus-visible` twin, because
+ *   `initDynamicStyles()` (dynamic-styles.js:188-202) otherwise synthesizes one
+ *   late and reorders the cascade under us.
+ * - Search dimming is a CLASS, never an inline style. NemoPresetExt's default
+ *   search mode has shipped broken for versions precisely because an inline
+ *   `style` lost to an `!important` rule (docs/prompt-manager-v0.md, decision 7).
+ *
+ * NOT gated on `body[data-k-layout="rails"]`: the panel is a Kotatsu surface
+ * wherever the settings drawer is, and the `--k-*` tokens live on `:root`
+ * (css/tokens.css). Under classic the element renders identically.
+ *
+ * Load order: after the shell sheets (so `--k-ghost-hover`, `--k-inset-fill` and
+ * `--k-inset-border` from css/kotatsu-chrome.css resolve) and before
+ * css/mobile-styles.css, so the responsive layer still wins.
+ */
+
+k-prompt-list[variant="list"] {
+    /* ── Slice-local geometry ────────────────────────────────────────────── */
+    --k-pl-row-h: 26px;
+    --k-pl-indent: 12px;
+    --k-pl-gap: 6px;
+    --k-pl-pad: 6px;
+    --k-pl-depth: 0;
+
+    --k-pl-name-size: 12.5px;
+    --k-pl-meta-size: 10.5px;
+    --k-pl-chip-size: 9.5px;
+    --k-pl-head-size: 12px;
+
+    --k-pl-switch-w: 26px;
+    --k-pl-switch-h: 14px;
+    --k-pl-knob: 10px;
+    --k-pl-token-w: 46px;
+
+    --k-pl-hairline: 1px;
+    --k-pl-dim-opacity: 0.32;
+    --k-pl-off-opacity: 0.5;
+
+    display: block;
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
+}
+
+/* ── Header: search, counts, tier ───────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-head {
+    display: flex;
+    align-items: center;
+    gap: var(--k-pl-gap);
+    padding: var(--k-pl-pad) 0;
+}
+
+k-prompt-list[variant="list"] .k-pl-search {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 2px 6px;
+    border: var(--k-pl-hairline) solid var(--k-inset-border);
+    border-radius: var(--k-radius-sm);
+    background: var(--k-inset-fill);
+    color: var(--k-text-muted);
+    transition: border-color var(--k-motion-duration) var(--k-motion);
+}
+
+k-prompt-list[variant="list"] .k-pl-search:hover,
+k-prompt-list[variant="list"] .k-pl-search:focus-within {
+    border-color: var(--k-accent);
+}
+
+k-prompt-list[variant="list"] .k-pl-search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--k-text);
+    font-family: inherit;
+    font-size: var(--k-pl-name-size);
+    line-height: var(--k-pl-row-h);
+    padding: 0;
+}
+
+k-prompt-list[variant="list"] .k-pl-search-input::placeholder {
+    color: var(--k-text-faint);
+}
+
+k-prompt-list[variant="list"] .k-pl-head-stats {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+k-prompt-list[variant="list"] .k-pl-stat {
+    font-family: var(--k-font-mono);
+    font-size: var(--k-pl-meta-size);
+    color: var(--k-text-muted);
+    white-space: nowrap;
+}
+
+k-prompt-list[variant="list"] .k-pl-stat--tokens {
+    color: var(--k-accent);
+}
+
+k-prompt-list[variant="list"] .k-pl-stat--tier {
+    padding: 1px 5px;
+    border-radius: var(--k-radius-pill);
+    border: var(--k-pl-hairline) solid var(--k-inset-border);
+    color: var(--k-text-faint);
+    font-size: var(--k-pl-chip-size);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Sections and containers ────────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+k-prompt-list[variant="list"] .k-pl-section,
+k-prompt-list[variant="list"] .k-pl-shelf {
+    border: var(--k-pl-hairline) solid var(--k-inset-border);
+    border-radius: var(--k-radius-sm);
+    background: var(--k-inset-fill);
+    overflow: hidden;
+}
+
+k-prompt-list[variant="list"] .k-pl-head-row {
+    display: flex;
+    align-items: center;
+    gap: var(--k-pl-gap);
+    min-height: var(--k-pl-row-h);
+    padding: 2px 4px;
+    padding-inline-start: calc(4px + var(--k-pl-indent) * var(--k-pl-depth));
+}
+
+k-prompt-list[variant="list"] .k-pl-head-row--section {
+    background: var(--k-panel-fill-soft);
+    border-block-end: var(--k-pl-hairline) solid var(--k-inset-border);
+}
+
+k-prompt-list[variant="list"] .k-pl-head-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: var(--k-pl-head-size);
+    font-weight: var(--k-display-weight);
+    color: var(--k-text-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+k-prompt-list[variant="list"] .k-pl-head-row--group .k-pl-head-label,
+k-prompt-list[variant="list"] .k-pl-head-row--span .k-pl-head-label {
+    font-weight: normal;
+    color: var(--k-text);
+}
+
+k-prompt-list[variant="list"] .k-pl-container {
+    border-inline-start: var(--k-pl-hairline) solid var(--k-inset-border);
+    margin-inline-start: 4px;
+}
+
+k-prompt-list[variant="list"] .k-pl-container--span {
+    border-inline-start-style: dashed;
+}
+
+k-prompt-list[variant="list"] .k-pl-section-body,
+k-prompt-list[variant="list"] .k-pl-container-body {
+    display: flex;
+    flex-direction: column;
+    padding-block: 1px;
+}
+
+k-prompt-list[variant="list"] .k-pl-close-row {
+    opacity: 0.72;
+}
+
+/* ── Twist ──────────────────────────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-twist {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--k-radius-xs);
+    background: transparent;
+    color: var(--k-text-muted);
+    cursor: pointer;
+    transition:
+        transform var(--k-motion-duration) var(--k-motion),
+        background-color var(--k-motion-duration) var(--k-motion);
+}
+
+k-prompt-list[variant="list"] .k-pl-twist.is-open {
+    transform: rotate(90deg);
+}
+
+k-prompt-list[variant="list"] .k-pl-twist:hover,
+k-prompt-list[variant="list"] .k-pl-twist:focus-visible {
+    background: var(--k-ghost-hover);
+    color: var(--k-text);
+    outline: none;
+}
+
+/* ── Counter and progress ───────────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-counter {
+    flex: 0 0 auto;
+    font-family: var(--k-font-mono);
+    font-size: var(--k-pl-meta-size);
+    color: var(--k-text-muted);
+    white-space: nowrap;
+}
+
+k-prompt-list[variant="list"] .k-pl-progress {
+    height: 2px;
+    background: var(--k-surface-sunken);
+}
+
+k-prompt-list[variant="list"] .k-pl-progress > i {
+    display: block;
+    height: 100%;
+    background: var(--k-accent);
+    transition: width var(--k-motion-duration) var(--k-motion);
+}
+
+/* ── Rows ───────────────────────────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-row {
+    display: flex;
+    align-items: center;
+    gap: var(--k-pl-gap);
+    min-height: var(--k-pl-row-h);
+    padding: 1px 4px;
+    padding-inline-start: calc(4px + var(--k-pl-indent) * var(--k-pl-depth));
+    border-radius: var(--k-radius-xs);
+}
+
+k-prompt-list[variant="list"] .k-pl-row:hover,
+k-prompt-list[variant="list"] .k-pl-row:focus-within {
+    background: var(--k-ghost-hover);
+}
+
+k-prompt-list[variant="list"] .k-pl-row--option {
+    padding-inline-start: calc(14px + var(--k-pl-indent) * var(--k-pl-depth));
+}
+
+k-prompt-list[variant="list"] .k-pl-row.is-disabled .k-pl-name,
+k-prompt-list[variant="list"] .k-pl-row.is-disabled .k-pl-kind {
+    opacity: var(--k-pl-off-opacity);
+}
+
+/* Search dimming. A class, never an inline style — see the sheet header. */
+k-prompt-list[variant="list"] .k-pl-row.is-dim,
+k-prompt-list[variant="list"] .k-pl-head-row.is-dim {
+    opacity: var(--k-pl-dim-opacity);
+}
+
+k-prompt-list[variant="list"] .k-pl-row.is-hit,
+k-prompt-list[variant="list"] .k-pl-head-row.is-hit {
+    background: color-mix(in srgb, var(--k-accent) 8%, transparent);
+}
+
+k-prompt-list[variant="list"] .k-pl-row.is-missing .k-pl-name {
+    text-decoration: line-through;
+    color: var(--k-danger);
+}
+
+k-prompt-list[variant="list"] .k-pl-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: var(--k-pl-name-size);
+    color: var(--k-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+k-prompt-list[variant="list"] .k-pl-note {
+    flex: 0 0 auto;
+    font-size: var(--k-pl-chip-size);
+    color: var(--k-text-faint);
+    font-style: var(--k-italics);
+}
+
+k-prompt-list[variant="list"] .k-pl-mark {
+    background: color-mix(in srgb, var(--k-accent) 30%, transparent);
+    color: var(--k-text-strong);
+    border-radius: var(--k-radius-xs);
+    padding: 0 1px;
+}
+
+k-prompt-list[variant="list"] .k-pl-kind {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    color: var(--k-text-muted);
+}
+
+k-prompt-list[variant="list"] .k-pl-row[data-kind="marker"] .k-pl-kind {
+    color: var(--k-info);
+}
+
+k-prompt-list[variant="list"] .k-pl-row[data-kind="important"] .k-pl-kind {
+    color: var(--k-warning);
+}
+
+k-prompt-list[variant="list"] .k-pl-row[data-kind="in-chat"] .k-pl-kind {
+    color: var(--k-rose);
+}
+
+k-prompt-list[variant="list"] .k-pl-icon {
+    display: block;
+}
+
+/* ── Chips ──────────────────────────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-chips {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+k-prompt-list[variant="list"] .k-pl-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 4px;
+    border-radius: var(--k-radius-pill);
+    border: var(--k-pl-hairline) solid var(--k-inset-border);
+    background: var(--k-surface-sunken);
+    color: var(--k-text-muted);
+    font-size: var(--k-pl-chip-size);
+    line-height: 1.5;
+    white-space: nowrap;
+    max-width: 12ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+k-prompt-list[variant="list"] .k-pl-chip--depth,
+k-prompt-list[variant="list"] .k-pl-chip--role {
+    font-family: var(--k-font-mono);
+}
+
+k-prompt-list[variant="list"] .k-pl-chip--override {
+    color: var(--k-info);
+    border-color: color-mix(in srgb, var(--k-info) 40%, transparent);
+}
+
+k-prompt-list[variant="list"] .k-pl-chip--exclusive {
+    color: var(--k-accent);
+    border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+k-prompt-list[variant="list"] .k-pl-chip--missing {
+    color: var(--k-danger);
+    border-color: color-mix(in srgb, var(--k-danger) 45%, transparent);
+}
+
+k-prompt-list[variant="list"] .k-pl-chip--source {
+    max-width: 16ch;
+}
+
+/* ── The switch ─────────────────────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-switch {
+    flex: 0 0 auto;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: var(--k-pl-switch-w);
+    height: var(--k-pl-switch-h);
+    padding: 0;
+    border: var(--k-pl-hairline) solid var(--k-inset-border);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-surface-sunken);
+    cursor: pointer;
+    transition:
+        background-color var(--k-motion-duration) var(--k-motion),
+        border-color var(--k-motion-duration) var(--k-motion);
+}
+
+k-prompt-list[variant="list"] .k-pl-switch:hover,
+k-prompt-list[variant="list"] .k-pl-switch:focus-visible {
+    border-color: var(--k-accent);
+    outline: none;
+}
+
+k-prompt-list[variant="list"] .k-pl-knob {
+    position: absolute;
+    inset-inline-start: 2px;
+    width: var(--k-pl-knob);
+    height: var(--k-pl-knob);
+    border-radius: var(--k-radius-round);
+    background: var(--k-text-faint);
+    transition:
+        inset-inline-start var(--k-motion-duration) var(--k-motion),
+        background-color var(--k-motion-duration) var(--k-motion);
+}
+
+k-prompt-list[variant="list"] .k-pl-switch[aria-checked="true"] {
+    background: color-mix(in srgb, var(--k-accent) 32%, transparent);
+    border-color: var(--k-accent);
+}
+
+k-prompt-list[variant="list"] .k-pl-switch[aria-checked="true"] .k-pl-knob {
+    inset-inline-start: calc(var(--k-pl-switch-w) - var(--k-pl-knob) - 4px);
+    background: var(--k-accent-bright);
+}
+
+/* An always-on prompt: the slot still occupies the column so names stay aligned. */
+k-prompt-list[variant="list"] .k-pl-switch--fixed {
+    background: transparent;
+    border-style: dashed;
+    cursor: default;
+}
+
+/* ── Tokens ─────────────────────────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-tokens {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    min-width: var(--k-pl-token-w);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-pl-meta-size);
+    color: var(--k-text-muted);
+}
+
+/* Absence is a statement, not a zero: the slot holds the column, nothing more. */
+k-prompt-list[variant="list"] .k-pl-tokens--none {
+    color: var(--k-text-faint);
+    opacity: 0.5;
+}
+
+k-prompt-list[variant="list"] .k-pl-tokens.is-warning {
+    color: var(--k-warning);
+}
+
+k-prompt-list[variant="list"] .k-pl-tokens.is-danger {
+    color: var(--k-danger);
+}
+
+/* ── Row actions ────────────────────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-actions {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+}
+
+k-prompt-list[variant="list"] .k-pl-act {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--k-radius-xs);
+    background: transparent;
+    color: var(--k-text-faint);
+    cursor: pointer;
+    transition:
+        color var(--k-motion-duration) var(--k-motion),
+        background-color var(--k-motion-duration) var(--k-motion);
+}
+
+k-prompt-list[variant="list"] .k-pl-act:hover,
+k-prompt-list[variant="list"] .k-pl-act:focus-visible {
+    background: var(--k-ghost-hover);
+    color: var(--k-text);
+    outline: none;
+}
+
+k-prompt-list[variant="list"] .k-pl-act.is-on {
+    color: var(--k-accent);
+}
+
+k-prompt-list[variant="list"] .k-pl-act--danger:hover,
+k-prompt-list[variant="list"] .k-pl-act--danger:focus-visible {
+    color: var(--k-danger);
+}
+
+k-prompt-list[variant="list"] .k-pl-act[disabled] {
+    opacity: 0.28;
+    cursor: default;
+}
+
+k-prompt-list[variant="list"] .k-pl-act[disabled]:hover,
+k-prompt-list[variant="list"] .k-pl-act[disabled]:focus-visible {
+    background: transparent;
+    color: var(--k-text-faint);
+}
+
+/* ── Slice C: master toggle, relax chip, recount ────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-master,
+k-prompt-list[variant="list"] .k-pl-recount {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--k-radius-xs);
+    background: transparent;
+    color: var(--k-text-faint);
+    cursor: pointer;
+    transition:
+        color var(--k-motion-duration) var(--k-motion),
+        background-color var(--k-motion-duration) var(--k-motion);
+}
+
+k-prompt-list[variant="list"] .k-pl-master:hover,
+k-prompt-list[variant="list"] .k-pl-master:focus-visible,
+k-prompt-list[variant="list"] .k-pl-recount:hover,
+k-prompt-list[variant="list"] .k-pl-recount:focus-visible {
+    background: var(--k-ghost-hover);
+    color: var(--k-accent);
+    outline: none;
+}
+
+k-prompt-list[variant="list"] .k-pl-master[disabled],
+k-prompt-list[variant="list"] .k-pl-recount[disabled] {
+    opacity: 0.28;
+    cursor: default;
+}
+
+k-prompt-list[variant="list"] .k-pl-master[disabled]:hover,
+k-prompt-list[variant="list"] .k-pl-master[disabled]:focus-visible,
+k-prompt-list[variant="list"] .k-pl-recount[disabled]:hover,
+k-prompt-list[variant="list"] .k-pl-recount[disabled]:focus-visible {
+    background: transparent;
+    color: var(--k-text-faint);
+}
+
+/* The busy state is the whole point of the affordance: a dry run is a real generation. */
+k-prompt-list[variant="list"] .k-pl-recount.is-busy {
+    color: var(--k-accent);
+    opacity: 1;
+    animation: k-pl-spin 1.1s linear infinite;
+}
+
+@keyframes k-pl-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    k-prompt-list[variant="list"] .k-pl-recount.is-busy {
+        animation: none;
+        opacity: 0.6;
+    }
+}
+
+k-prompt-list[variant="list"] .k-pl-chip--relax {
+    font-family: inherit;
+    cursor: pointer;
+    color: var(--k-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition:
+        color var(--k-motion-duration) var(--k-motion),
+        border-color var(--k-motion-duration) var(--k-motion);
+}
+
+k-prompt-list[variant="list"] .k-pl-chip--relax.is-on {
+    color: var(--k-accent);
+    border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
+}
+
+k-prompt-list[variant="list"] .k-pl-chip--relax:hover,
+k-prompt-list[variant="list"] .k-pl-chip--relax:focus-visible {
+    color: var(--k-text);
+    border-color: var(--k-accent);
+    outline: none;
+}
+
+/* ── Slice C: drag ──────────────────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-grip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: var(--k-pl-row-h);
+    color: var(--k-text-faint);
+    opacity: 0.45;
+    cursor: grab;
+    /* Without this the browser claims the gesture for panning and the drag never starts on a
+       phone. It is why the handle is a handle and not the whole row. */
+    touch-action: none;
+    user-select: none;
+    transition: opacity var(--k-motion-duration) var(--k-motion);
+}
+
+k-prompt-list[variant="list"] .k-pl-row:hover .k-pl-grip,
+k-prompt-list[variant="list"] .k-pl-head-row:hover .k-pl-grip,
+k-prompt-list[variant="list"] .k-pl-grip:focus-visible {
+    opacity: 1;
+    color: var(--k-text-muted);
+    outline: none;
+}
+
+/* The column still exists for undraggable rows, so no name shifts by 12px. */
+k-prompt-list[variant="list"] .k-pl-grip--fixed {
+    cursor: default;
+    opacity: 0;
+}
+
+k-prompt-list[variant="list"] .k-pl-row.is-dragging,
+k-prompt-list[variant="list"] .k-pl-head-row.is-dragging {
+    opacity: 0.4;
+}
+
+/* An inset rule rather than an absolutely positioned pseudo-element: rows are static, and a
+   positioned indicator inside an `overflow: hidden` section clips at the boundary — which is
+   exactly where a cross-section drop needs to be visible. */
+k-prompt-list[variant="list"] .k-pl-row.is-drop-before,
+k-prompt-list[variant="list"] .k-pl-head-row.is-drop-before {
+    box-shadow: inset 0 2px 0 0 var(--k-accent-bright);
+}
+
+k-prompt-list[variant="list"] .k-pl-row.is-drop-after,
+k-prompt-list[variant="list"] .k-pl-head-row.is-drop-after {
+    box-shadow: inset 0 -2px 0 0 var(--k-accent-bright);
+}
+
+/* ── The promoted receipt drawer ────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-receipt {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 2px 4px 6px;
+    padding: 6px;
+    border: var(--k-pl-hairline) solid var(--k-inset-border);
+    border-radius: var(--k-radius-sm);
+    background: var(--k-surface-sunken);
+}
+
+k-prompt-list[variant="list"] .k-pl-receipt-head {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+k-prompt-list[variant="list"] .k-pl-receipt-id {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--k-font-mono);
+    font-size: var(--k-pl-chip-size);
+    color: var(--k-text-faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+k-prompt-list[variant="list"] .k-pl-receipt-body {
+    margin: 0;
+    max-height: 220px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-family: var(--k-font-mono);
+    font-size: var(--k-pl-meta-size);
+    line-height: 1.45;
+    color: var(--k-text-dim);
+}
+
+k-prompt-list[variant="list"] .k-pl-receipt-empty {
+    margin: 0;
+    font-size: var(--k-pl-meta-size);
+    color: var(--k-text-faint);
+}
+
+/* ── Shelf, notes, quiet states ─────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-shelf-note,
+k-prompt-list[variant="list"] .k-pl-note-line {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 2px 4px;
+    font-size: var(--k-pl-meta-size);
+    color: var(--k-text-faint);
+}
+
+k-prompt-list[variant="list"] .k-pl-notes {
+    padding-block: 4px;
+}
+
+k-prompt-list[variant="list"] .k-pl-note-line {
+    color: var(--k-warning);
+}
+
+k-prompt-list[variant="list"] .k-pl-error {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0 0 var(--k-pl-pad);
+    padding: 4px 6px;
+    border-radius: var(--k-radius-sm);
+    border: var(--k-pl-hairline) solid color-mix(in srgb, var(--k-danger) 45%, transparent);
+    background: color-mix(in srgb, var(--k-danger) 10%, transparent);
+    color: var(--k-danger);
+    font-size: var(--k-pl-meta-size);
+}
+
+k-prompt-list[variant="list"] .k-pl-error > span {
+    flex: 1 1 auto;
+}
+
+k-prompt-list[variant="list"] .k-pl-quiet {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 14px 8px;
+    text-align: center;
+}
+
+k-prompt-list[variant="list"] .k-pl-quiet-title {
+    font-size: var(--k-pl-head-size);
+    color: var(--k-text-muted);
+}
+
+k-prompt-list[variant="list"] .k-pl-quiet-note {
+    font-size: var(--k-pl-meta-size);
+    color: var(--k-text-faint);
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+
+k-prompt-list[variant="list"] .k-pl-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding-block: var(--k-pl-pad);
+}
+
+k-prompt-list[variant="list"] .k-pl-select {
+    flex: 1 1 120px;
+    min-width: 0;
+    font-size: var(--k-pl-name-size);
+}
+
+k-prompt-list[variant="list"] .k-pl-btn {
+    flex: 0 0 auto;
+    padding: 2px 8px;
+    border: var(--k-pl-hairline) solid var(--k-inset-border);
+    border-radius: var(--k-radius-sm);
+    background: var(--k-inset-fill);
+    color: var(--k-text-muted);
+    font-family: inherit;
+    font-size: var(--k-pl-meta-size);
+    cursor: pointer;
+    transition:
+        color var(--k-motion-duration) var(--k-motion),
+        border-color var(--k-motion-duration) var(--k-motion),
+        background-color var(--k-motion-duration) var(--k-motion);
+}
+
+k-prompt-list[variant="list"] .k-pl-btn:hover,
+k-prompt-list[variant="list"] .k-pl-btn:focus-visible {
+    background: var(--k-ghost-hover);
+    border-color: var(--k-accent);
+    color: var(--k-text);
+    outline: none;
+}
+
+k-prompt-list[variant="list"] .k-pl-btn--danger:hover,
+k-prompt-list[variant="list"] .k-pl-btn--danger:focus-visible {
+    border-color: var(--k-danger);
+    color: var(--k-danger);
+}
+
+k-prompt-list[variant="list"] .k-pl-search-clear {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--k-radius-xs);
+    background: transparent;
+    color: var(--k-text-faint);
+    cursor: pointer;
+}
+
+k-prompt-list[variant="list"] .k-pl-search-clear:hover,
+k-prompt-list[variant="list"] .k-pl-search-clear:focus-visible {
+    background: var(--k-ghost-hover);
+    color: var(--k-text);
+    outline: none;
+}

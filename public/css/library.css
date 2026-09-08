@@ -1,0 +1,975 @@
+/*
+ * library.css — the cast gallery (library v0 slice C, docs/library-v0.md §1).
+ *
+ * Owns the INSIDE of `<k-library>`: the centre-column overlay, the hero, the continue strip,
+ * the tools row, and the poster card. The centre TRACK belongs to css/shell-frame.css and is
+ * not restyled here — the gallery paints over it, it does not replace it.
+ *
+ * Discipline (docs/shell-v0.md §"The slot contract"):
+ * - Every rule is gated on `body[data-k-layout="rails"]`. Classic is untouched, byte for byte.
+ * - Colours, radii and shadows come from `--k-*` only. There is not one literal colour in this
+ *   file — grep it: no `#`, no `rgb(`. The one `hsl()` is the per-card accent, and even that
+ *   takes two of its three channels from tokens.
+ * - Slice-local parameters are declared once, up top, in the `--k-lib-*` namespace — the
+ *   sheet-local pattern css/shell-left.css uses for `--k-rl-*` and css/shell-center.css for
+ *   `--k-cc-*`. They are NOT added to css/tokens.css on purpose (see "Packs" below).
+ * - Every `:hover` has an explicit `:focus-visible` twin, because `initDynamicStyles()`
+ *   (dynamic-styles.js:188-202) otherwise synthesizes one late and reorders the cascade.
+ * - Type floor 11px, everywhere. Kirara's 6-9px chrome is below legibility (recon flag); the
+ *   ~5:1 hero-to-chrome RATIO is kept, the absolute pixel sizes are not.
+ *
+ * ── Packs ────────────────────────────────────────────────────────────────────────────────
+ * The `--k-lib-*` parameters live at COMPONENT scope, not at `:root`, which is the same call
+ * css/mes-variants.css makes for its per-variant tokens and for the same two reasons: a pack
+ * retunes the gallery by VALUE (`--k-lib-accent-s: 22%`) instead of cloning rule blocks, and a
+ * parameter for a surface nobody has open costs nothing. It also keeps `npm run theme:check
+ * -- blue-hour --drift` green without touching a single pack: that gate compares tokens.css's
+ * `:root` against blue-hour/theme.json name for name, so a `:root` addition here would force
+ * an edit to every shipped pack manifest for parameters no pack has an opinion about yet.
+ * A pack's own `sheet.css` is prefixed `body[data-k-theme="<id>"]` (theme/core.js:1305-1318),
+ * which ties on specificity with the `body[data-k-layout="rails"]` block below and is injected
+ * later — so a pack override wins, which is the whole point.
+ *
+ * ── The one rule that reaches outside the component ───────────────────────────────────────
+ * `#k-center { position: relative }`. The overlay is `position: absolute; inset: 0` and needs
+ * a containing block; shell-frame.css leaves `#k-center` static, so today an absolute
+ * descendant of the centre column resolves against `#k-shell` (`position: fixed; inset: 0`,
+ * shell-frame.css:69-79). Audited before writing it: the only `position: absolute` rules in
+ * style.css that can land inside `#k-center` are `#sheld` itself (neutralized to `static`
+ * under rails, shell-frame.css:137), `.swipe_left` / `.swipeRightBlock` / `.mes_img_swipes` /
+ * `.mes_img_controls` / `.mes_video_controls` (all inside `.mes`, which is `position:
+ * relative`, style.css:1194-1202) and `#character_popup` (never a descendant of `#k-center`).
+ * Nothing re-resolves. `position` also neither creates nor removes a containing block for
+ * `position: fixed`, so shell-frame.css's `#chat` backdrop-filter breadcrumb is untouched.
+ *
+ * Load order: linked from index.html after css/shell-center.css (so the overlay can sit over
+ * what that sheet paints) and before css/mobile-styles.css (so the responsive layer still
+ * wins).
+ */
+
+body[data-k-layout="rails"] {
+    /* ── Page rhythm ─────────────────────────────────────────────────────────── */
+    --k-lib-measure: 1440px;
+    --k-lib-gutter: clamp(24px, 4vw, 64px);
+    --k-lib-block-gap: clamp(22px, 2.6vw, 38px);
+    --k-lib-grid-min: 240px;
+    --k-lib-grid-gap: clamp(12px, 1.4vw, 20px);
+
+    /* ── Type (floor 11px, docs/library-v0.md §1.3) ──────────────────────────── */
+    --k-lib-title-size: clamp(38px, 4vw, 60px);
+    --k-lib-title-lh: 1.02;
+    --k-lib-title-track: -0.02em;
+    --k-lib-eyebrow-size: 11px;
+    --k-lib-eyebrow-track: 0.16em;
+    --k-lib-sub-size: 14px;
+    --k-lib-section-size: 12px;
+    --k-lib-ui-size: 12.5px;
+    --k-lib-micro-size: 11px;
+
+    /* ── Card ────────────────────────────────────────────────────────────────── */
+    --k-lib-card-ratio: 2 / 3;
+    --k-lib-card-min-h: 300px;
+    --k-lib-card-pad: 14px;
+    --k-lib-card-radius: var(--k-radius-lg);
+    /* Derived from the UNPINNED peer, like every other kotatsu hairline: applyThemeColor()
+       can inline-pin --k-border onto :root from a legacy theme JSON and outrank us
+       (tokens.css:79-83). The design doc names this `--k-border-soft`; no such token exists
+       in the substrate, so the recipe is spelled out instead of inventing a root name. */
+    --k-lib-card-border: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+    --k-lib-card-fill: var(--k-surface-sunken);
+    --k-lib-kicker-size: 11px;
+    --k-lib-kicker-track: 0.14em;
+    --k-lib-kicker-weight: 700;
+    --k-lib-name-size: 26px;
+    --k-lib-name-lh: 1.05;
+    --k-lib-body-size: 12px;
+    --k-lib-body-lh: 1.5;
+    --k-lib-foot-size: 12px;
+    --k-lib-tag-size: 11px;
+    --k-lib-chrome-size: 32px;
+    --k-lib-portrait-rest: 0.8;
+    --k-lib-portrait-bloom: 1;
+    --k-lib-lift: -5px;
+    --k-lib-bloom-scale: 1.03;
+    --k-lib-bloom-duration: 0.6s;
+
+    /* ── The accent band ─────────────────────────────────────────────────────────
+       The per-card hue is a pure function of the avatar (view-model.js `accentHue`);
+       saturation and lightness are NOT per-card, they are these two values, so every accent
+       lands inside Blue Hour's pastel register and a pack retunes all of them at once.
+       Blue Hour's own --k-accent is ~hsl(230 37% 71%); this band is that, widened by a hair. */
+    --k-lib-accent-s: 38%;
+    --k-lib-accent-l: 72%;
+
+    /* ── The two-gradient scrim (Kirara's vignette, retunable) ───────────────────
+       Vertical: clear through the face, near-opaque under the copy. Horizontal: a faint
+       left-edge darkener so the kicker never sits on a bright cheek. */
+    --k-lib-scrim-clear: transparent;
+    --k-lib-scrim-mid: color-mix(in srgb, var(--k-scrim) 55%, transparent);
+    --k-lib-scrim-deep: color-mix(in srgb, var(--k-scrim) 94%, transparent);
+    --k-lib-scrim-start: 38%;
+    --k-lib-scrim-knee: 64%;
+    --k-lib-scrim-end: 86%;
+    --k-lib-scrim-edge: color-mix(in srgb, var(--k-scrim) 45%, transparent);
+    --k-lib-scrim-edge-end: 34%;
+
+    /* ── Shared surfaces ─────────────────────────────────────────────────────── */
+    --k-lib-hairline: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+    --k-lib-glass: color-mix(in srgb, var(--k-scrim) 55%, transparent);
+    --k-lib-field-fill: color-mix(in srgb, var(--k-ground-deep) 70%, transparent);
+    --k-lib-hover-fill: color-mix(in srgb, var(--k-accent) 10%, transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. THE OVERLAY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The containing block. See the sheet header for why this is safe. */
+body[data-k-layout="rails"] #k-center {
+    position: relative;
+}
+
+body[data-k-layout="rails"] k-library {
+    position: absolute;
+    inset: 0;
+    /* Above the relocated #sheld and nothing else: the gallery is a centre-column surface,
+       not a modal, so it must stay under the rail handles (40), the drawer rack (3005),
+       popups (9999) and the branch map. 31, not a small number: `#k-center { position:
+       relative }` does NOT create a stacking context, so this competes with #sheld's own
+       `z-index: 30` in the shared ancestor context — probe-caught: at z 2 the empty
+       transparent #chat painted above the gallery and ate every card click. */
+    z-index: 31;
+    display: block;
+    min-width: 0;
+    min-height: 0;
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
+}
+
+/* Closed is not rendered — the component returns `nothing` — but the element is still in the
+   tree, so it must not be able to intercept a click meant for the chat underneath. */
+body[data-k-layout="rails"] k-library:not([open]) {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-lib-sheet {
+    box-sizing: border-box;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    /* Opaque on purpose (doc §0): the chat is still mounted underneath and must not read
+       through. The ambient wash matches what the shell paints elsewhere. */
+    background-color: var(--k-ground);
+    background-image: linear-gradient(180deg,
+            color-mix(in srgb, var(--k-backdrop-top) 70%, transparent),
+            var(--k-ground) 42%);
+}
+
+body[data-k-layout="rails"] .k-lib-page {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--k-lib-block-gap);
+    width: 100%;
+    max-width: var(--k-lib-measure);
+    margin: 0 auto;
+    padding: clamp(18px, 2vw, 30px) var(--k-lib-gutter) clamp(40px, 6vw, 80px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. BRAND ROW — the hearth moves house (doc §0)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-lib-brandrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-lib-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    opacity: 0.85;
+}
+
+body[data-k-layout="rails"] .k-lib-logo {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
+}
+
+body[data-k-layout="rails"] .k-lib-wordmark {
+    width: 74px;
+    height: 20px;
+    flex: 0 0 auto;
+}
+
+body[data-k-layout="rails"] .k-lib-version {
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-lib-micro-size);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body[data-k-layout="rails"] .k-lib-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: var(--k-lib-chrome-size);
+    height: var(--k-lib-chrome-size);
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--k-lib-hairline);
+    border-radius: var(--k-radius-round);
+    background: var(--k-lib-field-fill);
+    color: var(--k-text-muted);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-lib-close:hover,
+body[data-k-layout="rails"] .k-lib-close:focus-visible {
+    border-color: var(--k-accent);
+    background: var(--k-lib-hover-fill);
+    color: var(--k-text-strong);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. HERO
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-lib-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: clamp(16px, 3vw, 48px);
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-lib-hero-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-lib-eyebrow {
+    color: var(--k-accent);
+    font-size: var(--k-lib-eyebrow-size);
+    font-weight: 700;
+    letter-spacing: var(--k-lib-eyebrow-track);
+    text-transform: uppercase;
+}
+
+/* The serif voice. `--k-font-display` is Newsreader, self-hosted and resolved by
+   css/kotatsu-chrome.css §2 — Kotatsu has ONE serif and this is it (doc §1.2 item 2). */
+body[data-k-layout="rails"] .k-lib-title {
+    margin: 0;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: var(--k-lib-title-size);
+    line-height: var(--k-lib-title-lh);
+    letter-spacing: var(--k-lib-title-track);
+}
+
+body[data-k-layout="rails"] .k-lib-sub {
+    margin: 0;
+    color: var(--k-text-muted);
+    font-size: var(--k-lib-sub-size);
+}
+
+body[data-k-layout="rails"] .k-lib-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+body[data-k-layout="rails"] .k-lib-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 8px 14px;
+    border: 1px solid var(--k-lib-hairline);
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text);
+    font-family: inherit;
+    font-size: var(--k-lib-ui-size);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-lib-btn--ghost:hover,
+body[data-k-layout="rails"] .k-lib-btn--ghost:focus-visible {
+    border-color: var(--k-accent);
+    background: var(--k-lib-hover-fill);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-lib-btn--primary {
+    border-color: color-mix(in srgb, var(--k-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--k-accent) 18%, transparent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-lib-btn--primary:hover,
+body[data-k-layout="rails"] .k-lib-btn--primary:focus-visible {
+    border-color: var(--k-accent-bright);
+    background: color-mix(in srgb, var(--k-accent) 30%, transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. CONTINUE STRIP
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-lib-continue {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-lib-sectiontitle {
+    margin: 0;
+    color: var(--k-text-muted);
+    font-family: inherit;
+    font-size: var(--k-lib-section-size);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+body[data-k-layout="rails"] .k-lib-recents {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-lib-recent {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 8px 12px 8px 8px;
+    border: 1px solid var(--k-lib-hairline);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-lib-field-fill);
+    color: var(--k-text);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-lib-recent:hover,
+body[data-k-layout="rails"] .k-lib-recent:focus-visible {
+    border-color: var(--k-accent);
+    background: var(--k-lib-hover-fill);
+}
+
+body[data-k-layout="rails"] .k-lib-recent-face {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--k-radius-md);
+    object-fit: cover;
+}
+
+body[data-k-layout="rails"] .k-lib-recent--group .k-lib-recent-face {
+    border-radius: var(--k-radius-round);
+}
+
+body[data-k-layout="rails"] .k-lib-recent-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-lib-recent-name {
+    color: var(--k-text-strong);
+    font-size: var(--k-lib-ui-size);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Muted, not faint, both metadata voices of the row: the filename measured
+   4.46:1 with faint against the recents card — a hair under the 4.5:1
+   small-text AA floor (smoke 2026-08-25 P2) — and the timestamp shares its
+   size, surface and job, so the pair moves one token step together. */
+body[data-k-layout="rails"] .k-lib-recent-chat {
+    color: var(--k-text-muted);
+    font-size: var(--k-lib-micro-size);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body[data-k-layout="rails"] .k-lib-recent-when {
+    flex: 0 0 auto;
+    color: var(--k-text-muted);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-lib-micro-size);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. TOOLS ROW
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-lib-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--k-lib-hairline);
+}
+
+body[data-k-layout="rails"] .k-lib-search {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex: 1 1 220px;
+    min-width: 0;
+    max-width: 380px;
+    padding: 0 12px;
+    height: var(--k-lib-chrome-size);
+    border: 1px solid var(--k-lib-hairline);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-lib-field-fill);
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-lib-search:focus-within {
+    border-color: var(--k-accent);
+    color: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-lib-search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--k-text);
+    font-family: inherit;
+    font-size: var(--k-lib-ui-size);
+}
+
+body[data-k-layout="rails"] .k-lib-search-input::placeholder {
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-lib-search-input::-webkit-search-cancel-button {
+    appearance: none;
+}
+
+body[data-k-layout="rails"] .k-lib-tabs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 0 0 auto;
+    padding: 2px;
+    border: 1px solid var(--k-lib-hairline);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-lib-field-fill);
+}
+
+body[data-k-layout="rails"] .k-lib-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    padding: 5px 12px;
+    border: none;
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text-muted);
+    font-family: inherit;
+    font-size: var(--k-lib-ui-size);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-lib-tab:hover,
+body[data-k-layout="rails"] .k-lib-tab:focus-visible {
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-lib-tab.is-active {
+    background: color-mix(in srgb, var(--k-accent) 20%, transparent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-lib-tab-count {
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-lib-micro-size);
+    font-weight: 500;
+}
+
+body[data-k-layout="rails"] .k-lib-tab.is-active .k-lib-tab-count {
+    color: var(--k-accent-bright);
+}
+
+body[data-k-layout="rails"] .k-lib-sort {
+    flex: 0 0 auto;
+    height: var(--k-lib-chrome-size);
+    margin: 0;
+    padding: 0 10px;
+    border: 1px solid var(--k-lib-hairline);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-lib-field-fill);
+    color: var(--k-text);
+    font-family: inherit;
+    font-size: var(--k-lib-ui-size);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-lib-sort:hover,
+body[data-k-layout="rails"] .k-lib-sort:focus-visible {
+    border-color: var(--k-accent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. THE GRID AND THE POSTER CARD (doc §1.3)
+   ───────────────────────────────────────────────────────────────────────────
+   Fluid columns, not Kirara's hard-coded four: rails eats 620px of the viewport and the user
+   has a vertical monitor, so the grid has to be able to fall to two columns without a
+   breakpoint. `auto-fill` rather than `auto-fit` — a single card must stay card-sized instead
+   of stretching to the full measure.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-lib-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--k-lib-grid-min), 1fr));
+    gap: var(--k-lib-grid-gap);
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-lib-card {
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    aspect-ratio: var(--k-lib-card-ratio);
+    min-height: var(--k-lib-card-min-h);
+    overflow: hidden;
+    border: 1px solid var(--k-lib-card-border);
+    border-radius: var(--k-lib-card-radius);
+    background: var(--k-lib-card-fill);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-lib-card:hover,
+body[data-k-layout="rails"] .k-lib-card:focus-visible {
+    /* A colour change is state, not motion, so it stays outside the reduced-motion block
+       below — a reader who asks for no animation still gets to see which card is under the
+       pointer. The LIFT and the portrait bloom are the motion, and those are gated. */
+    border-color: color-mix(in srgb, var(--card-accent) 60%, transparent);
+    outline: none;
+}
+
+/* `.k-lib-card--group` intentionally carries NO rules in v0: a group card differs by its
+   CONTENT (stacked member faces, a member count instead of an epithet), not by its box. The
+   class is emitted anyway as the hook a pack — or the rig probe's group-variant count — needs
+   to reach group cards without parsing their innards. */
+
+/* ── portrait ─────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-lib-card-art {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+body[data-k-layout="rails"] .k-lib-card-portrait {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    filter: saturate(var(--k-lib-portrait-rest));
+}
+
+body[data-k-layout="rails"] .k-lib-card-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(160deg,
+            color-mix(in srgb, var(--card-accent) 18%, var(--k-surface-2)),
+            var(--k-ground-deep));
+    color: color-mix(in srgb, var(--card-accent) 75%, var(--k-text-strong));
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: 46px;
+    letter-spacing: 0.04em;
+}
+
+body[data-k-layout="rails"] .k-lib-card-stack {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    height: 100%;
+    background: var(--k-ground-deep);
+}
+
+body[data-k-layout="rails"] .k-lib-card-stack-face {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+    object-position: center top;
+    filter: saturate(var(--k-lib-portrait-rest));
+}
+
+/* A stack of one or three fills the row it lands on rather than leaving a hole. */
+body[data-k-layout="rails"] .k-lib-card-stack-face:only-child,
+body[data-k-layout="rails"] .k-lib-card-stack-face:nth-child(3):last-child {
+    grid-column: span 2;
+}
+
+/* The two-gradient vignette. Both stops are tokens so a pack can retune the whole set. */
+body[data-k-layout="rails"] .k-lib-card-scrim {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg,
+            var(--k-lib-scrim-clear) var(--k-lib-scrim-start),
+            var(--k-lib-scrim-mid) var(--k-lib-scrim-knee),
+            var(--k-lib-scrim-deep) var(--k-lib-scrim-end)),
+        linear-gradient(90deg,
+            var(--k-lib-scrim-edge),
+            transparent var(--k-lib-scrim-edge-end));
+    pointer-events: none;
+}
+
+/* ── corner chrome: always visible, because a poster is finished at rest ───── */
+
+body[data-k-layout="rails"] .k-lib-card-chrome {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-lib-card-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--k-lib-chrome-size);
+    height: var(--k-lib-chrome-size);
+    border: 1px solid color-mix(in srgb, var(--k-rose) 45%, transparent);
+    border-radius: var(--k-radius-round);
+    background: var(--k-lib-glass);
+    color: var(--k-rose-bright);
+    backdrop-filter: blur(var(--k-blur-panel));
+}
+
+body[data-k-layout="rails"] .k-lib-card-fav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--k-lib-chrome-size);
+    height: var(--k-lib-chrome-size);
+    margin: 0;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
+    border-radius: var(--k-radius-round);
+    background: var(--k-lib-glass);
+    color: var(--k-text-muted);
+    backdrop-filter: blur(var(--k-blur-panel));
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-lib-card-fav.is-on {
+    border-color: color-mix(in srgb, var(--card-accent) 55%, transparent);
+    color: var(--card-accent);
+}
+
+body[data-k-layout="rails"] .k-lib-card-fav:hover,
+body[data-k-layout="rails"] .k-lib-card-fav:focus-visible {
+    border-color: var(--card-accent);
+    color: var(--card-accent);
+}
+
+/* Library v0 slice D: "Edit card", the way into `<k-card-studio>`. Same 32px glass circle as
+   the heart, quieter at rest — the heart is state the poster is always telling you, this is a
+   door. Drawn only on character cards and only in interactive mode (k-library.js). */
+body[data-k-layout="rails"] .k-lib-card-edit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--k-lib-chrome-size);
+    height: var(--k-lib-chrome-size);
+    margin: 0;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
+    border-radius: var(--k-radius-round);
+    background: var(--k-lib-glass);
+    color: var(--k-text-faint);
+    backdrop-filter: blur(var(--k-blur-panel));
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-lib-card-edit:hover,
+body[data-k-layout="rails"] .k-lib-card-edit:focus-visible {
+    border-color: var(--card-accent);
+    color: var(--card-accent);
+    outline: none;
+}
+
+/* ── copy block: bottom-anchored, grows upward ────────────────────────────── */
+
+body[data-k-layout="rails"] .k-lib-card-copy {
+    position: absolute;
+    inset: auto 0 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-sizing: border-box;
+    padding: var(--k-lib-card-pad);
+    pointer-events: none;
+}
+
+body[data-k-layout="rails"] .k-lib-card-kicker {
+    color: var(--card-accent);
+    font-size: var(--k-lib-kicker-size);
+    font-weight: var(--k-lib-kicker-weight);
+    letter-spacing: var(--k-lib-kicker-track);
+    text-transform: uppercase;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+body[data-k-layout="rails"] .k-lib-card-name {
+    margin: 0;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: var(--k-lib-name-size);
+    line-height: var(--k-lib-name-lh);
+    overflow-wrap: anywhere;
+}
+
+/* Two lines, and the space for two lines is RESERVED whether or not there is copy — a grid of
+   cards whose footers sit at different heights reads as broken alignment, not as variety. */
+body[data-k-layout="rails"] .k-lib-card-body {
+    margin: 0;
+    min-height: calc(var(--k-lib-body-size) * var(--k-lib-body-lh) * 2);
+    color: var(--k-text-quote);
+    font-size: var(--k-lib-body-size);
+    line-height: var(--k-lib-body-lh);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+body[data-k-layout="rails"] .k-lib-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow: hidden;
+    max-height: calc(var(--k-lib-tag-size) + 12px);
+}
+
+body[data-k-layout="rails"] .k-lib-card-tag {
+    padding: 2px 8px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-lib-glass);
+    color: var(--k-text-dim);
+    font-size: var(--k-lib-tag-size);
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-lib-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid color-mix(in srgb, var(--k-chrome-border) 30%, transparent);
+    font-size: var(--k-lib-foot-size);
+}
+
+body[data-k-layout="rails"] .k-lib-card-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    color: var(--k-text-faint);
+}
+
+/* Groups print a real chat count; characters print none (see §"Card footer" reasoning in
+   view-model.js). Mono, so a number never shifts the row as it changes width. */
+body[data-k-layout="rails"] .k-lib-card-count,
+body[data-k-layout="rails"] .k-lib-card-when {
+    font-family: var(--k-font-mono);
+}
+
+body[data-k-layout="rails"] .k-lib-card-count + .k-lib-card-when::before {
+    content: "·";
+    margin-right: 6px;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-lib-card-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex: 0 0 auto;
+    color: var(--k-text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-lib-card-open .k-lib-icon--arrow {
+    color: var(--card-accent);
+}
+
+body[data-k-layout="rails"] .k-lib-card:hover .k-lib-card-open,
+body[data-k-layout="rails"] .k-lib-card:focus-visible .k-lib-card-open {
+    color: var(--k-text-strong);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7. QUIET AND EMPTY STATES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-lib-quiet {
+    margin: 0;
+    padding: 40px 0;
+    color: var(--k-text-faint);
+    font-size: var(--k-lib-ui-size);
+    text-align: center;
+}
+
+body[data-k-layout="rails"] .k-lib-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: clamp(36px, 6vw, 72px) 24px;
+    border: 1px dashed var(--k-lib-hairline);
+    border-radius: var(--k-radius-xl);
+    background: color-mix(in srgb, var(--k-surface-2) 40%, transparent);
+    text-align: center;
+}
+
+body[data-k-layout="rails"] .k-lib-empty-title {
+    margin: 0;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: clamp(20px, 2.2vw, 28px);
+}
+
+body[data-k-layout="rails"] .k-lib-empty-sub {
+    margin: 0;
+    color: var(--k-text-muted);
+    font-size: var(--k-lib-sub-size);
+}
+
+body[data-k-layout="rails"] .k-lib-empty-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. SHARED ICON SIZING
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-lib-icon {
+    flex: 0 0 auto;
+    display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9. MOTION — everything animated lives in here and nowhere else
+   ───────────────────────────────────────────────────────────────────────────
+   `prefers-reduced-motion: no-preference` is the OPT-IN form: a reader who has asked for less
+   motion, or whose browser does not report a preference at all, gets a gallery with zero
+   transitions and every state still legible (§6 keeps the hover COLOURS outside this block on
+   purpose). Nothing below changes layout — only transform, filter and colour interpolation —
+   so removing it costs atmosphere and no information.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: no-preference) {
+    body[data-k-layout="rails"] .k-lib-card {
+        transition:
+            transform var(--k-avatar-motion),
+            border-color var(--k-motion);
+    }
+
+    body[data-k-layout="rails"] .k-lib-card-portrait,
+    body[data-k-layout="rails"] .k-lib-card-stack-face {
+        transition:
+            transform var(--k-lib-bloom-duration) ease,
+            filter var(--k-lib-bloom-duration) ease;
+    }
+
+    body[data-k-layout="rails"] .k-lib-card:hover,
+    body[data-k-layout="rails"] .k-lib-card:focus-visible {
+        transform: translateY(var(--k-lib-lift));
+    }
+
+    body[data-k-layout="rails"] .k-lib-card:hover .k-lib-card-portrait,
+    body[data-k-layout="rails"] .k-lib-card:focus-visible .k-lib-card-portrait,
+    body[data-k-layout="rails"] .k-lib-card:hover .k-lib-card-stack-face,
+    body[data-k-layout="rails"] .k-lib-card:focus-visible .k-lib-card-stack-face {
+        transform: scale(var(--k-lib-bloom-scale));
+        filter: saturate(var(--k-lib-portrait-bloom));
+    }
+
+    body[data-k-layout="rails"] .k-lib-btn,
+    body[data-k-layout="rails"] .k-lib-close,
+    body[data-k-layout="rails"] .k-lib-recent,
+    body[data-k-layout="rails"] .k-lib-tab,
+    body[data-k-layout="rails"] .k-lib-sort,
+    body[data-k-layout="rails"] .k-lib-search,
+    body[data-k-layout="rails"] .k-lib-card-edit,
+    body[data-k-layout="rails"] .k-lib-card-fav {
+        transition:
+            border-color var(--k-motion),
+            background-color var(--k-motion),
+            color var(--k-motion);
+    }
+}

@@ -1,0 +1,1386 @@
+/*
+ * settings-modal.css — the rails settings surface (settings v0 slice B, docs/settings-v0.md §2;
+ * v0.1 slice F, §9-§10).
+ *
+ * Owns the INSIDE of `<k-settings-modal>`: the scrim, the centred sheet, the tab column, the
+ * panels, the Hybrid's eyebrow groups and weave runs, the five adopted stock REGIONS the four
+ * v0.1 tabs are made of, and the chrome that dresses stock's own controls once they have been
+ * borrowed into a row. It does NOT restyle those controls' behaviour — they keep their ids and
+ * their classes, and everything here is presentation that evaporates the moment they go home.
+ *
+ * §6 is the one section with a hard prohibition rather than a preference: the Connection block
+ * hosts 167 nodes whose inline `display` core owns outright, and a selector in this sheet that
+ * reaches one of them breaks the per-API form switch. Read §6 before adding a rule that could
+ * match inside `#rm_api_block`.
+ *
+ * Discipline (docs/shell-v0.md §"The slot contract", the list css/studio.css and css/library.css
+ * both keep):
+ * - Every rule is gated on `body[data-k-layout="rails"]`. Classic never constructs this element
+ *   and must never see a byte of this sheet either — its settings surface is the stock drawer
+ *   rack, and §7's acceptance contract demands that rack stay pixel-stable.
+ * - Colours, radii and shadows come from `--k-*` only: no hex literal, no `rgb(`. (The `#` grep
+ *   this line used to promise stopped being useful in v0.1 — §6 names five stock ids, because an
+ *   adopted region is addressed by the id it already has.)
+ * - Slice-local parameters are declared once, up top, in the `--k-set-*` namespace — the
+ *   sheet-local pattern css/studio.css uses for `--k-studio-*` and css/library.css for
+ *   `--k-lib-*`. They are NOT added to css/tokens.css on purpose: `npm run theme:check --
+ *   blue-hour --drift` compares tokens.css's `:root` against every pack manifest name for name,
+ *   so a `:root` addition here would force an edit to every shipped pack for parameters no pack
+ *   has an opinion about yet. A pack's own `sheet.css` is prefixed `body[data-k-theme="<id>"]`
+ *   (theme/core.js:1305-1318), ties on specificity with the blocks below and is injected later,
+ *   so a pack override still wins — which is the whole point.
+ * - Every `:hover` has an explicit `:focus-visible` twin, because `initDynamicStyles()`
+ *   (dynamic-styles.js:188-202) otherwise synthesizes one late and reorders the cascade.
+ * - Type floor 11px, everywhere.
+ *
+ * ── Stacking ─────────────────────────────────────────────────────────────────────────────────
+ * scrim 4090 / sheet 4091, declared in JS as `SETTINGS_Z` (k-settings-modal.js) and mirrored
+ * here. Above the whole in-page family this surface curates — the parked rack (holder 3005),
+ * `k-library` 31, `#sheld` 30, the AN panel 4000, `#character_popup` 4001 — and
+ * BELOW the card studio's 4100/4101, which is a modal editing surface that may legitimately be
+ * opened over settings and must own the screen when it is. `dialog.popup` at 9999 beats both:
+ * `showModal()` puts it in the top layer where no z-index reaches it anyway.
+ *
+ * ── Centring without a transform ─────────────────────────────────────────────────────────────
+ * The sheet is centred with `inset: 0; margin: auto`, not with `translate(-50%, -50%)`. A
+ * `transform` on an ancestor becomes the containing block for every `position: fixed`
+ * descendant — the footgun this repo has paid for before — and this sheet holds borrowed core
+ * nodes whose own stylesheets we do not control. `<k-settings-modal>` itself is
+ * `display: contents` for the same reason: no box, no stacking context, so the scrim and the
+ * sheet carry their real page-level z-indices instead of ordinals inside a local context.
+ *
+ * ── Load order ───────────────────────────────────────────────────────────────────────────────
+ * Linked from index.html immediately after css/studio.css and before the rechrome sheets: the
+ * rechrome family dresses the stock control primitives this sheet borrows, and it caps its own
+ * specificity with `:where()` against exactly this class of surface, so it must come after.
+ * Before css/mobile-styles.css like every other rails sheet, so the responsive layer keeps the
+ * final word.
+ *
+ * NOTE for the merge: this is the first stylesheet under public/kotatsu/ — every other sheet
+ * lives in public/css/. It is co-located with the settings module on the batch brief's
+ * instruction; moving it to css/settings-modal.css is a `git mv` plus one line in index.html if
+ * the convention is preferred.
+ */
+
+body[data-k-layout="rails"] {
+    /* ── Stacking (mirrors SETTINGS_Z in k-settings-modal.js) ────────────────── */
+    --k-set-z-scrim: 4090;
+    --k-set-z-sheet: 4091;
+
+    /* ── Sheet geometry (1b, "Tightened Ledger") ─────────────────────────────── */
+    --k-set-width: min(1160px, calc(100vw - 48px));
+    --k-set-height: min(840px, calc(100dvh - 48px));
+    --k-set-nav-w: 180px;
+    /* Body padding only now — the header's diverged (§2 below) since it dropped to a
+       single 49px row and stopped sharing a rhythm with the panel underneath it. */
+    --k-set-pad: 16px 20px 20px;
+    --k-set-gap: 16px;
+
+    /* ── The card system (1b §4-6) ───────────────────────────────────────────── */
+    /* Group-to-group spacing. Was the `.k-set-rows` flex gap when groups were bare
+       eyebrow runs; now it is `.k-set-group`'s own margin-bottom, because `.k-set-rows`
+       is a `columns` container and multicol has no row-gap for the blocks stacked
+       inside one column — see the card comment below. */
+    --k-set-group-gap: 12px;
+    /* Eyebrow-to-title gap in the header's now-inline copy row (§2), NOT the card
+       eyebrow's own spacing — that one is a literal in the card rule, straight off the
+       README table, because it no longer shares a formula with anything else. */
+    --k-set-eyebrow-gap: 6px;
+    /* Row-to-row inside a run. Zero, on purpose: the per-row hairline (§4) is what
+       separates rows now, and a gap on top of a border would double the seam. This is
+       also the color-grid's row-gap — "0 18px" falls out of this var plus
+       `--k-set-weave-gap` below with no extra rule needed. */
+    --k-set-run-gap: 0px;
+    /* The weave's column gutter, and the color grid's. Wider than the row gap so the
+       two columns read as columns rather than as one wrapped list. */
+    --k-set-weave-gap: 18px;
+
+    /* ── Type (floor 11px) ───────────────────────────────────────────────────── */
+    /* Fixed now, not a clamp: the header is one literal 49px row, not a shape that
+       negotiates with viewport width. */
+    --k-set-title-size: 21px;
+    --k-set-title-lh: 1;
+    --k-set-eyebrow-size: 11px;
+    --k-set-eyebrow-track: 0.16em;
+    --k-set-label-size: 11.5px;
+    --k-set-label-track: 0.09em;
+    --k-set-ui-size: 12.5px;
+    --k-set-hint-size: 11px;
+
+    /* ── Surfaces ────────────────────────────────────────────────────────────── */
+    --k-set-scrim-fill: color-mix(in srgb, var(--k-scrim) 72%, transparent);
+    --k-set-sheet-fill: var(--k-surface);
+    --k-set-hairline: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+    --k-set-hover-fill: color-mix(in srgb, var(--k-accent) 10%, transparent);
+    --k-set-active-fill: color-mix(in srgb, var(--k-rose) 12%, transparent);
+    --k-set-field-fill: var(--k-ground-deep);
+    --k-set-ring: color-mix(in srgb, var(--k-accent) 34%, transparent);
+    /* The card's own hairline stop (22%) doubles as its border AND its eyebrow's
+       underline — one name, both jobs, since the README gives them the same number. */
+    --k-set-card-border: color-mix(in srgb, var(--k-chrome-border) 22%, transparent);
+    --k-set-card-fill: color-mix(in srgb, var(--k-surface-2) 60%, transparent);
+    /* The per-row separator inside a card. Lighter than the card's own border (12%
+       against 22%) so eight rows don't out-shout the four corners holding them. */
+    --k-set-row-hairline: color-mix(in srgb, var(--k-chrome-border) 12%, transparent);
+    --k-set-danger-border: color-mix(in srgb, var(--k-danger) 40%, transparent);
+
+    /* ── Field heights ───────────────────────────────────────────────────────── */
+    /* Row controls only — the header search pill and close button are their own
+       literals now (§2), decoupled on purpose: a 49px header and a 27px row never
+       wanted the same number twice. 27, not the README's 24-25: a bare 25px clipped
+       stock `<select>`'s own line-height/padding against a fixed box (pixel QA,
+       "Blue Hour (Native)"/"Card"/"Inline"/"List" cut at the baseline) — 2px bought
+       back the room, and the select rule below still pins its own line-height and
+       padding-block explicitly rather than trusting that 2px alone holds at every
+       font scale. */
+    --k-set-input-h: 27px;
+    --k-set-search-h: 30px;
+    --k-set-close-size: 30px;
+    --k-set-btn-h: 32px;
+    --k-set-chip-h: 22px;
+}
+
+/* Background scroll-chaining courtesy while a modal is up. `.k-settings-modal-open` is set on
+   <body> by the element for exactly as long as it is connected, and is also the state hook a
+   probe (and `<k-library>`'s Escape stand-down) reads without querying for the element. It was
+   named apart from `.k-settings-open` because that class belonged to the drawer-rack overlay,
+   which v0.1 retired outright — the name is now free, and deliberately left free. */
+body[data-k-layout="rails"].k-settings-modal-open {
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. THE OVERLAY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* No box, no stacking context — see the sheet header. */
+body[data-k-layout="rails"] k-settings-modal {
+    display: contents;
+}
+
+body[data-k-layout="rails"] .k-set-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: var(--k-set-z-scrim);
+    background: var(--k-set-scrim-fill);
+    backdrop-filter: blur(calc(var(--k-blur-panel) / 2));
+    -webkit-backdrop-filter: blur(calc(var(--k-blur-panel) / 2));
+}
+
+body[data-k-layout="rails"] .k-set-sheet {
+    box-sizing: border-box;
+    /* `inset: 0` + `margin: auto` centres a fixed box with a definite width and height, with no
+       transform anywhere. */
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    z-index: var(--k-set-z-sheet);
+    display: flex;
+    flex-direction: column;
+    width: var(--k-set-width);
+    height: var(--k-set-height);
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--k-set-hairline);
+    border-radius: var(--k-radius-xl);
+    background: var(--k-set-sheet-fill);
+    box-shadow: var(--k-elev-4);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. HEADER — title, search, close
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Single 49px-tall row now (was ~96px, title over eyebrow): `padding: 14px 20px` on
+   an auto-height flex row whose tallest child is the 30px search pill. */
+body[data-k-layout="rails"] .k-set-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--k-set-hairline);
+}
+
+/* The eyebrow moved inline after the title (§2), so this wrapper is a row now, not a
+   stacked column — `align-items: baseline` because the eyebrow is a smaller face
+   riding the title's baseline, not a sibling of equal height. */
+body[data-k-layout="rails"] .k-set-head-copy {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--k-set-eyebrow-gap);
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+/* The general eyebrow recipe. Still used bare wherever a caps-tracked "KOTATSU" reads
+   as a plain label; the header's own instance additionally takes `.k-set-header-eyebrow`
+   for the inline baseline nudge below. */
+body[data-k-layout="rails"] .k-set-eyebrow {
+    color: var(--k-accent);
+    font-size: var(--k-set-eyebrow-size);
+    font-weight: 700;
+    letter-spacing: var(--k-set-eyebrow-track);
+    text-transform: uppercase;
+}
+
+/* Inline variant: the header's "KOTATSU" now sits beside "Settings" instead of above
+   it. Same recipe as `.k-set-eyebrow` (kept self-contained so it works whether or not
+   the markup pairs it with the base class) plus a 3px top nudge — the caps face sits
+   optically high against a serif title's baseline without it — and an 8px inline-start
+   margin of its own (pixel QA defect 4: "SettingsKOTATSU" was touching; `.k-set-head-copy`'s
+   `gap` clearly wasn't reaching this pairing live, so the space is pinned directly on the
+   element instead of trusted to the parent). */
+body[data-k-layout="rails"] .k-set-header-eyebrow {
+    position: relative;
+    top: 3px;
+    margin-inline-start: 8px;
+    color: var(--k-accent);
+    font-size: var(--k-set-eyebrow-size);
+    font-weight: 700;
+    letter-spacing: var(--k-set-eyebrow-track);
+    text-transform: uppercase;
+}
+
+body[data-k-layout="rails"] .k-set-title {
+    margin: 0;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: var(--k-set-title-size);
+    line-height: var(--k-set-title-lh);
+    letter-spacing: -0.01em;
+}
+
+/* The registry-wide search field. §2 names it as the retarget owed to slice C: the six
+   `#settingsSearch` rules in rechrome-fields.css point at the stock box this replaces, and this
+   class is what they should aim at instead. */
+body[data-k-layout="rails"] .k-set-search {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 340px;
+    margin: 0 0 0 auto;
+    padding: 0 10px;
+    height: var(--k-set-search-h);
+    border: 1px solid var(--k-set-hairline);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-set-field-fill);
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-set-search:hover,
+body[data-k-layout="rails"] .k-set-search:focus-within {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-set-search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-set-ui-size);
+    outline: none;
+}
+
+body[data-k-layout="rails"] .k-set-search-input::placeholder {
+    color: var(--k-text-faint);
+}
+
+/* Safari/Chrome paint their own clear affordance on `type="search"`; the field already has
+   Escape-to-clear and the glyph fights the pill's right padding. */
+body[data-k-layout="rails"] .k-set-search-input::-webkit-search-cancel-button {
+    appearance: none;
+}
+
+/* Optional `/` keycap at the pill's right edge — a hint, not a control; nothing
+   listens for the literal keypress here (that binding, if it exists, lives in
+   k-settings-modal.js). Radius 4, not the mock's 10px pill: the modal reserves fully
+   round corners for the search pill itself and the count/lock pills, so a keycap
+   inside one stays visually a KEY and not a second, smaller pill. */
+body[data-k-layout="rails"] .k-set-search-key {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 5px;
+    border: 1px solid var(--k-set-hairline);
+    border-radius: 4px;
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+body[data-k-layout="rails"] .k-set-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: var(--k-set-close-size);
+    height: var(--k-set-close-size);
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--k-set-hairline);
+    border-radius: var(--k-radius-round);
+    background: transparent;
+    color: var(--k-text-muted);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-set-close:hover,
+body[data-k-layout="rails"] .k-set-close:focus-visible {
+    border-color: var(--k-accent);
+    background: var(--k-set-hover-fill);
+    color: var(--k-text-strong);
+    outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. THE BODY — tab column + panels
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-set-body {
+    display: grid;
+    grid-template-columns: var(--k-set-nav-w) minmax(0, 1fr);
+    gap: var(--k-set-gap);
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: var(--k-set-pad);
+    overflow: hidden;
+}
+
+/* ── the tab column ─────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-set-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+body[data-k-layout="rails"] .k-set-tab {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    margin: 0;
+    padding: 6px 9px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--k-text-muted);
+    font-family: var(--k-font-ui);
+    font-size: 12px;
+    line-height: 1.35;
+    text-align: left;
+    cursor: pointer;
+    transition: color var(--k-motion), background-color var(--k-motion), box-shadow var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-set-tab-label {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Nav icons: 13px stroke, inline SVG per repo rule (the sibling draws the shapes; this
+   is the size/weight floor so a forgotten inline attribute still lands on-spec).
+   `currentColor` needs no rule of its own — the icon's own `stroke="currentColor"`
+   already tracks `.k-set-tab`'s text color through muted/active/empty. */
+body[data-k-layout="rails"] .k-set-tab .k-set-icon {
+    width: 13px;
+    height: 13px;
+    stroke-width: 1.4;
+    flex: 0 0 auto;
+}
+
+body[data-k-layout="rails"] .k-set-tab:hover,
+body[data-k-layout="rails"] .k-set-tab:focus-visible {
+    background: var(--k-set-hover-fill);
+    color: var(--k-text-strong);
+    outline: none;
+}
+
+/* Border dropped in favour of a left bar — a full outline on a 180px-wide item read as
+   a box more than a selection, and the bar reads as a rail the way the sheet's other
+   active-state hairlines (rose, inset) already do. */
+body[data-k-layout="rails"] .k-set-tab.is-active {
+    background: var(--k-set-active-fill);
+    color: var(--k-rose);
+    font-weight: 600;
+    box-shadow: inset 2px 0 0 var(--k-rose);
+}
+
+/* A tab with zero matches for the running query. Dimmed, never disabled: the reader may still
+   want to look, and a search that removes navigation is a search that traps you. */
+body[data-k-layout="rails"] .k-set-tab.is-empty {
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-set-tab-count {
+    flex: 0 0 auto;
+    min-width: 18px;
+    padding: 1px 6px;
+    border-radius: var(--k-radius-pill);
+    background: color-mix(in srgb, var(--k-accent) 18%, transparent);
+    color: var(--k-accent-bright);
+    font-size: var(--k-set-hint-size);
+    font-weight: 700;
+    text-align: center;
+}
+
+/* ── the panels ─────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-set-panels {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+body[data-k-layout="rails"] .k-set-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+    min-height: 0;
+    padding-right: 6px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* All nine panels exist at all times (a borrowed control may never sit inside a lit-html
+   ChildPart — see k-settings-modal.js rule 2), so the inactive four are hidden rather than
+   unrendered. `display: none` beats the UA's `[hidden]` rule only with a real selector. */
+body[data-k-layout="rails"] .k-set-panel[hidden] {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-set-blurb {
+    margin: 0;
+    color: var(--k-text-muted);
+    font-size: var(--k-set-ui-size);
+    line-height: 1.5;
+}
+
+/* ── the Hybrid, card edition: eyebrow groups anchored in cards, ledger runs, weave runs ────
+   docs/settings-v0.md §9 pins the layout: ledger rows for heavyweight controls, a two-column
+   weave ONLY for homogeneous clusters, eyebrow headers from the registry's `group` field. The
+   nesting is still `.k-set-rows > .k-set-group > .k-set-run > .k-set-row`, still computed once
+   per tab by `regionsFor()` (k-settings-modal.js) from a frozen entry list — nothing here has to
+   survive a shape that changes between renders, because none can.
+
+   1b ("Tightened Ledger") adds two things on top of that same nesting: `.k-set-group` becomes
+   a bordered card instead of a bare eyebrow-plus-rows run, and `.k-set-rows` becomes a 2-column
+   `columns` flow of those cards instead of one stacked list. The card's border does the
+   separating a 22px group gap used to do (now 12px, carried as `.k-set-group`'s own
+   margin-bottom — a multicol container has no row-gap for the blocks stacked inside one column,
+   only `column-gap` for the gutter between columns), and a per-row hairline (below) does the
+   separating the 22px-gapped eyebrow-then-rows shape used to do without one.
+
+   The weave threshold is FOUR consecutive checkbox rows, and the reasoning is in `WEAVE_MIN`.
+   Three clusters weave across the nine tabs; everything else is a ledger. The Legacy Theme
+   Colors group (10 rows) rides the same weave grid — with `--k-set-run-gap` at 0, the weave's
+   `gap: 0 18px` already matches the color grid's own spec with no group-specific selector. */
+
+/* …but ONLY for tabs built from the modal's own groups-of-rows. The four adopted-block tabs
+   (Connection, Personas, World Info, Extensions) are giant stock regions the modal explicitly
+   does not restyle (§6 G8, and the handoff's own fidelity note: "the real tabs keep their
+   adopted stock regions unmodified") — and multicol FRAGMENTS them: Personas rendered as an
+   empty column hole beside a squished avatar grid, Extensions' accordion tail clipped clean
+   off, World Info's expandable activation drawer painted over its neighbours instead of
+   pushing them (Andres's eyeball, 2026-08-26 — probes can't feel fragmentation). A panel that
+   contains any `.k-set-block` therefore keeps the single full-width stacked flow and spends
+   the sheet's whole height the way stock expects. */
+body[data-k-layout="rails"] .k-set-rows:not(:has(.k-set-block)) {
+    columns: 2;
+    column-gap: 12px;
+    column-fill: balance;
+}
+
+/* The card. Border, radius and fill are the anchoring move — eight tabs of ledger rows floating
+   on the bare panel is what 1a (the shipped modal) still does; a card gives every group a hull.
+   `break-inside: avoid` keeps a card from splitting across the two columns, which a multicol
+   layout will otherwise do freely once a card is taller than its column's balanced share. */
+body[data-k-layout="rails"] .k-set-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--k-set-run-gap);
+    min-width: 0;
+    margin-bottom: var(--k-set-group-gap);
+    padding: 9px 11px 8px;
+    border: 1px solid var(--k-set-card-border);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-set-card-fill);
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+}
+
+/* The eyebrow. Same micro-caps recipe as the sheet header's and as a row label — 11px, tracked,
+   700 — but in the MUTED voice with a hairline under it, so three tiers stay distinguishable at
+   a glance: `--k-accent` belongs to the sheet's one eyebrow ("KOTATSU"), `--k-text-strong`
+   belongs to a row's own label, and a group header is the structural rule between them. Inside
+   the card the hairline drops to the card's own 22% stop (`--k-set-card-border`) rather than the
+   sheet's structural 35% one, so the eyebrow's underline reads as part of the card, not a second
+   border competing with the one already drawn around it. */
+body[data-k-layout="rails"] .k-set-group-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 4px;
+    padding: 0 6px 5px;
+    border-bottom: 1px solid var(--k-set-card-border);
+    color: var(--k-text-muted);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-set-eyebrow-size);
+    font-weight: 700;
+    letter-spacing: var(--k-set-eyebrow-track);
+    line-height: 1.3;
+    text-transform: uppercase;
+}
+
+body[data-k-layout="rails"] .k-set-run {
+    display: flex;
+    flex-direction: column;
+    gap: var(--k-set-run-gap);
+    min-width: 0;
+}
+
+/* Keep the registry's stable runs, but give every control the card's full row width.
+   Nesting a second two-column layout inside these cards made mixed controls wrap unevenly. */
+body[data-k-layout="rails"] .k-set-run--weave {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--k-set-run-gap) var(--k-set-weave-gap);
+    align-items: start;
+}
+
+body[data-k-layout="rails"] .k-set-empty {
+    margin: 0;
+    padding: 18px 0;
+    color: var(--k-text-muted);
+    font-size: var(--k-set-ui-size);
+}
+
+body[data-k-layout="rails"] .k-set-empty[hidden] {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-set-group[hidden],
+body[data-k-layout="rails"] .k-set-search-destinations[hidden] {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-set-search-destinations {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-set-result-link {
+    min-height: var(--k-set-btn-h);
+    padding: 6px 12px;
+    border: 1px solid var(--k-set-hairline);
+    border-radius: var(--k-radius-md);
+    background: var(--k-set-field-fill);
+    color: var(--k-text);
+    font: inherit;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-set-result-link:hover,
+body[data-k-layout="rails"] .k-set-result-link:focus-visible {
+    background: var(--k-set-hover-fill);
+    outline: 2px solid var(--k-accent);
+    outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. ROWS — one per registry entry
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Mock anatomy (§10.1, 2026-08-26): label block left, control right-aligned — the row OWNS its
+   width, so a narrow control no longer strands a dead right column (the 210px+1fr grid did).
+   1b tightens the rhythm from ~40px rows to ~27px: padding 7/8 → 4/6, and the hover fill below
+   moves from a flat surface wash to the accent wash `--k-set-hover-fill` already carries for the
+   search pill and the close button, so a hovered row now reads as the same "lit" state as the
+   rest of the chrome instead of a second, unrelated recipe. */
+body[data-k-layout="rails"] .k-set-row {
+    display: flex;
+    /* §10.2 errata (2026-08-26): a control that cannot fit beside its label drops below it
+       instead of escaping the row box — the row trades a line of height for containment,
+       and at comfortable widths the wrap never engages. */
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+
+/* A search filters by HIDING rows, never by removing them from the template — lit reuses
+   template instances by index and a shifted row would hand one entry's adoption slot to
+   another entry's control (k-settings-modal.js #renderPanel). */
+body[data-k-layout="rails"] .k-set-row[hidden] {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-set-row:hover,
+body[data-k-layout="rails"] .k-set-row:focus-within {
+    background: var(--k-set-hover-fill);
+}
+
+/* The per-row hairline the card relies on for separation instead of a run gap (`--k-set-run-gap`
+   is 0 now). Every row inside a card gets one; the group's true last row — last row of its
+   group's last run — has it stripped, so the card's own bottom padding is the only seam there.
+   A row hidden by search or by the smooth-streaming dependency (`display: none`, further down)
+   stays in the DOM and can still count as `:last-child` for this selector, so an actively
+   filtered or gated card can show a stray hairline under its last VISIBLE row, or lose the one
+   under a row that only looks last because the true last is hidden. Cosmetic-only edge case; the
+   registry has no clean "last visible sibling" selector to reach for without `:has()` chains
+   fragile enough to not be worth it here. */
+body[data-k-layout="rails"] .k-set-group .k-set-row {
+    border-bottom: 1px solid var(--k-set-row-hairline);
+}
+
+body[data-k-layout="rails"] .k-set-group > .k-set-run:last-child > .k-set-row:last-child {
+    border-bottom: none;
+}
+
+/* A checkbox row prints no label of its own: the borrowed `label.checkbox_label` carries the
+   words, so the control takes the whole line. */
+body[data-k-layout="rails"] .k-set-row--inline {
+    justify-content: flex-start;
+}
+
+/* `min-width: 64px` (pixel QA defect 2, replacing the old `min-width: 0`): the 2-column card
+   flow halves a group's width, and a `flex: 1 1 auto` labelrow with no floor was shrinking past
+   its own text — "Layout" and "Rails" (the layout/rails segmented-switch rows) were breaking
+   mid-word under `overflow-wrap: anywhere` before the control cell (`.k-set-control`, still
+   `min-width: 0` below) ever gave up its own room. 64px is a floor for short row labels, not a
+   width; the row still grows past it whenever the card has space to spare. */
+body[data-k-layout="rails"] .k-set-labelrow {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 64px;
+    flex: 1 1 auto;
+}
+
+/* Sentence case, quiet weight — caps and tracking belong to eyebrows only (§10.1: the caps row
+   labels made every row shout and the pane read as pre-Hybrid). `white-space: nowrap` +
+   ellipsis (defect 2) replace `overflow-wrap: anywhere`: a label now holds its line at the
+   `.k-set-labelrow` floor above and lets the control cell absorb the squeeze, the way the QA
+   note asked, rather than breaking mid-word. A label long enough to still outrun that floor
+   ellipsizes instead of wrapping or spilling into the control — rare in this registry, but the
+   registry doesn't promise short labels the way the two segmented-switch rows happen to be. */
+body[data-k-layout="rails"] .k-set-label {
+    display: block;
+    max-width: 100%;
+    color: var(--k-text-strong);
+    font-size: var(--k-set-label-size);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The canvas mock's icon cluster: a button span lays its slim rows horizontally, right-aligned
+   under the row it serves. Every button keeps its own row/slot/search identity — clustering is
+   a flex-direction flip, not a data shape. */
+body[data-k-layout="rails"] .k-set-run--actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-top: calc(var(--k-set-run-gap) * -1);
+}
+
+body[data-k-layout="rails"] .k-set-row--action {
+    padding: 2px 0;
+    flex: 0 0 auto;
+}
+
+body[data-k-layout="rails"] .k-set-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Containment floor for what a control row hosts (§10.2 errata, 2026-08-26): an adopted
+   select or field is capped at its control's width, never allowed to paint past it into a
+   neighbouring weave cell. `max-width` only — no `min-width: 0` blanket, which would let
+   stock number inputs collapse to nothing. */
+body[data-k-layout="rails"] .k-set-control :is(select, input, textarea, button) {
+    max-width: 100%;
+}
+
+/* The adoption slot. `display: contents` so a borrowed control lays out as a direct child of
+   the control row and this wrapper adds no box of its own — the slot is a bookmark for the
+   Relocator, not a container with opinions. */
+body[data-k-layout="rails"] .k-set-slot {
+    display: contents;
+}
+
+/* The `lockedBy` chip. Metadata only in v0 — §0 keeps the tier mechanism dormant and this
+   never disables anything; it says out loud that something outside Kotatsu has a vote. */
+body[data-k-layout="rails"] .k-set-lock {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: 1px solid var(--k-set-hairline);
+    border-radius: var(--k-radius-pill);
+    color: var(--k-text-faint);
+    font-size: var(--k-set-hint-size);
+    white-space: nowrap;
+}
+
+/* Also the inline "label · hint" recipe (§5): the sibling nests this class straight inside
+   `.k-set-label` for the " · hint" tail, and the explicit 400 is what keeps that tail from
+   inheriting the label's own 500 weight. */
+body[data-k-layout="rails"] .k-set-hint {
+    color: var(--k-text-faint);
+    font-size: var(--k-set-hint-size);
+    font-weight: 400;
+}
+
+body[data-k-layout="rails"] .k-set-icon {
+    flex: 0 0 auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. BORROWED STOCK CONTROLS — presentation only, and only while they are here
+   ───────────────────────────────────────────────────────────────────────────
+   Every rule below is scoped inside `.k-set-control`, so it stops applying the instant the
+   Relocator puts the node back. Nothing here renames a class, changes a value, or touches a
+   handler; the rechrome sheets still own the primitives themselves.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-set-control select,
+body[data-k-layout="rails"] .k-set-control input[type="text"],
+body[data-k-layout="rails"] .k-set-control input[type="number"],
+body[data-k-layout="rails"] .k-set-control input[type="search"] {
+    box-sizing: border-box;
+    max-width: 100%;
+    height: var(--k-set-input-h);
+    margin: 0;
+    font-family: var(--k-font-ui);
+    font-size: var(--k-set-ui-size);
+}
+
+/* Pixel QA (defect 1): a bare 27px box wasn't enough on its own — stock's `<select>` still
+   carries its own line-height and vertical padding, sized for a taller control than either the
+   old 32px or this row's 27px, and a `<select>`'s content clips against a fixed height rather
+   than reflowing. `padding-block` (logical, so it only touches top/bottom) and an explicit
+   `line-height` pin the vertical metrics ourselves instead of trusting whatever stock or
+   rechrome-fields.css happens to carry — robust against a font-scale bump, not just today's
+   screenshot. Horizontal padding is left alone; it was never the clipped axis. Scoped to
+   `select` alone, not the shared input list above: the text/number/search inputs were not
+   flagged by QA and Chrome already centres their content reliably at this height. */
+body[data-k-layout="rails"] .k-set-control select {
+    padding-block: 5px;
+    line-height: 1.2;
+}
+
+body[data-k-layout="rails"] .k-set-control select:focus,
+body[data-k-layout="rails"] .k-set-control input:focus,
+body[data-k-layout="rails"] .k-set-control select:focus-visible,
+body[data-k-layout="rails"] .k-set-control input:focus-visible {
+    outline: 2px solid var(--k-set-ring);
+    outline-offset: 1px;
+}
+
+/* Stock's checkbox label, borrowed whole. Its `for=` association is the affordance, so it keeps
+   its hit area and only the spacing is ours. 12px, not the general `--k-set-ui-size` (12.5px):
+   1b gives the checkbox row its own slightly tighter size (§5). */
+body[data-k-layout="rails"] .k-set-control .checkbox_label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    margin: 0;
+    color: var(--k-text);
+    font-size: 12px;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-set-control .checkbox_label small,
+body[data-k-layout="rails"] .k-set-control .checkbox_label span {
+    font-size: 12px;
+}
+
+/* Kotatsu's own wardrobe / landing rows travel as whole labelled groups (registry `adopt`), so
+   their inner label span and pack note come with them. The child combinator is against the SLOT,
+   not the control row: the slot is `display: contents`, which removes its box but not its place
+   in the DOM tree that selectors walk. */
+body[data-k-layout="rails"] .k-set-slot > .flex-container {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-set-control small {
+    color: var(--k-text-faint);
+    font-size: var(--k-set-hint-size);
+}
+
+/* Stock uses <small> for primary checkbox labels, not just supporting hints. */
+body[data-k-layout="rails"] .k-set-control .checkbox_label :is(small, span) {
+    color: var(--k-text);
+    opacity: 1;
+}
+
+/* Borrowed `.menu_button` action divs (Reload Chat, Account, Admin Panel, Log Out, Clean-Up, the
+   persona row's New/Duplicate/Set Default/Delete…) at the 1b row-button height. Icon + text or
+   icon-only, so padding stays horizontal-only and centring is explicit rather than trusting
+   stock's own recipe under a height it did not choose. */
+body[data-k-layout="rails"] .k-set-control .menu_button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: var(--k-set-btn-h);
+    padding: 0 10px;
+    border-radius: 7px;
+    font-family: var(--k-font-ui);
+    font-size: 12px;
+}
+
+/* Theme actions keep their stock handlers. The modal adds reversible text labels, and
+   separates file transfer from saving into two runs. Let the labeled targets wrap naturally. */
+body[data-k-layout="rails"] .k-set-control :is(#ui_preset_import_button,
+    #ui_preset_export_button,
+    #ui-preset-update-button,
+    #ui-preset-save-button,
+    #ui-preset-delete-button) {
+    width: auto;
+    min-width: 32px;
+    min-height: var(--k-set-btn-h);
+    height: auto;
+    padding: 6px 9px;
+    border-radius: 6px;
+}
+
+body[data-k-layout="rails"] .k-set-control #ui-preset-update-button {
+    background: var(--k-set-active-fill);
+    border-color: var(--k-rose);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-set-row--action:has(#ui-preset-delete-button) {
+    margin-left: 8px;
+    padding-left: 12px;
+    border-left: 1px solid var(--k-set-hairline);
+}
+
+body[data-k-layout="rails"] .k-set-action-label {
+    white-space: nowrap;
+}
+
+/* Danger token (§7) on the three destructive actions the README names — NOT the persona delete
+   button, which already carries stock's own `red_button` class and is out of this facelift's
+   scope. Border reads at 40% danger, text/icon at full danger; `color` reaches the FA glyph too
+   since `<i>` inherits it, so one declaration covers both. */
+body[data-k-layout="rails"] .k-set-control :is(#ui-preset-delete-button,
+    #data_maid_button,
+    #logout_button) {
+    border-color: var(--k-set-danger-border);
+    color: var(--k-danger);
+}
+
+/* ── the range slider (`.neo-range-slider`) — track only ─────────────────────
+   Height 4px → 3px and the flat grey fill (`--k-rcf-track-fill`) → solid accent, both on
+   rechrome-fields.css's own track pseudo-elements. Neither property is `!important` there, so a
+   higher-specificity selector here wins outright — no fight, no load-order dependency. The
+   inset ring rechrome already paints (`--k-rcf-track-inset`, inherited, untouched) is the
+   "hairline rest" the README asks for; nothing here needs to repaint it.
+
+   The THUMB is deliberately NOT resized to the README's 11-12px. rechrome-fields.css pins
+   `.neo-range-slider`'s box height `!important`, set to exactly the thumb's own 18px outer
+   edge, off a measured table in that file's own comment: an unstyled webkit track stays
+   hit-testable well past its painted box, and 18px is the smallest box that keeps the thumb's
+   whole hit area inside itself without cutting the grabbable band below contract 7's floor
+   ("hit targets never shrink"). Shrinking the thumb here would mean either fighting that pin
+   from outside the file that owns it, or handing back the exact regression it exists to
+   prevent. Left alone; flagged in the facelift report instead of forced. */
+body[data-k-layout="rails"] .k-set-control .neo-range-slider::-webkit-slider-runnable-track {
+    height: 3px;
+    background-color: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-set-control .neo-range-slider::-moz-range-track {
+    height: 3px;
+    background-color: var(--k-accent);
+}
+
+/* The value readout beside a range or number control: 11px mono, right-aligned, a fixed minimum
+   so a value swinging between one and four digits doesn't shove the control beside it. */
+body[data-k-layout="rails"] .k-set-control .neo-range-input,
+body[data-k-layout="rails"] .k-set-control .range-block-counter input {
+    min-width: 34px;
+    text-align: right;
+    font-family: var(--k-font-mono);
+    font-size: 11px;
+    color: var(--k-text-dim);
+}
+
+/* Toolcool color pickers (`toolcool-color-picker`), the ten Legacy Theme Colors swatches. A
+   custom element with its own shadow root: this sizes the HOST box toward the row-control floor
+   but cannot reach past the shadow boundary to retouch the swatch/popover chrome inside it, so
+   it is a best-effort fit rather than a guaranteed match — flagged in the facelift report. */
+body[data-k-layout="rails"] .k-set-control toolcool-color-picker {
+    height: var(--k-set-input-h);
+    flex: 0 0 auto;
+}
+
+/* ── presentation that evaporates ───────────────────────────────────────────
+   Three rules, one idea: an adopted unit often carries stock text that says exactly what the
+   row label beside it already says, and the STOCK copy is the one that goes. Never the modal's,
+   because the row label is what search matches on and where the settings-v0 §5 truth fixes
+   land. Every selector here is scoped inside the modal, so the borrowed node is whole again the
+   instant the Relocator puts it back — nothing is stripped, only hidden, and only while it is
+   standing in a room that already introduced it.
+
+   The line this draws: a `<label for=>` is NOT presentation. It is clickable hit area, and it
+   stays visible wherever it travels (registry `adopt` audit, rule 1). Only captions with no
+   `for=` — bare `<span>`s, bare `<small>`s, a block's own `<h4>` — evaporate. */
+
+/* `#CustomCSS-block` arrives with a `title_restorable` heading whose `<span>` repeats the row
+   label. The heading itself stays, right-aligned: its other child is `i.editor_maximize`, the
+   only door to the full-screen editor for an 8-row textarea, and it travels precisely because
+   the block does. */
+body[data-k-layout="rails"] .k-set-control #CustomCSS-block {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-set-control #CustomCSS-block > h4 > span {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-set-control #CustomCSS-block > h4 {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0;
+}
+
+/* Pixel QA defect 5a: `rows="8"` (stock, `index.html:5446`) renders taller than the Appearance
+   tab's height budget affords — the single tallest control on the tab, by itself worth a real
+   share of the 141px the panel was overflowing by. 150px is a default, not a lock:
+   `resize: vertical` keeps the user's own escape hatch, since a free-text editor is exactly the
+   kind of control that should stay resizable rather than just capped. */
+body[data-k-layout="rails"] .k-set-control #customCSS {
+    height: 150px;
+    resize: vertical;
+}
+
+/* Kotatsu's five wardrobe / reading-size / landing rows open with a caption span that repeats
+   the row label — "Messages:" printed under MESSAGES. The pack note `<small>` underneath is NOT
+   touched: it is live text (`k-library.js:1298`, `theme/core.js:287-291`) and often the only
+   thing on the row that the reader does not already know. */
+body[data-k-layout="rails"] .k-set-control :is(#kotatsu_mes_variant_row,
+    #kotatsu_mes_nameplate_row,
+    #kotatsu_mes_metadata_row,
+    #kotatsu_prose_scale_row,
+    #kotatsu_landing_row) > .flex-container > span {
+    display: none;
+}
+
+/* Pixel QA defect 5b: the adopted wrapper carries stock's own `flexFlowColumn` utility class
+   (a shared class used elsewhere outside this modal, so it isn't touched directly), stacking
+   caption / track / counter into three lines — measured live as the Font Scale row's number
+   input wrapping BELOW its slider, and the same shape costs height on the other six adopted
+   slider-mirror wrappers this selector already reaches. A grid reads the same three DOM
+   children differently instead of restacking anything: the caption spans the full row via the
+   explicit rule below, and auto-placement drops the next two children — track, then counter —
+   into the row underneath, side by side, which is what the §5 row rhythm wanted for a range
+   control from the start. `minmax(0, 1fr)`, not a bare `1fr`, on the first column: a grid
+   track's automatic minimum is its content's own min-size, and without that floor override the
+   track — and the slider inside it — would refuse to shrink below that in a squeezed card. */
+body[data-k-layout="rails"] .k-set-slot > div:has(> input.neo-range-slider) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 8px;
+}
+
+body[data-k-layout="rails"] .k-set-slot > div:has(> input.neo-range-slider) > small {
+    grid-column: 1 / -1;
+}
+
+/* An adopted slider wrapper brings the stock caption above its track. The WORDS go; the little
+   `ⓘ` inside the same `<small>` stays, because its tooltip is the one thing on those rows the
+   label does not carry ("The number of chat history messages to load before pagination"). The
+   `:last-child` rule catches `#chat_truncation`'s trailing note, which after the §5 fix says
+   what the row label says. */
+body[data-k-layout="rails"] .k-set-slot > div:has(> input.neo-range-slider) > small > span {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-set-slot > div:has(> input.neo-range-slider) > small:last-child {
+    display: none;
+}
+
+/* An adopted affordance the APP has hidden takes its whole row with it. Two of the action rows
+   are conditional: `user.js:24-26` hides the admin and logout buttons outright when accounts
+   are off, and `:73` shows the admin one only to admins. Both do it with jQuery `.hide()`, which
+   writes an inline `display: none`, so without this an install with accounts off would print an
+   "ADMIN PANEL" label beside an empty box. Substring-matching the inline style is the only
+   question CSS can ask about that, and it is asking for the exact string jQuery serializes —
+   which is also why the rule lives here and not in the registry: visibility is core's decision,
+   made at runtime, and the map has no business predicting it. */
+body[data-k-layout="rails"] .k-set-row:has(> .k-set-control > .k-set-slot > [style*="display: none"]) {
+    display: none;
+}
+
+/* ── the one dependency the drawer expresses, restated for rows ─────────────
+   Census §5.6: of all 110 controls, exactly ONE parent/child gate exists, and it is pure CSS —
+   `#smooth_streaming_control:has(#smooth_streaming:not(:checked)) ~ #smooth_streaming_speed_control`
+   (toggle-dependent.css:480-481). It is a SIBLING rule, and adoption re-parents its three nodes
+   into three different `.k-set-row`s, so the original selector stops matching the moment the
+   modal borrows them: the sub-controls would sit there editable with their parent switched off.
+
+   The rows are the new siblings, so the gate is restated at row level. This is not a second
+   opinion about the rule — it is the same rule, addressed to the shape the controls are in.
+   Under classic, and in the parked rack, the stock rule is untouched.
+
+   v0.1 changed the SELECTOR, not the rule. The Hybrid nests rows inside runs inside groups, and
+   a `~` chain only reaches rows that happen to land in the same run container. Today all three
+   do — the Streaming group's leading checkbox run is 2 long, under the weave threshold, so it
+   dissolves into one ledger with the two ranges — but that is an accident of one number, and a
+   layout rule must not be the thing standing between a switched-off parent and an editable
+   child. Scoping to the PANEL's row list instead is shape-independent: `#smooth_streaming` can
+   only be inside a `.k-set-rows` while the Streaming tab is holding it, and its two dependants
+   are the only ids named. */
+body[data-k-layout="rails"] .k-set-rows:has(#smooth_streaming:not(:checked)) .k-set-row:is([data-k-set-entry="smooth_streaming_no_think"],
+    [data-k-set-entry="smooth_streaming_speed"]) {
+    display: none;
+}
+
+/* ── the two native strips: layout, and rail collapse ───────────────────────
+   `.k-layout-option` is reused verbatim so the buttons inherit the dressing
+   css/shell-frame.css:334-356 already ships. Only the container differs: the overlay's
+   `#k-layout-switch` carried drawer-rack geometry that means nothing inside a modal row.
+
+   The rails strip wears the same container because it IS the same object — a segmented row of
+   `.k-layout-option` buttons — even though its semantics differ: layout is a radio group
+   (`aria-pressed` = "this is the layout"), rails is a pair of independent toggles
+   (`aria-pressed` = "this rail is open"). One dressing, two meanings, and the rose fill reads
+   correctly for both. */
+
+body[data-k-layout="rails"] .k-set-layout-switch,
+body[data-k-layout="rails"] .k-set-rails-switch {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--k-set-hairline);
+    border-radius: var(--k-radius-md);
+}
+
+/* Pixel QA defect 3: this hint ("Switching reloads the page.", "A lit side is open.") lives in
+   the DOM inside the CONTROL cell — a child of `.k-set-layout-switch`/`.k-set-rails-switch`,
+   which is itself inside `.k-set-control` — not beside the row label the way README's
+   "label · hint" pattern wants everywhere else. A CSS `order` can reshuffle siblings but cannot
+   reparent a node three levels deep into `.k-set-labelrow`'s branch of the DOM; that move needs
+   a markup change outside this file's fence. With the control cell now sharing its row with a
+   floor-width label (defect 2), an 8-character-wide hint wrapping into a ladder of one-word
+   lines reads worse than no hint at all, so it is hidden rather than left cramped — the row's
+   own label ("Layout" / "Rails") still says what is being switched; only the elaboration is
+   lost. The old `margin-left: 8px` this replaces is moot on a hidden element. */
+body[data-k-layout="rails"] .k-set-layout-switch .k-set-hint,
+body[data-k-layout="rails"] .k-set-rails-switch .k-set-hint {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-set-layout-switch .k-layout-option[disabled] {
+    cursor: progress;
+    opacity: 0.55;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. ADOPTED BLOCKS — a whole stock region, borrowed (v0.1, §10)
+   ───────────────────────────────────────────────────────────────────────────
+   Five regions across the four new tabs: `#rm_api_block` (Connection), `#persona-suite`
+   (Personas), `#wiTopBlock` + `#world_popup` (World Info), `#extensions-settings-button`
+   (Extensions). A block is NOT a row: no label column, no registry label printed, no hover wash,
+   no padding of our own. It spans the pane and the PANEL scrolls it.
+
+   ── The one display write this sheet is allowed to make, and the 167 it is not ─────────────
+   Two of the five are `.drawer-content` nodes, and core parks them at `display: none`
+   (style.css:5580-5605) — so the tab that hosts them has to say `display: block` on the
+   CONTAINER or adopt an invisible region. That is the line recon G8 draws and it is drawn
+   exactly here: the tab styles the container, never the sub-blocks. Inside `#rm_api_block` sit
+   **167 nodes whose inline `display` is written by three independent core jQuery layers** —
+   `changeMainAPI()` (script.js:8076-8189), `[data-source]` (openai.js:6050-6055) and
+   `[data-tg-type]` (textgen-settings.js:1159-1178) — and that inline display IS the per-API
+   visibility. Those three writers keep sole authority. **No `[data-source]`, `[data-tg-type]` or
+   `#*_api` selector may ever appear in this sheet**; one would show all five APIs at once. It is
+   the preset-dock lesson (docs/preset-dock-v0.md:68-73) with the sign reversed: that dock needed
+   `!important` to BEAT core's inline display, and this tab needs to never contest it.
+
+   Secrets ride the same discipline: the tab adopts the `#api_key_*` inputs and reads NOTHING.
+   `writeSecret()` clears the input it just sent (secrets.js:369), so an adopted key field is
+   always empty at rest and there is nothing in the DOM to echo — provided nobody asks. Nothing
+   in this sheet or in k-settings-modal.js asks.
+
+   ── Geometry: `.drawer-content` is hostile to any host but the holder ──────────────────────
+   `display:none; position:absolute; top: var(--topBarBlockSize); width: var(--sheldWidth);
+   min-width:450px; height:0; backdrop-filter: blur(…)`. Dropped into a panel unmodified it would
+   be invisible, 450px-minimum, offset a top-bar down, and — via `backdrop-filter` — a containing
+   block for every `position:fixed` descendant (the standing Kotatsu footgun). The reset below is
+   css/shell-right.css:225-266 ported, as recon §6 G3 says to port it, with the `:is()` list
+   pointed at this surface's two drawers instead of the rail's one.
+
+   No `!important` on the seven MovingUI properties here, and that is a real difference from the
+   rail's copy rather than an omission: `loadMovingUIState()` (power-user.js:1917-1939) only
+   replays inline geometry for the seven panels `initMovingUI()` drags
+   (RossAscends-mods.js:676-682) — `#sheld`, `#left-nav-panel`, `#right-nav-panel`, `#WorldInfo`,
+   `#floatingPrompt`, `#logprobsViewer`, `#cfgConfig`. Neither `#rm_api_block` nor
+   `#rm_extensions_block` is one, and `#WorldInfo` itself is never adopted — only its two
+   children are — so no inline style ever lands on anything this sheet has to out-rank. The
+   `:is(#…)` lift is still there for core's own id rules (style.css:3086 `#rm_api_block`,
+   style.css:2936 `#rm_extensions_block`).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-set-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-set-block[hidden] {
+    display: none;
+}
+
+/* The block's slot takes a real box, unlike a row's `display: contents` bookmark: an adopted
+   region is a layout container in its own right and needs somewhere to be constrained. */
+body[data-k-layout="rails"] .k-set-slot--block {
+    display: block;
+    min-width: 0;
+}
+
+/* Why a block is on screen when everything else on the tab is filtered away. A `withinBlock`
+   registry row (today: `auto_connect`, folded into the Connection block) is searchable but draws
+   no row of its own, so without this line the reader gets a tab that claims one hit and shows a
+   1,800-line drawer with no explanation. */
+body[data-k-layout="rails"] .k-set-block-match {
+    margin: 0;
+    padding: 0 8px;
+    color: var(--k-text-faint);
+    font-size: var(--k-set-hint-size);
+}
+
+/* The `.drawer` WRAPPER travels for Extensions, not the panel — `doNavbarIconClick` resolves
+   icon↔content by DOM relationship (script.js:11285-11287), and CONTRACT.md:71-75 permits moving
+   the node but not splitting the two frozen columns out of it (recon §4.6). In a modal the
+   wrapper is a plain block and its icon is furniture. */
+body[data-k-layout="rails"] .k-set-slot--block > .drawer {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-set-slot--block > .drawer > .drawer-toggle {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-set-block :is(#rm_api_block, #rm_extensions_block) {
+    /* `relative`, not `static`: with every offset auto'd it lays out identically, but the panel
+       stays the containing block for its own `position: absolute` children
+       (`.editable-slider-notification`, `.topRightInset` — style.css:5739/:4450). Under `static`
+       those would anchor to the viewport and float over the top bar. `relative` still does not
+       trap `position: fixed` descendants. */
+    position: relative;
+    display: block;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    /* The containing-block footgun again: `.drawer-content` carries `backdrop-filter`
+       (style.css:5598, kotatsu-chrome.css:591). Inside an already opaque sheet the blur buys
+       nothing, so it is removed outright rather than pushed to a ::before. */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    /* Core animates `height` AND `display` with `@starting-style` + `allow-discrete`
+       (style.css:5600-5624). A region that is permanently open must not replay the open
+       animation every time something toggles a class on it. */
+    transition: none;
+    /* `body.movingUI .drawer-content { resize: both }` (toggle-dependent.css:449). */
+    resize: none;
+    /* The PANEL scrolls, not the region — one scrollbar per tab, and a region that sets its own
+       would trap the connection form's 1,800 lines in a box inside a box. */
+    overflow: visible;
+}
+
+/* The two World Info halves and the persona suite are plain divs, so they need almost nothing —
+   except that `#world_popup` ships `overflow-y: hidden` (world-info.css:19), and a single
+   non-visible axis forces the other one to compute as `auto`, which puts a horizontal scrollbar
+   under the entry list for no reason. Its `left/right/z-index` are inert (no `position` rule
+   applies to it) and stay that way here. */
+body[data-k-layout="rails"] .k-set-block :is(#wiTopBlock, #world_popup, #persona-suite) {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-set-block #world_popup {
+    min-height: 0;
+    overflow: visible;
+}
+
+/* ── the rack skin follows the region (recon §6 G11) ────────────────────────
+   css/rechrome-rack.css dresses `.inline-drawer` headers, `.standoutHeader`, `h4`, `hr` and the
+   paginationjs nav through `.drawer-content` DESCENDANT selectors. Two of the five blocks are
+   `.drawer-content` nodes and keep matching; the other three (`#persona-suite`, `#wiTopBlock`,
+   `#world_popup`) travel OUT of one and stop. Rather than restate a dozen rule bodies here, that
+   sheet's selectors now read `:is(.drawer-content, .k-set-block)` — one anatomy, three hosts,
+   which is the stance its own header already takes for the rack and the rail. The rule that made
+   it worth doing is the pagination `font-family` fallback (rechrome-rack.css:436), which exists
+   *because* personas.js:314-315 passes `<` and `>` as nav text: lose it and the glyphs fall back
+   to the UA serif, re-opening the exact defect that rule was written to fix.
+
+   css/kotatsu-chrome.css has two `.drawer-content`-scoped rules in the same position, and they
+   are restated HERE rather than widened THERE: that sheet is the app-wide chrome, and one
+   surface's adoption is not a reason to teach it a settings-modal class name. Two copies of two
+   rules, the same cost §8.4 already accepted for the smooth-streaming gate, and for the same
+   reason — adoption re-parents the node and a descendant selector cannot follow it.
+
+   The heading baseline (kotatsu-chrome.css:312-321, :648-651). `#persona-suite` carries the only
+   heading among the three that would notice — `<h3>Persona Management</h3>`, index.html:5961.
+   `h4` is in the list so the two sheets agree about it; rechrome-rack loads after this one and
+   ties on specificity, so its micro-caps still win, which is what should happen. */
+body[data-k-layout="rails"] .k-set-block :is(h3, h4) {
+    color: var(--k-text-strong);
+    font-family: var(--k-font-ui);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+/* The interior card layer (kotatsu-chrome.css:632-641). `#wiTopBlock`'s "Click to expand"
+   activation-settings collapsible (index.html:4797-4801) is the one `.inline-drawer` among the
+   three, and without this it is a flat run of rows where every other tab shows a stacked card. */
+body[data-k-layout="rails"] .k-set-block .inline-drawer {
+    margin: 10px 0 4px;
+    padding: 4px 12px 10px;
+    border: 1px solid var(--k-inset-border);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-inset-fill);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7. NARROW — the tab column folds above the panels
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 780px) {
+    body[data-k-layout="rails"] .k-set-body {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    body[data-k-layout="rails"] .k-set-tabs {
+        flex-direction: row;
+        flex-wrap: wrap;
+        overflow-y: visible;
+    }
+
+    body[data-k-layout="rails"] .k-set-tab {
+        width: auto;
+    }
+
+    body[data-k-layout="rails"] .k-set-row {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 6px;
+    }
+
+    body[data-k-layout="rails"] .k-set-labelrow {
+        padding-top: 0;
+    }
+
+    /* A weave in a folded sheet is two columns of one word each. The eyebrow above still says
+       these rows belong together, which was always the grouping that mattered. */
+    body[data-k-layout="rails"] .k-set-run--weave {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* The card flow collapses with everything else that folds at this width: a 180px nav rail
+       has already gone to a wrapped top strip, so a 2-column card flow underneath it would be
+       squeezing two narrow columns of cards under a squeezed panel — the same crowding §7 exists
+       to relieve, one level down. One column, registry order, cards unchanged otherwise. Same
+       block guard as the base rule: `columns: 1` is still a multicol context, and a fragmenting
+       context is exactly what the adopted-block tabs must never sit in. */
+    body[data-k-layout="rails"] .k-set-rows:not(:has(.k-set-block)) {
+        columns: 1;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. RESPONSIVE WALK-BACK — mobile-styles.css has the final word, so answer it
+   ───────────────────────────────────────────────────────────────────────────
+   css/mobile-styles.css loads AFTER this sheet and, below 1000px, pins every `.drawer-content`
+   at `width: 100dvw !important; left: 0 !important; resize: none !important` plus a fixed
+   `top` (:306-315), and later re-pins `#world_popup` and `.drawer-content` to
+   `calc(100dvh - 70px)` with a `margin-top: 36px` (:617-646). Any of those inside a modal panel
+   is a torn layout.
+
+   Mobile rails is an explicit v0 non-goal and this does not make the sheet responsive — it only
+   stops the mobile sheet from tearing an adopted region out of a panel it is nested three levels
+   inside. Same stance and same place as the rail's own walk-back
+   (css/shell-right.css:345-362) and slice A's #sheld one (css/shell-frame.css:346-355): the
+   walk-back lives with the shape being walked back, never in mobile-styles.css. `!important`
+   here answers `!important` there and buys nothing else.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 1000px) {
+    body[data-k-layout="rails"] .k-set-block :is(#rm_api_block, #rm_extensions_block, #world_popup) {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        top: auto !important;
+        left: auto !important;
+        margin: 0 !important;
+        resize: none !important;
+        border: 0;
+        border-radius: 0;
+        overflow: visible;
+    }
+}

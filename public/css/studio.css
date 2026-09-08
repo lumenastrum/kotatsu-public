@@ -1,0 +1,738 @@
+/*
+ * studio.css — the card studio (library v0 slice D, docs/library-v0.md §2).
+ *
+ * Owns the INSIDE of `<k-card-studio>`: the scrim, the centred sheet, the two-column grid, the
+ * tab strip, and the chrome that dresses core's own controls once they have been borrowed into
+ * it. It does NOT restyle those controls' behaviour — they keep their ids and their classes, and
+ * everything here is presentation that evaporates the moment they go home.
+ *
+ * Discipline (docs/shell-v0.md §"The slot contract", the same list library.css keeps):
+ * - Every rule is gated on `body[data-k-layout="rails"]`. Classic never sees the studio and must
+ *   never see a byte of this sheet either.
+ * - Colours, radii and shadows come from `--k-*` only. Grep it: no `#`, no `rgb(`.
+ * - Slice-local parameters are declared once, up top, in the `--k-studio-*` namespace — the
+ *   sheet-local pattern css/library.css uses for `--k-lib-*` and css/shell-left.css for
+ *   `--k-rl-*`. They are NOT added to css/tokens.css on purpose: `npm run theme:check --
+ *   blue-hour --drift` compares tokens.css's `:root` against every pack manifest name for name,
+ *   so a `:root` addition here would force an edit to every shipped pack for parameters no pack
+ *   has an opinion about yet. A pack's own `sheet.css` is prefixed `body[data-k-theme="<id>"]`
+ *   (theme/core.js:1305-1318), ties on specificity with the blocks below and is injected later,
+ *   so a pack override still wins — which is the whole point.
+ * - Every `:hover` has an explicit `:focus-visible` twin, because `initDynamicStyles()`
+ *   (dynamic-styles.js:188-202) otherwise synthesizes one late and reorders the cascade.
+ * - Type floor 11px, everywhere.
+ *
+ * ── Stacking ─────────────────────────────────────────────────────────────────────────────────
+ * scrim 4100 / sheet 4101, declared in JS as `STUDIO_Z` (k-card-studio.js) and mirrored here.
+ * The measured ladder in this document: #sheld 30, k-library 31 (library.css:141), rail handles
+ * 40 (shell-frame.css:404), settings scrim 2999 (shell-frame.css:261), #top-settings-holder 3005
+ * (kotatsu-chrome.css), AN scrim 3999 / AN panel 4000 (shell-panels.css:134), #character_popup
+ * 4001 (style.css:4665), #shadow_select_chat_popup 4100 (style.css:4743), core popups 9999.
+ *
+ * The studio is a MODAL EDITING surface, so it sits above that whole in-page family rather than
+ * threading between them: every one of those surfaces is either behind it (the rack, the
+ * gallery, the chat) or is currently missing its own controls because the studio is holding
+ * them (#character_popup). It stays under `dialog.popup` (9999) on purpose — the crop dialog and
+ * the alternate-greetings editor open OVER the studio as part of its own flows, and `showModal()`
+ * puts them in the top layer where no z-index reaches them anyway.
+ *
+ * ── Centring without a transform ─────────────────────────────────────────────────────────────
+ * The sheet is centred with `inset: 0; margin: auto`, not with `translate(-50%, -50%)`. A
+ * `transform` on an ancestor becomes the containing block for every `position: fixed`
+ * descendant — the footgun that has bitten this repo before — and the studio holds three dozen
+ * borrowed core nodes whose own stylesheets we do not control. `<k-card-studio>` itself is
+ * `display: contents` for the same reason: no box, no stacking context, so the scrim and the
+ * sheet carry their real page-level z-indices instead of ordinals inside a local context.
+ *
+ * Load order: linked from index.html immediately after css/library.css (the preview card reuses
+ * `.k-lib-card*`, so those rules must already be in the cascade) and before css/mobile-styles.css
+ * so the responsive layer keeps the final word.
+ */
+
+body[data-k-layout="rails"] {
+    /* ── Stacking (mirrors STUDIO_Z in k-card-studio.js) ─────────────────────── */
+    --k-studio-z-scrim: 4100;
+    --k-studio-z-sheet: 4101;
+
+    /* ── Sheet geometry (doc §2.2) ───────────────────────────────────────────── */
+    --k-studio-width: min(1060px, calc(100vw - 64px));
+    --k-studio-max-h: calc(100dvh - 64px);
+    --k-studio-rail-w: 280px;
+    --k-studio-pad: clamp(16px, 1.6vw, 26px);
+    --k-studio-gap: clamp(14px, 1.4vw, 22px);
+
+    /* ── Type (floor 11px) ───────────────────────────────────────────────────── */
+    --k-studio-title-size: clamp(22px, 2vw, 30px);
+    --k-studio-title-lh: 1.1;
+    --k-studio-eyebrow-size: 11px;
+    --k-studio-eyebrow-track: 0.16em;
+    --k-studio-label-size: 11px;
+    --k-studio-label-track: 0.11em;
+    --k-studio-hint-size: 11px;
+    --k-studio-ui-size: 12.5px;
+    --k-studio-field-size: 13px;
+
+    /* ── Surfaces ────────────────────────────────────────────────────────────── */
+    --k-studio-scrim-fill: color-mix(in srgb, var(--k-scrim) 72%, transparent);
+    --k-studio-sheet-fill: var(--k-surface);
+    --k-studio-hairline: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+    /* Fields read as CUT INTO the panel — Kirara's move. The darkest surface token there is. */
+    --k-studio-field-fill: var(--k-ground-deep);
+    --k-studio-field-radius: var(--k-radius-md);
+    --k-studio-hover-fill: color-mix(in srgb, var(--k-accent) 10%, transparent);
+    --k-studio-ring: color-mix(in srgb, var(--k-accent) 34%, transparent);
+
+    /* ── Field heights ───────────────────────────────────────────────────────── */
+    --k-studio-input-h: 34px;
+    --k-studio-area-min-h: 120px;
+    --k-studio-area-tall-h: 180px;
+}
+
+/* Background scroll-chaining courtesy while a modal is up. `.k-studio-open` is set on <body>
+   by the element for exactly as long as it is connected, and is also the state hook a probe
+   (or a later surface) can read without querying for the element. */
+body[data-k-layout="rails"].k-studio-open {
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. THE OVERLAY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* No box, no stacking context — see the sheet header. */
+body[data-k-layout="rails"] k-card-studio {
+    display: contents;
+}
+
+body[data-k-layout="rails"] .k-studio-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: var(--k-studio-z-scrim);
+    background: var(--k-studio-scrim-fill);
+    backdrop-filter: blur(calc(var(--k-blur-panel) / 2));
+    -webkit-backdrop-filter: blur(calc(var(--k-blur-panel) / 2));
+}
+
+body[data-k-layout="rails"] .k-studio-sheet {
+    box-sizing: border-box;
+    position: fixed;
+    /* `inset: 0` + `margin: auto` centres a fixed box with a definite width and a
+       fit-content height, with no transform anywhere. */
+    inset: 0;
+    margin: auto;
+    z-index: var(--k-studio-z-sheet);
+    display: flex;
+    flex-direction: column;
+    width: var(--k-studio-width);
+    height: fit-content;
+    max-height: var(--k-studio-max-h);
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--k-studio-hairline);
+    border-radius: var(--k-radius-xl);
+    background: var(--k-studio-sheet-fill);
+    box-shadow: var(--k-elev-4);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. HEADER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-studio-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 0 0 auto;
+    padding: var(--k-studio-pad) var(--k-studio-pad) calc(var(--k-studio-pad) * 0.6);
+    border-bottom: 1px solid var(--k-studio-hairline);
+}
+
+body[data-k-layout="rails"] .k-studio-head-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-studio-eyebrow {
+    color: var(--k-accent);
+    font-size: var(--k-studio-eyebrow-size);
+    font-weight: 700;
+    letter-spacing: var(--k-studio-eyebrow-track);
+    text-transform: uppercase;
+}
+
+body[data-k-layout="rails"] .k-studio-title {
+    margin: 0;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: var(--k-studio-title-size);
+    line-height: var(--k-studio-title-lh);
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+}
+
+body[data-k-layout="rails"] .k-studio-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--k-studio-hairline);
+    border-radius: var(--k-radius-round);
+    background: transparent;
+    color: var(--k-text-muted);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-studio-close:hover,
+body[data-k-layout="rails"] .k-studio-close:focus-visible {
+    border-color: var(--k-accent);
+    background: var(--k-studio-hover-fill);
+    color: var(--k-text-strong);
+    outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. THE GRID — 280px preview rail + the tabbed pane (doc §2.2)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-studio-grid {
+    display: grid;
+    grid-template-columns: var(--k-studio-rail-w) minmax(0, 1fr);
+    gap: var(--k-studio-gap);
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: var(--k-studio-pad);
+    overflow: hidden;
+}
+
+/* ── left rail ──────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-studio-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* The preview IS the gallery card (library.css owns `.k-lib-card*`); this only sizes it. */
+body[data-k-layout="rails"] .k-studio-preview {
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-studio-preview .k-lib-card {
+    cursor: default;
+}
+
+body[data-k-layout="rails"] .k-studio-railtools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* The real `#avatar_div_div` label, dressed as a glass button. Its `for="add_avatar_button"`
+   is what opens the file picker, so the affordance stays core's and only the paint is ours. */
+body[data-k-layout="rails"] .k-studio-slot--portrait {
+    flex: 0 0 auto;
+}
+
+body[data-k-layout="rails"] .k-studio-slot--portrait #avatar_div_div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--k-studio-hairline);
+    border-radius: var(--k-radius-md);
+    background: color-mix(in srgb, var(--k-scrim) 45%, transparent);
+    backdrop-filter: blur(var(--k-blur-panel));
+    -webkit-backdrop-filter: blur(var(--k-blur-panel));
+    cursor: pointer;
+    overflow: hidden;
+}
+
+body[data-k-layout="rails"] .k-studio-slot--portrait #avatar_div_div:hover,
+body[data-k-layout="rails"] .k-studio-slot--portrait #avatar_div_div:focus-within {
+    border-color: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-studio-slot--portrait #avatar_load_preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+}
+
+body[data-k-layout="rails"] .k-studio-portrait-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--k-text-muted);
+    font-size: var(--k-studio-ui-size);
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] .k-studio-slot--fav {
+    flex: 0 0 auto;
+}
+
+/* Core's own `#favorite_button`, kept whole: `updateFavButtonState()` toggles `fav_on` /
+   `fav_off` on it (script.js:9334) and those classes carry the lit state from style.css. */
+body[data-k-layout="rails"] .k-studio-slot--fav #favorite_button {
+    margin: 0;
+}
+
+/* ── readiness meter ────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-studio-ready {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--k-studio-hairline);
+    border-radius: var(--k-radius-lg);
+    background: color-mix(in srgb, var(--k-ground-deep) 55%, transparent);
+}
+
+body[data-k-layout="rails"] .k-studio-ready-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-studio-ready-label {
+    color: var(--k-text-muted);
+    font-size: var(--k-studio-label-size);
+    font-weight: 700;
+    letter-spacing: var(--k-studio-label-track);
+    text-transform: uppercase;
+}
+
+body[data-k-layout="rails"] .k-studio-ready-score {
+    color: var(--k-text-strong);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-studio-ui-size);
+}
+
+body[data-k-layout="rails"] .k-studio-ready-track {
+    height: 4px;
+    border-radius: var(--k-radius-pill);
+    background: color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
+    overflow: hidden;
+}
+
+body[data-k-layout="rails"] .k-studio-ready-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-studio-ready-note {
+    margin: 0;
+    color: var(--k-text-muted);
+    font-size: var(--k-studio-hint-size);
+    line-height: 1.45;
+}
+
+body[data-k-layout="rails"] .k-studio-ready-fineprint {
+    margin: 0;
+    color: var(--k-text-faint);
+    font-size: var(--k-studio-hint-size);
+    line-height: 1.45;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. THE PANE — tabs, blurb, panels
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-studio-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    min-height: 0;
+}
+
+body[data-k-layout="rails"] .k-studio-tabs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    padding: 2px;
+    border: 1px solid var(--k-studio-hairline);
+    border-radius: var(--k-radius-pill);
+    background: color-mix(in srgb, var(--k-ground-deep) 70%, transparent);
+}
+
+body[data-k-layout="rails"] .k-studio-tab {
+    margin: 0;
+    padding: 6px 14px;
+    border: none;
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text-muted);
+    font-family: inherit;
+    font-size: var(--k-studio-ui-size);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-studio-tab:hover,
+body[data-k-layout="rails"] .k-studio-tab:focus-visible {
+    color: var(--k-text-strong);
+    outline: none;
+}
+
+body[data-k-layout="rails"] .k-studio-tab.is-active {
+    background: color-mix(in srgb, var(--k-accent) 20%, transparent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-studio-blurb {
+    flex: 0 0 auto;
+    margin: 0;
+    padding-left: 2px;
+    color: var(--k-text-faint);
+    font-size: var(--k-studio-hint-size);
+}
+
+body[data-k-layout="rails"] .k-studio-panels {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-right: 4px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+body[data-k-layout="rails"] .k-studio-panel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    align-content: start;
+}
+
+body[data-k-layout="rails"] .k-studio-panel[hidden] {
+    display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. FIELDS — Kotatsu labels, core controls
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-studio-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    grid-column: span 2;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-studio-field.is-half {
+    grid-column: span 1;
+}
+
+body[data-k-layout="rails"] .k-studio-labelrow {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-studio-label {
+    color: var(--k-text-muted);
+    font-size: var(--k-studio-label-size);
+    font-weight: 700;
+    letter-spacing: var(--k-studio-label-track);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-studio-hint {
+    flex: 0 1 auto;
+    min-width: 0;
+    color: var(--k-text-faint);
+    font-size: var(--k-studio-hint-size);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-studio-control {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-studio-readonly {
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px dashed var(--k-studio-hairline);
+    border-radius: var(--k-studio-field-radius);
+    color: var(--k-text-strong);
+    font-size: var(--k-studio-field-size);
+}
+
+body[data-k-layout="rails"] .k-studio-slot {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+/* ── the borrowed inputs ────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-studio-control textarea,
+body[data-k-layout="rails"] .k-studio-control input[type="text"],
+body[data-k-layout="rails"] .k-studio-control input[type="search"],
+body[data-k-layout="rails"] .k-studio-control input[type="number"],
+body[data-k-layout="rails"] .k-studio-control input:not([type]),
+body[data-k-layout="rails"] .k-studio-control select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--k-studio-hairline);
+    border-radius: var(--k-studio-field-radius);
+    background: var(--k-studio-field-fill);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-studio-field-size);
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-studio-control textarea {
+    min-height: var(--k-studio-area-min-h);
+    resize: vertical;
+}
+
+body[data-k-layout="rails"] .k-studio-control #description_textarea,
+body[data-k-layout="rails"] .k-studio-control #firstmessage_textarea,
+body[data-k-layout="rails"] .k-studio-control #mes_example_textarea {
+    min-height: var(--k-studio-area-tall-h);
+}
+
+body[data-k-layout="rails"] .k-studio-control input[type="number"] {
+    width: 100%;
+}
+
+body[data-k-layout="rails"] .k-studio-control textarea:focus,
+body[data-k-layout="rails"] .k-studio-control input:focus,
+body[data-k-layout="rails"] .k-studio-control select:focus,
+body[data-k-layout="rails"] .k-studio-control textarea:focus-visible,
+body[data-k-layout="rails"] .k-studio-control input:focus-visible,
+body[data-k-layout="rails"] .k-studio-control select:focus-visible {
+    border-color: var(--k-accent);
+    box-shadow: 0 0 0 3px var(--k-studio-ring);
+    outline: none;
+}
+
+body[data-k-layout="rails"] .k-studio-control textarea::placeholder,
+body[data-k-layout="rails"] .k-studio-control input::placeholder {
+    color: var(--k-text-faint);
+}
+
+/* Token counters: core's own block, given the studio's hint voice. */
+body[data-k-layout="rails"] .k-studio-control .extension_token_counter {
+    color: var(--k-text-faint);
+    font-size: var(--k-studio-hint-size);
+    text-align: right;
+}
+
+/* ── name field: core keeps its own display authority ───────────────────────── */
+
+/* `#name_div` is relocated whole in CREATE mode only, because core puts a
+   `display: none !important` class on it in edit (script.js:9168, style.css:3154). Nothing here
+   tries to out-shout that — the studio prints the name as text instead (`.k-studio-readonly`). */
+body[data-k-layout="rails"] .k-studio-control #name_div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+/* ── tags ───────────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-studio-control #tags_div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-studio-control #tags_div .tag_controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-studio-control #tagList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 0;
+}
+
+/* ── talkativeness ──────────────────────────────────────────────────────────── */
+
+/* The whole `#talkativeness_div` is borrowed so the Shy / Normal / Chatty legend rides along;
+   its own two headings are replaced by the studio's label and hint, so they are hidden rather
+   than printed twice. Hidden, not removed: the drawer gets them back untouched on close. */
+body[data-k-layout="rails"] .k-studio-control #talkativeness_div > h4,
+body[data-k-layout="rails"] .k-studio-control #talkativeness_div > h5 {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-studio-control #talkativeness_div input[type="range"] {
+    width: 100%;
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-studio-control #talkativeness_div .slider_hint {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--k-text-faint);
+    font-size: var(--k-studio-hint-size);
+}
+
+/* ── creator-notes preview drawer ───────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-studio-control #spoiler_free_desc {
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--k-studio-hairline);
+    border-radius: var(--k-studio-field-radius);
+    background: color-mix(in srgb, var(--k-ground-deep) 55%, transparent);
+    font-size: var(--k-studio-field-size);
+}
+
+/* ── action rows ────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-studio-field--actions .k-studio-control {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-studio-field--actions .k-studio-slot {
+    flex: 0 0 auto;
+}
+
+body[data-k-layout="rails"] .k-studio-field--actions .menu_button {
+    margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. FOOTER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-studio-foot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+    padding: calc(var(--k-studio-pad) * 0.7) var(--k-studio-pad);
+    border-top: 1px solid var(--k-studio-hairline);
+    background: color-mix(in srgb, var(--k-ground-deep) 40%, transparent);
+}
+
+body[data-k-layout="rails"] .k-studio-foot-spacer {
+    flex: 1 1 auto;
+}
+
+/* `#delete_button`'s display is CORE's: `flex` in edit (script.js:9109), `none` in create
+   (script.js:9205). The footer never writes `display` on it — the mode drives it, exactly as
+   it does in the drawer, and that is why there is no `.k-studio-foot [hidden]` rule here. */
+body[data-k-layout="rails"] .k-studio-slot--delete {
+    flex: 0 0 auto;
+    flex-direction: row;
+}
+
+body[data-k-layout="rails"] .k-studio-slot--delete #delete_button {
+    margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7. RESPONSIVE + MOTION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+    body[data-k-layout="rails"] .k-studio-grid {
+        grid-template-columns: minmax(0, 1fr);
+        /* Stacked, the two grid items land in implicit rows. Left to stretch
+           they split the sheet's fixed height in half and the card overflows
+           its half straight into the form; content-sized rows let the grid be
+           as tall as the stack really is, and the scroll below carries it. */
+        grid-auto-rows: max-content;
+        overflow-y: auto;
+    }
+
+    body[data-k-layout="rails"] .k-studio-rail {
+        overflow: visible;
+    }
+
+    /* The preview is a CARD, not a banner. Stacked, the rail spans the whole
+       sheet, and an uncapped .k-lib-card inflates to sheet width — its portrait
+       aspect then makes a poster that buries the form below the fold (found
+       2026-08-25 at 864px: a giant Unnamed monogram and two floating fields).
+       Cap it at the desktop rail width and center it; the form follows right
+       underneath at card scale. */
+    body[data-k-layout="rails"] .k-studio-preview {
+        width: 100%;
+        max-width: var(--k-studio-rail-w);
+        margin-inline: auto;
+    }
+
+    body[data-k-layout="rails"] .k-studio-panel {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body[data-k-layout="rails"] .k-studio-field,
+    body[data-k-layout="rails"] .k-studio-field.is-half {
+        grid-column: span 1;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    body[data-k-layout="rails"] .k-studio-close,
+    body[data-k-layout="rails"] .k-studio-tab,
+    body[data-k-layout="rails"] .k-studio-slot--portrait #avatar_div_div,
+    body[data-k-layout="rails"] .k-studio-control textarea,
+    body[data-k-layout="rails"] .k-studio-control input,
+    body[data-k-layout="rails"] .k-studio-control select {
+        transition:
+            border-color var(--k-motion),
+            background-color var(--k-motion),
+            box-shadow var(--k-motion),
+            color var(--k-motion);
+    }
+
+    /* The meter is the one thing in the sheet that MOVES, and only ever by a fifth. */
+    body[data-k-layout="rails"] .k-studio-ready-fill {
+        transition: width var(--k-motion);
+    }
+}

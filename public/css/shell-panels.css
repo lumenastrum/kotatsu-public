@@ -1,0 +1,187 @@
+/*
+ * Kotatsu shell QoL v0 — the floating panel family under rails.
+ * docs/shell-qol-v0.md §2-3.
+ *
+ * Three panels live in `#movingDivs` as direct children and share one width
+ * rule: `#floatingPrompt` and `#cfgConfig` (public/style.css:2957-2980) and
+ * `#logprobsViewer` (public/css/logprobs.css:1-20). All three compute their
+ * width as `calc(((100dvw - var(--sheldWidth)) / 2) - 1px)` — "half the empty
+ * gutter", which is core's implicit three-column layout stated as arithmetic.
+ *
+ * Under rails that formula degenerates. `--sheldWidth` is redefined to the real
+ * centre track (css/shell-frame.css:60-61), so "the gutter" becomes the two
+ * rails and the panel is drawn at half their combined width — a constant ~309px
+ * with both rails open, ~169/139px with one collapsed, and the 100px floor with
+ * both collapsed (public/style.css:5641-5645) — painted ON TOP of the left rail,
+ * because css/kotatsu-chrome.css:608-614 anchors the family at `left: 8px`.
+ * The Author's Note is the panel that hurts, because its depth and frequency
+ * rows need ~310px of min-content and it grows a horizontal scrollbar.
+ *
+ * The fix is not a tweak to the formula, it is a replacement: a self-sufficient
+ * width, centred on the viewport, immune to rail collapse by construction.
+ *
+ * Rules of the house, all load-bearing here:
+ *
+ * - Every rule is gated on `body[data-k-layout="rails"]`. Classic must stay
+ *   pixel-identical. The one exception is the `#k-an-scrim` base rule, the same
+ *   shell-only-node exception css/shell-frame.css:35-37 takes — and that node
+ *   does not exist under classic at all, because kotatsu/shell/an-sheet.js
+ *   creates it on the rails mount and removes it on unmount.
+ * - `display` and `opacity` are NEVER written for these panels. Visibility is
+ *   inline state owned by scripts/authors-note.js (`:404`, `:497`) and its
+ *   siblings; a stylesheet that joins that conversation would fight the fade and
+ *   could strand a panel visible. This sheet styles a panel it never opens.
+ * - `:hover` is paired with an explicit `:focus-visible` (dynamic-styles.js
+ *   :188-202 appends a synthesized twin late otherwise, changing cascade order
+ *   at runtime).
+ *
+ * Load order: linked after the other shell sheets and before
+ * css/mobile-styles.css.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. TIER 0 — GEOMETRY FOR THE FAMILY
+   ───────────────────────────────────────────────────────────────────────────
+   Why `!important`, when the selector already out-specifies core at (1,1,1):
+
+   1. `loadMovingUIState()` (power-user.js:1914-1937) replays a stored panel box
+      as INLINE styles, and an inline declaration beats every non-important
+      author rule regardless of specificity.
+   2. `body:not(.movingUI) .drawer-content.maximized` (style.css:5630-5635) is
+      itself `!important`.
+
+   Neither represents user intent under rails: §3 below hides the grab handle
+   and the maximize button, so the panel cannot be dragged, resized or maximized
+   here in the first place. Holding the geometry is the honest outcome.
+
+   The 1001px floor keeps the mobile walk-back intact. css/mobile-styles.css
+   :372-396 pins this same family to `100dvw !important` below 1000px and loads
+   AFTER this sheet; without the query our higher specificity would win there and
+   pin a 400px minimum onto a phone. Same breakpoint css/kotatsu-chrome.css:1410
+   uses to walk back its own chrome, for the same reason.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (min-width: 1001px) {
+    body[data-k-layout="rails"] #floatingPrompt,
+    body[data-k-layout="rails"] #cfgConfig,
+    body[data-k-layout="rails"] #logprobsViewer {
+        /* Wide enough for the widest row inside (the "In-chat @ Depth" line
+           measures ~310px of min-content), capped so it never reads as a page.
+           `min-width: 100px !important` (style.css:5642) is a floor below this
+           range and does not need beating, and core's `max-width: 90dvw`
+           (style.css:2960) cannot bite above 1001px either — which keeps the
+           centring arithmetic below exact. */
+        --k-panel-inline-size: clamp(400px, 38vw, 560px);
+
+        inline-size: var(--k-panel-inline-size) !important;
+        block-size: auto !important;
+
+        /* Centred on the VIEWPORT, not on a track: rail collapse changes the
+           tracks and must not move a panel that belongs to neither rail.
+
+           Arithmetic on `left` rather than `left: 50%` + a `translate`, on
+           purpose. A non-`none` `translate` makes the element a containing block
+           for `position: fixed` descendants — the same trap the shell already
+           works around elsewhere — and these three panels host arbitrary
+           extension content. Plain offsets change nothing about containment. */
+        left: calc(50% - (var(--k-panel-inline-size) / 2)) !important;
+        right: auto !important;
+        margin: 0 !important;
+
+        /* The rails top bar is `--k-topbar-pill-height` tall
+           (css/shell-frame.css:72), NOT `--topBarBlockSize` — that token is the
+           CLASSIC pill block (css/kotatsu-chrome.css:175 = 64px) and anchoring
+           to it would leave the panel floating 36px below a 44px bar. */
+        top: calc(var(--k-topbar-pill-height) + 16px) !important;
+        max-block-size: calc(100dvh - var(--k-topbar-pill-height) - 48px) !important;
+    }
+
+    /* The scroll goes to the holder, which already carries
+       `.scrollY { overflow-y: auto !important }` (style.css:204-206). The panel
+       is a column flex container, so the holder needs `min-block-size: 0` to be
+       allowed to shrink below its content — without it the panel overflows its
+       own max-height and core's outer `overflow-y: auto` produces a second
+       scrollbar around the first. */
+    body[data-k-layout="rails"] #floatingPrompt > [name="floatingPromptHolder"],
+    body[data-k-layout="rails"] #cfgConfig > [name="cfgConfigHolder"] {
+        flex: 1 1 auto;
+        min-block-size: 0;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. TIER 1 — THE AUTHOR'S NOTE AS A SHEET
+   ───────────────────────────────────────────────────────────────────────────
+   Dressing only. kotatsu/shell/an-sheet.js owns the scrim node and the body
+   class; it observes the panel's inline `display` and never writes it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Base state for a node that only exists under rails (see the header). */
+#k-an-scrim {
+    display: none;
+}
+
+/* z-index 3999 threads the needle from below: `#movingDivs > div` sits at 4000
+   (style.css:2982-2984), so the Author's Note stays fully interactive on top of
+   its own scrim while everything under it — the shell frame (30), .fillLeft /
+   .fillRight (3000), the drawer rack (3005) — reads as backgrounded. This is a
+   SECOND scrim, deliberately: the settings modal draws its own at 4090
+   (k-settings-modal.js SETTINGS_Z) and can be open at the same time. */
+body[data-k-layout="rails"].k-an-open #k-an-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 3999;
+    background-color: var(--k-frame-scrim);
+    backdrop-filter: blur(var(--k-blur-panel));
+    -webkit-backdrop-filter: blur(var(--k-blur-panel));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. TIER 1 — MOVINGUI FURNITURE, RETIRED UNDER RAILS
+   ───────────────────────────────────────────────────────────────────────────
+   Rails never invokes MovingUI, and §1 pins the geometry with `!important`, so
+   a grab handle here would be a control that visibly does nothing. Hidden for
+   all three panels rather than the Author's Note alone: they share §1's pin, so
+   they share its consequence. The reasoning is the tab rail's
+   (css/shell-right.css:229-234).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] #floatingPrompt .drag-grabber,
+body[data-k-layout="rails"] #cfgConfig .drag-grabber,
+body[data-k-layout="rails"] #logprobsViewer .drag-grabber,
+body[data-k-layout="rails"] #floatingPromptMaximize,
+body[data-k-layout="rails"] #cfgConfigMaximize,
+body[data-k-layout="rails"] #logprobsMaximizeToggle {
+    display: none;
+}
+
+/* Out-specifies `body.movingUI … #floatingPrompt { resize: both }`
+   (css/toggle-dependent.css:449-456) at (1,1,1) against (0,2,1). */
+body[data-k-layout="rails"] #floatingPrompt,
+body[data-k-layout="rails"] #cfgConfig,
+body[data-k-layout="rails"] #logprobsViewer {
+    resize: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. TIER 2 — CONTENT THAT WRAPS
+   ───────────────────────────────────────────────────────────────────────────
+   Two rows inside the Author's Note refuse to wrap: the "In-chat @ Depth" lines
+   at index.html:7887-7897 and :7972-7982. Both are `.checkbox_label`, which is
+   `display: flex; flex-direction: row; column-gap: 5px` with no wrap declared
+   (style.css:4617-4625), and each packs a radio, a label, a number input and a
+   role `<select>` onto one line — the ~310px of min-content that made the panel
+   scroll sideways.
+
+   The two `.flex-container` rows named alongside them in the design
+   (index.html:7900-7906, :7984-7990) already wrap: `.flex-container` carries
+   `flex-wrap: wrap` and `gap: 5px` (css/st-tailwind.css:268-272). They are left
+   alone rather than given a redundant rule.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] #floatingPrompt .checkbox_label,
+body[data-k-layout="rails"] #cfgConfig .checkbox_label {
+    flex-wrap: wrap;
+    row-gap: 4px;
+}

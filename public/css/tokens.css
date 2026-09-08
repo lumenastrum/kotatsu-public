@@ -1,0 +1,311 @@
+/*
+ * Kotatsu token substrate — SPEC §4 target 1, design doc §§1 and 6.
+ *
+ * This sheet is the ONLY place raw color/geometry literals are allowed to live.
+ * Everything else in `public/` consumes `--k-*`, either directly or through the
+ * legacy `--SmartTheme*` / `--black*` / `--grey*` primitives, whose values are
+ * now derivations of this layer (see `style.css` `:root`).
+ *
+ * Load order: this file is linked FIRST in `index.html` and `login.html`, before
+ * `style.css` and every vendored sheet.
+ *
+ * Alpha ramps are NOT tokenized. Blue Hour inflates 25 base colors into 77 rgba
+ * values purely through alpha; every one of those is reachable as
+ *   color-mix(in srgb, var(--k-X) N%, transparent)
+ * at the consumption site. Only two ramp *stops* are tokens, because they need to
+ * vary per sheet: `--k-border-strength` and `--k-shadow-strength`.
+ *
+ * Packs: `:root` carries Blue Hour (the shipped default, no attribute needed).
+ * Additional palettes live in `public/themes/<id>/theme.json`; the pack loader writes
+ * their resolved tokens directly on `:root`. This generalizes the `--ac-*` /
+ * `body[data-stscript-style]` pattern core already ships at style.css:1812-1900
+ * while keeping root-level `--SmartTheme*` derivations in the same scope.
+ */
+
+:root {
+    /* ── Ground & surfaces ───────────────────────────────────────────── */
+    --k-ground: #0e1119;
+    /* deepest stop: pill/panel/popup gradient bottom, `pre` blocks */
+    --k-ground-deep: #0d101b;
+    /* the panel fill; `blur_tint_color` writes here from a theme JSON */
+    --k-surface: #171b2c;
+    /* raised: pill/panel/popup gradient top, toast cards */
+    --k-surface-2: #131726;
+    /* sunken: inline-drawer cards, .menu_button, table head, checkbox well */
+    --k-surface-sunken: #181d2a;
+    /* side panels stay slightly softer than popup and menu surfaces */
+    --k-panel-fill-soft: linear-gradient(180deg,
+            color-mix(in srgb, var(--k-surface-2) 96%, transparent),
+            color-mix(in srgb, var(--k-ground-deep) 94%, transparent));
+    /* modal scrim + the base of every dark overlay wash */
+    --k-scrim: #080a12;
+
+    /* Top stop of the ambient body backdrop. Held apart from --k-surface even
+       though Blue Hour gives both #171b2c, because the theme-JSON compat map
+       writes `blur_tint_color` INTO --k-surface — and that value carries its own
+       alpha. Reusing --k-surface here made the gradient's top stop translucent
+       over a body background of the same color, which flattened the moonlit
+       sweep to a wash. Verified live: --k-surface resolves to
+       rgba(15, 18, 27, 0.82) at runtime, not #171b2c. Inventory §3 lists this
+       separately as --k-panel, one use: the body gradient start. */
+    --k-backdrop-top: #171b2c;
+
+    /* ── Text ────────────────────────────────────────────────────────── */
+    --k-text: #d8dce8;
+    --k-text-strong: #eceef6;
+    /* The reading surface — `.mes_text` / `.mes_reasoning` (kotatsu-chrome.css §3).
+       Defaults to the body text; a pack whose `--k-text` runs near-white takes the
+       glare off hours of prose HERE without dimming a single label (Sparkle does:
+       reader-polish v0 finding 6). A colour, or a `var(--k-text*)` reference. */
+    --k-text-prose: var(--k-text);
+    /* blockquote copy, hljs bullets */
+    --k-text-quote: #c3c8da;
+    /* one notch below muted; hljs operators/punctuation */
+    --k-text-dim: #8891ad;
+    /* resting drawer icons, swipe arrows, .code-copy — inventory-corrected */
+    --k-text-muted: #7f89ac;
+    /* timestamps, mesID, token counter, placeholders, code comments */
+    --k-text-faint: #6d7590;
+    /* reasoning body + hljs tags */
+    --k-text-reasoning: #949dc4;
+
+    /* ── Accents ─────────────────────────────────────────────────────── */
+    --k-accent: #9aa4d2;
+    --k-accent-bright: #b6bee2;
+    --k-rose: #dca9a4;
+    --k-rose-bright: #e6bdb6;
+
+    /* ── Structure ───────────────────────────────────────────────────── */
+    /* third-most-used color in Blue Hour: every panel/card/pill border */
+    --k-border: #545e80;
+    --k-border-strength: 35%;
+    --k-shadow: #000000;
+    --k-shadow-strength: 40%;
+    /* Sheet-owned bases: applyThemeColor() can inline-pin --k-border/--k-shadow
+       from a theme JSON. Native chrome recipes must remain switchable by
+       data-k-theme, so they derive from unpinned peers instead. */
+    --k-chrome-border: #545e80;
+    --k-elevation-shadow: #000000;
+
+    /* ── Message tints ───────────────────────────────────────────────── */
+    --k-user-mes: #202536;
+    --k-bot-mes: #181d2a;
+    --k-chat-tint: #0f121b;
+
+    /* ── Status ──────────────────────────────────────────────────────── */
+    --k-success: #9ec49a;
+    --k-warning: #cbb289;
+    --k-danger: #c98a8a;
+    --k-info: var(--k-accent);
+    /* Deep stops: the opaque fills behind destructive / confirm buttons. Tokenized
+       (rather than inlined at the call site) because the legacy --crimson70a and
+       --okGreen70a primitives need a base color that is already darkened. */
+    --k-danger-deep: color-mix(in srgb, var(--k-danger) 42%, var(--k-scrim));
+    --k-success-deep: color-mix(in srgb, var(--k-success) 42%, var(--k-scrim));
+
+    /* ── Controls ────────────────────────────────────────────────────────
+       Core computes the checkbox tick as the luminance inverse of the body
+       TEXT color (style.css:94-97), so any theme with light body text gets a
+       black tick on a pale well. This token replaces that calc outright at the
+       `--SmartThemeCheckboxTickColor` call site (css/kotatsu-chrome.css §2),
+       which also re-colors the range thumb (style.css:4311) — the same channel
+       drives both.
+
+       Bound to --k-rose, not --k-quote, on purpose: the checkbox WELL is
+       sheet-driven (--k-surface-sunken, which no theme key writes to), so a
+       theme-pinned tick would split a matched pair across two layers. It also
+       made Sparkle unable to retint its own tick — applyThemeColor() writes
+       --k-quote as an INLINE style on documentElement, which outranks every
+       sheet block. Verified live. */
+    --k-checkbox-tick: var(--k-rose);
+
+    /* ── Ambient glows (body backdrop ellipses) ──────────────────────── */
+    --k-glow-dawn: #7e8cc8;
+    --k-glow-rose: #966a8a;
+    --k-glow-deep: #5a64a0;
+
+    /* ── Overlay bases ───────────────────────────────────────────────── */
+    /* Every legacy --white*a wash derives from this; every --black*a / --grey*a
+       wash derives from --k-overlay-dark. Retinting these two retints all 30
+       core primitives at once. */
+    --k-overlay-light: var(--k-accent-bright);
+    --k-overlay-dark: var(--k-scrim);
+
+    /* ── Theme-JSON semantic aliases ─────────────────────────────────── */
+    /* `applyThemeColor()` writes a loaded theme's values into these. */
+    --k-italics: var(--k-accent);
+    --k-underline: var(--k-accent-bright);
+    --k-quote: var(--k-rose);
+
+    /* ── Geometry ────────────────────────────────────────────────────── */
+    --k-radius-xs: 4px;
+    --k-radius-sm: 6px;
+    --k-radius-md: 8px;
+    --k-radius-lg: 10px;
+    /* 7th stop, not in the design's list of 6: 12px is used 12x in the blob,
+       tied with 8px for most-used. Collapsing it into --k-radius-lg would have
+       flattened toast cards, popups and the compose pill. */
+    --k-radius-xl: 12px;
+    --k-radius-pill: 999px;
+    --k-radius-round: 50%;
+
+    /* ── Top bar ─────────────────────────────────────────────────────────
+       Core builds `--topBarBlockSize` from a calc() chain off the icon font
+       size (style.css:119-122). The floating pill is a fixed height that does
+       not track the icon scale, so the chrome sheet flattens that name onto
+       these. Block size = pill + inset above + an equal gap below, which is
+       what keeps #sheld clear of the pill. */
+    --k-topbar-pill-height: 44px;
+    --k-topbar-pill-inset: 10px;
+    --k-topbar-height: 64px;
+    --k-blur-panel: 12px;
+
+    /* ── Shell rails ─────────────────────────────────────────────────────
+       The two fixed tracks of the rails layout's grid
+       (`--k-rail-left-width minmax(0, 1fr) --k-rail-right-width`), from the
+       mockup in docs/shell-v0.md. They live here, in core, and not in a pack:
+       packs may not invent tokens (docs/theme-packs-v0.md:83-85), and a pack
+       that wants wider rails needs a name that already exists to override.
+
+       The rails sheet consumes these directly rather than through a pinnable
+       peer, which is safe for a reason worth writing down: the pin hazard
+       (see --k-chrome-border above) is about applyThemeColor() inlining a
+       LEGACY theme's values onto :root and outranking body[data-k-theme]
+       rules. Legacy theme JSON has no rail concept and never writes these
+       names, so there is nothing to be outranked by.
+
+       No --k-rail-gap: the mockup separates the tracks with 1px borders on the
+       rails themselves, not with a grid gap, so a gap token would have no call
+       site. Add it when a pack needs one. */
+    --k-rail-left-width: 280px;
+    --k-rail-right-width: 340px;
+
+    /* The centre track's readable floor. Below it, the responsive resolver
+       (kotatsu/shell/rail-collapse.js) renders preferred-open rails as
+       effectively collapsed — right first, then both — instead of letting a
+       persisted open/open squeeze the prose to a slit (900×1440 measured a
+       134px prose column, smoke 2026-08-25). Since reader-polish v0 finding 2
+       the resolver takes the LARGER of this and the reading column itself
+       (shell-center.css `--k-cc-column-base` × `--k-prose-scale`), so rails
+       never squeeze the column: a 900-wide portrait now yields BOTH rails to
+       the prose. This token is the pack-raisable minimum underneath that. Read
+       from JS as pixels, so any pack override must stay a px length. */
+    --k-center-readable-min: 560px;
+
+    /* ── Elevation ───────────────────────────────────────────────────── */
+    --k-elev-1: 0 2px 10px color-mix(in srgb, var(--k-elevation-shadow) 35%, transparent);
+    --k-elev-2: 0 6px 24px color-mix(in srgb, var(--k-elevation-shadow) 45%, transparent);
+    --k-elev-3: 0 10px 32px color-mix(in srgb, var(--k-elevation-shadow) 55%, transparent);
+    --k-elev-3-soft: 0 10px 32px color-mix(in srgb, var(--k-elevation-shadow) 50%, transparent);
+    --k-elev-4: 0 16px 48px color-mix(in srgb, var(--k-elevation-shadow) 60%, transparent);
+
+    /* Accent rings — the 3 non-elevation shadows in the blob. Unlike the
+       elevations these are halos, not lift: they say "this one" rather than
+       "this floats". Consumed by css/kotatsu-chrome.css (selected chat branch,
+       slider thumb resting + hover). */
+    --k-ring-soft: 0 0 12px color-mix(in srgb, var(--k-rose) 28%, transparent),
+        inset 0 0 8px color-mix(in srgb, var(--k-rose) 6%, transparent);
+    --k-ring-thumb: 0 0 0 3px color-mix(in srgb, var(--k-rose) 18%, transparent);
+    --k-ring-thumb-hover: 0 0 0 5px color-mix(in srgb, var(--k-rose) 30%, transparent);
+
+    /* ── Motion ──────────────────────────────────────────────────────── */
+    /* 33 of Blue Hour's 34 transitions are .15s ease. Core's --animation-duration
+       derives from --k-motion-duration so the two stop disagreeing. */
+    --k-motion-duration: 150ms;
+    --k-motion: var(--k-motion-duration) ease;
+    /* The lone 180ms outlier is the chat-avatar lift. */
+    --k-avatar-motion: 180ms ease;
+
+    /* ── Avatar geometry ─────────────────────────────────────────────── */
+    /* `--avatar-base-border-radius` was overloaded: core consumes it as a border
+       WIDTH and a MARGIN in 13 places. Those call sites now read these two; the
+       radius name keeps radius-only semantics. */
+    --k-avatar-border-w: 2px;
+    --k-avatar-gap: 2px;
+    --k-avatar-bot-shadow:
+        0 4px 16px color-mix(in srgb, var(--k-elevation-shadow) 45%, transparent),
+        0 0 12px color-mix(in srgb, var(--k-rose) 10%, transparent);
+    --k-avatar-user-shadow:
+        0 4px 16px color-mix(in srgb, var(--k-elevation-shadow) 45%, transparent),
+        0 0 12px color-mix(in srgb, var(--k-accent) 12%, transparent);
+
+    /* ── Typography hooks ────────────────────────────────────────────── */
+    /* Fallbacks only. The real faces (Newsreader / IBM Plex Sans / IBM Plex
+       Mono) are self-hosted under `public/webfonts/kotatsu/` and resolve here
+       from `css/kotatsu-chrome.css` §2 — a token sheet may not own @font-face,
+       and a default theme must not @import from a third-party host on boot.
+       These values are what a build without the chrome sheet degrades to. */
+    --k-font-ui: var(--mainFontFamily);
+    --k-font-prose: var(--mainFontFamily);
+    --k-font-display: var(--k-font-prose);
+    --k-display-weight: 500;
+    --k-font-mono: var(--monoFontFamily);
+
+    /* Prose rhythm — the reading surface (consumed by kotatsu-chrome.css §3;
+       tuned by the 2026-08-24 legibility A/B). The paragraph gap must clearly
+       exceed the leading or long replies read as one slab; all three are
+       relative/unitless so the user's mainFontSize knob scales everything. */
+    --k-mes-line-height: 1.65;
+    --k-mes-weight: 450;
+    --k-mes-para-gap: 0.85em;
+
+    /* ── Code surface ────────────────────────────────────────────────── */
+    /* Sized to cover all 49 selectors in `css/bright.min.css`. Eleven of those
+       selectors are NOT overridden by the Blue Hour blob and leak Bright's neon
+       through specificity; the tokens marked (leak) close them with harmonious
+       Blue Hour values. Selector coverage per token is noted inline.
+       Consumed by `css/kotatsu-chrome.css` §4, which restates all 49 of
+       Bright's selector groups one-for-one so nothing leaks through on
+       specificity. The vendored file stays byte-untouched and mergeable. */
+
+    /* .hljs (background) */
+    --k-code-bg: transparent;
+    /* .code-copy resting and hover/focus visibility */
+    --k-code-copy-opacity-rest: 0.5;
+    --k-code-copy-opacity-active: 1;
+    /* .hljs, pre code.hljs, code.hljs */
+    --k-code-text: var(--k-text);
+    /* (leak) .hljs::selection, .hljs ::selection — Bright ships #505050/#e0e0e0 */
+    --k-code-selection-bg: color-mix(in srgb, var(--k-accent) 30%, transparent);
+    --k-code-selection-text: var(--k-text-strong);
+    /* .hljs-comment */
+    --k-code-comment: var(--k-text-faint);
+    /* .hljs-tag */
+    --k-code-tag: var(--k-text-reasoning);
+    /* .hljs-operator, .hljs-punctuation, .hljs-subst */
+    --k-code-punctuation: var(--k-text-dim);
+    /* .hljs-bullet, .hljs-deletion, .hljs-name, .hljs-selector-tag,
+       .hljs-template-variable, .hljs-variable */
+    --k-code-variable: var(--k-text-quote);
+    /* .hljs-attr, .hljs-link, .hljs-literal, .hljs-number, .hljs-symbol,
+       .hljs-variable.constant_, and (leak) .ruby .hljs-property */
+    --k-code-attr: var(--k-rose-bright);
+    /* .hljs-class .hljs-title, .hljs-title, .hljs-title.class_ */
+    --k-code-title: var(--k-accent-bright);
+    /* (leak) .hljs-title.function_, .hljs-function .hljs-title — a function name
+       is a title, so it joins the title family instead of Bright's cyan */
+    --k-code-function: var(--k-accent-bright);
+    /* .hljs-strong */
+    --k-code-strong: var(--k-text-strong);
+    /* .hljs-addition, .hljs-code, .hljs-string, .hljs-title.class_.inherited__ */
+    --k-code-string: var(--k-rose);
+    /* .hljs-built_in, .hljs-doctag, .hljs-keyword.hljs-atrule, .hljs-quote,
+       .hljs-regexp */
+    --k-code-builtin: var(--k-accent);
+    /* .hljs-attribute, .hljs-section */
+    --k-code-section: var(--k-accent);
+    /* .hljs-keyword, .hljs-selector-class, .hljs-selector-pseudo */
+    --k-code-keyword: var(--k-accent);
+    /* (leak) .hljs-type, .hljs-template-tag, .diff .hljs-meta — Bright groups all
+       three with .hljs-keyword, so they take the keyword color */
+    --k-code-type: var(--k-accent);
+    /* (leak) .hljs-emphasis — Blue Hour restates the italic but drops Bright's
+       magenta; emphasis takes the theme's own italics color */
+    --k-code-emphasis: var(--k-italics);
+    /* .hljs-meta, .hljs-meta-keyword */
+    --k-code-meta: var(--k-text-muted);
+    /* (leak) .hljs-meta .hljs-keyword — outranks .hljs-meta at (0,2,0) */
+    --k-code-meta-keyword: var(--k-accent);
+    /* (leak) .hljs-meta .hljs-string — `#include <…>`, decorators: it is a string */
+    --k-code-meta-string: var(--k-rose);
+}

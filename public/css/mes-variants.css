@@ -1,0 +1,941 @@
+/*
+ * mes-variants.css — the message-variant wardrobe (docs/variant-wardrobe-v0.md §1, slice A).
+ *
+ * Seven non-`card` looks over ONE message tree, plus the two orthogonal nameplate/metadata
+ * axes, entirely in CSS. `card` is today's look and ships ZERO rules here: every selector in
+ * this file is gated on `#chat[data-k-mes-variant="<v>"]`, `#chat[data-k-mes-nameplate="<v>"]`
+ * or `#chat[data-k-mes-metadata="<v>"]`, so with no attribute present the sheet is INERT and
+ * the page renders byte-identically to a build without it. That inertness is also what makes
+ * the A/B measurements honest (docs/renderer-v0.md §3 slice D incident 2: same-conditions
+ * controls are the only comparisons this design trusts).
+ *
+ * The mechanisms this sheet spends (renderer-v0 §2.5):
+ *   #1 per-row `--k-mes-avatar` / `-thumb` / `-original` custom properties, written once at
+ *      fill time by public/scripts/message-rows.js `setRowAvatarProps` — the portrait family
+ *      is nothing but `background-image: var(--k-mes-avatar-original)` on a masked pseudo.
+ *   #2 the validated `#chat[data-k-mes-variant]` enumerated setting (the door).
+ *   #3 variant-aware avatar resolution — `portrait*` ask for the full-res original, everyone
+ *      else keeps the thumbnail. One token, not a config.yaml edit (recon §5.1 jailbreak #13).
+ *   #4 real `<p>` nodes inside `.mes_text`, which is the whole reason `bubble-split` exists.
+ *   #5 nameplate ≠ action bar: variants hide `.name_text` / `.timestamp`, NEVER `.ch_name`
+ *      (`.mes_buttons` is nested inside it — recon §3.8, the Voidlit lesson).
+ *
+ * Parameter tokens are declared at VARIANT SCOPE, never at `:root`, so a theme pack overrides
+ * a look by value (`--k-bubble-max-w: 60%`) instead of cloning rule blocks, and a token for a
+ * variant nobody selected costs nothing. One derived set per look, no per-side clones
+ * (recon §3.3 unitless numbers + §3.4 one variable coordinating many rules; §4.6/§4.7 are the
+ * warnings this shape exists to avoid).
+ *
+ * Hard rules honoured, each checkable by grep:
+ *   - ZERO `!important` in this file (recon §4.2).
+ *   - No `background-attachment: fixed` anywhere (recon §4.5 — repaints per scroll frame,
+ *     broken on iOS, and every effect here survives without it).
+ *   - `.ch_name` is never hidden; only `.name_text` / `.timestamp` / the small readouts.
+ *   - Every dramatic rule carries `:not(.smallSysMes)`: system chatter keeps core's centred
+ *     small-text treatment (style.css:674-712), which carries its own `!important`s.
+ *   - `.mes_text:empty` is a real state (a streaming reply before its first token, or a
+ *     message that is only a reasoning block) and no variant draws a box around nothing.
+ *
+ * ── Two conventions a reader will otherwise trip over ────────────────────────────────────
+ *
+ * 1. THE LEADING `body` IS LOAD-BEARING, NOT DECORATION. The substrate this sheet layers over
+ *    (css/shell-center.css §3) scopes every message rule as `body[data-k-layout="rails"] #chat
+ *    .mes:not(.smallSysMes) …` — one ID, N classes, and ONE ELEMENT unit. A variant selector
+ *    written the obvious way (`#chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes)
+ *    .mes_text`) matches the substrate on IDs and classes but carries no element unit, so it
+ *    LOSES on the third component and the variant silently does nothing under rails. Prefixing
+ *    `body` ties the arithmetic, and this sheet is linked after css/shell-center.css, so the
+ *    tie resolves in the wardrobe's favour — the same mechanism shell-center itself uses to
+ *    win against css/toggle-dependent.css (its §5). Under `classic` the substrate is inert and
+ *    the prefix costs nothing. Token blocks skip the prefix: nothing else declares these names.
+ *
+ * 2. HIDING IS DECLARED TWICE, ON PURPOSE. `display: none` is the correct hide and the only
+ *    free one. But shell-center.css §5 pins `display` on `.name_text`, `.timestamp` and
+ *    `.mesAvatarWrapper` with `!important` under rails — a `body.documentstyle` counter-measure
+ *    that fires unconditionally — and this sheet ships zero `!important`, so under rails that
+ *    pin wins. Each hide therefore also states a COLLAPSE (invisible + zero-metric) that still
+ *    reads correctly when the pin takes `display`. Both declarations live in one rule; the
+ *    fallback is dead weight the moment shell-center's §5 restatements are narrowed to
+ *    `body.documentstyle` (chip filed in docs/variant-wardrobe-v0.md §5).
+ *
+ * Load order: linked from index.html after the shell sheets (so it can reshape what
+ * shell-center paints) and before css/mobile-styles.css (so the responsive layer still wins).
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. flat — absorbs Moonlit's Document and Lumen (recon §1.1 #2, §6.2)
+   ───────────────────────────────────────────────────────────────────────────
+   The message card dissolves into a continuous document: no surface, no border,
+   no shadow, tightened padding, one capped prose measure down the middle, the
+   name reduced to an inline byline, the clock gone. Lumen is NOT a second
+   variant — it is this plus a pack's typography tokens (recon §6.3).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#chat[data-k-mes-variant="flat"] {
+    --k-flat-pad: 6px;
+    --k-flat-gap: 20px;
+    /* Book rhythm: print prose separates paragraphs by first-line indent, not
+       vertical gap. Set to 0 to fall back to gap-separated paragraphs. */
+    --k-flat-indent: 1.25em;
+    /* The measure is set on `.mes_block` so the byline and the prose share one column edge.
+       `ch` there resolves against the UI face rather than the prose face — a few percent
+       wider than a measure set on `.mes_text`, and worth it for the alignment. */
+    --k-flat-measure: 72ch;
+    --k-flat-name-size: 0.82em;
+    --k-flat-name-gap: 2px;
+}
+
+body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) {
+    padding: var(--k-flat-gap) var(--k-flat-pad) 0;
+    border: none;
+    background-color: transparent;
+}
+
+body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_block {
+    max-width: var(--k-flat-measure);
+    margin-inline: auto;
+}
+
+/* Book paragraphs: indent carries the separation, the gap goes to zero. The
+   first paragraph stays flush — print convention after a heading or break.
+   Streaming is safe: the tail <p> updates in place (renderer slice D), and
+   text-indent is static geometry on the node. */
+body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_text p {
+    margin-bottom: 0;
+    text-indent: var(--k-flat-indent);
+}
+
+body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_text p:first-child {
+    text-indent: 0;
+}
+
+/* The surface is what dissolves. Padding drops to the prose's own rhythm; the swipe gutter
+   the substrate reserves on `.mes_text` goes with it, because a document has no pill for the
+   arrow to sit on top of — `.swipeRightBlock` is absolutely positioned against `.mes` and
+   lands in the row's right margin, outside the capped measure. */
+body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_block .mes_text {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+/* A byline, not a nameplate. `.ch_name` keeps its box (the action bar lives in it). */
+body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_block .ch_name {
+    min-height: 0;
+    margin-bottom: var(--k-flat-name-gap);
+}
+
+body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .name_text {
+    font-family: var(--k-font-prose);
+    font-size: var(--k-flat-name-size);
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--k-text-muted);
+}
+
+body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .timestamp,
+body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .timestamp-icon {
+    display: none;
+    visibility: hidden;
+    font-size: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. bubble + bubble-split — shared base (Moonlit Bubble / Signal / Tide)
+   ───────────────────────────────────────────────────────────────────────────
+   ONE rule set, two scopes. `bubble-split` IS `bubble` plus per-paragraph
+   pills (§3 below), so the shared half is written once as a selector list —
+   recon §4.6/§4.7 is the warning against the alternative (a second hand-tuned
+   copy that drifts).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#chat[data-k-mes-variant="bubble"],
+#chat[data-k-mes-variant="bubble-split"] {
+    --k-bubble-max-w: 72%;
+    --k-bubble-radius: 16px;
+    /* The corner nearest the speaker's avatar. One token, mirrored by the two rules that
+       consume it, instead of two hand-written corner quartets. */
+    --k-bubble-tail: 5px;
+    --k-bubble-pad-x: 14px;
+    --k-bubble-pad-y: 9px;
+    --k-bubble-gap: 14px;
+    /* Core's own alpha stops (style.css:85-86), so a pack that retints `--k-user-mes` /
+       `--k-bot-mes` retints the pills with it. */
+    --k-bubble-bot-fill: color-mix(in srgb, var(--k-bot-mes) 88%, transparent);
+    --k-bubble-user-fill: color-mix(in srgb, var(--k-user-mes) 88%, transparent);
+    --k-bubble-border: color-mix(in srgb, var(--k-chrome-border) 22%, transparent);
+}
+
+body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes),
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) {
+    padding-top: var(--k-bubble-gap);
+    border: none;
+    background-color: transparent;
+}
+
+/* THE PILL IS `.mes_block`. That is the design doc's word and it is the reason the two
+   bubble variants are a different look rather than a restatement of the rails substrate
+   (which paints `.mes_text` and keeps the nameplate outside — shell-center decision 1).
+   Here the name rides at the top of the pill, messenger-style, and `bubble-split` gets a
+   surface to switch OFF when the paragraphs take over. `nameplate="above"` is the axis that
+   lifts the name back out; it works because the pill is `.mes_block` (see §8). */
+body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block,
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block {
+    flex: 0 1 auto;
+    width: fit-content;
+    max-width: var(--k-bubble-max-w);
+    min-width: 0;
+    padding: var(--k-bubble-pad-y) var(--k-bubble-pad-x);
+    border: 1px solid var(--k-bubble-border);
+    border-radius: var(--k-bubble-tail) var(--k-bubble-radius) var(--k-bubble-radius) var(--k-bubble-radius);
+    background-color: var(--k-bubble-bot-fill);
+}
+
+/* The text is now INSIDE a padded pill, so it carries no box of its own. This also retires
+   the substrate's reserved swipe gutter: `.swipeRightBlock` is absolute against `.mes`, and
+   a fit-content pill leaves the row's right edge empty for it. */
+body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block .mes_text,
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block .mes_text {
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+}
+
+body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block .ch_name,
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block .ch_name {
+    min-height: 0;
+    margin-bottom: 3px;
+}
+
+/* Both nested `.flex-container` levels inside `.ch_name` default to `min-width: auto`, which
+   is what lets a long character name refuse to ellipse — and inside a `fit-content` pill that
+   is not a cosmetic problem, it is the name deciding how wide the bubble is. The substrate
+   already zeroes these under rails; stated here so classic gets the same protection. */
+body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .ch_name .flex-container,
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .ch_name .flex-container {
+    min-width: 0;
+}
+
+body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .name_text,
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .name_text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.78em;
+    letter-spacing: 0.02em;
+    color: var(--k-text-muted);
+}
+
+/* Timestamp on hover only — `visibility`, not `display`, so the reveal costs no reflow and
+   the action bar never jumps under the pointer. It is also the declaration the substrate's
+   `display` pin cannot touch. `:focus-within` is the keyboard twin (initDynamicStyles()
+   would otherwise synthesize one late and reorder the cascade — shell-center header). */
+body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .timestamp,
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .timestamp {
+    visibility: hidden;
+    transition: opacity var(--k-motion);
+    opacity: 0;
+}
+
+body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes):hover .timestamp,
+body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes):focus-within .timestamp,
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes):hover .timestamp,
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes):focus-within .timestamp {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* ── User turns: the mirror ─────────────────────────────────────────────────
+   `order`, not `flex-direction: row-reverse`. The substrate already mirrors user rows with
+   `order` under rails; restating the same mechanism composes with it instead of double-
+   flipping it, and it works identically under classic where no order rules exist at all. */
+
+body #chat[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .mes_block,
+body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_block {
+    order: 1;
+    margin-left: auto;
+    border-radius: var(--k-bubble-radius) var(--k-bubble-tail) var(--k-bubble-radius) var(--k-bubble-radius);
+    background-color: var(--k-bubble-user-fill);
+}
+
+body #chat[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper,
+body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper {
+    order: 2;
+}
+
+body #chat[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .mes_block .ch_name,
+body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_block .ch_name {
+    flex-direction: row-reverse;
+}
+
+body #chat[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .ch_name > .flex-container,
+body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .ch_name > .flex-container {
+    justify-content: flex-end;
+}
+
+/* Signal's suppression: on your own turn the name is noise — the side of the column already
+   says who is talking. Bot turns keep theirs. */
+body #chat[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .name_text,
+body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .name_text {
+    display: none;
+    visibility: hidden;
+    font-size: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. bubble-split — Tide's per-paragraph pills (recon §1.1 #7, the most novel)
+   ───────────────────────────────────────────────────────────────────────────
+   §2's shared base, then the surface hops one level down: `.mes_block` goes
+   transparent and each DIRECT `<p>` of `.mes_text` becomes its own pill, so a
+   single turn renders as a stack of messages.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#chat[data-k-mes-variant="bubble-split"] {
+    --k-split-gap: 5px;
+    --k-split-pad-x: var(--k-bubble-pad-x);
+    --k-split-pad-y: var(--k-bubble-pad-y);
+}
+
+/* The container stops being a surface and goes back to being a column. `max-width` stays:
+   it is the measure every pill inside is capped by. */
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block {
+    padding: 0;
+    border-color: transparent;
+    background-color: transparent;
+}
+
+/* `> p` and nothing else, deliberately: lists, tables, code blocks and blockquotes keep the
+   treatment css/kotatsu-chrome.css §11 gives them instead of being crammed into a pill.
+   Renderer slices B/D guarantee these are real, STABLE paragraph nodes (renderer-v0 §2.5
+   mechanism #4), which is what makes streaming work — the growing tail paragraph is the same
+   element from token 1, so its pill grows in place rather than remounting per tick. */
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_text > p {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 var(--k-split-gap);
+    padding: var(--k-split-pad-y) var(--k-split-pad-x);
+    border: 1px solid var(--k-bubble-border);
+    border-radius: var(--k-bubble-radius);
+    background-color: var(--k-bubble-bot-fill);
+}
+
+/* The tail corner belongs to the first pill of the stack, the way a messenger draws it. */
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_text > p:first-child {
+    border-top-left-radius: var(--k-bubble-tail);
+}
+
+body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_text > p:last-child {
+    margin-bottom: 0;
+}
+
+body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_text > p {
+    margin-left: auto;
+    background-color: var(--k-bubble-user-fill);
+}
+
+body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_text > p:first-child {
+    border-top-left-radius: var(--k-bubble-radius);
+    border-top-right-radius: var(--k-bubble-tail);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. script — the screenplay column
+   ───────────────────────────────────────────────────────────────────────────
+   A narrow centred measure, the speaker set as a small-caps slug line above the
+   speech, no avatars, no clock, generous air between turns. Em-dash rhythm and
+   stage direction are the PROSE's job, not the sheet's.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#chat[data-k-mes-variant="script"] {
+    --k-script-measure: 58ch;
+    --k-script-gap: 28px;
+    --k-script-name-size: 0.72em;
+    --k-script-name-track: 0.18em;
+    --k-script-name-gap: 10px;
+}
+
+body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) {
+    gap: 0;
+    padding: var(--k-script-gap) 0 0;
+    border: none;
+    background-color: transparent;
+}
+
+/* Avatars are unused in this look, and `--k-mes-avatar*` goes with them: nothing here reads
+   the per-row art properties. The wrapper is collapsed rather than deleted from the box tree
+   twice over (header note 2) — and its readouts go with `display: none`, which the substrate
+   does not pin, so the collapse is total either way. */
+body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mesAvatarWrapper {
+    display: none;
+    visibility: hidden;
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block {
+    max-width: var(--k-script-measure);
+    margin-inline: auto;
+    padding-left: 0;
+}
+
+/* The slug line. `.ch_name` itself keeps `justify-content: space-between` so `.mes_buttons`
+   stays parked at the right edge; only the NAME GROUP centres, which is what puts the
+   speaker over the middle of the speech. */
+body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block .ch_name {
+    min-height: 0;
+    margin-bottom: var(--k-script-name-gap);
+}
+
+body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .ch_name > .flex-container {
+    justify-content: center;
+}
+
+body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .name_text {
+    font-size: var(--k-script-name-size);
+    font-weight: 600;
+    letter-spacing: var(--k-script-name-track);
+    text-transform: uppercase;
+    color: var(--k-text-muted);
+}
+
+body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .timestamp,
+body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .timestamp-icon {
+    display: none;
+    visibility: hidden;
+    font-size: 0;
+}
+
+body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block .mes_text {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. portrait — PROMOTED FROM docs/spikes/portrait-spike.css, VERBATIM
+   ───────────────────────────────────────────────────────────────────────────
+   Absorbs Moonlit's Echo and Whisper (recon §6.2): full-bleed character art
+   masked into the message surface, driven entirely by the per-row
+   `--k-mes-avatar*` properties. This is the shape slice E PRICED against the
+   §1 speed budgets with `kotatsu-portrait-spike.mjs` — four live mask layers,
+   full-res art, no `background-attachment: fixed` — so it is promoted with
+   every token name, value and selector unchanged. The spike's own header, kept
+   below as the design record, is the authority on why each piece is what it is;
+   only its opening paragraph ("NOT LOADED BY THE APP") stopped being true.
+   The one thing added is §5b, which reconciles it with the rails substrate.
+
+   Mask recipe: recon §3.2 / §3.1, transcribed from Moonlit style.css:1450-1462
+   (Echo user), :1502-1516 (Echo bot) and :1985-1996 (Ripple). Four directional
+   linear-gradients composited with `mask-composite: intersect`. Two of the four
+   are opaque-at-0% as shipped — deliberate: they are the HARD edges, kept as
+   real layers so a pack softens any edge by changing one token instead of
+   cloning the rule block (recon §4.6/§4.7: variants share a base, not a
+   clipboard).
+
+   Deliberately NOT done, each with its reason:
+     - `background-attachment: fixed` (Moonlit :1450, :1502) — recon §4.5,
+       renderer-v0 §2.5 anti-pattern list: repaints against the viewport every
+       scroll frame, broken on iOS, and the effect survives without it.
+     - `!important` on any token (recon §4.2) — zero occurrences.
+     - hiding `.ch_name` (recon §3.8, renderer-v0 §2.5 mechanism #5) —
+       `.mes_buttons` lives inside it. The art is anchored inside `.mes_text`, a
+       SIBLING of `.ch_name`, so the nameplate and the whole action bar are never
+       overlapped in the first place. Only `.timestamp` is hidden.
+     - `will-change` / `transform: translateZ(0)` on rows — would promote every
+       mounted row to its own compositor layer and trade a paint bill for a
+       memory bill. Measure first.
+     - `overflow: hidden` on `.mes_text` — a new BFC there would clip inline
+       media controls and the edit textarea's focus ring. The mask already bounds
+       the art to its own box.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Layout params (recon §3.3/§3.4: one derived set, no per-side clones) ─────────────── */
+
+#chat[data-k-mes-variant="portrait"] {
+    --k-portrait-art-w: 34%;
+    --k-portrait-art-min-w: 120px;
+    --k-portrait-art-gap: 14px;
+    --k-portrait-min-h: 140px;
+    --k-portrait-radius: 10px;
+
+    /* Mask stops. `0%` = a hard edge flush with the message surface; any positive length =
+       that edge dissolves into the text over that fraction of the box. Moonlit's shipped
+       Echo/Ripple values are inner 30% / bottom 40%, outer and top hard. */
+    --k-portrait-fade-inner: 30%;
+    --k-portrait-fade-outer: 0%;
+    --k-portrait-fade-bottom: 40%;
+    --k-portrait-fade-top: 0%;
+}
+
+/* §2.5 mechanism #3 — variant-aware avatar resolution. `portrait*` asks for the FULL-RES
+   original; the thumbnail is 96px-class and turns to mush blown up to a full-height panel
+   (recon §5.1). Override to `var(--k-mes-avatar-thumb)` to price the cheap source.
+   ⚠️ MUST be declared at ROW scope, not on #chat: `var()` inside a custom property
+   substitutes at the DECLARING element, and `--k-mes-avatar-*` exist only as inline
+   properties on each `.mes` — declared on #chat this resolves to empty and the empty
+   value is what inherits down (live-caught: pseudo rendered `background-image: none`,
+   meaning the spike's perf verdict was priced with masks live but no art decode). */
+body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) {
+    --k-portrait-art: var(--k-mes-avatar-original, var(--k-mes-avatar));
+}
+
+/* ── The message surface ─────────────────────────────────────────────────────────────── */
+
+/* `position: relative` is the only geometry change to an existing element. Verified safe: the
+   two absolutely-positioned things that could have been re-parented by it already have their
+   own containing blocks — `.code-copy` resolves against `.mes_text pre`
+   (css/kotatsu-chrome.css:809-812) and `.mes_img_controls` against `.mes_img_container`
+   (style.css). `.swipe_left` / `.swipeRightBlock` / `.mes_reasoning_arrow` are outside
+   `.mes_text` and keep resolving against `.mes`. */
+#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_text {
+    position: relative;
+    min-height: var(--k-portrait-min-h);
+}
+
+/* An empty `.mes_text` is a real state — a streaming reply before its first token, or a
+   message that is only a reasoning block. No art, no reserved height, no border-box lie. */
+#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_text:empty {
+    min-height: 0;
+}
+
+/* The text is padded off the art rather than layered under it, so nothing readable is ever
+   obscured and the mask's soft inner edge feathers into empty padding. */
+#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes):not([is_user="true"]) .mes_text {
+    padding-right: calc(max(var(--k-portrait-art-w), var(--k-portrait-art-min-w)) + var(--k-portrait-art-gap));
+}
+
+#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes)[is_user="true"] .mes_text {
+    padding-left: calc(max(var(--k-portrait-art-w), var(--k-portrait-art-min-w)) + var(--k-portrait-art-gap));
+}
+
+/* §2.5 mechanism #5, the Voidlit lesson (recon §3.8): hide `.name_text` / `.timestamp`,
+   NEVER `.ch_name` — the action bar is nested inside it. */
+#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .timestamp {
+    display: none;
+}
+
+/* ── The art panel ───────────────────────────────────────────────────────────────────── */
+
+#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_text:not(:empty)::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: max(var(--k-portrait-art-w), var(--k-portrait-art-min-w));
+    pointer-events: none;
+
+    background-image: var(--k-portrait-art);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    /* background-attachment stays at its `scroll` initial value on purpose — see the header. */
+
+    -webkit-mask-composite: destination-in;
+    mask-composite: intersect;
+}
+
+/* Bot / system turns: art on the outer (right) edge, dissolving left into the prose and up
+   from the bottom. Moonlit style.css:1502-1516. */
+#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes):not([is_user="true"]) .mes_text:not(:empty)::before {
+    right: 0;
+    border-radius: 0 var(--k-portrait-radius) var(--k-portrait-radius) 0;
+    -webkit-mask-image:
+        linear-gradient(to left, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-outer)),
+        linear-gradient(to right, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-inner)),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-top)),
+        linear-gradient(to top, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-bottom));
+    mask-image:
+        linear-gradient(to left, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-outer)),
+        linear-gradient(to right, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-inner)),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-top)),
+        linear-gradient(to top, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-bottom));
+}
+
+/* User turns: the exact mirror — one block, same tokens, opposite anchor (recon §4.6 is the
+   warning against writing this as a second hand-tuned copy). Moonlit style.css:1440-1462. */
+#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes)[is_user="true"] .mes_text:not(:empty)::before {
+    left: 0;
+    border-radius: var(--k-portrait-radius) 0 0 var(--k-portrait-radius);
+    -webkit-mask-image:
+        linear-gradient(to right, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-outer)),
+        linear-gradient(to left, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-inner)),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-top)),
+        linear-gradient(to top, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-bottom));
+    mask-image:
+        linear-gradient(to right, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-outer)),
+        linear-gradient(to left, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-inner)),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-top)),
+        linear-gradient(to top, rgba(0, 0, 0, 0), rgb(0, 0, 0) var(--k-portrait-fade-bottom));
+}
+
+/* ── 5b. Substrate reconciliation — the two declarations rails outranks ───────────────────
+   The spike was measured with `addStyleTag`, which appends at the END of the cascade; linked
+   from index.html it sits where this sheet sits, and two of its declarations lose to
+   css/shell-center.css:
+     · `min-height: var(--k-portrait-min-h)` at (1,4,0) loses to the substrate's
+       `.mes_text { min-height: 0 }` at (1,4,1) — and without the floor a one-line message
+       gives the art panel a 30px sliver instead of a portrait.
+     · `display: none` on `.timestamp` loses outright to shell-center.css §5's `!important`.
+   Both are RESTATED here, same tokens, same intent, at winning weight. Nothing above is
+   edited: the priced shape stays byte-identical for anyone diffing it against the spike.
+   These two rules disappear the day the substrate stops pinning `display` and this sheet is
+   allowed the ordinary `.mes_block .mes_text` chain. */
+
+body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_block .mes_text {
+    min-height: var(--k-portrait-min-h);
+}
+
+body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_block .mes_text:empty {
+    min-height: 0;
+}
+
+body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .timestamp,
+body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .timestamp-icon {
+    display: none;
+    visibility: hidden;
+    font-size: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. portrait-column — Ripple's sticky art column (recon §1.1 #6)
+   ───────────────────────────────────────────────────────────────────────────
+   The avatar grows into a tall portrait panel that RIDES THE SCROLL while its
+   message body passes it. `position: sticky` under the grow-only window is
+   verdict FEASIBLE (renderer-v0 slice C gate; recon §6.5 unknown #1 answered) —
+   the window only ever appends rows above/below, never recycles a row's node,
+   so the sticky element's containing block is a stable `.mes`.
+
+   Sizing is ONE derived set (recon §3.4): the column width is the only length,
+   the height is `width x --k-avatar-aspect` (unitless, §3.3), and both are
+   published through the tokens core's own `.avatar` / `.avatar img` rules
+   already read — so changing `--k-pcol-w` relays the whole column, including
+   the swipe reservation core computes from `--avatar-base-height`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The column's two LENGTHS live on <body>, not on #chat, and the reason is the reading
+   column. Under rails every row, the header strip and the composer share one
+   `--k-cc-column` box (css/shell-center.css §"The column"), sized so the PROSE runs ~75
+   characters per line beside the card avatar. This look swaps that avatar for a 168px
+   panel plus an 18px gap, and if the box stays put the prose pays for it — measured
+   2026-09-05 on a 3440 monitor: the bot block fell 632 → 524px, 75 → 60 CPL, a NARROWER
+   column with MORE dead track either side. The honest shape is the one reader-polish v0
+   set — bigger type at the same measure, never a narrower one — so the look widens the
+   TRACK by exactly what the panel costs and the measure holds. That is
+   `--k-cc-track-extra`, which shell-center folds into `--k-cc-column` (a registered
+   <length>, so kotatsu/shell/rail-collapse.js can read it back as pixels and the rails keep
+   yielding to the wider column).
+
+   The arithmetic, from the row anatomy (playwright-rig kotatsu-row-anatomy.mjs), not from
+   token names: `.mes` is a flex row whose FIRST in-flow item is core's zero-width
+   `.for_checkbox` label, so the row's `gap` is paid twice — once after that label, once
+   after the avatar wrapper. Card: `avatar-col + 2·row-gap`. This look: `pcol-w + 2·pcol-gap`.
+   The extra is their difference. `--k-cc-avatar-col` is the card wrapper's ON-SCREEN
+   width (shell-center declares it: the `--k-cc-avatar` token, or 72px under
+   `body.big-avatars`, where css/kotatsu-chrome.css §14's literal outranks the token).
+   With big avatars: 168 + 36 − 72 − 24 = 108px, the loss measured above, to the pixel.
+
+   `:has()` because the consumers are SIBLINGS of #chat (`#form_sheld`, `.k-ch__row`)
+   and only an ancestor can reach them; every engine that has `field-sizing` has `:has()`.
+   The lengths are declared HERE so the extra and the panel can never disagree — a pack
+   that wants a wider panel overrides `--k-pcol-w` at this scope (the #chat block below
+   still owns the unitless/derived tokens and inherits these two). */
+body:has(#chat[data-k-mes-variant="portrait-column"]) {
+    --k-pcol-w: 168px;
+    --k-pcol-gap: 18px;
+    --k-cc-track-extra: calc(var(--k-pcol-w) + 2 * var(--k-pcol-gap) - var(--k-cc-avatar-col, 40px) - 2 * var(--k-cc-row-gap, 12px));
+}
+
+#chat[data-k-mes-variant="portrait-column"] {
+    /* `--k-pcol-w` / `--k-pcol-gap` inherit from the body rule above. */
+    --k-avatar-aspect: 1.5;
+    --k-pcol-top: 12px;
+    --k-pcol-radius: var(--k-radius-lg);
+}
+
+body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) {
+    /* §2.5 mechanism #3: the 168px column wants the original, not the 96px thumb.
+       Row scope for the same reason as portrait's art var — see the note there. */
+    --k-pcol-art: var(--k-mes-avatar-original, var(--k-mes-avatar));
+    --avatar-base-width: var(--k-pcol-w);
+    --avatar-base-height: calc(var(--k-pcol-w) * var(--k-avatar-aspect));
+    --avatar-base-border-radius-round: var(--k-pcol-radius);
+
+    gap: var(--k-pcol-gap);
+    align-items: flex-start;
+    border: none;
+    background-color: transparent;
+}
+
+body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .mesAvatarWrapper {
+    position: sticky;
+    top: var(--k-pcol-top);
+    flex: 0 0 var(--k-pcol-w);
+    width: var(--k-pcol-w);
+    align-self: flex-start;
+}
+
+/* Core reserves a full avatar height of padding under the LAST message's wrapper
+   (style.css `.last_mes .mesAvatarWrapper`), which at 252px would make the wrapper taller
+   than most rows and kill the stick. Zeroed here, and only here. */
+body #chat[data-k-mes-variant="portrait-column"] .mes.last_mes:not(.smallSysMes) .mesAvatarWrapper {
+    padding-bottom: 0;
+}
+
+/* The panel itself. Stated in `--avatar-base-*` rather than literals so the declaration
+   above stays the single source — and stated at all because css/kotatsu-chrome.css §14 pins
+   72x108 literals under `body.big-avatars`, which would otherwise win here. */
+body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .avatar {
+    flex: 0 0 auto;
+    width: var(--avatar-base-width);
+    height: var(--avatar-base-height);
+    border-radius: var(--k-pcol-radius);
+    background-image: var(--k-pcol-art);
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-size: cover;
+    /* background-attachment stays `scroll` — see the file header. */
+}
+
+/* The `<img>` is the thumbnail and the click target both. Kept in the box (so the avatar
+   click that opens the character still works, and the a11y tree still has the image), made
+   invisible so the full-res background is what the eye gets. */
+body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .avatar img {
+    width: var(--avatar-base-width);
+    height: var(--avatar-base-height);
+    border: none;
+    box-shadow: none;
+    opacity: 0;
+}
+
+body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .mes_block {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7. broadcast — the focus feed (absorbs Beacon)
+   ───────────────────────────────────────────────────────────────────────────
+   Every turn gets a left accent rail; everything that is not the newest message
+   is dimmed, and comes back to full strength under the pointer or the keyboard.
+   The dim is `opacity` on the row and nothing else — no filter, no `will-change`
+   (renderer-v0 §2.5 anti-patterns), so a dimmed row costs one composited layer
+   only while it is actually transitioning.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#chat[data-k-mes-variant="broadcast"] {
+    --k-broadcast-rail: 3px;
+    --k-broadcast-dim: 0.55;
+    --k-broadcast-pad: 14px;
+    --k-broadcast-gap: 16px;
+    --k-broadcast-name-track: 0.14em;
+    /* The speaker colours css/kotatsu-chrome.css §15 already uses for the row stripe: rose
+       for the character, lavender for you. One token, overridden once for user turns. */
+    --k-broadcast-rail-color: var(--k-rose);
+}
+
+body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) {
+    padding: var(--k-broadcast-gap) var(--k-broadcast-pad) 0;
+    border: none;
+    border-left: var(--k-broadcast-rail) solid var(--k-broadcast-rail-color);
+    border-radius: 0;
+    background-color: transparent;
+    transition: opacity var(--k-motion);
+}
+
+body #chat[data-k-mes-variant="broadcast"] .mes[is_user="true"]:not(.smallSysMes) {
+    --k-broadcast-rail-color: var(--k-accent);
+}
+
+body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes):not(.last_mes) {
+    opacity: var(--k-broadcast-dim);
+}
+
+body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes):not(.last_mes):hover,
+body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes):not(.last_mes):focus-within {
+    opacity: 1;
+}
+
+body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) .name_text {
+    font-size: 0.76em;
+    font-weight: 600;
+    letter-spacing: var(--k-broadcast-name-track);
+    text-transform: uppercase;
+}
+
+body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) .mes_block .mes_text {
+    border: none;
+    background-color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. NAMEPLATE AXIS — #chat[data-k-mes-nameplate]
+   ───────────────────────────────────────────────────────────────────────────
+   Orthogonal to the variant. `inline` is today and ships no rules. The
+   attribute arrives with slice B; until then everything below matches nothing.
+
+   `above` (Whisper/Hush) lifts the whole nameplate ROW out of `.mes_block`'s
+   box, so it reads as a label over the message rather than a line inside it.
+   The mechanism is one absolutely-positioned row plus a matching reservation on
+   the block — no per-variant patching, and it composes with every look: where
+   the variant paints `.mes_block` (bubble, bubble-split) the name escapes the
+   pill; where it paints `.mes_text` (card under rails) or nothing (flat,
+   script) it simply gains air.
+
+   TWO things had to be checked before this was allowed to exist.
+
+   1. Containing-block audit for `position: relative` on `.mes_block`, done the
+      way the portrait spike did it for `.mes_text`: the only absolutely-
+      positioned descendants are `.mes_reasoning_arrow` (contained by
+      `.mes_reasoning_header`, `position: relative` at style.css:477-479),
+      `.code-copy` (contained by `.mes_text pre`, css/kotatsu-chrome.css:809-812)
+      and the media controls (contained by `.mes_img_container` /
+      `.mes_video_container`, style.css:5209). None of them currently resolve
+      against `.mes`, so none of them move. `.swipe_left` / `.swipeRightBlock`
+      are siblings of `.mes_block`, not descendants, and keep resolving against
+      `.mes`.
+
+   2. `.mes_block` CLIPS. Core gives it `overflow-x: hidden; overflow-y: clip`
+      (style.css:1520-1526) to stop a wide table or a long code line from blowing
+      the row out — and a nameplate parked at `bottom: 100%` is outside the
+      padding box, so it would be clipped away to nothing. `overflow-clip-margin`
+      is the exact tool: it widens the clip rectangle by a length without
+      restoring scrollability. It applies to every side, so the horizontal clip
+      loosens by the same amount — harmless, because `#chat` itself is
+      `overflow-x: hidden` (style.css:871) and the document can never gain a
+      horizontal scrollbar from it. The whole lift is wrapped in `@supports`, so
+      an engine without `overflow-clip-margin` renders the nameplate INLINE
+      (today's shape) rather than eating it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#chat[data-k-mes-nameplate="above"] {
+    /* The row's reserved height. One token drives all three halves of the lift — the
+       reservation, the label box and the clip margin — so a pack that wants a taller label
+       line changes one number (recon §3.4). */
+    --k-nameplate-h: 20px;
+    --k-nameplate-gap: 5px;
+}
+
+@supports (overflow-clip-margin: 1px) {
+    body #chat[data-k-mes-nameplate="above"] .mes:not(.smallSysMes) .mes_block {
+        position: relative;
+        margin-top: calc(var(--k-nameplate-h) + var(--k-nameplate-gap));
+        overflow: clip;
+        overflow-clip-margin: calc(var(--k-nameplate-h) + var(--k-nameplate-gap));
+    }
+
+    body #chat[data-k-mes-nameplate="above"] .mes:not(.smallSysMes) .mes_block .ch_name {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 100%;
+        min-height: var(--k-nameplate-h);
+        margin: 0 0 var(--k-nameplate-gap);
+    }
+}
+
+/* `inline` is today's shape and ships nothing. `margin` — the name in a left gutter — ships
+   nothing EITHER: it was attempted and dropped, because the gutter it needs is the column the
+   avatar already owns and the substrate hands out no third track. Slice B still accepts the
+   value in the door so a pack authored for a later Kotatsu is not schema-fatal; it falls back
+   with one warning. Verdict and reasoning: docs/variant-wardrobe-v0.md §5. */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9. METADATA AXIS — #chat[data-k-mes-metadata]
+   ───────────────────────────────────────────────────────────────────────────
+   Moonlit's `enableMessageDetails` was ~100 lines of per-mode CSS behind one
+   checkbox (recon §1.2, §6.4). As an axis it is the rule pair below, and it is
+   per-mode-free because it names the readouts, not the layout.
+
+   The reveal is `opacity` + `pointer-events`, never `display`:
+     · no reflow on hover, so the action bar cannot jump out from under the
+       pointer the frame you reach for it (the Moonlit modes had to translate
+       these by 40px per mode to dodge exactly that);
+     · the row keeps its height whether the chrome is showing or not, so a
+       hover does not shift the scroll position of everything below it;
+     · and it is a property css/shell-center.css §5 does not pin, so this works
+       under both layouts without an `!important` anywhere.
+   `.mes_timer` rides with the named set: it is the fourth readout of the same
+   family, and hiding three of four would read as a bug, not a mode. For the
+   same reason `k-mes-metrics` (metrics native v0) is the FIFTH member — the
+   context/cache/output bar is chrome about the message, not the message, and a
+   `hover` mode that faded four readouts and left a token gauge lit would be the
+   exact bug this rule exists to prevent. Its chips are inert in v0, so
+   `metadata-reveal.js`'s IGNORED_SELECTORS needs no entry; the day a chip
+   becomes clickable, it does.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#chat[data-k-mes-metadata="hover"],
+#chat[data-k-mes-metadata="click"] {
+    --k-meta-hidden-opacity: 0;
+}
+
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .timestamp,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .timestamp-icon,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .mesIDDisplay,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .mes_timer,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .tokenCounterDisplay,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) k-mes-metrics,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .timestamp,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .timestamp-icon,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .mesIDDisplay,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .mes_timer,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .tokenCounterDisplay,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) k-mes-metrics {
+    opacity: var(--k-meta-hidden-opacity);
+    pointer-events: none;
+    transition: opacity var(--k-motion);
+}
+
+/* `hover` reveals on pointer or focus. `click` reveals on the row class slice B's delegated
+   `#chat` handler toggles — and keeps the `:focus-within` reveal, because a keyboard user
+   tabbing into a row's action bar must be able to see the row's chrome without a mouse. */
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .timestamp,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .timestamp-icon,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .mesIDDisplay,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .mes_timer,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .tokenCounterDisplay,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover k-mes-metrics,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .timestamp,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .timestamp-icon,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .mesIDDisplay,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .mes_timer,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .tokenCounterDisplay,
+body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within k-mes-metrics,
+body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .timestamp,
+body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .timestamp-icon,
+body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .mesIDDisplay,
+body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .mes_timer,
+body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .tokenCounterDisplay,
+body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) k-mes-metrics,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .timestamp,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .timestamp-icon,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .mesIDDisplay,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .mes_timer,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .tokenCounterDisplay,
+body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within k-mes-metrics {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Motion opt-out. The only animated properties in this sheet are the two opacity fades
+   above and broadcast's dim, and all three are affordances, not information. */
+@media (prefers-reduced-motion: reduce) {
+    body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes),
+    body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .timestamp,
+    body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .timestamp,
+    body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .timestamp,
+    body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .timestamp {
+        transition: none;
+    }
+}

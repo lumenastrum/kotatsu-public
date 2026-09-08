@@ -1,0 +1,543 @@
+/*
+ * rechrome-popups.css — rechrome v0 slice C (docs/rechrome-v0.md §Slices).
+ *
+ * Owns the two MODAL-ADJACENT surfaces core owns and Kotatsu never re-cut: the
+ * generic `dialog.popup` (css/popup.css, built from `#popup_template` in
+ * index.html:6626-6644) and the toastr cards (`#toast-container`, vendored
+ * css/toastr.min.css). Everything between them — the sheet, its title, the
+ * OK/Cancel/custom button row, the corner close chip, the toast card — is
+ * re-dressed in the house language. Nothing else in this file exists.
+ *
+ * The anatomy is BORROWED, not invented. Two reference selectors:
+ *   - `.k-studio-sheet` (css/studio.css:116-137) is the sheet recipe: flat
+ *     `--k-surface` fill, one hairline derived from the UNPINNED
+ *     `--k-chrome-border` peer through `--k-border-strength`, `--k-radius-xl`,
+ *     `--k-elev-4`. `dialog.popup` already carries the radius and the elevation
+ *     verbatim (css/popup.css:12-16), so this sheet does NOT restate them —
+ *     only the fill and the hairline strength actually change. The audit is the
+ *     point: a rule that repaints a value identical to stock is noise that a
+ *     future theme pack has to keep in sync for nothing.
+ *   - `.k-lib-btn` (css/library.css:297-331) is the button: pill radius, 8/14
+ *     padding, 12.5px at 600, transparent ghost by default, and the light
+ *     accent pill for `--primary`. The studio's Save button is literally
+ *     `.k-lib-btn.k-lib-btn--primary` (kotatsu/studio/k-card-studio.js:759), so
+ *     "primary = the light pill" and "the studio's Save" are the same object.
+ *     In the popup row the primary is the OK button and whichever button JS
+ *     marked `.menu_button_default` (scripts/popup.js:448-449); every other
+ *     button in the row is a ghost.
+ *
+ * The poster children, both verified against their real markup before a byte
+ * was written: the Import Characters popup (script.js:12897-12898 —
+ * POPUP_TYPE.INPUT, `wider`, `allowVerticalScrolling`, a `<ul>` of eight source
+ * examples in `.sources_list` plus a 4-row textarea) and the tag-import dialog
+ * (scripts/tags.js:1044-1085 — `wider`, THREE `.tags` chip rows, one custom
+ * checkbox, and FIVE buttons in one `.popup-controls`). Their layout machinery
+ * is untouched: no rule here writes `display`, `overflow`, `width`, `height`,
+ * `flex-direction` or `text-align` on `.popup-body` / `.popup-content`, which
+ * is what carries the long source list and the wrapping chip rows. The one
+ * layout AFFORDANCE added is `flex-wrap` on the button row, because five pills
+ * at pill padding is exactly the row stock never had to survive.
+ *
+ * ── Gate ──────────────────────────────────────────────────────────────────
+ * Every rule is under `body[data-k-layout="rails"]`. A dialog opened with
+ * `showModal()` paints in the TOP LAYER, which is a paint-order concept, not a
+ * tree concept — `Popup.show()` does `document.body.append(this.dlg)`
+ * (scripts/popup.js:680) before it calls `showModal()` (:685), so the dialog is
+ * and stays a child of `<body>` and the descendant gate matches. Same for
+ * `#toast-container`: body-level normally, and re-parented INTO the open dialog
+ * by `fixToastrForDialogs()` (scripts/popup.js:948-968) — both homes are inside
+ * `<body>`, so one gated selector covers both. Verified in source, not assumed.
+ *
+ * ── Walk-backs (contract 5: `!important` only to unwind an existing one) ───
+ * Exactly one, at §5.1: toastr ships the four status glyphs as base64 PNGs with
+ * `!important` (css/toastr.min.css, `#toast-container>.toast-info` and its three
+ * siblings). They are raster, off-palette pure white, and unreachable by any
+ * token — a theme pack cannot repaint them, which is precisely what contract 2
+ * forbids. Nothing but `!important` can unwind `!important`, so that one rule
+ * carries it and says so at the rule.
+ *
+ * ── Deliberately NOT touched, and why ─────────────────────────────────────
+ * `.transparent_dialogue_popup` (style.css:3742) and the zoomed-image
+ * fullscreen popup (`.popup:has(.img_enlarged.zoomed).large_dialogue_popup`,
+ * style.css:5379-5386) are excluded by `:not()` from the surface and the
+ * padding respectively — both are stock variants whose whole job is to have no
+ * chrome, and a gated selector outranks them on specificity. The action-loader
+ * uses the first one live (scripts/action-loader.js:538).
+ * `--popup-animation-speed` and the pop-in/pop-out keyframes stay core's: they
+ * already resolve through `--animation-duration*`, which derives from
+ * `--k-motion-duration` in the substrate.
+ * The toast CARD stays neutral. css/kotatsu-chrome.css §11 made a documented
+ * choice — one neutral card, the status on a left edge — and this sheet extends
+ * that reading rather than arguing with it: the reclaimed icon gutter and the
+ * status-tinted TITLE, not a per-status card fill.
+ *
+ * ── Slice boundary ────────────────────────────────────────────────────────
+ * Slice A owns bare `.menu_button`; this sheet only ever reaches it through
+ * `.popup-controls`, which the design doc assigns here ("the OK/Cancel/wide
+ * button rows"). Slice B owns `.text_pole`, textareas and checkbox rows, so
+ * `.popup-input` and the `<label>`s inside `.popup-inputs` are left alone —
+ * only the `.popup-inputs` CONTAINER's own type and rhythm are set here.
+ *
+ * Every `:hover` has its explicit `:focus-visible` twin. `initDynamicStyles()`
+ * (scripts/dynamic-styles.js:188-202) synthesizes a missing twin and appends it
+ * late, which reorders the cascade at runtime; writing it keeps the order ours.
+ *
+ * Load order: linked from index.html after css/studio.css and before
+ * css/mobile-styles.css, in slice order A→D.
+ */
+
+body[data-k-layout="rails"] {
+    /* Sheet-local parameters, the css/library.css `--k-lib-*` pattern: declared
+       at component scope, never at `:root`, so `npm run theme:check -- --drift`
+       does not demand an entry in every shipped pack manifest for a parameter
+       no pack has an opinion about yet. A pack's own `sheet.css` is prefixed
+       `body[data-k-theme="<id>"]`, ties with this block on specificity and is
+       injected later, so a pack override still wins. */
+
+    /* Hairline off the UNPINNED peer, not `--k-border`: applyThemeColor() can
+       inline-pin `--k-border` onto :root from a legacy theme JSON and outrank
+       every sheet rule (css/tokens.css:79-83). Same recipe, name for name, as
+       `--k-studio-hairline` and `--k-lib-hairline`. */
+    --k-pop-hairline: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+
+    /* The sheet's own inset. Stock is `4px 14px` (css/popup.css:15), which puts
+       15px above the title and 5px under the button row — the asymmetry reads
+       as a crop, and it gets worse the moment the row grows to pill height. */
+    --k-pop-pad: 18px;
+    --k-pop-pad-top: 10px;
+
+    /* Type: the 12.5px UI size shared by `--k-lib-ui-size` and
+       `--k-studio-ui-size`. Floor is 11px, everywhere. */
+    --k-pop-ui-size: 12.5px;
+
+    /* Button anatomy, copied from `.k-lib-btn`. */
+    --k-pop-btn-pad-block: 8px;
+    --k-pop-btn-pad-inline: 14px;
+    /* `.k-lib-hero-actions` sits at 8px. Loosened by two here: these are
+       commit-or-cancel decisions, and the tag-import row puts five of them
+       side by side. */
+    --k-pop-btn-gap: 10px;
+
+    /* One accent wash for every ghost control in the sheet — the same mix
+       `--k-ghost-hover`, `--k-lib-hover-fill` and `--k-studio-hover-fill` all
+       spell out. */
+    --k-pop-hover-fill: color-mix(in srgb, var(--k-accent) 10%, transparent);
+
+    /* Toast card: stock is `15px 15px 15px 50px`, where 50 is a gutter for a
+       raster icon this sheet removes. Vertical stays at stock so no toast gets
+       SHORTER than it is today (contract 7); the left inset is 18 rather than
+       16 so copy clears kotatsu-chrome §11's 3px status edge. */
+    --k-pop-toast-pad: 15px 16px 15px 18px;
+    /* toastr's own compact breakpoint (`max-width: 480px`), restated verbatim
+       so the small-screen card does not inflate. */
+    --k-pop-toast-pad-compact: 8px 8px 8px 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. THE SHEET — `.k-studio-sheet`, worn by `dialog.popup`
+   ───────────────────────────────────────────────────────────────────────────
+   Stock (css/popup.css:9-34) already ships `border-radius: var(--k-radius-xl)`
+   and `box-shadow: var(--k-elev-4)` — the studio recipe, byte for byte. Two
+   things differ and only those two are written: the fill is the panel GRADIENT
+   rather than the studio's flat `--k-surface`, and the hairline hardcodes 35%
+   instead of reading `--k-border-strength`, which is the knob a pack turns.
+
+   `overflow: visible` is core's and stays core's: it is what lets a toast
+   escape the dialog box (css/popup.css:25-26), and `.popup-body` is the element
+   actually clipping content.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] dialog.popup:not(.transparent_dialogue_popup) {
+    background: var(--k-surface);
+    border-color: var(--k-pop-hairline);
+}
+
+/* Padding is split off the surface rule for one reason: the zoomed-image popup
+   zeroes it on purpose (style.css:5386) at (0,3,0), and a gated selector would
+   quietly outrank that and re-frame a fullscreen image. Excluded by name. */
+body[data-k-layout="rails"] dialog.popup:not(.transparent_dialogue_popup):not(:has(.img_enlarged.zoomed)) {
+    padding: var(--k-pop-pad-top) var(--k-pop-pad) var(--k-pop-pad);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. COPY — the title is already dressed; this is the rest of the body
+   ───────────────────────────────────────────────────────────────────────────
+   `.popup h3` / `.popup h4` take the display face, weight, 0.03em tracking and
+   `--k-text-strong` from css/kotatsu-chrome.css §3 and §12 [62]. Nothing here
+   re-litigates that. What is left is the copy UNDER the title, which today
+   inherits browser defaults: the Import Characters source list and the
+   tag-import instructions.
+
+   `.popup { text-align: center }` is stock and stays stock. Core already opts
+   the two long-form popups out with `.justifyLeft` on their own containers
+   (scripts/templates/importCharacters.html:3,
+   scripts/templates/charTagImport.html:3), so flipping the default would only
+   move the problem to every one-line confirm.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The `<small>` runs under the Import and tag-import titles. */
+body[data-k-layout="rails"] .popup .popup-content>small,
+body[data-k-layout="rails"] .popup .import_tags_content>small,
+body[data-k-layout="rails"] .popup #folder_tags_block>small {
+    color: var(--k-text-muted);
+    font-size: var(--k-pop-ui-size);
+    line-height: 1.5;
+}
+
+/* The eight supported-source rows. Stock gives the `<ul>` browser defaults and
+   a 5px bottom pad per item (css/st-tailwind.css:603-605); the rhythm stays,
+   the colour and the measure become ours. */
+body[data-k-layout="rails"] .popup .sources_list {
+    color: var(--k-text-muted);
+    font-size: var(--k-pop-ui-size);
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .popup .sources_list ul {
+    margin-bottom: 0;
+    padding-left: 1.25em;
+}
+
+body[data-k-layout="rails"] .popup .sources_list li span:first-child {
+    color: var(--k-text);
+}
+
+/* The `<tt>` / `<code>` examples are the only literal strings in the dialog —
+   a URL you are about to paste. They read as data, in the meta face. */
+body[data-k-layout="rails"] .popup .sources_list tt,
+body[data-k-layout="rails"] .popup .sources_list code {
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    font-size: 0.92em;
+    overflow-wrap: anywhere;
+}
+
+/* Section headings inside the tag-import body ("Existing Tags", "New Tags",
+   "Folder Tags") are h4s stacked over wrapping chip rows. They keep the display
+   face from kotatsu-chrome §3 and gain only the gap that stops a heading from
+   sitting on the chips above it. `.tags` itself (css/tags.css:106-113) is a
+   wrapping flex row and is not touched. */
+body[data-k-layout="rails"] .popup .import_tags_content h4 {
+    margin-bottom: 6px;
+}
+
+/* The custom-input block ("Remember my choice" and friends). JS writes
+   `display: block` / `none` on this element inline (scripts/popup.js:454), so
+   no rule here writes `display`. The `<label>` and its checkbox belong to
+   slice B; this is the container's own type and rhythm only. `font-size:
+   smaller` (css/popup.css:164) is a relative keyword the house does not use. */
+body[data-k-layout="rails"] .popup .popup-inputs {
+    margin-top: 14px;
+    font-size: var(--k-pop-ui-size);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. THE BUTTON ROW — `.k-lib-btn`, worn by `.popup-controls .menu_button`
+   ───────────────────────────────────────────────────────────────────────────
+   Stock row: `display: flex; gap: 20px; align-self: center`, no wrap
+   (css/popup.css:176-181). Stock button: `padding: 3px 5px`, `--k-radius-md`,
+   a sunken fill and `filter: grayscale(0.5)` (style.css:3831-3846). The pill is
+   8/14 — TALLER than stock in every direction, so contract 7 is satisfied by
+   construction, not by inspection.
+
+   `filter: grayscale(0.5)` is the one thing that has to be actively unwound
+   rather than replaced: it desaturates the accent straight back out of the
+   primary pill. It is not `!important`, so a gated selector is enough — but it
+   is unwound with core's own `:not(.disabled):not([disabled])` guard, because
+   the disabled treatment (style.css:3100-3105) is ALSO a filter and must
+   survive.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .popup-controls {
+    /* No `display` write: it is already flex, and JS sets `display: none` on
+       this element inline for POPUP_TYPE.DISPLAY (scripts/popup.js:483). */
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--k-pop-btn-gap);
+    margin-top: 14px;
+}
+
+body[data-k-layout="rails"] .popup-controls .menu_button {
+    gap: 6px;
+    /* Stock buttons carry `margin: 5px 0`; the row's gap does that job now. */
+    margin: 0;
+    padding: var(--k-pop-btn-pad-block) var(--k-pop-btn-pad-inline);
+    border: 1px solid var(--k-pop-hairline);
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text);
+    font-family: inherit;
+    font-size: var(--k-pop-ui-size);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Walk-back of `.menu_button { filter: grayscale(0.5) }`, guarded so the
+   disabled dimming at style.css:3100-3105 is not cancelled with it. */
+body[data-k-layout="rails"] .popup-controls .menu_button:not(.disabled):not([disabled]) {
+    filter: none;
+}
+
+/* And the same for the interactive states: css/popup.css:214-216 fires
+   `filter: brightness(1.3) saturate(1.3)` at (0,4,0) on `:hover:focus-visible`,
+   which is a brightness hack standing in for a hover style. The pill has real
+   hover colours, so the filter goes. */
+body[data-k-layout="rails"] .popup-controls .menu_button:not(.disabled):not([disabled]):hover,
+body[data-k-layout="rails"] .popup-controls .menu_button:not(.disabled):not([disabled]):focus-visible {
+    filter: none;
+}
+
+/* ── Ghost: Cancel, and every custom button that is not the default ────────
+   Written to EXCLUDE the primaries. Without the two `:not()`s this rule lands
+   at a higher specificity than the primary's resting fill and would wash the
+   accent pill grey the moment the pointer touched it. */
+body[data-k-layout="rails"] .popup-controls .menu_button:not(.popup-button-ok):not(.menu_button_default):hover,
+body[data-k-layout="rails"] .popup-controls .menu_button:not(.popup-button-ok):not(.menu_button_default):focus-visible {
+    border-color: var(--k-accent);
+    background: var(--k-pop-hover-fill);
+    color: var(--k-text-strong);
+    outline: none;
+}
+
+/* ── Primary: the light pill ───────────────────────────────────────────────
+   `.popup-button-ok` and whatever JS marked `.menu_button_default`
+   (scripts/popup.js:448-449) — in the tag-import dialog those are the same
+   button, in a popup with a custom default they are not.
+
+   This retires core's blanket crimson on `.popup-button-ok` (css/popup.css:195)
+   and the rose-tinted `.menu_button_default` (css/popup.css:183): "affirmative"
+   is not "destructive", and today the Import button in the Import Characters
+   dialog is painted the same red as a delete confirmation. Destructive intent
+   keeps its own opt-in — see the `.red_button` block below. */
+body[data-k-layout="rails"] .popup-controls .menu_button.popup-button-ok,
+body[data-k-layout="rails"] .popup-controls .menu_button.menu_button_default {
+    border-color: color-mix(in srgb, var(--k-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--k-accent) 18%, transparent);
+    color: var(--k-text-strong);
+    /* Replaces the `0 0 5px var(--white20a)` glow at css/popup.css:184 — the
+       fill is the emphasis now. */
+    box-shadow: none;
+}
+
+/* (0,5,1), which is what it takes to beat core's own
+   `.menu_button.menu_button_default:not(.disabled):not([disabled]):hover`
+   at (0,5,0) — css/popup.css:189-193. Measured, not guessed. */
+body[data-k-layout="rails"] .popup-controls .menu_button.popup-button-ok:hover,
+body[data-k-layout="rails"] .popup-controls .menu_button.popup-button-ok:focus-visible,
+body[data-k-layout="rails"] .popup-controls .menu_button.menu_button_default:hover,
+body[data-k-layout="rails"] .popup-controls .menu_button.menu_button_default:focus-visible {
+    border-color: var(--k-accent-bright);
+    background: color-mix(in srgb, var(--k-accent) 30%, transparent);
+    color: var(--k-text-strong);
+    outline: none;
+}
+
+/* ── Destructive: the opt-in that survives ────────────────────────────────
+   `.red_button` / `.redWarningBG` (style.css:3654-3660) fill with
+   `--crimson70a !important`, so the fill above never reaches them — that
+   `!important` is left standing, deliberately, because it is the only signal a
+   caller has for "this one deletes something". The border and the label are
+   brought into the same key so the button reads as one object instead of a red
+   box wearing an accent ring. */
+body[data-k-layout="rails"] .popup-controls .menu_button.red_button,
+body[data-k-layout="rails"] .popup-controls .menu_button.redWarningBG {
+    border-color: color-mix(in srgb, var(--k-danger) 55%, transparent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .popup-controls .menu_button.red_button:hover,
+body[data-k-layout="rails"] .popup-controls .menu_button.red_button:focus-visible,
+body[data-k-layout="rails"] .popup-controls .menu_button.redWarningBG:hover,
+body[data-k-layout="rails"] .popup-controls .menu_button.redWarningBG:focus-visible {
+    border-color: var(--k-danger);
+    outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. THE CLOSE CHIP — `.popup-button-close`
+   ───────────────────────────────────────────────────────────────────────────
+   Geometry is stock and stays stock: 24x24 at font-size 20, hung on the corner
+   at `top: -6px; right: -6px` (css/popup.css:218-231). Padding on `.popup`
+   cannot move it — an absolutely positioned child resolves against the
+   ancestor's PADDING BOX, whose outer edge is fixed by the border box, and the
+   UA sheet already gives `dialog` a position. So the box is left exactly where
+   it is and only the colour changes.
+
+   `filter: brightness(0.8)` at rest (css/popup.css:227) and
+   `.right_menu_button:hover { filter: brightness(150%) }` (style.css:2775-2777)
+   are a two-step brightness ramp standing in for colour. The glyph is
+   `fa-circle-xmark`, a solid disc with the X knocked out, so it reads on the
+   sheet and on the backdrop without a chip behind it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .popup .popup-button-close {
+    filter: none;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .popup .popup-button-close:hover,
+body[data-k-layout="rails"] .popup .popup-button-close:focus-visible {
+    filter: none;
+    color: var(--k-text-strong);
+    outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. TOASTS
+   ───────────────────────────────────────────────────────────────────────────
+   css/kotatsu-chrome.css §11 already owns the card: `--k-surface-2` fill,
+   `--k-radius-xl`, `--k-elev-3`, and the status on a 3px left edge. That
+   decision is documented there and is extended here, not re-argued. What §11
+   could not reach:
+
+     - the four base64 status glyphs, shipped `!important` (§5.1);
+     - the 50px gutter those glyphs left behind (§5.2);
+     - the `:hover` box-shadow, which leaks a raw `0 0 12px #000` past §11 on
+       specificity (§5.3) — `#toast-container>div:hover` is (1,1,1) and §11's
+       `body #toast-container>div` is (1,0,2), so toastr wins the hover state
+       today. That is a live raw-hex leak, not a hypothetical;
+     - the close button, the links and the progress bar, all still on toastr's
+       #FFF / #CCC / #000 / #999 literals.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 5.1 The one walk-back in this sheet ──────────────────────────────────
+   css/toastr.min.css declares `#toast-container>.toast-info` (and -error,
+   -success, -warning) with `background-image: url(data:image/png;base64,…)
+   !important`. Four raster glyphs, pure white, no token anywhere near them: a
+   theme pack cannot repaint them, which contract 2 does not allow. `!important`
+   is the only thing that unwinds `!important`, and this is the only rule in the
+   file that carries it. The status signal does not go away — it is §11's left
+   edge, plus the tinted title in §5.4. */
+body[data-k-layout="rails"] #toast-container>.toast-info,
+body[data-k-layout="rails"] #toast-container>.toast-success,
+body[data-k-layout="rails"] #toast-container>.toast-warning,
+body[data-k-layout="rails"] #toast-container>.toast-error {
+    background-image: none !important;
+}
+
+/* ── 5.2 The card ─────────────────────────────────────────────────────────
+   The reclaimed gutter is the whole "no more chonky" of this slice: 50px of
+   left padding existed to hold a 24px icon that no longer renders. `width` is
+   untouched at every breakpoint, and vertical padding is stock, so the card's
+   clickable box never gets smaller than it is today — it only stops being
+   two-thirds empty.
+
+   The border is restated off `--k-pop-hairline` rather than
+   `--SmartThemeBorderColor` (§11's choice): the legacy name can be inline-pinned
+   onto :root by applyThemeColor(), and chrome that must stay pack-switchable
+   reads the unpinned peer. */
+body[data-k-layout="rails"] #toast-container>div {
+    padding: var(--k-pop-toast-pad);
+    border-color: var(--k-pop-hairline);
+}
+
+@media all and (max-width: 480px) {
+    /* toastr tightens the card here (`padding: 8px 8px 8px 50px`) and narrows
+       it to 11em/18em. The narrowing is core's and is left alone; only the dead
+       gutter is reclaimed, at core's own vertical value. */
+    body[data-k-layout="rails"] #toast-container>div {
+        padding: var(--k-pop-toast-pad-compact);
+    }
+}
+
+/* ── 5.3 Hover ────────────────────────────────────────────────────────────
+   Closes the specificity leak described above. `opacity` and `cursor` are
+   toastr's and are correct; only the raw-hex shadow is replaced.
+
+   The card is a plain `<div>` and cannot take focus today, so the
+   `:focus-visible` twin is inert — it is written anyway, because that is the
+   whole point of contract 6: `initDynamicStyles()` (scripts/dynamic-styles.js:
+   188-202) synthesizes a twin for any hover rule that lacks one and APPENDS it,
+   which would put a rule of its making after this sheet in the cascade. Writing
+   it keeps the order ours, and it starts working for free the day a toast grows
+   a tabindex. */
+body[data-k-layout="rails"] #toast-container>div:hover,
+body[data-k-layout="rails"] #toast-container>div:focus-visible {
+    box-shadow: var(--k-elev-3);
+}
+
+/* ── 5.4 Status, carried by the title ─────────────────────────────────────
+   The card stays neutral (§11's call). The title takes the status hue, so a
+   toast with a title reads its type in TEXT as well as in the edge, which the
+   3px edge alone cannot do at a glance. All four are existing substrate tokens
+   — `--k-info` is itself `var(--k-accent)` and `--k-warning`/`--k-danger` sit in
+   the same warm register as `--k-quote` (css/tokens.css:90-94). No new hex. */
+body[data-k-layout="rails"] #toast-container .toast-info .toast-title {
+    color: color-mix(in srgb, var(--k-info) 80%, var(--k-text-strong));
+}
+
+body[data-k-layout="rails"] #toast-container .toast-success .toast-title {
+    color: color-mix(in srgb, var(--k-success) 80%, var(--k-text-strong));
+}
+
+body[data-k-layout="rails"] #toast-container .toast-warning .toast-title {
+    color: color-mix(in srgb, var(--k-warning) 80%, var(--k-text-strong));
+}
+
+body[data-k-layout="rails"] #toast-container .toast-error .toast-title {
+    color: color-mix(in srgb, var(--k-danger) 80%, var(--k-text-strong));
+}
+
+/* ── 5.5 Close button ─────────────────────────────────────────────────────
+   toastr paints it `#FFF` with a white text-shadow and takes it to `#000` on
+   hover — black on a dark card, i.e. invisible at exactly the moment you are
+   reaching for it. Off globally (script.js:377) but reachable per-call, so it
+   is fixed rather than ignored. Opacity is toastr's ramp inverted the right way
+   round: dim at rest, full on interaction. */
+body[data-k-layout="rails"] #toast-container .toast-close-button {
+    color: var(--k-text-muted);
+    text-shadow: none;
+    opacity: 0.7;
+}
+
+body[data-k-layout="rails"] #toast-container .toast-close-button:hover,
+body[data-k-layout="rails"] #toast-container .toast-close-button:focus-visible {
+    color: var(--k-text-strong);
+    opacity: 1;
+    outline: none;
+}
+
+/* ── 5.6 Links inside a toast ─────────────────────────────────────────────
+   `.toast-message a, .toast-message label { color: #FFF }` with a `#CCC` hover.
+   Both literals; both replaced. */
+body[data-k-layout="rails"] #toast-container .toast-message a,
+body[data-k-layout="rails"] #toast-container .toast-message label {
+    color: var(--k-accent-bright);
+}
+
+body[data-k-layout="rails"] #toast-container .toast-message a:hover,
+body[data-k-layout="rails"] #toast-container .toast-message a:focus-visible {
+    color: var(--k-text-strong);
+    text-decoration: underline;
+    outline: none;
+}
+
+/* ── 5.7 Progress bar ─────────────────────────────────────────────────────
+   `background-color: #000` at 0.4 opacity — a black bar on a near-black card.
+   Off by default (script.js:378), on for long-lived toasts. */
+body[data-k-layout="rails"] #toast-container .toast-progress {
+    background-color: var(--k-accent);
+    opacity: 0.35;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. MOTION
+   ───────────────────────────────────────────────────────────────────────────
+   The library and studio pattern: colour transitions only, and only where the
+   user has not asked for stillness. The popup's own open/close animation is
+   core's and already runs off `--animation-duration*`, which the substrate
+   derives from `--k-motion-duration`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: no-preference) {
+    body[data-k-layout="rails"] .popup-controls .menu_button,
+    body[data-k-layout="rails"] .popup .popup-button-close,
+    body[data-k-layout="rails"] #toast-container .toast-close-button,
+    body[data-k-layout="rails"] #toast-container .toast-message a {
+        transition:
+            border-color var(--k-motion),
+            background-color var(--k-motion),
+            box-shadow var(--k-motion),
+            color var(--k-motion);
+    }
+}

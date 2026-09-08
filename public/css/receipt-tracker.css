@@ -1,0 +1,371 @@
+/*
+ * Receipt tracker v0 — `<k-receipt-tracker>` (docs/receipt-tracker-v0.md, decision 8).
+ *
+ * Scoped under `body[data-k-layout="rails"]`, the same discipline css/shell-right.css uses
+ * for every `.k-tr-*` rule: the element only ever mounts inside the Trackers page of the
+ * rails-only right rail (k-tab-rail.js's `view` branch), so classic never sees a rule from
+ * this sheet fire, and every selector says so explicitly rather than relying on the element
+ * simply not existing under classic.
+ *
+ * Geometry: sheet-local numbers reuse the `--k-tr-*` custom properties css/shell-right.css
+ * already declares on `body[data-k-layout="rails"]` (`--k-tr-page-pad`, `--k-tr-row-height`,
+ * `--k-tr-quiet-size`, `--k-tr-label-size`, `--k-tr-gap`, `--k-tr-row-pad`) rather than
+ * inventing a parallel `--k-rt-*` geometry namespace — this sheet only ever paints inside
+ * that rail, so the rail's own scale is the right one to inherit. Colour, radius and motion
+ * come from `--k-*` house tokens only.
+ *
+ * No internal scroll container anywhere below (anti-nested-scroll doctrine,
+ * shell-right.css:195-205): `.k-tr-page.is-active` is the one scroller the rail owns, and
+ * this sheet's content flows inside it like any other page body.
+ */
+
+/* ── Host + sections ───────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] k-receipt-tracker {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--k-tr-gap) * 2);
+    width: 100%;
+    min-width: 0;
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
+}
+
+/* Pre-upgrade guard, same reasoning as k-tab-rail's own (shell-right.css:78-81): an
+   un-hydrated element is inline by default and would flash an empty content box. */
+body[data-k-layout="rails"] k-receipt-tracker:not(:defined) {
+    display: block;
+}
+
+body[data-k-layout="rails"] .k-rt-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--k-tr-gap);
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-rt-heading {
+    margin: 0;
+    font-size: var(--k-tr-label-size);
+    font-weight: 600;
+    letter-spacing: var(--k-tr-label-track, 0.01em);
+    text-transform: uppercase;
+    color: var(--k-text-faint);
+}
+
+/* ── Quiet states — same visual language as the rail's own stub row
+   (shell-right.css ".k-tr-quiet"), reproduced here rather than shared across sheets so this
+   component's CSS stays self-contained under its own class prefix. ─────────────────────── */
+
+body[data-k-layout="rails"] .k-rt-quiet {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: var(--k-tr-row-height);
+    padding: 0 var(--k-tr-row-pad);
+    color: var(--k-text-faint);
+    font-size: var(--k-tr-quiet-size);
+}
+
+body[data-k-layout="rails"] .k-rt-quiet-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── The live card ──────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-rt-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--k-tr-gap);
+    box-sizing: border-box;
+    padding: var(--k-tr-page-pad);
+    border-radius: var(--k-radius-md);
+    background-color: var(--k-surface-2);
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+}
+
+body[data-k-layout="rails"] .k-rt-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--k-tr-gap);
+}
+
+body[data-k-layout="rails"] .k-rt-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-inset-fill);
+    box-shadow: inset 0 0 0 1px var(--k-inset-border);
+    font-size: var(--k-tr-quiet-size);
+    font-weight: 600;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-rt-badge.is-landed {
+    color: var(--k-success);
+}
+
+body[data-k-layout="rails"] .k-rt-badge.is-dry {
+    color: var(--k-warning);
+}
+
+body[data-k-layout="rails"] .k-rt-badge.is-pending {
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-rt-meta-item {
+    font-size: var(--k-tr-quiet-size);
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-rt-meta-time {
+    margin-left: auto;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rt-totals {
+    font-size: var(--k-tr-quiet-size);
+    color: var(--k-text-muted);
+}
+
+/* ── Caveat chips ───────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-rt-caveats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+body[data-k-layout="rails"] .k-rt-caveat {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: var(--k-radius-pill);
+    background-color: color-mix(in srgb, var(--k-warning) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k-warning) 32%, transparent);
+    font-size: 10.5px;
+    color: var(--k-text-muted);
+    cursor: help;
+}
+
+/* ── Entries — assembly order, never re-sorted (decision 4) ───────────────────── */
+
+body[data-k-layout="rails"] .k-rt-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+body[data-k-layout="rails"] .k-rt-entry {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--k-tr-gap);
+    box-sizing: border-box;
+    min-height: var(--k-tr-row-height);
+    padding: 4px var(--k-tr-row-pad);
+    border-radius: var(--k-radius-md);
+}
+
+body[data-k-layout="rails"] .k-rt-entry:hover {
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-rt-entry-label {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    flex: 1 1 120px;
+}
+
+body[data-k-layout="rails"] .k-rt-entry-name {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: var(--k-tr-quiet-size);
+    color: var(--k-text-strong);
+}
+
+/* Honesty flag for a label that fell all the way through the resolution chain in
+   receipt-tracker-view.js (resolveEntryLabel) with nothing to resolve it against — the
+   raw identifier is real, but the reader should know the current preset doesn't own it. */
+body[data-k-layout="rails"] .k-rt-entry-hint {
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-style: italic;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rt-entry-roles {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 3px;
+}
+
+body[data-k-layout="rails"] .k-rt-role {
+    padding: 1px 6px;
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-inset-fill);
+    font-size: 10px;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-rt-entry-metric {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 90px;
+    min-width: 90px;
+}
+
+body[data-k-layout="rails"] .k-rt-entry-tokens {
+    flex: 0 0 auto;
+    min-width: 2.5em;
+    text-align: right;
+    font-size: var(--k-tr-quiet-size);
+    color: var(--k-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Pure-CSS proportional bar: track + fill, no library, width set inline from
+   receipt-tracker-view.js's tokenShare() (a percent, already clamped to [0, 100]). */
+body[data-k-layout="rails"] .k-rt-bar {
+    flex: 1 1 auto;
+    min-width: 24px;
+    height: 4px;
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-inset-fill);
+    overflow: hidden;
+}
+
+body[data-k-layout="rails"] .k-rt-bar-fill {
+    height: 100%;
+    border-radius: inherit;
+    background-color: var(--k-accent);
+    transition: width var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rt-entry-count {
+    flex: 0 0 auto;
+    font-size: 10px;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rt-entry-truncated {
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-style: italic;
+    color: var(--k-text-faint);
+}
+
+/* `emptyAnchor` (decision 5): the literal words, never a styled zero. */
+body[data-k-layout="rails"] .k-rt-entry-empty {
+    flex: 1 1 auto;
+    font-size: var(--k-tr-quiet-size);
+    font-style: italic;
+    color: var(--k-text-faint);
+}
+
+/* The one quiet line every receipt's holes collapse into (decision 4) — never one row
+   per empty slot. */
+body[data-k-layout="rails"] .k-rt-holes {
+    padding: 2px var(--k-tr-row-pad) 0 var(--k-tr-row-pad);
+    font-size: 10.5px;
+    font-style: italic;
+    color: var(--k-text-faint);
+}
+
+/* ── History ────────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-rt-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+body[data-k-layout="rails"] .k-rt-history-item {
+    display: flex;
+    flex-direction: column;
+}
+
+body[data-k-layout="rails"] .k-rt-history-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--k-tr-row-height);
+    margin: 0;
+    padding: 0 var(--k-tr-row-pad);
+    border: 0;
+    border-radius: var(--k-radius-md);
+    background: none;
+    font-family: var(--k-font-ui);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rt-history-row:hover {
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-rt-history-row:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: -1px;
+}
+
+body[data-k-layout="rails"] .k-rt-history-row.is-expanded {
+    background-color: var(--k-inset-fill);
+}
+
+body[data-k-layout="rails"] .k-rt-history-mes {
+    flex: 0 0 auto;
+    font-size: var(--k-tr-quiet-size);
+    font-variant-numeric: tabular-nums;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-rt-history-sep {
+    flex: 0 0 auto;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rt-history-preset {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex: 1 1 auto;
+    font-size: var(--k-tr-quiet-size);
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-rt-history-tokens {
+    flex: 0 0 auto;
+    font-size: var(--k-tr-quiet-size);
+    color: var(--k-text-faint);
+    font-variant-numeric: tabular-nums;
+}
+
+body[data-k-layout="rails"] .k-rt-history-detail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--k-tr-gap);
+    padding: 6px var(--k-tr-row-pad) 10px var(--k-tr-row-pad);
+    margin-left: 4px;
+    border-left: 1px solid color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"] .k-rt-bar-fill,
+    body[data-k-layout="rails"] .k-rt-history-row {
+        transition: none;
+    }
+}

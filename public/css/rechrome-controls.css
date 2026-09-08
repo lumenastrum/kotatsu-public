@@ -1,0 +1,500 @@
+/*
+ * rechrome-controls.css — stock buttons and selects, in the house language.
+ * Rechrome v0 slice A, docs/rechrome-v0.md. Andres's brief: "No more chonky
+ * drop-down bars and buttons."
+ *
+ * Owns exactly two primitive families, wherever they ride:
+ *   - `.menu_button` and its variants — icon squares, icon+label, disabled,
+ *     toggleable, and the `.red_button` / `.redWarningBG` / `.redOverlayGlow`
+ *     danger accents — plus the stock button row (`.buttons_block`).
+ *   - every `<select>`: the closed control only. The chonk was never the
+ *     dropdown, it was the bar — 15px type, a 55%-opaque slab and a flat grey
+ *     triangle baked into `/img/down-arrow.svg` that no theme can reach.
+ *
+ * The anatomy is copied, not invented. The button is `.k-lib-btn`
+ * (css/library.css:297-331): pill radius, hairline border, ghost fill, 12.5px
+ * at weight 600, 6px gap, `--k-ghost-hover` on hover. The field is the
+ * `.k-studio-control` recipe (css/studio.css:505-549): cut into the panel with
+ * the darkest surface token, `--k-radius-md`, a 3px accent ring on focus. The
+ * button metric splits `.k-lib-btn` (8px 14px) and `.k-studio-tab` (6px 14px)
+ * and lands on the tab's, because a settings rack has thirty of these and the
+ * gallery has three.
+ *
+ * ── The chevron, and the one place this sheet argues with its own brief ──────
+ * The slice was specced with the chevron as "an inline SVG data: URI in a gated
+ * background-image". It is drawn with two `linear-gradient` bands instead, and
+ * the reason is contract 2, which outranks the mechanism: a data: URI is a
+ * SEPARATE DOCUMENT. It cannot read `--k-*`, `currentColor` in it resolves
+ * against its own root (black), and CSS variables do not substitute into a
+ * string token — so the ink would have had to be a frozen hex, which is exactly
+ * the failure `/img/down-arrow.svg` already ships (`#888888`, unreachable by
+ * every theme pack, Sparkle included). Two 45°/135° bands give a real STROKED
+ * chevron — the house icon idiom, CLAUDE.md "inline stroke SVG, no emoji" — with
+ * the ink held in `--k-rc-chevron-ink`, so a pack retints it by value and the
+ * hover state retints it by re-declaring one custom property. The whole recipe
+ * is one token (`--k-rc-chevron`, declared on the control in §2a for a
+ * substitution-timing reason spelled out there); a later commit that finds a way
+ * to ship a themeable data: URI replaces that single declaration and nothing else.
+ * The native dropdown MENU is untouched — `select option` is OS-owned and a
+ * stated non-goal.
+ *
+ * ── Walk-backs (contract 5) ─────────────────────────────────────────────────
+ * Two, both documented at their rule:
+ *   - style.css:3653-3661 `.red_button, .redWarningBG { background-color: ...
+ *     !important }` and its `:hover` twin.
+ *   - css/st-tailwind.css:230-234 `.redOverlayGlow { opacity: 0.8 !important }`.
+ * Nothing else in this sheet carries `!important`.
+ *
+ * ── Discipline (docs/rechrome-v0.md §Contracts) ─────────────────────────────
+ * - Every rule gated on `body[data-k-layout="rails"]`. A rule that matches under
+ *   classic is a bug (css/shell-frame.css header owns that doctrine).
+ * - Colours, radii and motion from `--k-*` only. Grep it: no `#`, no `rgb(`.
+ * - Slice-local parameters live once, up top, in the `--k-rc-*` namespace, on
+ *   `body[data-k-layout="rails"]` — the css/library.css `--k-lib-*` and
+ *   css/studio.css `--k-studio-*` pattern, and NOT in css/tokens.css, so
+ *   `npm run theme:check -- blue-hour --drift` stays green without an edit to
+ *   every shipped pack manifest.
+ * - Every `:hover` written with its `:focus-visible` twin, because
+ *   initDynamicStyles() (dynamic-styles.js:188-202) otherwise synthesizes one
+ *   late and reorders the cascade.
+ * - Hit targets never shrink. Stock `.menu_button` is ~28px tall (15px type,
+ *   3px/5px padding); this sheet floors it at 30px and pads to 6px/14px. Stock
+ *   `select` is ~26px; this one lands ~31px. Density comes off the TYPE — 15px
+ *   to 12.5px, the house UI size, floor 11px — not off the target.
+ * - Type never touched on a Font Awesome-classed button. `.fa-solid` carries
+ *   `font-weight: 900` and `line-height: 1` at (0,1,0) (css/solid.min.css,
+ *   css/fontawesome.min.css); a bare `body[data-k-layout="rails"] .menu_button`
+ *   is (0,2,1) and would silently drop every solid glyph to the regular face.
+ *   That is why the typography path is fenced behind `:not([class*="fa-"])`.
+ *
+ * ── Specificity notes for the sibling slices ────────────────────────────────
+ * The base button rule is (0,2,1) and the base select rule is (0,1,2), both
+ * deliberately kept BELOW `body[data-k-layout="rails"] .k-studio-control select`
+ * (0,2,2) and `... .k-studio-field--actions .menu_button` (0,3,1) so the studio
+ * keeps its own field and action-row authority. Any gated rule a sibling slice
+ * writes is at least (0,3,1) / (0,2,2) and therefore outranks this sheet for
+ * free — which is how slice C restates the popup emphasis buttons
+ * (`.menu_button_default`, `.popup-button-ok`, css/popup.css:183-201). Those two
+ * are C's and are deliberately NOT restated here; until C lands they read as
+ * ghost pills, which is a flattening, not a break.
+ *
+ * Load order: linked from index.html after css/studio.css and before
+ * css/mobile-styles.css, in slice order A→D.
+ */
+
+body[data-k-layout="rails"] {
+    /* ── Button ──────────────────────────────────────────────────────────────
+       Padding is `.k-studio-tab`'s (css/studio.css:386). The icon pad is square
+       and deliberately smaller than the text pad-x: several stock icon buttons
+       are pinned to a fixed square box by an ID rule (`#rm_button_bar
+       .menu_button` is `calc(var(--mainFontSize) * 1.7)`, ~25.5px, at (1,1,1)),
+       and with `box-sizing: border-box` everywhere (style.css:146) a 14px pad
+       would leave the glyph almost no content box. 6px leaves ~13.5px against a
+       15px glyph — the overflow is centred by the button's own flex centring and
+       renders clean, and the HIT TARGET is that ID rule's box either way. */
+    --k-rc-btn-pad-y: 6px;
+    --k-rc-btn-pad-x: 14px;
+    --k-rc-btn-icon-pad: 6px;
+    --k-rc-btn-gap: 6px;
+    --k-rc-btn-min-h: 30px;
+    --k-rc-btn-size: 12.5px;
+    --k-rc-btn-weight: 600;
+    /* Same recipe as `--k-lib-hairline` / `--k-studio-hairline`, restated rather
+       than borrowed: those are sheet-local to their own slices. Derived from the
+       UNPINNED peer `--k-chrome-border`, because applyThemeColor() can inline-pin
+       `--k-border` onto :root from a legacy theme JSON and an inline pin outranks
+       every `body[data-k-theme]` rule (css/tokens.css:79-83). */
+    --k-rc-hairline: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+    /* The ghost: `.k-lib-btn` is `background: transparent` and reads off its
+       border. `--k-ghost-hover` (css/kotatsu-chrome.css §2) is the one accent
+       tint every ghost control in this codebase already shares. */
+    --k-rc-btn-fill: transparent;
+
+    /* ── Danger ──────────────────────────────────────────────────────────────
+       `--k-danger` tinted the way `.k-lib-btn--primary` tints `--k-accent`
+       (css/library.css:321-331): 18%-ish fill, 55%-ish border, strong ink. The
+       stock treatment was a flat opaque `--crimson70a` slab that went FULL
+       `--fullred` on hover — a solid red brick in a sheet full of hairlines. */
+    --k-rc-danger-fill: color-mix(in srgb, var(--k-danger) 16%, transparent);
+    --k-rc-danger-fill-hover: color-mix(in srgb, var(--k-danger) 30%, transparent);
+    --k-rc-danger-line: color-mix(in srgb, var(--k-danger) 50%, transparent);
+    --k-rc-danger-line-hover: var(--k-danger);
+    --k-rc-danger-ink: var(--k-danger);
+
+    /* ── Field (the select bar) ──────────────────────────────────────────────
+       `--k-inset-border` is css/kotatsu-chrome.css §2's own name for this layer
+       ("inline drawers, roster entries, inset fields") and already carries
+       stock's 28% strength, so the bar's edge does not get heavier than it was.
+       The fill is css/library.css's `--k-lib-field-fill` recipe: the deepest
+       ground token, held translucent so the bar reads as CUT INTO whatever panel
+       it lands on instead of as a slab laid over it. */
+    --k-rc-field-fill: color-mix(in srgb, var(--k-ground-deep) 70%, transparent);
+    --k-rc-field-fill-hover: color-mix(in srgb, var(--k-ground-deep) 84%, transparent);
+    --k-rc-field-line: var(--k-inset-border);
+    --k-rc-field-pad-y: 6px;
+    --k-rc-field-pad-x: 10px;
+    --k-rc-field-size: 12.5px;
+    --k-rc-field-lh: 1.35;
+    --k-rc-field-radius: var(--k-radius-md);
+    /* `.k-studio-control`'s focus ring, restated locally (css/studio.css:547). */
+    --k-rc-ring: color-mix(in srgb, var(--k-accent) 34%, transparent);
+
+    /* ── Chevron ─────────────────────────────────────────────────────────────
+       Two diagonal bands, each clipped to its own `--k-rc-chevron-arm` square:
+       45deg puts a "\" through the left square, 135deg a "/" through the right
+       one, and the two squares are laid edge to edge so the strokes meet at the
+       bottom — a 10x5 stroked chevron with the arm angle a designer would draw.
+       The `a`/`b` stops are the band edges: the gradient line across a 5px square
+       at 45° is 5√2 ≈ 7.07px long, so `50% ± weight/2` in px IS the stroke width
+       measured perpendicular to the stroke.
+
+       The ink is a var, not a literal, on purpose — it is what makes this
+       repaintable. A pack retints every chevron in the app by declaring
+       `--k-rc-chevron-ink`, and the hover rules retint one control the same way.
+
+       The RECIPE itself (`--k-rc-chevron`) is deliberately NOT declared here,
+       next to its own parameters, and that is not an oversight. A custom
+       property's computed value is its token stream WITH ITS var()s ALREADY
+       SUBSTITUTED, resolved on the element that declares it — so a
+       `--k-rc-chevron` declared on `body` would bake in body's ink and then be
+       inherited already-frozen. Overriding `--k-rc-chevron-ink` on `select:hover`
+       would compile, apply, and change absolutely nothing. It lives on the
+       `select` rule instead, §2a, where the substitution happens on the control
+       itself and the hover override is in scope. */
+    --k-rc-chevron-ink: var(--k-text-muted);
+    --k-rc-chevron-ink-active: var(--k-accent-bright);
+    --k-rc-chevron-arm: 5px;
+    --k-rc-chevron-weight: 1.5px;
+    --k-rc-chevron-inset: 9px;
+    --k-rc-chevron-a: calc(50% - var(--k-rc-chevron-weight) / 2);
+    --k-rc-chevron-b: calc(50% + var(--k-rc-chevron-weight) / 2);
+    /* Text must clear both arms plus a breath: inset + 2 arms + 5px. */
+    --k-rc-select-gutter: calc(var(--k-rc-chevron-inset) + var(--k-rc-chevron-arm) * 2 + 5px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. BUTTONS — `.menu_button`
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The pill. (0,2,1) — see the header for why it stays there.
+
+   Only five properties move, and every one of them is what the house language
+   changes: the radius (md to pill, `.k-lib-btn`), the fill (a 60% sunken slab to
+   the ghost), the border TINT (stock hardcodes 35%; the token reads
+   `--k-border-strength`, which is a pack lever), the padding, and the grayscale.
+
+   `filter: none` is the quiet one. Stock puts `grayscale(0.5)` on every button
+   in the app (style.css:3833), which is a de-saturation pass laid over a palette
+   that was tokenized precisely so its colours would read true — it is why the
+   danger buttons never looked like `--k-danger` and the `--active` toggles never
+   looked like `--k-success`. It is restored, deliberately, on `[disabled]` below.
+
+   NOT touched here: `border-width` (the `@media (prefers-contrast: more)` block
+   at style.css:6489 raises it to 2px and must keep winning — so this sheet sets
+   `border-color`, never the `border` shorthand), `margin` (stock's `5px 0` is the
+   only vertical rhythm several drawer stacks have, and the rack is slice D's),
+   `color`, `cursor`, `text-align`, `display` and the `transition`, all of which
+   are already correct and already token-driven. */
+body[data-k-layout="rails"] .menu_button {
+    gap: var(--k-rc-btn-gap);
+    min-height: var(--k-rc-btn-min-h);
+    padding: var(--k-rc-btn-pad-y) var(--k-rc-btn-pad-x);
+    border-color: var(--k-rc-hairline);
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-rc-btn-fill);
+    filter: none;
+}
+
+/* Type, for the buttons that carry type. Fenced off Font Awesome: a button whose
+   OWN class list holds an `fa-*` renders its glyph from that class's
+   `font-weight: 900` / `line-height: 1` / `font-size: 1.25em`, all at (0,1,0),
+   and this selector would outrank all three. A `.menu_button_icon` wrapping an
+   `<i class="fa-solid">` CHILD is safe and lands here — the child keeps its own
+   FA declarations, which are applied to the child.
+
+   `white-space: nowrap` is the whole reason a two-word button stops looking
+   chonky: stock is `width: min-content`, so "Import preset" wrapped to two lines
+   and the pill grew a second row. With nowrap, min-content IS the line, so the
+   pill shrink-wraps to it without this sheet touching `width` at all — which
+   leaves `.popup-controls .menu_button { width: unset }` (slice C's) intact. */
+body[data-k-layout="rails"] .menu_button:not([class*="fa-"]) {
+    font-size: var(--k-rc-btn-size);
+    font-weight: var(--k-rc-btn-weight);
+    white-space: nowrap;
+}
+
+/* Icon squares: the button IS the glyph, so the pad is square and the pill
+   radius reads as a circle. `.menu_button_icon` is excluded because that class
+   means icon PLUS label and it needs the horizontal pad from the base rule. */
+body[data-k-layout="rails"] .menu_button[class*="fa-"]:not(.menu_button_icon) {
+    padding: var(--k-rc-btn-icon-pad);
+}
+
+/* Icon + label. Stock sizes the label at `calc(var(--mainFontSize) * 0.9)`
+   (style.css:5481) — 13.5px, a size that exists nowhere else in the house.
+
+   `font-family` is a fix, not a reskin: when the fa class sits on the BUTTON and
+   the label sits in a child span (`menu_button menu_button_icon fa-solid fa-trash`,
+   the quick-reply set controls), the span inherits "Font Awesome 6 Free" from its
+   parent and the label renders in the icon font. Naming the UI face here costs
+   nothing and closes it. */
+body[data-k-layout="rails"] .menu_button_icon span {
+    font-family: var(--k-font-ui);
+    font-size: var(--k-rc-btn-size);
+    font-weight: var(--k-rc-btn-weight);
+}
+
+/* Disabled. Stock's rule (style.css:3101-3106) is at (0,2,0) and the base pill
+   above is (0,2,1), so its `filter` would have been dropped on the floor and the
+   button would have lost half its disabled signal. Restated — but as grayscale
+   ALONE: stock stacked `brightness(75%)` on top of an `opacity: 0.5` that is
+   still in force from its own rule, which is two dimmings for one state. The
+   `opacity`, `cursor` and `pointer-events` in that rule are untouched and still
+   apply; the cascade resolves per property, so silence here means "keep stock". */
+body[data-k-layout="rails"] .menu_button[disabled],
+body[data-k-layout="rails"] .menu_button.disabled {
+    filter: grayscale(1);
+}
+
+/* Toggleable buttons reserve their left gutter for an absolutely positioned
+   `::before` tick (style.css:3109-3135). Stock reserves it with
+   `padding-left: 20px` at (0,2,0), which the base pill outranks — so it is
+   restated on top of the house pad rather than instead of it.
+
+   The `::before`'s own positioning is left exactly as found. It is
+   `position: absolute` under a `.menu_button` that was never given
+   `position: relative`, so it resolves against whatever ancestor happens to be
+   positioned — a stock bug, and adding `position: relative` here would create a
+   containing block for every other absolutely positioned descendant of every
+   button in the app. Out of scope for a reskin. */
+body[data-k-layout="rails"] .menu_button.toggleable {
+    padding-left: calc(var(--k-rc-btn-pad-x) + 8px);
+}
+
+/* ── Danger ─────────────────────────────────────────────────────────────────
+   WALK-BACK (contract 5). style.css:3653-3656 pins
+   `.red_button, .redWarningBG { background-color: var(--crimson70a) !important }`
+   and style.css:3658-3661 pins the `:hover` to a flat `var(--fullred)`. Both are
+   `!important` at (0,1,0) / (0,2,0), so nothing but `!important` reaches them —
+   which is the one case the contract allows. The VALUES were already
+   token-derived (`--crimson70a` is `--k-danger-deep`, style.css:56); what moves
+   is the treatment: an opaque brick becomes the `.k-lib-btn--primary` tint
+   recipe in `--k-danger` instead of `--k-accent`, so a delete button reads as
+   the same object as every other button, only red.
+
+   Scoped to `.menu_button.*` on purpose. `.redWarningBG` also lands on
+   `#labModeWarning` (index.html:156), a banner div that is not this slice's, and
+   `.redOverlayGlow` also lands on `#API-status-top`
+   (scripts/RossAscends-mods.js:341), which belongs to the top bar. Neither is
+   touched.
+
+   `.redOverlayGlow` joins the group for a second reason: css/st-tailwind.css:230
+   sets `color: #800` — a raw literal, the only unreachable colour left in this
+   family, and near-black maroon against a dark ground. The group's
+   `--k-rc-danger-ink` outranks it at (0,3,1) with no `!important` needed. */
+body[data-k-layout="rails"] .menu_button.red_button,
+body[data-k-layout="rails"] .menu_button.redWarningBG,
+body[data-k-layout="rails"] .menu_button.redOverlayGlow {
+    /* walks back style.css:3655 */
+    background-color: var(--k-rc-danger-fill) !important;
+    border-color: var(--k-rc-danger-line);
+    color: var(--k-rc-danger-ink);
+}
+
+/* The hover twin has to carry `!important` too, or the resting `!important`
+   above would out-shout it. Stock ships `:hover` with no `:focus-visible`
+   (style.css:3658), so the twin is added here — contract 6, and without it
+   initDynamicStyles() synthesizes one late and reorders the cascade. */
+body[data-k-layout="rails"] .menu_button.red_button:hover,
+body[data-k-layout="rails"] .menu_button.red_button:focus-visible,
+body[data-k-layout="rails"] .menu_button.redWarningBG:hover,
+body[data-k-layout="rails"] .menu_button.redWarningBG:focus-visible,
+body[data-k-layout="rails"] .menu_button.redOverlayGlow:hover,
+body[data-k-layout="rails"] .menu_button.redOverlayGlow:focus-visible {
+    /* walks back style.css:3660 */
+    background-color: var(--k-rc-danger-fill-hover) !important;
+    border-color: var(--k-rc-danger-line-hover);
+    color: var(--k-text-strong);
+}
+
+/* WALK-BACK (contract 5). css/st-tailwind.css:231 pins `opacity: 0.8 !important`
+   on `.redOverlayGlow`. That class is an ALARM — it is what the assets connector
+   and the API status wear when the connection is down — and dimming an alarm is
+   backwards; on a ghost pill it also takes the hairline border most of the way
+   to invisible. Walked back to full opacity on buttons only.
+
+   `text-shadow: none !important` in the same stock rule is left standing: it
+   cancels the global `*` text-shadow (style.css:151), which is correct here. */
+body[data-k-layout="rails"] .menu_button.redOverlayGlow {
+    /* walks back css/st-tailwind.css:231 */
+    opacity: 1 !important;
+}
+
+/* ── The stock button row ───────────────────────────────────────────────────
+   `.buttons_block` (style.css:3635) is the row primitive under the persona
+   controls, the avatar states and the create-form bottom bar. Only the gap
+   moves, to `.k-lib-hero-actions`'s 8px (css/library.css:293) — pills need more
+   air between them than slabs did. `display`, `flex`, `justify-content` and
+   `flex-wrap` are untouched: this is a skin, and layout inside the parked drawer
+   rack is slice D's.
+
+   Its `.menu_button` child rule (style.css:3644-3650) re-declares `padding: 5px`
+   and `filter: grayscale(0.5)` at (0,2,0); the base pill is (0,2,1) and already
+   supersedes both. Nothing to restate. */
+body[data-k-layout="rails"] .buttons_block {
+    gap: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. SELECTS — the chonky bars
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The closed control. (0,1,2), which is BELOW
+   `body[data-k-layout="rails"] .k-studio-control select` (0,2,2) — the studio
+   keeps its own field recipe and this sheet only adds the chevron back to it,
+   in §2f.
+
+   No `:not()` fences on this selector, deliberately: every candidate
+   (`.select2-hidden-accessible`, chiefly) would push it to (0,2,2) and it would
+   start tying with, and then beating, the studio. select2's hidden originals do
+   not need fencing anyway — css/select2.min.css clips them with `!important` on
+   every geometry property, so nothing declared here can reach them.
+
+   `appearance: none` is already stock (style.css:3053-3055, all three prefixes),
+   which is what makes a custom chevron legal in the first place: the OS keeps the
+   MENU, we get the box. Restated here so this sheet is legible on its own and so
+   the gate does not depend on a line in style.css staying put.
+
+   Height is not declared. Stock is `height: min-content` and several rows size
+   their selects by hand (`.paginationjs-size-changer`, `.oneline-dropdown`,
+   `#persona_sort_order`); the ~31px this lands on comes out of type and padding,
+   which is contract 7's whole point. Stock was ~26px, so the target grows. */
+body[data-k-layout="rails"] select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding: var(--k-rc-field-pad-y) var(--k-rc-select-gutter) var(--k-rc-field-pad-y) var(--k-rc-field-pad-x);
+    border-color: var(--k-rc-field-line);
+    border-radius: var(--k-rc-field-radius);
+    background-color: var(--k-rc-field-fill);
+    color: var(--k-text);
+    font-size: var(--k-rc-field-size);
+    line-height: var(--k-rc-field-lh);
+    /* A 40%-width bar full of model names truncates instead of clipping mid-glyph. */
+    text-overflow: ellipsis;
+    cursor: pointer;
+    /* The chevron. Replaces `/img/down-arrow.svg`'s frozen `#888888` triangle —
+       see the header for why this is gradients and not a data: URI, and the
+       parameters block for why the recipe is declared HERE, on the control, and
+       not up there with its own parameters. Declared once; §2f reuses it. */
+    --k-rc-chevron:
+        linear-gradient(45deg,
+            transparent var(--k-rc-chevron-a),
+            var(--k-rc-chevron-ink) var(--k-rc-chevron-a),
+            var(--k-rc-chevron-ink) var(--k-rc-chevron-b),
+            transparent var(--k-rc-chevron-b)),
+        linear-gradient(135deg,
+            transparent var(--k-rc-chevron-a),
+            var(--k-rc-chevron-ink) var(--k-rc-chevron-a),
+            var(--k-rc-chevron-ink) var(--k-rc-chevron-b),
+            transparent var(--k-rc-chevron-b));
+    background-image: var(--k-rc-chevron);
+    background-repeat: no-repeat;
+    background-size: var(--k-rc-chevron-arm) var(--k-rc-chevron-arm);
+    background-position:
+        right calc(var(--k-rc-chevron-inset) + var(--k-rc-chevron-arm)) center,
+        right var(--k-rc-chevron-inset) center;
+}
+
+/* `select.text_pole` (style.css:2694) reserves `padding-right: 20px` for the old
+   8px arrow at (0,1,1); the rule above is (0,1,2) and already supersedes it with
+   the wider gutter. Restated nowhere — this comment is the receipt. */
+
+/* Hover. The chevron retints by re-declaring ONE custom property. This works
+   only because `--k-rc-chevron` is declared on the control by the rule above and
+   not up in the parameters block: substitution happens at computed-value time on
+   the element that declares the property, so the ink this rule sets on the
+   hovered select is the ink that recipe compiles with. No second gradient stack,
+   no duplicated geometry.
+
+   `:focus-visible` is the required twin (contract 6). It also inherits the ring
+   from the focus rule below, so a keyboard user gets the tint AND the halo. */
+body[data-k-layout="rails"] select:hover,
+body[data-k-layout="rails"] select:focus-visible {
+    --k-rc-chevron-ink: var(--k-rc-chevron-ink-active);
+    border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
+    background-color: var(--k-rc-field-fill-hover);
+}
+
+/* Focus. `.k-studio-control`'s ring (css/studio.css:540-549), with one
+   deliberate difference: the studio writes `outline: none` and this does not.
+   style.css:320-324 gives every focused control a faint 1px outline, and the
+   `@media (prefers-contrast: more)` block at style.css:6476-6482 raises it to
+   2px — that outline IS the high-contrast affordance, and this sheet links later
+   than both, so `outline: none` here would have quietly removed it for the users
+   who need it most. The accent halo is additive instead. */
+body[data-k-layout="rails"] select:focus,
+body[data-k-layout="rails"] select:focus-visible {
+    border-color: var(--k-accent);
+    box-shadow: 0 0 0 3px var(--k-rc-ring);
+}
+
+/* Disabled, matching the button's signal: desaturate and dim, no second
+   brightness pass. Stock ships nothing for a disabled select at all. */
+body[data-k-layout="rails"] select:disabled {
+    filter: grayscale(1);
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* A `[multiple]` select is a LIST BOX, not a bar — there is nothing to drop
+   down, so the chevron would be a lie floating over the first row, and the
+   gutter would be dead space. Twelve of these ship in index.html (horde models,
+   the OpenRouter provider and quantization pickers, the world-info key selects).
+   Height is left alone: the box sizes to its rows. */
+body[data-k-layout="rails"] select[multiple] {
+    padding-right: var(--k-rc-field-pad-x);
+    background-image: none;
+    cursor: default;
+}
+
+/* The studio's borrowed selects — `#char-management-dropdown` (the More… bar in
+   the Card-data tab) above all.
+
+   css/studio.css:518 sets `background: var(--k-studio-field-fill)`, and the
+   SHORTHAND resets `background-image` to none. So today a studio select has no
+   chevron at all while still carrying `select.text_pole`'s 20px right gutter —
+   a bar with a gap where its arrow should be. This restores it.
+
+   Matched at (0,2,2), exactly tying css/studio.css:505-523, and won on load
+   order (this sheet links after studio.css). Only the two properties the studio
+   cannot express are declared: the chevron layers and the gutter that clears
+   them. The cut-in `--k-studio-field-fill`, the studio hairline, its 13px field
+   type and its focus ring all survive untouched, which is the point — the More…
+   bar goes on looking like every other field in that sheet.
+
+   Two knock-on effects, both checked and both wanted. css/studio.css writes no
+   `select:hover` at all, so the generic hover above (also (0,2,2), later file)
+   now reaches studio selects — an 84%-opaque `--k-ground-deep` against studio's
+   opaque one, plus the accent hairline, which is the treatment studio already
+   gives the same field on focus. And studio's own focus rule is (0,3,2), so it
+   still outranks the generic focus ring: the studio keeps focus authority. */
+body[data-k-layout="rails"] .k-studio-control select {
+    padding-right: var(--k-rc-select-gutter);
+    background-image: var(--k-rc-chevron);
+    background-repeat: no-repeat;
+    background-size: var(--k-rc-chevron-arm) var(--k-rc-chevron-arm);
+    background-position:
+        right calc(var(--k-rc-chevron-inset) + var(--k-rc-chevron-arm)) center,
+        right var(--k-rc-chevron-inset) center;
+}
+
+body[data-k-layout="rails"] .k-studio-control select:hover,
+body[data-k-layout="rails"] .k-studio-control select:focus-visible {
+    --k-rc-chevron-ink: var(--k-rc-chevron-ink-active);
+}
+
+/* `select option` / `option:not(:checked)` / `option[disabled]`
+   (style.css:3068-3082) are NOT restyled. The native dropdown MENU is OS-owned
+   and a stated non-goal (docs/rechrome-v0.md §Non-goals); on the platforms where
+   those declarations do anything at all they paint the popup, not the bar. */

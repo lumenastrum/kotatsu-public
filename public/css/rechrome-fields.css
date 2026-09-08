@@ -1,0 +1,526 @@
+/*
+ * rechrome-fields.css — stock FORM FIELDS in the Kotatsu control language
+ * (rechrome v0 slice B, docs/rechrome-v0.md).
+ *
+ * Owns four families of borrowed primitive, everywhere they ride under rails:
+ *   1. `.text_pole` inputs and textareas, plus the four stock textareas that carry no
+ *      `.text_pole` at all — `#settingsSearch` and the three character-form areas.
+ *   2. The slider VALUE boxes: `.neo-range-input` and the 31 classless
+ *      `.range-block-counter input`s, which are the numeric half of every range row and the
+ *      last field in the rack still wearing `--black30a` and `--SmartThemeBorderColor`.
+ *   3. `input[type="checkbox"]` and the label ROWS it rides in (`.checkbox_label`,
+ *      `#anchor_checkbox label`, `#power-user-option-checkboxes label`).
+ *   4. `input[type="range"]` — the thumb on BOTH engines (Firefox has never had one), and the
+ *      track and box on the `.neo-range-slider` family. §4 carries the measurements that made
+ *      that a split rather than one rule; read them before widening it.
+ *
+ * It does not own `<select>` or `.menu_button` (slice A), popup surfaces (slice C), or the
+ * rack's cards and headers (slice D). `.text_pole` sits on 50 `<select>`s as well as on 124
+ * inputs and 80 textareas, so every rule below names the ELEMENT — `input:where(.text_pole)`,
+ * `textarea:where(.text_pole)` — and never the bare class. That is the seam between A and B.
+ *
+ * ── Verified, not assumed ─────────────────────────────────────────────────────────────────
+ * Written without the app, but not without a browser: the geometry claims in §1, §3 and §4
+ * were measured in Chrome against copies of the real markup, with `getBoundingClientRect` for
+ * layout and a `document.elementFromPoint` sweep for the grabbable band, then read back off a
+ * screenshot. Two designs died to that — see the table in §4. What came out: no hit target
+ * shrinks anywhere (checkbox 15px → 16px, single-line field 25.5px → 31.6px, neo slider band
+ * 9px → 18px, bare slider band 14px → 14px), the bare slider rows are byte-identical to stock,
+ * and the neo slider's bar does not move (row grows 49.5px → 56.5px around it).
+ *
+ * ── The anatomy this copies ───────────────────────────────────────────────────────────────
+ * `.k-studio-control`'s borrowed inputs (css/studio.css:505-554) are the house field: cut into
+ * the panel with the darkest surface token there is (`--k-ground-deep`), one hairline of
+ * `--k-chrome-border` at `--k-border-strength`, `--k-radius-md`, the UI face at 13px, and a
+ * focus state of `border-color: var(--k-accent)` with a 3px `color-mix(… 34%)` ring. All of
+ * that is reproduced here, value for value, with two deliberate divergences:
+ *
+ *   - PADDING. The studio is an editing sheet with room to breathe and pads 8px/10px on a 1.5
+ *     leading. The rack is a dense settings surface and the brief for this batch was "no more
+ *     chonky bars", so fields here pad 6px/10px on 1.35, which measures 31.55px against
+ *     stock's 25.5px — up, so nothing shrinks, but not the studio's ~37px. The LANGUAGE is the
+ *     fill, the hairline, the radius, the face and the ring; padding is surface rhythm, and
+ *     these two surfaces do not share a rhythm.
+ *   - The ring is drawn with `outline`, not with the studio's `box-shadow`. Every one of these
+ *     stock fields already has a focus `outline` to displace (style.css:320-328, :4284-4287)
+ *     and several carry a core `box-shadow` worth keeping — the checkbox well's inset, the
+ *     range thumb's halo. Writing the ring as the same property core used means overriding
+ *     instead of stacking, it is not clipped by an ancestor's `overflow`, and it leaves a real
+ *     outline standing in the high-contrast lane rather than the `outline: none` that a
+ *     box-shadow ring has to pair with. §6 raises the ring's own contrast there.
+ *
+ * ── Walk-backs ────────────────────────────────────────────────────────────────────────────
+ * Two, each marked at its rule, both the kotatsu-chrome:1400-1432 pattern of `!important` used
+ * ONLY to reach past an existing `!important`:
+ *   - `.text_pole::placeholder` and `textarea::placeholder` are pinned `color: … !important`
+ *     (style.css:2619-2627) at `--SmartThemeEmColor`, which resolves through the compat map to
+ *     `--k-accent`. A lavender placeholder reads as a filled-in value. Walked back to
+ *     `--k-text-faint`, which is the token core already picked for the compose placeholder.
+ *   - `.neo-range-slider` pins its entire box `!important` (style.css:4252-4267). Three of
+ *     those declarations — `height`, `background-color`, `box-shadow` — have to move for the
+ *     track to become paintable by the track pseudo-elements, and `margin-top` moves with them
+ *     because those 7px existed only to clear a thumb that no longer overflows its input.
+ *
+ * ── Discipline ────────────────────────────────────────────────────────────────────────────
+ * - Every rule gated on `body[data-k-layout="rails"]`. Classic is untouched, byte for byte.
+ * - Colours, radii and motion from `--k-*` only. Grep it: no `#`, no `rgb(`.
+ * - Slice-local parameters in the `--k-rcf-*` namespace, declared once, up top — the pattern
+ *   css/library.css uses for `--k-lib-*` and css/studio.css for `--k-studio-*`. They are NOT
+ *   added to css/tokens.css, for the reason those sheets give: `npm run theme:check --
+ *   blue-hour --drift` compares `:root` against every pack manifest name for name, so a
+ *   `:root` addition here would force an edit to every shipped pack for parameters no pack has
+ *   an opinion about yet. A pack's own `sheet.css` is prefixed `body[data-k-theme="<id>"]`
+ *   (theme/core.js:1305-1318), ties with the block below and is injected later, so a pack
+ *   override still wins.
+ * - Every `:hover` has an explicit `:focus-visible` twin. `initDynamicStyles()`
+ *   (dynamic-styles.js:188-202) otherwise synthesizes one into a LATER sheet and reorders the
+ *   cascade; it matches hover against focus by base selector *within one stylesheet*, so the
+ *   twin has to live in this file and read identically to the hover it answers.
+ * - Specificity is deliberately CAPPED, with `:where()` around the class and id qualifiers.
+ *   `.k-studio-control` borrows a dozen of these exact nodes into the card studio and dresses
+ *   them at `(0,2,1)` / `(0,3,1)`; this sheet links later, so anything written here at the
+ *   same weight would silently take the studio's fields over — a doubled focus ring and the
+ *   rack's tighter padding inside an editing sheet that had chosen otherwise. Written as
+ *   `input:where(.text_pole)` the base recipes land at `(0,1,1)` and the states at `(0,2,1)`:
+ *   still above every core rule they answer (`.text_pole` at `(0,1,0)`, bare `textarea` at
+ *   `(0,0,1)`, `input:focus-visible` at `(0,1,1)` on source order), still below the studio.
+ *   The two rules that DO name ids bare (`#anchor_checkbox label`,
+ *   `#power-user-option-checkboxes label`) are answering core id rules of their own.
+ * - No `display` / `visibility` anywhere: the RossAscends count-guards and the Escape cascade
+ *   read `.openDrawer` state. Skins recolour, they never re-plumb.
+ * - Transitions live in the `prefers-reduced-motion: no-preference` block at the foot of the
+ *   file, the css/studio.css:720 pattern.
+ *
+ * Load order: linked from index.html after css/studio.css and before css/mobile-styles.css, in
+ * slice order A→D.
+ */
+
+body[data-k-layout="rails"] {
+    /* ── Field skin — the .k-studio-control anatomy ───────────────────────────── */
+    /* Fields read as CUT INTO the panel. The darkest surface token there is. */
+    --k-rcf-fill: var(--k-ground-deep);
+    --k-rcf-hairline: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+    /* Hover: the same hairline, leaned on. Not a colour change, a pressure change. */
+    --k-rcf-hairline-lit: color-mix(in srgb, var(--k-accent) 45%, transparent);
+    --k-rcf-radius: var(--k-radius-md);
+    --k-rcf-ring: color-mix(in srgb, var(--k-accent) 34%, transparent);
+    --k-rcf-ring-w: 3px;
+
+    /* ── Field rhythm ─────────────────────────────────────────────────────────── */
+    --k-rcf-pad-y: 6px;
+    --k-rcf-pad-x: 10px;
+    --k-rcf-size: 13px;
+    --k-rcf-line: 1.35;
+    /* A paragraph needs air a single line does not; textareas take the studio's leading. */
+    --k-rcf-area-line: 1.5;
+    /* The two counter boxes are metadata, and metadata is mono in this house
+       (css/kotatsu-chrome.css §3 already lists `.neo-range-input` in that group). 0.85em of
+       the counter block's own 0.95em ≈ 12px, which clears the 11px type floor. */
+    --k-rcf-counter-size: 0.85em;
+
+    /* ── Checkbox ─────────────────────────────────────────────────────────────── */
+    /* Core sizes the box off `--mainFontSize` (style.css:4071-4072): 15px at fontScale 1, and
+       smaller the moment the user turns the font knob down. This is a FLOOR, not a fixed
+       size — the box still grows with the knob, it just may not fall under 16px. */
+    --k-rcf-check-min: 16px;
+    --k-rcf-check-gap: 8px;
+
+    /* ── Range ────────────────────────────────────────────────────────────────── */
+    /* The visible bar keeps stock's 4px (style.css:4300); the weight of the line was never the
+       problem. Read §4 before touching any of these — the split between the two slider
+       families, and the reason only one of them declares a track height, is a measured
+       hit-target result, not a preference. */
+    --k-rcf-track-h: 4px;
+    --k-rcf-track-fill: color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
+    --k-rcf-track-inset: inset 0 0 2px color-mix(in srgb, var(--k-scrim) 50%, transparent);
+    /* 14px core + a 2px ring on each side, copied off the webkit thumb core already
+       ships (style.css:4311-4326). */
+    --k-rcf-thumb-core: 14px;
+    --k-rcf-thumb-ring-w: 2px;
+    --k-rcf-thumb-outer: calc(var(--k-rcf-thumb-core) + var(--k-rcf-thumb-ring-w) * 2);
+    --k-rcf-thumb-rim: color-mix(in srgb, var(--k-ground-deep) 90%, transparent);
+    /* The `.neo-range-slider` box only. Exactly the thumb's outer size, so the thumb stops
+       overflowing the control it belongs to and the whole of it becomes grabbable. */
+    --k-rcf-slider-h: var(--k-rcf-thumb-outer);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. TEXT FIELDS — `.text_pole` and the four that never got the class
+   ───────────────────────────────────────────────────────────────────────────
+   Stock (style.css:2682-2692) is `padding: 3px 5px`, a 28%-alpha border and a 55%-alpha
+   sunken fill: a field that floats ON the panel. The house field is cut INTO it. Stock
+   `textarea` (style.css:1556-1570) is a second, slightly different recipe — 5px/10px,
+   `--black30a`, a 5px literal radius — which is why the four classless textareas are named
+   here rather than left to inherit a look nothing else in the rails layout wears.
+
+   `#send_textarea`, `.edit_textarea` and `.reasoning_edit_textarea` are deliberately absent.
+   The first is the compose pill and belongs to css/shell-center.css; the other two are
+   in-message PROSE editors and must keep the reading face and the user's own font size,
+   not a 13px UI face.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] input:where(.text_pole),
+body[data-k-layout="rails"] textarea:where(.text_pole),
+body[data-k-layout="rails"] :where(#settingsSearch,
+    .k-set-search-input,
+    #description_textarea,
+    #firstmessage_textarea,
+    #mes_example_textarea) {
+    padding: var(--k-rcf-pad-y) var(--k-rcf-pad-x);
+    border: 1px solid var(--k-rcf-hairline);
+    border-radius: var(--k-rcf-radius);
+    background-color: var(--k-rcf-fill);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-rcf-size);
+    line-height: var(--k-rcf-line);
+    /* `cursor` inherits, and §3 puts `pointer` on the label rows some of these sit inside. */
+    cursor: text;
+}
+
+/* `.k-set-search-input` is deliberately NOT in this list, though it is in every other
+   `#settingsSearch` list in the sheet. `--k-rcf-area-line` is the TEXTAREA measure — the four
+   nodes above are all `<textarea>`s and want prose leading. The modal's search box is an
+   `<input type="search">` inside a fixed-height pill; the §1 line above is the one it wants. */
+body[data-k-layout="rails"] textarea:where(.text_pole),
+body[data-k-layout="rails"] :where(#settingsSearch,
+    #description_textarea,
+    #firstmessage_textarea,
+    #mes_example_textarea) {
+    line-height: var(--k-rcf-area-line);
+}
+
+/* WALK-BACK. style.css:2619-2627 pins both placeholder colours `!important` at
+   `--SmartThemeEmColor`, which the compat map resolves to `--k-accent` — a lavender
+   placeholder that reads as a value someone already typed. `!important` here exists only to
+   reach past that pin; nothing else in this file needs it. `opacity` drops out of the recipe
+   because `--k-text-faint` is already the dimmed step and does not want dimming twice. */
+body[data-k-layout="rails"] input:where(.text_pole)::placeholder,
+body[data-k-layout="rails"] textarea:where(.text_pole)::placeholder,
+body[data-k-layout="rails"] :where(#settingsSearch,
+    .k-set-search-input,
+    #description_textarea,
+    #firstmessage_textarea,
+    #mes_example_textarea)::placeholder {
+    color: var(--k-text-faint) !important;
+    opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. THE VALUE BOXES — the numeric half of a range row
+   ───────────────────────────────────────────────────────────────────────────
+   Two families, 101 nodes. `.neo-range-input` (style.css:4236-4250) is welded to the slider
+   above it and keeps its `0 0 sm sm` corners and its 1em/5px padding untouched — that padding
+   is doing alignment work, and only the palette is off-house. `.range-block-counter input`
+   (style.css:4224-4234) is the one field in the rack that never got tokenized at all.
+
+   Neither is given the §1 recipe: they are 75px-to-full-width numeric readouts, not prose
+   fields, and the §1 padding would eat their content box.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .neo-range-input,
+body[data-k-layout="rails"] .range-block-counter input {
+    border: 1px solid var(--k-rcf-hairline);
+    background-color: var(--k-rcf-fill);
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .range-block-counter input {
+    border-radius: var(--k-radius-sm);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-rcf-counter-size);
+}
+
+/* The number spinners are left native on purpose. Hiding `::-webkit-inner-spin-button` is the
+   usual next move and it would delete a click target from every one of these — contract 7
+   says hit targets never shrink, and a spinner is a hit target. */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. CHECKBOXES AND THE ROWS THEY RIDE IN
+   ───────────────────────────────────────────────────────────────────────────
+   The BOX itself is already house-dressed and ungated: css/kotatsu-chrome.css §13 owns its
+   well, its border, its radius and its tick, because core derived the tick from a luminance
+   calc over the body text colour and that had to die everywhere, not only under rails. This
+   section adds the three things that section could not: a size floor, a rails-scoped focus
+   ring, and the ROW — core gives the label row a 5px column gap and no pointer at all, so the
+   text beside a checkbox has never looked clickable even though clicking it toggles.
+
+   No custom checkbox. Core's `::before` tick (style.css:4086-4099) is a clip-path on a real
+   `input`, which already keeps the native semantics, the native keyboard path and the tick
+   colour on a token — a hand-built one would trade all of that for nothing visible.
+
+   `align-items: baseline` on those rows is left exactly as core set it. The box carries a
+   `transform: translateY(-0.075em)` calibrated against a baseline (style.css:4079); switching
+   the row to `center` would silently detune it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] input[type="checkbox"] {
+    min-width: var(--k-rcf-check-min);
+    min-height: var(--k-rcf-check-min);
+}
+
+body[data-k-layout="rails"] input[type="checkbox"]:hover,
+body[data-k-layout="rails"] input[type="checkbox"]:focus-visible {
+    border-color: var(--k-rcf-hairline-lit);
+}
+
+/* Replaces core's 1px `--interactable-outline-color` hairline (style.css:326-328) with the
+   house ring, on the same property so nothing stacks. `outline-offset` clears the box's
+   inset shadow instead of sitting on top of it. */
+body[data-k-layout="rails"] input[type="checkbox"]:focus-visible {
+    outline: var(--k-rcf-ring-w) solid var(--k-rcf-ring);
+    outline-offset: 1px;
+}
+
+/* The three label-row selectors core declares together at style.css:4617-4625. Two of them
+   are id-scoped there, so those two are named bare here to out-rank them; `.checkbox_label`
+   needs only the gate. `.auto_continue_settings_block` shares that core rule and is NOT
+   picked up: its `label` children are `flex-direction: column` blocks, not checkbox rows,
+   and a column gap means nothing to them.
+
+   `.k-set-rows label` is the settings-v0 §2 retarget for the third selector. Under rails the
+   modal borrows those controls OUT of `#power-user-option-checkboxes`, and the loss the
+   supersession recon predicted (§4c #2) is real but partial and therefore invisible in review:
+   the borrowed `.checkbox_label` rows keep their dressing from the first selector, while the
+   seven plain `<label for=>` captions inside that wrapper — `#example_messages_behavior`,
+   `#image_overswipe`, `#auto_continue_target_length` and the four STscript selects — lose
+   `cursor: pointer` and stop LOOKING clickable while remaining clickable. Additive on purpose:
+   the stock id stays, because the rack is still there and classic still shows it. */
+body[data-k-layout="rails"] .checkbox_label,
+body[data-k-layout="rails"] #anchor_checkbox label,
+body[data-k-layout="rails"] .k-set-rows label,
+body[data-k-layout="rails"] #power-user-option-checkboxes label {
+    column-gap: var(--k-rcf-check-gap);
+    cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. RANGE SLIDERS — both engines
+   ───────────────────────────────────────────────────────────────────────────
+   Stock paints the bar on the INPUT'S OWN BACKGROUND at `height: 4px` and lets an 18px thumb
+   overflow that box by 7px top and bottom (style.css:4294-4326). Two consequences. The
+   `.neo-range-slider` rows carry a `margin-top: 7px` and a counter with `padding-top: 5px`
+   that exist only as clearance for the spill. And Firefox has never seen a Kotatsu slider at
+   all: nothing in this repo has ever written `::-moz-range-track` or `::-moz-range-thumb`, so
+   where Chrome wears a rose thumb with a halo, Firefox wears the UA's grey circle.
+
+   ── The measurement this section is built on ─────────────────────────────────
+   Core paints the bar on the input's own background for a reason worth knowing before touching
+   it. Chrome does NOT confine a range input's hit area to its box: an unstyled
+   `::-webkit-slider-runnable-track` is TALLER than a 4px input, overflows it, and stays
+   hit-testable, so `document.elementFromPoint` finds the input across a 14px band on a bare
+   slider and a 9px band on a neo one. Paint that pseudo-element and the oversized default
+   becomes visible as a fat bar; give it `height: 4px` to fix that and the grabbable band
+   collapses to the 4px box — a hit target cut to a third, which contract 7 does not allow.
+   Measured in Chrome against the real `.range-block` and `.flex-container.flexFlowColumn.gap0`
+   markup, at a point on the track away from the thumb:
+
+     variant                                    box    bar     grabbable
+     stock (bar on the input background)        4px    4px       14px
+     track painted, no `height` declared        4px   ~14px      14px   ← fat bar, rejected
+     track painted WITH `height: 4px`           4px    4px        4px   ← rejected
+     track `height: 4px`, input `height: 18px`  18px   4px       18px   ← the neo family
+
+   Only the last row wins on both counts, and it wins only because the box grew. So the sheet
+   splits by family rather than treating a slider as a slider:
+
+   `.neo-range-slider` (70 of the 105) takes the box up to the thumb's own outer size, which
+   puts the whole thumb inside its own hit area and takes the grabbable band from 9px to 18px.
+   Its bar then moves to the track pseudo-elements and needs its own 4px, or it would paint the
+   full box. Measured: the bar lands at the SAME y it had before — a centred 4px track in an
+   18px box is exactly where 7px of margin-top plus a 4px input used to put it — and the row
+   grows 49.5px → 56.5px, giving back the 7px of clearance the thumb spill no longer needs.
+
+   The 35 bare sliders keep stock geometry to the pixel, bar included, and their track
+   pseudo-elements are not touched at all — there is no variant that repaints them without
+   costing either the bar's weight or two thirds of the target. Growing their box is not the
+   way out either: they sit inline in a `.range-block-range` block, so a taller box re-seats
+   them on a new baseline and the bar drifts 2.75px off the centre of the counter beside it
+   (measured 26.5 against 29.25), and pulling it back means writing `display: flex` on a rack
+   container — a layout change, and not this slice's to make. Their 14px band is already the
+   better of the two; it is left intact. What they do get is the thumb, on both engines, and
+   the one literal core left on them (`box-shadow: inset 0 0 2px black`, style.css:4305) moved
+   onto a token.
+
+   The STscript double slider — `.doubleRangeInputContainer`, whose `::after` fill bar is pinned
+   at a hard-coded `top: 11px` against the stock box and driven by power-user.js:4057/4065 — is
+   a bare slider, so that same split leaves it alone with no special case needed.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Every slider: core's one remaining literal, moved onto `--k-scrim`. The `.neo-range-slider`
+   block below pins this away again for that family, which paints its inset on the track
+   instead. */
+body[data-k-layout="rails"] input[type="range"] {
+    box-shadow: var(--k-rcf-track-inset);
+}
+
+/* WALK-BACK. style.css:4252-4267 pins every declaration on `.neo-range-slider` `!important`,
+   including the four this family has to move. `margin-top` is in the list because those 7px
+   were pure thumb-overflow clearance: with the thumb inside its own box they would be a
+   second, doubled gap, and dropping them is what keeps the bar on its original y. Everything
+   else in that block — the appearance reset, the width, the pill radius, the now-inert
+   `background-size`/`background-repeat` pair, the cursor — is either already what this sheet
+   wants or has stopped having an effect, and is left pinned. */
+body[data-k-layout="rails"] .neo-range-slider {
+    height: var(--k-rcf-slider-h) !important;
+    margin-top: 0 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* ── the track: the neo family, both engines ───────────────────────────────── */
+
+/* Two rules, never one list: an engine that does not know one of these pseudo-elements drops
+   the WHOLE selector list it appears in, so grouping them would cost each engine the other's
+   track. Scoped to `.neo-range-slider` because that is the only family whose box is tall
+   enough to carry a track of its own — see the table above. */
+body[data-k-layout="rails"] .neo-range-slider::-webkit-slider-runnable-track {
+    height: var(--k-rcf-track-h);
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-rcf-track-fill);
+    box-shadow: var(--k-rcf-track-inset);
+}
+
+body[data-k-layout="rails"] .neo-range-slider::-moz-range-track {
+    height: var(--k-rcf-track-h);
+    border: 0;
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-rcf-track-fill);
+    box-shadow: var(--k-rcf-track-inset);
+}
+
+/* ── the thumb, both engines ────────────────────────────────────────────────── */
+
+/* Webkit's thumb is core's (style.css:4311-4326) and its halo is
+   css/kotatsu-chrome.css §13's; neither is restated. The one thing that changes is centring,
+   and only for the neo family: webkit centres the thumb on the TRACK, so a track that has been
+   given a height of its own inside a taller box has to pull the thumb back by half the
+   difference or it hangs off the track's top edge. The bare family never declares a track
+   height, keeps the engine's own centring, and must NOT be given this margin. */
+body[data-k-layout="rails"] .neo-range-slider::-webkit-slider-thumb {
+    margin-top: calc((var(--k-rcf-track-h) - var(--k-rcf-thumb-outer)) / 2);
+}
+
+/* Firefox's thumb, written for the first time. Sized at the webkit thumb's OUTER size with an
+   explicit `box-sizing`, because the two engines box this pseudo-element differently and the
+   global `* { box-sizing: border-box }` (style.css:147-153) does not reach a shadow
+   pseudo-element: 14px of core plus two 2px rings is 18px on webkit, so it is declared as 18px
+   border-box here rather than left to an engine default. No margin — Firefox centres the thumb
+   on the track by itself. */
+body[data-k-layout="rails"] input[type="range"]::-moz-range-thumb {
+    box-sizing: border-box;
+    width: var(--k-rcf-thumb-outer);
+    height: var(--k-rcf-thumb-outer);
+    border: var(--k-rcf-thumb-ring-w) solid var(--k-rcf-thumb-rim);
+    border-radius: var(--k-radius-round);
+    background: var(--k-checkbox-tick);
+    box-shadow: var(--k-ring-thumb);
+    cursor: grab;
+}
+
+body[data-k-layout="rails"] input[type="range"]:hover::-moz-range-thumb,
+body[data-k-layout="rails"] input[type="range"]:focus-visible::-moz-range-thumb {
+    box-shadow: var(--k-ring-thumb-hover);
+}
+
+/* Core rings the whole control in a 1px `--interactable-outline-color` on focus
+   (style.css:4284-4287) — around a 4px box that read as a hairline, and around the neo
+   family's 18px one it would read as a white slab. The thumb's halo is the focus signal on
+   both engines now (the `:hover` / `:focus-visible` pair above for Firefox,
+   css/kotatsu-chrome.css §13's for webkit), so the outline steps aside here and only here.
+   Focus-only, with no hover to pair: core declares no hover outline to displace. */
+body[data-k-layout="rails"] input[type="range"]:focus-visible {
+    outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. THE SHARED FOCUS AND HOVER STATE
+   ───────────────────────────────────────────────────────────────────────────
+   One recipe for every field this sheet dressed in §1 and §2: the studio's, with the ring on
+   `outline` (see the header). Written as one pair of rules so the hover and its twin carry
+   byte-identical selector lists — `initDynamicStyles()` matches them by base selector, and a
+   list that drifted between the two would have half of it synthesized into a later sheet.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] input:where(.text_pole):hover,
+body[data-k-layout="rails"] textarea:where(.text_pole):hover,
+body[data-k-layout="rails"] .neo-range-input:hover,
+body[data-k-layout="rails"] .range-block-counter input:hover,
+body[data-k-layout="rails"] :where(#settingsSearch,
+    .k-set-search-input,
+    #description_textarea,
+    #firstmessage_textarea,
+    #mes_example_textarea):hover,
+body[data-k-layout="rails"] input:where(.text_pole):focus-visible,
+body[data-k-layout="rails"] textarea:where(.text_pole):focus-visible,
+body[data-k-layout="rails"] .neo-range-input:focus-visible,
+body[data-k-layout="rails"] .range-block-counter input:focus-visible,
+body[data-k-layout="rails"] :where(#settingsSearch,
+    .k-set-search-input,
+    #description_textarea,
+    #firstmessage_textarea,
+    #mes_example_textarea):focus-visible {
+    border-color: var(--k-rcf-hairline-lit);
+}
+
+body[data-k-layout="rails"] input:where(.text_pole):focus-visible,
+body[data-k-layout="rails"] textarea:where(.text_pole):focus-visible,
+body[data-k-layout="rails"] .neo-range-input:focus-visible,
+body[data-k-layout="rails"] .range-block-counter input:focus-visible,
+body[data-k-layout="rails"] :where(#settingsSearch,
+    .k-set-search-input,
+    #description_textarea,
+    #firstmessage_textarea,
+    #mes_example_textarea):focus-visible {
+    border-color: var(--k-accent);
+    outline: var(--k-rcf-ring-w) solid var(--k-rcf-ring);
+    outline-offset: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. THE TWO ENVIRONMENT LANES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* A 34%-alpha ring is a whisper to a reader who has asked the OS for contrast. Because every
+   ring in this file reads one parameter, the whole sheet solidifies from a single override
+   rather than from a restated selector list. Rides alongside style.css:6472-6493, which
+   thickens core's outlines in the same lane. */
+@media (prefers-contrast: more) {
+    body[data-k-layout="rails"] {
+        --k-rcf-ring: var(--k-accent-bright);
+        --k-rcf-hairline: color-mix(in srgb, var(--k-chrome-border) 70%, transparent);
+    }
+}
+
+/* The opt-in form, css/studio.css:720 and css/library.css:931. None of these move anything —
+   they are colour and shadow crossfades — but the house declares transitions here and not
+   inline, so the reduced-motion reader gets the same sheet with the animation removed instead
+   of a second sheet that has to undo it. */
+@media (prefers-reduced-motion: no-preference) {
+
+    body[data-k-layout="rails"] input:where(.text_pole),
+    body[data-k-layout="rails"] textarea:where(.text_pole),
+    body[data-k-layout="rails"] .neo-range-input,
+    body[data-k-layout="rails"] .range-block-counter input,
+    body[data-k-layout="rails"] :where(#settingsSearch,
+        .k-set-search-input,
+        #description_textarea,
+        #firstmessage_textarea,
+        #mes_example_textarea) {
+        transition:
+            border-color var(--k-motion),
+            background-color var(--k-motion),
+            outline-color var(--k-motion);
+    }
+
+    body[data-k-layout="rails"] input[type="checkbox"] {
+        transition:
+            border-color var(--k-motion),
+            background-color var(--k-motion),
+            outline-color var(--k-motion);
+    }
+
+    body[data-k-layout="rails"] input[type="range"]::-moz-range-thumb {
+        transition: box-shadow var(--k-motion);
+    }
+}

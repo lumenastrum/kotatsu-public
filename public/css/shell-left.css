@@ -1,0 +1,910 @@
+/*
+ * Kotatsu shell v0 — left rail (slice B).
+ *
+ * Owns the INSIDE of `<k-rail-left>`: section headers, roster rows, chat rows,
+ * quiet states. The rail container itself (`#k-rail-left`: track width, surface,
+ * right border, scroll behaviour) belongs to slice A's `shell-frame.css`.
+ *
+ * Discipline (docs/shell-v0.md §"The slot contract", recon §6C):
+ * - Every rule is gated under `body[data-k-layout="rails"]`; classic is untouched.
+ * - Colours and radii come from `--k-*` only — never a literal. Slice-local
+ *   geometry is declared once, up top, in the `--k-rl-*` namespace (the same
+ *   sheet-local pattern `css/kotatsu-chrome.css` uses for `--k-chrome-fill` and
+ *   friends). `--k-rail-*` is reserved for slice A's core tokens; this sheet
+ *   never writes that prefix.
+ * - Every `:hover` has an explicit `:focus-visible` twin, because
+ *   `initDynamicStyles()` (dynamic-styles.js:188-202) otherwise synthesizes one
+ *   late and reorders the cascade under us.
+ *
+ * The component renders into the LIGHT DOM, so these selectors reach it — and so
+ * can a theme pack's `sheet.css`. Bare `<button>` inherits core's font rule
+ * (style.css:1578-1583) plus UA chrome; both are reset explicitly below.
+ *
+ * Load order: linked by slice A after `css/kotatsu-chrome.css` (so `--k-ghost-hover`,
+ * `--k-inset-fill` and `--k-inset-border` resolve) and before `css/mobile-styles.css`.
+ */
+
+body[data-k-layout="rails"] {
+    /* ── Slice-local geometry (mockup numbers, docs/shell-v0.md §"The target") ── */
+    --k-rl-row-height: 34px;
+    --k-rl-head-height: 28px;
+    --k-rl-chip-size: 24px;
+    --k-rl-icon-size: 20px;
+
+    --k-rl-inset: 8px;
+    --k-rl-block-pad: 10px;
+    --k-rl-row-pad: 8px;
+    --k-rl-gap: 8px;
+    --k-rl-section-gap: 14px;
+
+    --k-rl-name-size: 13px;
+    --k-rl-meta-size: 11px;
+    --k-rl-head-size: 10.5px;
+    --k-rl-head-track: 0.1em;
+    --k-rl-quiet-size: 11.5px;
+    --k-rl-chat-size: 11.5px;
+    --k-rl-chip-size-text: 10.5px;
+
+    /* Branches section (branch panel v0 slice C). One indent step per hop away
+       from the open chat, a tighter gap for the trailing fork/recency pair, and
+       a size below --k-rl-meta-size for the two badges, which are annotations
+       on a row rather than a column of their own. */
+    --k-rl-branch-indent: 12px;
+    --k-rl-branch-meta-gap: 6px;
+    --k-rl-badge-size: 10px;
+
+    --k-rl-weight-rest: 500;
+    --k-rl-weight-active: 600;
+    --k-rl-weight-head: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOST — flow only. Track width, fill and border are slice A's.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The host is a flex column that FILLS the slot (`flex: 1 1 auto` — the slot,
+   `#k-rail-left` in shell-frame.css, is itself a flex column, and the default
+   `flex: 0 0 auto` a bare custom element gets would leave it sized to content
+   instead of the track). It no longer scrolls itself: `.k-rl-scroll` below
+   took over that job so a `.k-rl-footer` sibling can sit outside it, pinned by
+   layout rather than position (see `k-rail-left.js`'s header, "Footer slot",
+   for why). */
+body[data-k-layout="rails"] k-rail-left[variant="list"] {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
+}
+
+/* Pre-upgrade guard: an un-hydrated custom element is inline by default and
+   would flash its (empty) content box before Lit's first render. */
+body[data-k-layout="rails"] k-rail-left:not(:defined) {
+    display: block;
+    min-height: 0;
+}
+
+/* The scroller — every rule that used to live on the host directly, unchanged
+   in behaviour: same padding, same gap, same clip. */
+body[data-k-layout="rails"] k-rail-left[variant="list"] .k-rl-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: var(--k-rl-section-gap);
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    padding: var(--k-rl-block-pad) var(--k-rl-inset);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* The pinned footer. A hairline echoes the roster/chat/branch section rhythm
+   above it without adding a fourth `.k-rl-section` (the persona menu is not a
+   list of rows core hands back — it is one control), and `flex: 0 0 auto`
+   keeps it out of the scroller's shrink math entirely. */
+body[data-k-layout="rails"] k-rail-left[variant="list"] .k-rl-footer {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: var(--k-rl-row-pad) var(--k-rl-inset) var(--k-rl-block-pad);
+    border-top: 1px solid color-mix(in srgb, var(--k-chrome-border) 24%, transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-rl-section {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-rl-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--k-rl-gap);
+    height: var(--k-rl-head-height);
+    padding: 0 var(--k-rl-row-pad);
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-rl-head-label {
+    font-size: var(--k-rl-head-size);
+    font-weight: var(--k-rl-weight-head);
+    letter-spacing: var(--k-rl-head-track);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body[data-k-layout="rails"] .k-rl-head-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: var(--k-rl-icon-size);
+    height: var(--k-rl-icon-size);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    color: var(--k-text-muted);
+    font: inherit;
+    cursor: pointer;
+    transition: color var(--k-motion), background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rl-head-action:hover,
+body[data-k-layout="rails"] .k-rl-head-action:focus-visible {
+    color: var(--k-accent-bright);
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-rl-head-action:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: 1px;
+}
+
+/* The off state — today only the Chats "+" with neither a character nor a group
+   selected (k-rail-left.js #renderChats). `:hover` still MATCHES a disabled
+   button, so the accent pair above has to be walked back explicitly rather than
+   left to the disabled attribute; the twin is written here for the same reason
+   the hover pair is (initDynamicStyles() would otherwise synthesize and append a
+   focus rule of its own late — dynamic-styles.js:188-202). */
+body[data-k-layout="rails"] .k-rl-head-action:disabled {
+    color: var(--k-text-faint);
+    cursor: default;
+}
+
+body[data-k-layout="rails"] .k-rl-head-action:disabled:hover,
+body[data-k-layout="rails"] .k-rl-head-action:disabled:focus-visible {
+    color: var(--k-text-faint);
+    background-color: transparent;
+}
+
+body[data-k-layout="rails"] .k-rl-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-rl-icon {
+    flex: 0 0 auto;
+    display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ROWS — 34px, radius md, ghost hover, raised surface when active
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-rl-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--k-rl-gap);
+    box-sizing: border-box;
+    width: 100%;
+    height: var(--k-rl-row-height);
+    margin: 0;
+    padding: 0 var(--k-rl-row-pad);
+    border: 0;
+    border-radius: var(--k-radius-md);
+    background: transparent;
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-rl-name-size);
+    font-weight: var(--k-rl-weight-rest);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--k-motion), color var(--k-motion), box-shadow var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rl-row--char {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+body[data-k-layout="rails"] .k-rl-row:hover,
+body[data-k-layout="rails"] .k-rl-row:focus-visible {
+    background-color: var(--k-ghost-hover);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-rl-row:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: -1px;
+}
+
+/* Every active row — character, chat, branch — speaks the same "you are here"
+   the switcher popover and the layout switch speak (shell-frame.css:315-318):
+   the rose selection, not a brighter white. One rule, one voice; tokens only,
+   so a pack's own rose restyles all of it for free. */
+body[data-k-layout="rails"] .k-rl-row.is-active {
+    background-color: color-mix(in srgb, var(--k-rose) 12%, transparent);
+    box-shadow: none;
+    color: var(--k-rose);
+    font-weight: var(--k-rl-weight-active);
+}
+
+body[data-k-layout="rails"] .k-rl-row.is-active:hover,
+body[data-k-layout="rails"] .k-rl-row.is-active:focus-visible {
+    background-color: color-mix(in srgb, var(--k-rose) 12%, transparent);
+    color: var(--k-rose-bright);
+}
+
+
+body[data-k-layout="rails"] .k-rl-name {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Chat titles are file ids — mono, matching `.select_chat_block_filename`
+   (css/kotatsu-chrome.css:1301-1305) so the same string reads the same way in
+   both layouts. Overflow ellipsises at the end; the full id is on `title`. */
+body[data-k-layout="rails"] .k-rl-row--chat .k-rl-name {
+    font-family: var(--k-font-mono);
+    font-size: var(--k-rl-chat-size);
+}
+
+body[data-k-layout="rails"] .k-rl-meta {
+    flex: 0 0 auto;
+    font-family: var(--k-font-mono);
+    font-size: var(--k-rl-meta-size);
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--k-rl-weight-rest);
+    color: var(--k-text-faint);
+    text-align: right;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-rl-row:hover .k-rl-meta,
+body[data-k-layout="rails"] .k-rl-row:focus-visible .k-rl-meta,
+body[data-k-layout="rails"] .k-rl-row.is-active .k-rl-meta {
+    color: var(--k-text-muted);
+}
+
+/* ── Chat-row rename affordance ──────────────────────────────────────────────
+   A hover-revealed pencil overlaying the meta column; rename mode swaps the
+   whole row for an inline input. Rename goes through branchStore.rename (the
+   healing path) — never core's raw rename, which orphans children. */
+
+body[data-k-layout="rails"] .k-rl-rowwrap {
+    position: relative;
+    display: flex;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-rl-rowwrap > .k-rl-row {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-rl-rowwrap .k-rl-meta {
+    transition: color var(--k-motion), opacity var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rl-rowwrap:hover .k-rl-meta,
+body[data-k-layout="rails"] .k-rl-rowwrap:focus-within .k-rl-meta {
+    opacity: 0;
+}
+
+body[data-k-layout="rails"] .k-rl-act {
+    position: absolute;
+    top: 50%;
+    right: var(--k-rl-row-pad);
+    translate: 0 -50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--k-rl-icon-size);
+    height: var(--k-rl-icon-size);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    color: var(--k-text-muted);
+    font: inherit;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: color var(--k-motion), background-color var(--k-motion), opacity var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rl-rowwrap:hover .k-rl-act,
+body[data-k-layout="rails"] .k-rl-act:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body[data-k-layout="rails"] .k-rl-act:hover,
+body[data-k-layout="rails"] .k-rl-act:focus-visible {
+    color: var(--k-accent-bright);
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-rl-act:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: 1px;
+}
+
+body[data-k-layout="rails"] .k-rl-rename-input {
+    box-sizing: border-box;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: var(--k-rl-row-height);
+    margin: 0;
+    padding: 0 var(--k-rl-row-pad);
+    border: 0;
+    border-radius: var(--k-radius-md);
+    background: color-mix(in srgb, var(--k-surface-sunken) 88%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k-accent) 55%, transparent);
+    color: var(--k-text-strong);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-rl-chat-size);
+    outline: none;
+}
+
+/* ── Initials chip ─────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-rl-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    width: var(--k-rl-chip-size);
+    height: var(--k-rl-chip-size);
+    border-radius: var(--k-radius-sm);
+    background: var(--k-inset-fill);
+    box-shadow: inset 0 0 0 1px var(--k-inset-border);
+    color: var(--k-text-muted);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-rl-chip-size-text);
+    font-weight: var(--k-rl-weight-active);
+    letter-spacing: var(--k-rl-head-track);
+    text-indent: var(--k-rl-head-track);
+    line-height: 1;
+    user-select: none;
+    transition: background-color var(--k-motion), color var(--k-motion), box-shadow var(--k-motion);
+}
+
+/* The active chip inverts on the selection color — rose since the one-voice
+   pass (was accent when active meant "raised surface"). */
+body[data-k-layout="rails"] .k-rl-row.is-active .k-rl-chip {
+    background: var(--k-rose);
+    box-shadow: none;
+    color: var(--k-ground);
+}
+
+/* Card-art thumbnail — the chip's box wearing the character's face. `--art` is
+   an <img> through core's /thumbnail endpoint; the initials chip is its
+   fallback, so both share the chip class and its geometry. The active state
+   cannot invert an image, so it takes a rose ring instead — the modifier's
+   extra class outranks the invert rule above at any source order. */
+body[data-k-layout="rails"] .k-rl-chip--art {
+    object-fit: cover;
+    background: var(--k-inset-fill);
+}
+
+body[data-k-layout="rails"] .k-rl-row.is-active .k-rl-chip--art {
+    background: var(--k-inset-fill);
+    box-shadow: 0 0 0 1px var(--k-rose);
+}
+
+/* ── "+N more" ─────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-rl-row--more {
+    grid-template-columns: minmax(0, 1fr);
+    color: var(--k-text-faint);
+    font-size: var(--k-rl-quiet-size);
+}
+
+body[data-k-layout="rails"] .k-rl-row--more:hover,
+body[data-k-layout="rails"] .k-rl-row--more:focus-visible {
+    color: var(--k-accent-bright);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BRANCHES — the open chat's lineage, its children, the door to the map.
+   (branch panel v0 slice C, docs/branch-panel-v0.md §"The rail section")
+
+   These rows carry OPTIONAL trailing cells — a checkpoint badge, a fork index,
+   a recency stamp — so they lay out with flex rather than the grid the roster
+   and chat rows use. A grid track is still gapped when it holds nothing, which
+   would park 8px of dead space at the right edge of every row that happens to
+   have no badge; flex simply omits what is not there.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-rl-branch-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-rl-row--branch,
+body[data-k-layout="rails"] .k-rl-row--map {
+    display: flex;
+    gap: var(--k-rl-gap);
+}
+
+body[data-k-layout="rails"] .k-rl-row--branch .k-rl-name,
+body[data-k-layout="rails"] .k-rl-row--map .k-rl-name,
+body[data-k-layout="rails"] .k-rl-ghost .k-rl-name {
+    flex: 1 1 auto;
+}
+
+/* Chat ids again — same mono treatment the Chats section gives them, so one
+   string reads the same way wherever the rail prints it. */
+body[data-k-layout="rails"] .k-rl-row--branch .k-rl-name,
+body[data-k-layout="rails"] .k-rl-ghost .k-rl-name {
+    font-family: var(--k-font-mono);
+    font-size: var(--k-rl-chat-size);
+}
+
+/* One indent step: children hang below the open chat, which is the last row of
+   the lineage chain directly above them. The glyph column draws the link; this
+   draws the depth. */
+body[data-k-layout="rails"] .k-rl-row--child {
+    padding-left: calc(var(--k-rl-row-pad) + var(--k-rl-branch-indent));
+}
+
+body[data-k-layout="rails"] .k-rl-glyph {
+    display: inline-flex;
+    flex: 0 0 auto;
+    color: var(--k-text-faint);
+    transition: color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rl-row:hover .k-rl-glyph,
+body[data-k-layout="rails"] .k-rl-row:focus-visible .k-rl-glyph,
+body[data-k-layout="rails"] .k-rl-row.is-active .k-rl-glyph {
+    color: var(--k-accent);
+}
+
+/* On a rose "you are here" row (see the ROWS section) the glyph goes rose
+   with the text. AFTER the accent rule on purpose: equal specificity, so
+   source order is the tiebreak. */
+body[data-k-layout="rails"] .k-rl-row.is-active .k-rl-glyph,
+body[data-k-layout="rails"] .k-rl-row.is-active:hover .k-rl-glyph,
+body[data-k-layout="rails"] .k-rl-row.is-active:focus-visible .k-rl-glyph {
+    color: var(--k-rose);
+}
+
+/* Fork index — mono and faint, a coordinate rather than a label. */
+body[data-k-layout="rails"] .k-rl-fork {
+    flex: 0 0 auto;
+    font-family: var(--k-font-mono);
+    font-size: var(--k-rl-badge-size);
+    font-variant-numeric: tabular-nums;
+    color: var(--k-text-faint);
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-rl-row:hover .k-rl-fork,
+body[data-k-layout="rails"] .k-rl-row:focus-visible .k-rl-fork {
+    color: var(--k-text-muted);
+}
+
+/* Checkpoint badge — flag glyph plus a count, on the open chat's row only. */
+body[data-k-layout="rails"] .k-rl-flag {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 3px;
+    color: var(--k-rose);
+}
+
+body[data-k-layout="rails"] .k-rl-flag-count {
+    font-family: var(--k-font-mono);
+    font-size: var(--k-rl-badge-size);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+/* ── Ghost ancestor ────────────────────────────────────────────────────────
+   A name with no file behind it. Non-interactive on purpose: there is nothing
+   to open, so it is a <div>, gets no hover, and keeps the default cursor. */
+
+body[data-k-layout="rails"] .k-rl-ghost {
+    display: flex;
+    align-items: center;
+    gap: var(--k-rl-gap);
+    box-sizing: border-box;
+    width: 100%;
+    height: var(--k-rl-row-height);
+    padding: 0 var(--k-rl-row-pad);
+    color: var(--k-text-faint);
+    cursor: default;
+}
+
+body[data-k-layout="rails"] .k-rl-ghost .k-rl-icon {
+    opacity: 0.7;
+}
+
+body[data-k-layout="rails"] .k-rl-ghost .k-rl-meta {
+    font-style: italic;
+}
+
+/* ── Map door ──────────────────────────────────────────────────────────────
+   The section footer. Reads like "+N more" at rest — faint, accent on reach —
+   because it is the same kind of promise: the rest of it lives elsewhere. */
+
+body[data-k-layout="rails"] .k-rl-row--map {
+    color: var(--k-text-faint);
+    font-size: var(--k-rl-quiet-size);
+}
+
+body[data-k-layout="rails"] .k-rl-row--map:hover,
+body[data-k-layout="rails"] .k-rl-row--map:focus-visible {
+    color: var(--k-accent-bright);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QUIET STATES — one muted, non-interactive row. No drama, no fake tree.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-rl-quiet {
+    display: flex;
+    align-items: center;
+    gap: var(--k-rl-gap);
+    box-sizing: border-box;
+    min-height: var(--k-rl-row-height);
+    padding: 0 var(--k-rl-row-pad);
+    color: var(--k-text-faint);
+    font-size: var(--k-rl-quiet-size);
+}
+
+body[data-k-layout="rails"] .k-rl-quiet .k-rl-icon {
+    opacity: 0.7;
+}
+
+body[data-k-layout="rails"] .k-rl-quiet-text {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PERSONA MENU — the rail's persona chip + popover (pinned footer).
+   ───────────────────────────────────────────────────────────────────────────
+   <k-persona-menu> (kotatsu/shell/components/k-persona-menu.js) owns the chip
+   and the popover; this section owns their look, in the SAME visual language
+   as <k-model-menu>'s pill + popover (css/shell-topbar.css §4-5) — hairline
+   border, chrome fill, ghost-hover rows, and the rose "selected" treatment
+   every other "you are here" surface in the shell already speaks (
+   shell-frame.css:315-318, and this file's own `.k-rl-row.is-active` above).
+   It lives HERE rather than in shell-topbar.css because the component lives
+   inside <k-rail-left>, not inside <k-topbar> — the same file-owns-what-it-
+   contains boundary this file's own header states. The model pill's local
+   `--k-topbar-*` numbers are scoped to <k-topbar> and do not cascade to a rail
+   sibling, so the proportions below are re-declared as fresh `--k-pm-*`
+   sheet-local tokens rather than borrowed; every colour/radius/elevation is a
+   global `--k-*` token, same discipline as the rest of this file.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] k-persona-menu {
+    position: relative;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] k-persona-menu[variant="chip"] {
+    --k-pm-height: 34px;
+    --k-pm-portrait: 22px;
+    --k-pm-portrait-row: 20px;
+    --k-pm-gap: 8px;
+    --k-pm-pad-inline: 8px;
+    --k-pm-hairline: 1px;
+    --k-pm-name-size: 12.5px;
+    --k-pm-label-size: 10.5px;
+    --k-pm-offset: 8px;
+    --k-pm-list-max: 240px;
+    /* Viewport-relative, the same defensive shape --k-mm-max-height uses
+       (shell-topbar.css:379): #k-rail-left clips overflow (shell-frame.css:
+       117-125), so a popover taller than the rail's own box would be cut
+       rather than spill — this budget keeps it inside the common case. */
+    --k-pm-max-height: min(380px, calc(100dvh - 160px));
+    --k-pm-mark-size: 14px;
+    --k-pm-selected-fill: color-mix(in srgb, var(--k-rose) 12%, transparent);
+}
+
+/* Trigger — the model pill's own recipe (hairline + chrome fill + hover
+   wash, shell-topbar.css .k-pill), full width so it reads as this rail's
+   own control rather than a borrowed topbar pill. */
+body[data-k-layout="rails"] k-persona-menu .k-pm__trigger {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    gap: var(--k-pm-gap);
+    width: 100%;
+    height: var(--k-pm-height);
+    margin: 0;
+    padding-inline: var(--k-pm-pad-inline);
+    border: var(--k-pm-hairline) solid color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-chrome-fill);
+    box-shadow: var(--k-elev-1);
+    color: var(--k-text);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    transition: border-color var(--k-motion), background-color var(--k-motion), color var(--k-motion);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__trigger:hover,
+body[data-k-layout="rails"] k-persona-menu .k-pm__trigger:focus-visible {
+    border-color: color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    background: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__trigger:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: var(--k-pm-hairline);
+}
+
+/* Open: accent border + ring — the same recipe .k-mm__trigger[aria-expanded]
+   uses, so an expanded trigger reads the same way on both surfaces. */
+body[data-k-layout="rails"] k-persona-menu .k-pm__trigger[aria-expanded="true"] {
+    border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--k-accent) 12%, transparent), var(--k-elev-1);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: var(--k-pm-name-size);
+    color: var(--k-text);
+}
+
+/* Portrait — round (a persona, not a card), the fallback glyph centred inside
+   the same box an <img> would fill. Sized to match the roster's own chip
+   (--k-rl-chip-size, 24px) at the trigger — it sits directly beneath those
+   rows in the same rail — a touch smaller in the popover rows to leave more
+   width for the name column. */
+body[data-k-layout="rails"] k-persona-menu .k-pm__portrait {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    border-radius: var(--k-radius-round);
+    background: var(--k-inset-fill);
+    box-shadow: inset 0 0 0 1px var(--k-inset-border);
+    color: var(--k-text-muted);
+    object-fit: cover;
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__portrait--trigger {
+    width: var(--k-pm-portrait);
+    height: var(--k-pm-portrait);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__portrait--row {
+    width: var(--k-pm-portrait-row);
+    height: var(--k-pm-portrait-row);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__portrait .k-pm__glyph {
+    width: 60%;
+    height: 60%;
+}
+
+/* Popover — opens UPWARD from the footer (there is no room below it) and
+   spans the trigger's own width rather than a fixed px: #k-rail-left clips
+   overflow (shell-frame.css:117-125), so anything wider than the track would
+   be cut, not spill visibly — matching the trigger's width by construction
+   rules that out. */
+body[data-k-layout="rails"] k-persona-menu .k-pm__pop {
+    position: absolute;
+    bottom: calc(100% + var(--k-pm-offset));
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-block-size: var(--k-pm-max-height);
+    overflow: hidden auto;
+    padding: 6px;
+    background: var(--k-panel-fill);
+    border: var(--k-pm-hairline) solid color-mix(in srgb, var(--k-chrome-border) 35%, transparent);
+    border-radius: var(--k-radius-xl);
+    box-shadow: var(--k-elev-3);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__label {
+    padding: 8px 8px 4px;
+    font-size: var(--k-pm-label-size);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__empty {
+    padding: 2px 8px 6px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    max-block-size: var(--k-pm-list-max);
+    overflow: hidden auto;
+    padding: 2px;
+}
+
+/* Ghost rows — the same vocabulary as .k-mm__row. Real <button>s for tab order. */
+body[data-k-layout="rails"] k-persona-menu .k-pm__row {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 6px 8px;
+    border: none;
+    border-radius: var(--k-radius-md);
+    background: transparent;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    transition: background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__row:hover,
+body[data-k-layout="rails"] k-persona-menu .k-pm__row:focus-visible {
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__row:hover .k-pm__name,
+body[data-k-layout="rails"] k-persona-menu .k-pm__row:focus-visible .k-pm__name {
+    color: var(--k-accent-bright);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__row:focus-visible,
+body[data-k-layout="rails"] k-persona-menu .k-pm__foot:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: -1px;
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__copy {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__copy .k-pm__name {
+    font-size: 12.5px;
+    transition: color var(--k-motion);
+}
+
+/* Selected — the shell's one rose "you are here" voice, shared with
+   .k-rl-row.is-active above and .k-mm--selected in shell-topbar.css. */
+body[data-k-layout="rails"] k-persona-menu .k-pm--selected {
+    background-color: var(--k-pm-selected-fill);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm--selected .k-pm__copy .k-pm__name {
+    color: var(--k-rose);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm--selected:hover,
+body[data-k-layout="rails"] k-persona-menu .k-pm--selected:focus-visible {
+    background-color: var(--k-pm-selected-fill);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm--selected:hover .k-pm__copy .k-pm__name,
+body[data-k-layout="rails"] k-persona-menu .k-pm--selected:focus-visible .k-pm__copy .k-pm__name {
+    color: var(--k-rose-bright);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: var(--k-pm-mark-size);
+    height: var(--k-pm-mark-size);
+    color: var(--k-rose);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__divider {
+    block-size: 1px;
+    margin: 4px 8px;
+    background: color-mix(in srgb, var(--k-chrome-border) 28%, transparent);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__foot {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 7px 8px;
+    border: none;
+    border-radius: var(--k-radius-md);
+    background: transparent;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    color: var(--k-text-muted);
+    transition: background-color var(--k-motion), color var(--k-motion);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__foot:hover,
+body[data-k-layout="rails"] k-persona-menu .k-pm__foot:focus-visible {
+    background-color: var(--k-ghost-hover);
+    color: var(--k-accent-bright);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__foot-label {
+    flex: 1 1 auto;
+    font-size: 12.5px;
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__glyph {
+    flex: 0 0 auto;
+    width: 14px;
+    height: 14px;
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__mark .k-pm__glyph {
+    width: 12px;
+    height: 12px;
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__glyph--chevron {
+    width: 12px;
+    height: 12px;
+    color: var(--k-text-faint);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOTION — respect the OS setting; the rail is chrome, not content.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"] .k-rl-row,
+    body[data-k-layout="rails"] .k-rl-chip,
+    body[data-k-layout="rails"] .k-rl-glyph,
+    body[data-k-layout="rails"] .k-rl-head-action,
+    body[data-k-layout="rails"] k-persona-menu .k-pm__trigger,
+    body[data-k-layout="rails"] k-persona-menu .k-pm__row,
+    body[data-k-layout="rails"] k-persona-menu .k-pm__foot {
+        transition: none;
+    }
+}

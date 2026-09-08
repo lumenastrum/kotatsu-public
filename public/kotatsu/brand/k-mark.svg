@@ -1,0 +1,8 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Kotatsu k-mark, SMALL-RASTER variant: favicon truth. Thicker stroke,
+       enlarged solid dot, no glow — tuned for 16-48px. Hero sizes use
+       k-mark-hero.svg. Canon: docs/brand.md -->
+  <rect x="0" y="0" width="64" height="64" rx="13" fill="#0e1119"/>
+  <path d="M21 13 v38 M21 34 l19 -17 M26.5 29.5 l15.5 21.5" fill="none" stroke="#b6bee2" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="44" cy="17.5" r="7.5" fill="#dca9a4"/>
+</svg>

@@ -1,0 +1,363 @@
+/*
+ * Kotatsu shell v0 — the right rail (slice C).
+ *
+ * Linked by slice A so the sheet exists from the moment the frame does and slice
+ * C can land without touching index.html. Owns everything INSIDE #k-rail-right:
+ * the `Prompt · Trackers` tab strip and the pages under it — ONE dock, hosting
+ * #left-nav-panel node-for-node, and one stub. (World and Ext docked here too
+ * until settings v0.1 slice G moved both into the settings modal —
+ * docs/settings-v0.md §9-§10; their panels are the modal's problem now, and this
+ * sheet must not reach for them.) The track width, surface and border of
+ * #k-rail-right belong to css/shell-frame.css.
+ *
+ * Every rule is gated on `body[data-k-layout="rails"]` and every `:hover` is
+ * paired with an explicit `:focus-visible` (recon 6C: initDynamicStyles()
+ * synthesizes the missing twin late and reorders the cascade under us).
+ * Colours and radii come from `--k-*` only; slice-local geometry is declared
+ * once, up top, in the `--k-tr-*` namespace — the same sheet-local pattern
+ * css/kotatsu-chrome.css uses for `--k-chrome-fill` and slice B uses for
+ * `--k-rl-*`.
+ *
+ * Load order: linked by slice A after css/kotatsu-chrome.css (so `--k-ghost-hover`,
+ * `--k-inset-fill` and `--k-inset-border` resolve) and before css/mobile-styles.css.
+ *
+ * ── Why the docked block carries `!important` ────────────────────────────────
+ * Exactly seven properties are marked in the main docked block, and only on
+ * docked panels: `top`, `left`, `right`, `bottom`, `margin`, `width`, `height`
+ * (the responsive walk-back at the end of the sheet has its own, separately
+ * documented reason). Those seven are precisely the ones
+ * `savePositionAndSize()` (scripts/RossAscends-mods.js:504-517) stores and
+ * `loadMovingUIState()` (scripts/power-user.js:1917-1940) writes back as INLINE
+ * styles on #left-nav-panel — one of MovingUI's seven panels, and since the v0.1
+ * slim the only one that docks here (#WorldInfo is the other, and it is the
+ * modal's inheritance now: recon §5 G3). An inline style cannot be
+ * out-specified, only out-!important-ed, and the write happens at settings load,
+ * i.e. AFTER the rail has mounted. Rails never invokes MovingUI itself, but a
+ * user who dragged that panel in classic has the state saved; without these,
+ * their rail would open pre-broken. Delete the whole set when MovingUI goes
+ * (recon 3.3 holds the removal order).
+ */
+
+body[data-k-layout="rails"] {
+    /* ── Slice-local geometry (mockup numbers, docs/shell-v0.md §"The target") ── */
+    --k-tr-tab-height: 32px;
+
+    --k-tr-strip-pad: 8px;
+    --k-tr-strip-gap: 4px;
+    --k-tr-tab-pad: 7px;
+    --k-tr-tab-gap: 5px;
+    --k-tr-page-pad: 8px;
+    --k-tr-row-pad: 8px;
+    --k-tr-gap: 8px;
+
+    --k-tr-row-height: 34px;
+    --k-tr-label-size: 10.5px;
+    --k-tr-label-track: 0.01em;
+    --k-tr-quiet-size: 11.5px;
+
+    --k-tr-weight-rest: 500;
+    --k-tr-weight-active: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOST — flow only. Track width, fill and left border are slice A's.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] k-tab-rail[variant="tabs"] {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
+}
+
+/* Pre-upgrade guard: an un-hydrated custom element is inline by default and
+   would flash its (empty) content box before Lit's first render. */
+body[data-k-layout="rails"] k-tab-rail:not(:defined) {
+    display: block;
+    min-height: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TAB STRIP — 32px tabs, radius md, icon + label, active = raised surface
+   ───────────────────────────────────────────────────────────────────────────
+   ONE OF THE TWO TABS IS A DOCK. Since settings v0.1 slice G the strip reads
+   `Prompt · Trackers`: the prompt manager is the rail's LIVE surface and Trackers
+   is the same empty stub it has always been. The rationale that stood here
+   counted FOUR labels and argued equal columns would clip "Trackers" in a 340px
+   track; with two tabs nothing clips either way, so that argument is retired
+   rather than reworded.
+
+   `flex: 1 1 auto` with an auto basis stays for the reason that outlived it: a
+   tab is sized by its own label FIRST and only then shares the leftover, which is
+   what lets the next dock (the memory engine's in-the-moment tweaks —
+   docs/settings-v0.md §9) join the strip with no geometry edit here.
+
+   The 340px track is UNCHANGED, deliberately: nothing in css/tokens.css:175-176
+   or css/shell-frame.css ever tied that number to the tab count — it was sized
+   for the docked panel underneath (recon §5.2). Whether it still suits
+   #left-nav-panel alone is an eyeball call at viewing scale, not a measurement.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-tr-strip {
+    display: flex;
+    flex: 0 0 auto;
+    gap: var(--k-tr-strip-gap);
+    min-width: 0;
+    padding: var(--k-tr-strip-pad);
+    border-bottom: 1px solid color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+}
+
+body[data-k-layout="rails"] .k-tr-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--k-tr-tab-gap);
+    flex: 1 1 auto;
+    box-sizing: border-box;
+    min-width: 0;
+    height: var(--k-tr-tab-height);
+    margin: 0;
+    padding: 0 var(--k-tr-tab-pad);
+    border: 0;
+    border-radius: var(--k-radius-md);
+    background: transparent;
+    color: var(--k-text-muted);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-tr-label-size);
+    font-weight: var(--k-tr-weight-rest);
+    letter-spacing: var(--k-tr-label-track);
+    cursor: pointer;
+    transition: background-color var(--k-motion), color var(--k-motion), box-shadow var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-tr-tab:hover,
+body[data-k-layout="rails"] .k-tr-tab:focus-visible {
+    background-color: var(--k-ghost-hover);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-tr-tab:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: -1px;
+}
+
+body[data-k-layout="rails"] .k-tr-tab.is-active {
+    background: var(--k-inset-fill);
+    box-shadow: inset 0 0 0 1px var(--k-inset-border), var(--k-elev-1);
+    color: var(--k-text-strong);
+    font-weight: var(--k-tr-weight-active);
+}
+
+body[data-k-layout="rails"] .k-tr-tab.is-active:hover,
+body[data-k-layout="rails"] .k-tr-tab.is-active:focus-visible {
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-tr-tab-label {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+body[data-k-layout="rails"] .k-tr-icon {
+    flex: 0 0 auto;
+    display: block;
+    color: inherit;
+}
+
+body[data-k-layout="rails"] .k-tr-tab.is-active .k-tr-icon {
+    color: var(--k-accent-bright);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAGES — one per tab, all mounted, one visible. Tab switching is this class
+   toggle and nothing else; no panel is ever re-parented on a tab change.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-tr-pages {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+}
+
+body[data-k-layout="rails"] .k-tr-page {
+    display: none;
+    min-width: 0;
+    min-height: 0;
+}
+
+/* The page is the scroller, not the panel: a docked panel is laid out at its
+   natural height and this container clips it to the rail. One scrollbar per
+   rail instead of one per panel, and no nested scroll traps. */
+body[data-k-layout="rails"] .k-tr-page.is-active {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    padding: var(--k-tr-page-pad);
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DOCKED PANELS
+   ───────────────────────────────────────────────────────────────────────────
+   The `.drawer` WRAPPER moves, not just the panel, because core resolves
+   icon↔content by DOM relationship (doNavbarIconClick(), script.js:10928) and
+   `#<wrapper> .drawer-content` predicates read the same shape. In a rail the
+   wrapper is a plain block and its icon is furniture, so the toggle is hidden —
+   which also keeps it out of the tab order (keyboard.js gives .drawer-icon a
+   tabindex).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-tr-page > .drawer {
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-tr-page > .drawer > .drawer-toggle {
+    display: none;
+}
+
+/* MovingUI's grab handle. Rails never invokes MovingUI, and a grip that only
+   fights the grid is worse than no grip. Out-specifies
+   `body.movingUI .drag-grabber { display: inline }` (toggle-dependent.css:445). */
+body[data-k-layout="rails"] .k-tr-page .drawer-content.k-docked > .drag-grabber {
+    display: none;
+}
+
+/* The geometry reset. `:is(#id, …)` lifts the selector to id specificity in one
+   place so it out-ranks core's own id rules on the docked panel (#left-nav-panel
+   `top`, kotatsu-chrome.css:587-593; `left`, :610-614; `z-index`,
+   style.css:2986-2988) without repeating a selector per block. The list is down
+   to ONE id since the v0.1 slim, and the `:is()` stays anyway: adding the next
+   dock means adding its id here — deliberate, since the ids are frozen contract
+   names (CONTRACT.md:51-135) and naming them is cheaper than a wildcard that
+   would silently catch panels nobody docked. #WorldInfo and #rm_extensions_block
+   left with their tabs; whatever hosts a `.drawer-content` next owes them this
+   same reset (recon §5 G3 ports it into the modal sheet). */
+body[data-k-layout="rails"] .k-tr-page .drawer-content.k-docked:is(#left-nav-panel) {
+    /* `relative`, not `static`: with every offset auto'd below it lays out
+       identically, but the docked panel stays the containing block for its own
+       `position: absolute` children (`.editable-slider-notification` top-center,
+       `.topRightInset` doc links — style.css:5739/:4450). Under `static` those
+       anchored to the viewport and floated over the top bar. `relative` still
+       does not trap `position: fixed` descendants — they resolve against the
+       viewport exactly as core expects. */
+    position: relative;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+    height: auto !important;
+    max-height: none;
+    min-height: 0;
+    margin: 0 !important;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    /* No blur here. `.drawer-content` carries `backdrop-filter`
+       (style.css:5598, kotatsu-chrome.css:591) which makes it a containing block
+       for every `position: fixed` descendant — recon 6E. Inside an already opaque
+       rail the blur buys nothing, so it is removed outright rather than pushed to
+       a ::before: fewer layers, and fixed children resolve against the viewport
+       exactly as core expects them to. */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    /* Core animates `height` with `@starting-style` (style.css:5601-5624). A
+       panel that is permanently open must not replay the open animation every
+       time something toggles a class on it. */
+    transition: none;
+    /* `body.movingUI .drawer-content { resize: both }` (toggle-dependent.css:449). */
+    resize: none;
+    overflow: visible;
+}
+
+/* Force-shown regardless of `openDrawer`. The class normally stays on for the
+   whole mount, but core toggles it from several places (the Escape cascade, the
+   click-outside autoclose, doNavbarIconClick) and a dock must not blink out of
+   existence because one of them fired. ONE rule now: there used to be a second,
+   `display: block` for #WorldInfo and #rm_extensions_block, because those two are
+   block-shaped panels while #left-nav-panel is a `.fillLeft` flex column. It went
+   with their docks — a host that adopts them owes them their own force-show. */
+body[data-k-layout="rails"] .k-tr-page .drawer-content.k-docked#left-nav-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QUIET STATES — the Trackers stub. One muted row, no fake tree. Matches the
+   left rail's Branches section so the two rails read as one system.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-tr-quiet {
+    display: flex;
+    align-items: center;
+    gap: var(--k-tr-gap);
+    box-sizing: border-box;
+    min-height: var(--k-tr-row-height);
+    padding: 0 var(--k-tr-row-pad);
+    color: var(--k-text-faint);
+    font-size: var(--k-tr-quiet-size);
+}
+
+body[data-k-layout="rails"] .k-tr-quiet .k-tr-icon {
+    opacity: 0.7;
+}
+
+body[data-k-layout="rails"] .k-tr-quiet-text {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOTION — respect the OS setting; the rail is chrome, not content.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"] .k-tr-tab {
+        transition: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE WALK-BACK
+   ───────────────────────────────────────────────────────────────────────────
+   css/mobile-styles.css loads AFTER this sheet and below 1000px pins
+   `width: 100dvw !important; left: 0 !important` on every `.drawer-content`
+   (:306-315) plus a second, harsher block on #left-nav-panel (:373-395). Mobile
+   rails is an explicit v0 non-goal; this does not make the rail responsive, it
+   only stops the mobile sheet from tearing the docked panel out of a 340px
+   track. Same stance and same place as slice A's #sheld walk-back
+   (css/shell-frame.css:346-355): the walk-back lives with the shape being walked
+   back, never in mobile-styles.css.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 1000px) {
+    body[data-k-layout="rails"] .k-tr-page .drawer-content.k-docked:is(#left-nav-panel) {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        height: auto !important;
+        top: auto !important;
+        left: auto !important;
+        border: 0;
+        border-radius: 0;
+        overflow: visible;
+    }
+}
