@@ -121,6 +121,22 @@ export function isClaudeAdaptiveModel(model) {
 }
 
 /**
+ * Tests whether a model refuses to run with thinking off. Opus 5.5 and the Fable/Mythos 5
+ * line return a 400 for `thinking: {type: 'disabled'}` at every effort level; the only
+ * dial they have is effort, so a "disabled" request is honoured as adaptive + low effort.
+ * @param {string} model Model id
+ * @returns {boolean} True when thinking cannot be disabled on this model
+ */
+export function isThinkingAlwaysOnModel(model) {
+    const normalized = model.toLowerCase();
+    return (
+        /claude-opus-5-(?:[5-9]|\d{2,})(?:$|[-.])/.test(normalized)
+        || normalized.includes('claude-fable-5')
+        || normalized.includes('claude-mythos-5')
+    );
+}
+
+/**
  * Reads the Claude Agent SDK version from disk.
  * @returns {string} Version string, or 'unknown' when it cannot be resolved
  */
@@ -167,6 +183,7 @@ function normalizeEffort(requested, fallback) {
  */
 function requestedThinking(body, config, model) {
     const explicit = body?.thinking?.type;
+    if (explicit === 'disabled' && isThinkingAlwaysOnModel(model)) return 'adaptive';
     if (explicit === 'disabled' || explicit === 'adaptive') return explicit;
     if (isClaudeAdaptiveModel(model)) return 'adaptive';
     return config.thinking === 'disabled' ? 'disabled' : config.thinking === 'adaptive' ? 'adaptive' : 'auto';
@@ -199,7 +216,12 @@ export function buildSdkOptions({ body, config, model, abortController, selectio
             type: 'adaptive',
             ...(config.exposeReasoning ? { display: 'summarized' } : {}),
         };
-        options.effort = normalizeEffort(body.reasoning_effort, config.reasoningEffort);
+        // A caller who asked for thinking OFF on a model that cannot turn it off gets the
+        // cheapest thing that model offers instead of an upstream 400.
+        const wantedOff = body?.thinking?.type === 'disabled' && isThinkingAlwaysOnModel(model);
+        options.effort = wantedOff && !body.reasoning_effort
+            ? 'low'
+            : normalizeEffort(body.reasoning_effort, config.reasoningEffort);
     } else if (thinking === 'disabled' && /claude-(?:opus|sonnet)-5(?:$|[-.])/i.test(model)) {
         options.thinking = { type: 'disabled' };
     }

@@ -214,7 +214,11 @@ function main() {
     emptyExceptGit(work);
     fs.cpSync(exportDir, work, { recursive: true });
     git(work, ['add', '-A']);
-    git(work, ['add', '-f', ...DIST_FILES]);
+    // The mirror's own .gitignore hides dist/ and the placeholder dirs from `add -A`
+    // (v0.1.0 shipped without data/, plugins/, backups/ — harmless, boot creates what it
+    // needs, but the tree should match the source). Force them in, when present.
+    const forced = [...DIST_FILES, ...PLACEHOLDERS].filter((rel) => fs.existsSync(path.join(work, rel)));
+    git(work, ['add', '-f', ...forced]);
     const staged = git(work, ['status', '--porcelain']);
     if (!staged) {
         console.log('Mirror already matches this export; nothing to commit.');
