@@ -163,16 +163,16 @@ class XTTSTtsProvider {
             }
         }
 
-        const apiCheckInterval = setInterval(() => {
-            // Use Extras API if TTS support is enabled
-            if (modules.includes('tts') || modules.includes('xtts-tts')) {
-                const baseUrl = new URL(getApiUrl());
-                baseUrl.pathname = '/api/tts';
-                this.settings.provider_endpoint = baseUrl.toString();
-                $('#xtts_tts_endpoint').val(this.settings.provider_endpoint);
-                clearInterval(apiCheckInterval);
-            }
-        }, 2000);
+        // Use Extras API if TTS support is enabled.
+        // Kotatsu: one check, not a 2s poll. The poll only cleared once an Extras server reported
+        // a TTS module — which a retired Extras API never does — so it ticked forever, and every
+        // provider reload stacked another one (docs/baggage-audit-v0.md §6).
+        if (modules.includes('tts') || modules.includes('xtts-tts')) {
+            const baseUrl = new URL(getApiUrl());
+            baseUrl.pathname = '/api/tts';
+            this.settings.provider_endpoint = baseUrl.toString();
+            $('#xtts_tts_endpoint').val(this.settings.provider_endpoint);
+        }
 
         // Set initial values from the settings
         $('#xtts_tts_endpoint').val(this.settings.provider_endpoint);

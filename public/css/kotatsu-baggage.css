@@ -1,0 +1,127 @@
+/*
+ * kotatsu-baggage.css — inherited SillyTavern controls Kotatsu hides (docs/baggage-audit-v0.md).
+ *
+ * One sheet on purpose: "what has Kotatsu hidden, and why" is answered by reading this file,
+ * and any single hide is undone by deleting its rule. Every rule cites the audit row that
+ * proved the control dead, misleading or dangerous FROM CODE — not from its name.
+ *
+ * The house rule (settings-recon-supersession §0): hide the control, never delete the key.
+ * `power_user` / `extension_settings` round-trip untouched, so nothing here breaks a saved
+ * file, a theme JSON, an extension or a slash command. Where a saved VALUE would point at
+ * something hidden, a migration rewrites it first (kotatsu/settings/baggage.js) — hiding
+ * before migrating is how a select goes blank and saves ''.
+ *
+ * Rails-gated: classic keeps upstream's UI untouched. Conditional hides key on body attributes
+ * Kotatsu already writes (`data-k-theme` for an active pack) or adds for this audit
+ * (`data-k-bridge`, `data-k-main-api` — kotatsu/settings/baggage.js).
+ */
+
+/* ── B1 · Theme file buttons while a theme PACK is selected (audit §3) ──────────────────────
+   Update / Export / Delete / Save-as all act on `power_user.theme`, which under a pack is
+   `pack:<id>`: Update and Export write a `packblue-hour.json` legacy theme plus a duplicate
+   option; Delete removes the real pack option and rewrites 38 legacy keys while the pack stays
+   painted; Save-as moves `power_user.theme` without firing `change`, so the pack silently
+   drops on the next boot. None of the four means anything for a pack (a pack is a folder in
+   public/themes/, not a saved theme). Import stays: it brings in a legacy theme, which is then
+   selected like any other. */
+body[data-k-layout="rails"][data-k-theme] .k-set-row:is(
+    [data-k-set-entry="ui-preset-update-button"],
+    [data-k-set-entry="ui-preset-save-button"],
+    [data-k-set-entry="ui_preset_export_button"],
+    [data-k-set-entry="ui-preset-delete-button"]
+) {
+    display: none;
+}
+
+/* ── B2 · The Extras API (audit §1) ──────────────────────────────────────────────────────────
+   The SillyTavern-Extras server is discontinued upstream and labels itself "(DEPRECATED)". Its
+   connect strip goes; baggage.js has already turned auto-connect off and cleared the key, so
+   nothing hidden here is still acting. The exports (`doExtrasFetch`, `getApiUrl`, `modules`)
+   and the `EXTRAS_CONNECTED` event stay — extensions import them. */
+body[data-k-layout="rails"] hr:has(+ div > h4 > span[data-i18n="(DEPRECATED)"]),
+body[data-k-layout="rails"] div:has(> h4 > span[data-i18n="(DEPRECATED)"]),
+body[data-k-layout="rails"] div:has(> #extensions_url) {
+    display: none;
+}
+
+/* Manage Extensions: "Optional modules: caption, …" names Extras modules that can never load,
+   and the closing "Modules provided by your Extras API / Not connected to the API!" block
+   (extensions.js getModuleInformation, always the popup's last child) reports on a server
+   nobody can run. "Missing modules" — a third-party `requires` failure — stays. */
+body[data-k-layout="rails"] .extension_modules:has(> .optional),
+body[data-k-layout="rails"] .extensions_info > div:last-child:has(> h3) {
+    display: none;
+}
+
+/* ── B3 · The Dials on the built-in Claude bridge (audit §2) ────────────────────────────────
+   `data-k-bridge` = Chat Completion → custom → the bridge's own loopback listener. The bridge
+   reads none of these (claude-bridge/*.js: no temperature, top_p, penalties, seed, logit_bias)
+   and two are worse than no-ops: `n > 1` and any registered tool are a 400 on EVERY request
+   (claude-bridge/http.js:104-108) — which also retires Interleaved Thinking, a tool-call
+   reasoning mode with no tools to call. Reasoning Effort goes too: since connections-v0 C1 the
+   Claude Code card owns the bridge's effort (all five Claude steps plus the bridge default). Switch
+   the connection away and every control comes back, values untouched. */
+body[data-k-layout="rails"][data-k-bridge] .range-block:has(> .wide100p > #n_openai),
+body[data-k-layout="rails"][data-k-bridge] .range-block:has(> .range-block-range-and-counter #temp_openai),
+body[data-k-layout="rails"][data-k-bridge] .range-block:has(> .range-block-range-and-counter #freq_pen_openai),
+body[data-k-layout="rails"][data-k-bridge] .range-block:has(> .range-block-range-and-counter #pres_pen_openai),
+body[data-k-layout="rails"][data-k-bridge] .range-block:has(> .range-block-range-and-counter #top_p_openai),
+body[data-k-layout="rails"][data-k-bridge] .range-block:has(> .wide100p > #seed_openai),
+body[data-k-layout="rails"][data-k-bridge] .range-block:has(> label > #oai_max_context_unlocked),
+body[data-k-layout="rails"][data-k-bridge] .range-block:has(> label > #openai_function_calling),
+body[data-k-layout="rails"][data-k-bridge] .range-block:has(> #logit_bias_openai),
+body[data-k-layout="rails"][data-k-bridge] .range-block:has(> .flex-container > .oneline-dropdown > label[for="tool_reasoning_mode"]),
+body[data-k-layout="rails"][data-k-bridge] .flex-container:has(> .oneline-dropdown > label[for="openai_verbosity"]),
+body[data-k-layout="rails"][data-k-bridge] .flex-container:has(> .oneline-dropdown > label[for="openai_reasoning_effort"]) {
+    /* !important walks back INLINE display: core shows/hides these per source with jQuery
+       `.toggle()`, which writes `style="display: block"` (measured live on temp/seed/n) and
+       outranks any stylesheet rule — the preset-dock.css page filter's precedent. */
+    display: none !important;
+}
+
+/* Max Response Length stays — it still reserves room in the context window — but on the
+   bridge it is not a cap on how long Claude writes, and the slider never said so. */
+body[data-k-layout="rails"][data-k-bridge] .range-block:has(> .wide100p > #openai_max_tokens)::after {
+    content: 'Reserves room in the context. The Claude bridge does not cap reply length.';
+    display: block;
+    margin-top: 4px;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--k-text-muted);
+}
+
+/* The options menu: Token Probabilities opens an empty panel on the bridge (it emits no
+   logprobs), and CFG Scale only feeds Text Completion prompts (script.js returns early for
+   `main_api === 'openai'`). */
+body[data-k-layout="rails"][data-k-bridge] #option_toggle_logprobs,
+body[data-k-layout="rails"][data-k-main-api="openai"] #option_toggle_CFG {
+    display: none;
+}
+
+/* ── B4 · Advanced Formatting under Chat Completion (audit §2) ──────────────────────────────
+   Upstream tags the Text-Completion-only controls `data-cc-null` and, under Chat Completion,
+   only DIMS them (toggle-dependent.css: opacity .5, cursor not-allowed) — a drawer of
+   greyed-out controls that do nothing. Its own notice (#advanced-formatting-cc-notice) still
+   says why. Keyed on Kotatsu's `data-k-main-api` rather than core's `#top-settings-holder:has()`
+   so it holds wherever the drawer is docked. The two stop-string toggles do nothing under
+   Chat Completion either (`getStoppingStrings` returns only custom strings) — upstream missed
+   tagging them. */
+body[data-k-layout="rails"][data-k-main-api="openai"] #AdvancedFormatting [data-cc-null],
+body[data-k-layout="rails"][data-k-main-api="openai"] #AdvancedFormatting label:has(> #context_use_stop_strings),
+body[data-k-layout="rails"][data-k-main-api="openai"] #AdvancedFormatting label:has(> #context_names_as_stop_strings) {
+    display: none;
+}
+
+/* ── B4 · Settings modal rows that do nothing under rails (audit §3) ────────────────────────
+   The ten legacy colour pickers paint nothing while a theme pack is on — applyThemeColor()
+   returns early under `body[data-k-theme]` (power-user.js:1183) — so their whole card folds;
+   choose a legacy theme and it returns. Background thumbnail animation only affects the
+   Backgrounds drawer and the group-chat queue only paints the group-members panel; both are
+   parked out of reach under rails. */
+body[data-k-layout="rails"][data-k-theme] .k-set-group:has([data-k-set-entry="main-text-color-picker"]),
+body[data-k-layout="rails"] .k-set-row:is(
+    [data-k-set-entry="background_thumbnails_animation"],
+    [data-k-set-entry="show_group_chat_queue"]
+) {
+    display: none;
+}

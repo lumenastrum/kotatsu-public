@@ -77,6 +77,7 @@ import { renderTemplateAsync } from './templates.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { t } from './i18n.js';
+import { classifyImportFile, mergePackIntoPreset } from './extensions/regex/script-summary.js';
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
@@ -2535,6 +2536,22 @@ function getReasoningEffort(settings = null, model = null) {
             }
         }
 
+        // Kotatsu: a Claude model behind a custom URL is the built-in Claude Code bridge, which
+        // takes Claude's own effort scale (low/medium/high/xhigh/max). The OpenAI-shaped mapping
+        // below caps "Maximum" at high. The server forwards this only to the bridge's own listener
+        // (chat-completions.js isKotatsuBridgeUrl), so no other custom endpoint sees a new value.
+        // docs/connections-v0.md C0.
+        if (settings.chat_completion_source === chat_completion_sources.CUSTOM && /^claude-/.test(model)) {
+            switch (settings.reasoning_effort) {
+                case reasoning_effort_types.auto:
+                    return undefined;
+                case reasoning_effort_types.min:
+                    return 'low';
+                default:
+                    return settings.reasoning_effort;
+            }
+        }
+
         if (settings.chat_completion_source === chat_completion_sources.CUSTOM && /^koboldcpp\/(.+)$/.test(model)) {
             switch (settings.reasoning_effort) {
                 case reasoning_effort_types.auto:
@@ -4690,22 +4707,66 @@ function onLogitBiasPresetImportClick() {
 }
 
 async function onPresetImportFileChange(e) {
-    const file = e.target.files[0];
+    // A preset can be selected together with the regex pack it ships with (Kotatsu #6). Authors
+    // publish the two as separate files; without this the pack had to be found, imported through
+    // the Regex settings and pointed at the right home by hand. Files are told apart by shape.
+    const files = [...e.target.files];
+    e.target.value = '';
 
-    if (!file) {
+    if (files.length === 0) {
         return;
     }
 
-    const name = file.name.replace(/\.[^/.]+$/, '');
-    const importedFile = await getFileText(file);
-    let presetBody;
-    e.target.value = '';
+    /** @type {{ name: string, body: any }[]} */
+    const presets = [];
+    /** @type {any[]} */
+    const packScripts = [];
 
-    try {
-        presetBody = JSON.parse(importedFile);
-    } catch (err) {
-        toastr.error(t`Invalid file`);
+    for (const file of files) {
+        let parsed;
+        try {
+            parsed = JSON.parse(await getFileText(file));
+        } catch (err) {
+            toastr.error(t`Invalid file`);
+            continue;
+        }
+
+        switch (classifyImportFile(parsed)) {
+            case 'regex-pack':
+                packScripts.push(...(Array.isArray(parsed) ? parsed : [parsed]));
+                break;
+            case 'preset':
+                presets.push({ name: file.name.replace(/\.[^/.]+$/, ''), body: parsed });
+                break;
+            default:
+                toastr.error(t`Invalid file`);
+        }
+    }
+
+    if (presets.length === 0) {
+        // Only a pack came through the preset's door. It is still a thing the user meant to
+        // import, so it goes to the regex import, which asks where it belongs.
+        if (packScripts.length > 0) {
+            const { importRegexScriptsWithTarget } = await import('./extensions/regex/index.js');
+            await importRegexScriptsWithTarget(packScripts);
+        }
         return;
+    }
+
+    if (presets.length > 1) {
+        toastr.warning(t`Only one preset is imported at a time. Importing "${presets[0].name}".`);
+    }
+
+    const name = presets[0].name;
+    const presetBody = presets[0].body;
+
+    // The pack is folded into the preset BEFORE it is saved, so the pair is one file from here
+    // on and the regex extension's own check asks once, about everything, when the preset is
+    // selected below. Nothing is switched on here.
+    let merged = null;
+    if (packScripts.length > 0) {
+        const { getScriptsByType, SCRIPT_TYPES } = await import('./extensions/regex/engine.js');
+        merged = mergePackIntoPreset(presetBody, packScripts, { globalScripts: getScriptsByType(SCRIPT_TYPES.GLOBAL), newId: uuidv4 });
     }
 
     const fields = sensitiveFields.filter(field => presetBody[field]).map(field => `<b>${field}</b>`);
@@ -4754,6 +4815,24 @@ async function onPresetImportFileChange(e) {
     }
 
     const data = await savePresetSettings.json();
+
+    if (merged) {
+        const parts = [];
+        if (merged.added === 1) {
+            parts.push(t`1 regex script added to the preset.`);
+        } else if (merged.added > 1) {
+            parts.push(t`${merged.added} regex scripts added to the preset.`);
+        }
+        if (merged.skipped > 0) {
+            parts.push(t`${merged.skipped} already present, skipped.`);
+        }
+        if (merged.invalid > 0) {
+            parts.push(t`${merged.invalid} invalid entries ignored.`);
+        }
+        if (parts.length > 0) {
+            toastr.info(parts.join(' '));
+        }
+    }
 
     if (Object.keys(openai_setting_names).includes(data.name)) {
         oai_settings.preset_settings_openai = data.name;

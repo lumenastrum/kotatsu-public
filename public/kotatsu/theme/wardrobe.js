@@ -62,6 +62,16 @@ const AXIS_UI = Object.freeze({
     },
 });
 
+/**
+ * Known values the picker does not OFFER (baggage-audit-v0 §3). `margin` is a valid nameplate in
+ * the frozen set — packs and saved settings may name it, and the door keeps accepting it — but
+ * no sheet styles it (mes-variants.css only styles `above`), so choosing it rendered `inline`
+ * under another name. It stays selectable only while it is the live value, labelled for what it
+ * does.
+ * @type {Readonly<Partial<Record<VariantAxis, readonly string[]>>>}
+ */
+const UNOFFERED = Object.freeze({ nameplate: Object.freeze(['margin']) });
+
 /** @type {WardrobeHandlers|null} */
 let handlers = null;
 let initialized = false;
@@ -93,6 +103,7 @@ function fillOptions(select, axis) {
     const { labels } = AXIS_UI[axis];
     select.replaceChildren();
     for (const value of ROW_AXES[axis].values) {
+        if (UNOFFERED[axis]?.includes(value)) continue;
         const option = document.createElement('option');
         option.value = value;
         option.textContent = labels[value] ?? value;
@@ -142,7 +153,16 @@ export function renderWardrobePicker(decisions, packName) {
         const select = getSelect(axis);
         if (select) {
             const requested = decision.variant;
-            select.value = requested !== null && values.includes(requested) ? requested : fallback;
+            const live = requested !== null && values.includes(requested) ? requested : fallback;
+            // An unoffered value that is nevertheless live (a pack or an old setting chose it)
+            // gets its option back, so the select tells the truth instead of going blank.
+            if (!Array.from(select.options).some(option => option.value === live)) {
+                const option = document.createElement('option');
+                option.value = live;
+                option.textContent = `${AXIS_UI[axis].labels[live] ?? live} (same as ${AXIS_UI[axis].labels[fallback] ?? fallback})`;
+                select.append(option);
+            }
+            select.value = live;
             select.disabled = decision.source === 'pack';
         }
 

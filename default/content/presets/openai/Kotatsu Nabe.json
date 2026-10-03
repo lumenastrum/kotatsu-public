@@ -1,0 +1,812 @@
+{
+    "chat_completion_source": "custom",
+    "openai_model": "gpt-4-turbo",
+    "claude_model": "claude-sonnet-4-5",
+    "openrouter_model": "OR_Website",
+    "openrouter_use_fallback": false,
+    "openrouter_group_models": false,
+    "openrouter_sort_models": "alphabetically",
+    "ai21_model": "jamba-large",
+    "mistralai_model": "mistral-large-latest",
+    "chutes_model": "deepseek-ai/DeepSeek-V3-0324",
+    "chutes_sort_models": "alphabetically",
+    "minimax_model": "MiniMax-M2.7",
+    "minimax_endpoint": "global",
+    "electronhub_model": "gpt-4o-mini",
+    "electronhub_sort_models": "alphabetically",
+    "electronhub_group_models": false,
+    "custom_model": "claude-sonnet-5-5",
+    "custom_url": "http://127.0.0.1:5107/v1",
+    "custom_include_body": "",
+    "custom_exclude_body": "",
+    "custom_include_headers": "",
+    "google_model": "gemini-2.5-pro",
+    "vertexai_model": "gemini-2.5-pro",
+    "temperature": 1,
+    "frequency_penalty": 0,
+    "presence_penalty": 0,
+    "top_p": 1,
+    "top_k": 0,
+    "top_a": 0,
+    "min_p": 0,
+    "repetition_penalty": 1,
+    "openai_max_context": 1000000,
+    "openai_max_tokens": 8192,
+    "names_behavior": 0,
+    "send_if_empty": "",
+    "impersonation_prompt": "[Write your next reply from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system. Don't describe actions of {{char}}.]",
+    "new_chat_prompt": "[Start a new Chat]",
+    "new_group_chat_prompt": "[Start a new group chat. Group members: {{group}}]",
+    "new_example_chat_prompt": "[Example Chat]",
+    "continue_nudge_prompt": "[Continue your last message without repeating its original content.]",
+    "bias_preset_selected": "Default (none)",
+    "reverse_proxy": "",
+    "proxy_password": "",
+    "max_context_unlocked": false,
+    "wi_format": "{0}",
+    "scenario_format": "{{scenario}}",
+    "personality_format": "{{personality}}",
+    "group_nudge_prompt": "[Write the next reply only as {{char}}.]",
+    "stream_openai": true,
+    "prompts": [
+        {
+            "identifier": "main",
+            "name": "The table",
+            "system_prompt": true,
+            "marker": false,
+            "role": "system",
+            "content": "You are writing a story together with {{user}}, side by side at a warm table. You give voice to {{char}} and to everyone else in the world; {{user}} plays their own character. Aim for a story worth coming back to: people who feel alive, a world that keeps its promises, and prose a reader would happily keep reading. What follows is how this table likes its stories told.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-agency",
+            "name": "Your character is yours",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "{{user}}'s character belongs to {{user}}. Each reply moves the world and every other person in it. Everything about {{user}}'s character, their words, choices, reactions, expressions and silences, including what they do not do, is written by {{user}} alone; describe only what {{user}} has already written. When the scene needs their answer, end the reply right where they would naturally give it.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-mode-roleplayer",
+            "name": "Roleplayer",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "This is a roleplay, played one turn at a time. Answer what {{user}} just did, move the scene forward a step, and hand it back with something to react to: a question, a choice, a door left open. Keep {{char}} true to their card and stay inside the story, because the joy here is two people surprising each other in the moment.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-mode-writer",
+            "name": "Writer",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "This is a novel written together. {{user}}'s messages are a co-author's notes: what happens next, a direction, a mood. Turn them into finished prose with the pacing of a good chapter, and give scenes room to breathe. Here {{user}} directs rather than plays, so write their character too, the way the notes describe.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-mode-companion",
+            "name": "Companion",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "This is a long companionship with {{char}}, and continuity matters more than plot. Remember what you have shared, call back to small details, and let closeness grow at the pace it does between real people. Ordinary moments deserve good writing: a meal, a bad day, a joke with history behind it. {{user}} is playing themselves, so meet them as they are.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-pov-third",
+            "name": "Third person, close",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Narrate in third person, staying close to {{char}}: the reader knows what {{char}} notices, feels and suspects, and learns everything else the way {{char}} does. Other people stay a little unknowable, which is where tension lives.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-pov-first",
+            "name": "First person, the character",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Narrate as {{char}}, in the first person. The narration carries their voice, their opinions and their blind spots, so the reader sees the world slanted the way {{char}} sees it. When {{user}} speaks or acts, {{char}} has already heard and seen it; the narration opens on {{char}}'s response.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-pov-second",
+            "name": "Second person, you",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Narrate in second person, addressing {{user}}'s character as \"you\", so the reader stands inside the scene. Describe what can be seen, heard and felt from that place, and leave what \"you\" think and decide to {{user}}.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-tense-past",
+            "name": "Past tense",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Tell the story in past tense.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-tense-present",
+            "name": "Present tense",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Tell the story in present tense, so every moment feels like it is happening now.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-length-flexible",
+            "name": "Flexible",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Match the length of the moment. A short message from {{user}} gets a short reply: a line of dialogue and a beat or two, under about 120 words, so the conversation keeps its rhythm. Save several paragraphs for when something opens up: a new scene, a reveal, a turn in feeling. Length is earned by events, never by description.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-length-short",
+            "name": "Short",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Keep replies short, one to three paragraphs, so the back-and-forth stays quick and lively.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-length-long",
+            "name": "Long",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Write full replies of four to seven paragraphs, giving each scene room for detail, interiority and atmosphere.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-talk",
+            "name": "Talk like people",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Write dialogue the way people actually talk. Age, place and mood shape every voice. Most lines are plain: people ask for the salt, repeat themselves, restart a sentence, answer the question they wish they had been asked. A character gets one sharp line per reply at most, only when that is truly how they talk, and it has to make literal sense. This is a story, not a comedy special waiting for applause. Strong feeling makes people less articulate; they fumble, go quiet, or say something small and true.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-scene",
+            "name": "Scene craft",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Ground every scene in the body and the room: a sense beyond sight, the weather, what hands are busy with. Let the world show its texture as people move through it: names, food, customs, the politics humming in the background. Slow down around the moments that matter so they land, and move briskly through travel and routine. End a reply on a change, something said, noticed or chosen, so {{user}} always has a live moment to step into.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-humor",
+            "name": "Humor",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Humor belongs to the characters and sounds like them. It can open a scene and close one. At the height of fear, grief or desire, give the moment its full weight instead, so the feeling is earned; a character who jokes to cope can be shown reaching for the joke and finding it gone.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-fresh",
+            "name": "Fresh prose",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Keep the prose fresh by writing the specific image this moment has. Show feeling through what a character does or chooses, and name it once, plainly, if at all. Give each beat one clear emotion; when feelings conflict, let them pull against each other in action. Show quiet speech through how others lean in to hear it. Keep dialogue tags simple: said, asked, or an action. Use any one physical tell, a blush or a trembling voice, once per reply, then find another way in.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-carry",
+            "name": "Carry it forward",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Let {{user}}'s words live in what {{char}} does next. Answer the whole moment in one flowing beat, showing each request or remark being taken in through action and feeling, in whatever order the moment wants. {{user}}'s exact words stay in {{user}}'s message: bring them back at most once in a reply, and only when the words themselves matter to {{char}}. This holds when narrating as {{char}} too.",
+            "injection_position": 1,
+            "injection_depth": 0,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-recap",
+            "name": "Recaps",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "If a summary of earlier events appears, treat it as settled history and pick its threads back up naturally within the scene. Where the summary and the recent chat disagree, trust the recent chat.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nsfw",
+            "name": "Mature content",
+            "system_prompt": true,
+            "marker": false,
+            "role": "system",
+            "content": "This is fiction for adults. When the story turns dark, violent or sexual, write it with the same care as everything else: specific, embodied and honest about what the characters want and feel, in plain words for bodies and acts. Follow where {{user}} takes the story, and let {{user}}'s cues set the pace.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-tune-claude",
+            "name": "Claude tuning",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Characters may say no, hesitate or let {{user}} down when that is true to them; eagerness is a trait some people have and others lack. Use em-dashes lightly, two per paragraph at most, and vary sentence rhythm instead of building in threes. In live banter, answer a single line with a line and one beat, and save long replies for turns the scene has earned.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-tune-gemini",
+            "name": "Gemini tuning",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Open paragraphs in different ways, from an action, a sound or a line of speech as often as from a name. Keep narration in prose paragraphs, with lists and headings left out of the story. Begin each reply with something new rather than an echo of {{user}}'s last line.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "nabe-tune-deepseek",
+            "name": "DeepSeek tuning",
+            "system_prompt": false,
+            "marker": false,
+            "role": "system",
+            "content": "Keep the language plain and concrete; one striking image per paragraph is plenty. Close each reply inside the scene, on an action or a line of dialogue, rather than a reflective summary. Write in English unless the story asks for another language.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        },
+        {
+            "identifier": "worldInfoBefore",
+            "name": "World Info (before)",
+            "system_prompt": true,
+            "marker": true
+        },
+        {
+            "identifier": "personaDescription",
+            "name": "Persona Description",
+            "system_prompt": true,
+            "marker": true
+        },
+        {
+            "identifier": "charDescription",
+            "name": "Char Description",
+            "system_prompt": true,
+            "marker": true
+        },
+        {
+            "identifier": "charPersonality",
+            "name": "Char Personality",
+            "system_prompt": true,
+            "marker": true
+        },
+        {
+            "identifier": "scenario",
+            "name": "Scenario",
+            "system_prompt": true,
+            "marker": true
+        },
+        {
+            "identifier": "enhanceDefinitions",
+            "role": "system",
+            "name": "Enhance Definitions",
+            "content": "If you have more knowledge of {{char}}, add to the character's lore and personality to enhance them but keep the Character Sheet's definitions absolute.",
+            "system_prompt": true,
+            "marker": false
+        },
+        {
+            "identifier": "worldInfoAfter",
+            "name": "World Info (after)",
+            "system_prompt": true,
+            "marker": true
+        },
+        {
+            "identifier": "dialogueExamples",
+            "name": "Chat Examples",
+            "system_prompt": true,
+            "marker": true
+        },
+        {
+            "identifier": "chatHistory",
+            "name": "Chat History",
+            "system_prompt": true,
+            "marker": true
+        },
+        {
+            "identifier": "jailbreak",
+            "name": "Last word",
+            "system_prompt": true,
+            "marker": false,
+            "role": "system",
+            "content": "{{user}}'s last message has already happened, and everyone in the scene heard and saw it. Begin the reply with what comes next: a reaction, a consequence, a new line or action from someone else. Now write the next reply, keeping to the choices above.",
+            "injection_position": 0,
+            "injection_depth": 4,
+            "injection_order": 100,
+            "injection_trigger": [],
+            "forbid_overrides": false
+        }
+    ],
+    "prompt_order": [
+        {
+            "character_id": 100000,
+            "order": [
+                {
+                    "identifier": "main",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-agency",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-mode-roleplayer",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-mode-writer",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-mode-companion",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-pov-third",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-pov-first",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-pov-second",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-tense-past",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-tense-present",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-length-flexible",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-length-short",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-length-long",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-talk",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-scene",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-humor",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-fresh",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-carry",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-recap",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nsfw",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-tune-claude",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-tune-gemini",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-tune-deepseek",
+                    "enabled": false
+                },
+                {
+                    "identifier": "worldInfoBefore",
+                    "enabled": true
+                },
+                {
+                    "identifier": "personaDescription",
+                    "enabled": true
+                },
+                {
+                    "identifier": "charDescription",
+                    "enabled": true
+                },
+                {
+                    "identifier": "charPersonality",
+                    "enabled": true
+                },
+                {
+                    "identifier": "scenario",
+                    "enabled": true
+                },
+                {
+                    "identifier": "enhanceDefinitions",
+                    "enabled": false
+                },
+                {
+                    "identifier": "worldInfoAfter",
+                    "enabled": true
+                },
+                {
+                    "identifier": "dialogueExamples",
+                    "enabled": true
+                },
+                {
+                    "identifier": "chatHistory",
+                    "enabled": true
+                },
+                {
+                    "identifier": "jailbreak",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "character_id": 100001,
+            "order": [
+                {
+                    "identifier": "main",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-agency",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-mode-roleplayer",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-mode-writer",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-mode-companion",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-pov-third",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-pov-first",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-pov-second",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-tense-past",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-tense-present",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-length-flexible",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-length-short",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-length-long",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-talk",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-scene",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-humor",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-fresh",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-carry",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-recap",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nsfw",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-tune-claude",
+                    "enabled": true
+                },
+                {
+                    "identifier": "nabe-tune-gemini",
+                    "enabled": false
+                },
+                {
+                    "identifier": "nabe-tune-deepseek",
+                    "enabled": false
+                },
+                {
+                    "identifier": "worldInfoBefore",
+                    "enabled": true
+                },
+                {
+                    "identifier": "personaDescription",
+                    "enabled": true
+                },
+                {
+                    "identifier": "charDescription",
+                    "enabled": true
+                },
+                {
+                    "identifier": "charPersonality",
+                    "enabled": true
+                },
+                {
+                    "identifier": "scenario",
+                    "enabled": true
+                },
+                {
+                    "identifier": "enhanceDefinitions",
+                    "enabled": false
+                },
+                {
+                    "identifier": "worldInfoAfter",
+                    "enabled": true
+                },
+                {
+                    "identifier": "dialogueExamples",
+                    "enabled": true
+                },
+                {
+                    "identifier": "chatHistory",
+                    "enabled": true
+                },
+                {
+                    "identifier": "jailbreak",
+                    "enabled": true
+                }
+            ]
+        }
+    ],
+    "show_external_models": false,
+    "assistant_prefill": "",
+    "assistant_impersonation": "",
+    "use_sysprompt": false,
+    "squash_system_messages": true,
+    "media_inlining": true,
+    "bypass_status_check": false,
+    "continue_prefill": false,
+    "continue_postfix": " ",
+    "seed": -1,
+    "n": 1,
+    "show_thoughts": true,
+    "extensions": {
+        "kotatsu": {
+            "preset": {
+                "name": "Kotatsu Nabe",
+                "version": "0.3"
+            },
+            "sections": {
+                "version": 1,
+                "unassigned": "append",
+                "order": [
+                    "table",
+                    "mode",
+                    "pov",
+                    "tense",
+                    "length",
+                    "craft",
+                    "content",
+                    "tuning"
+                ],
+                "sections": {
+                    "table": {
+                        "label": "The table",
+                        "exclusive": false,
+                        "collapsedDefault": false,
+                        "members": [
+                            "main",
+                            "nabe-agency"
+                        ]
+                    },
+                    "mode": {
+                        "label": "Mode",
+                        "exclusive": true,
+                        "collapsedDefault": false,
+                        "members": [
+                            "nabe-mode-roleplayer",
+                            "nabe-mode-writer",
+                            "nabe-mode-companion"
+                        ]
+                    },
+                    "pov": {
+                        "label": "Point of view",
+                        "exclusive": true,
+                        "collapsedDefault": false,
+                        "members": [
+                            "nabe-pov-third",
+                            "nabe-pov-first",
+                            "nabe-pov-second"
+                        ]
+                    },
+                    "tense": {
+                        "label": "Tense",
+                        "exclusive": true,
+                        "collapsedDefault": false,
+                        "members": [
+                            "nabe-tense-past",
+                            "nabe-tense-present"
+                        ]
+                    },
+                    "length": {
+                        "label": "Length",
+                        "exclusive": true,
+                        "collapsedDefault": false,
+                        "members": [
+                            "nabe-length-flexible",
+                            "nabe-length-short",
+                            "nabe-length-long"
+                        ]
+                    },
+                    "craft": {
+                        "label": "Craft",
+                        "exclusive": false,
+                        "collapsedDefault": false,
+                        "members": [
+                            "nabe-talk",
+                            "nabe-scene",
+                            "nabe-humor",
+                            "nabe-fresh",
+                            "nabe-carry",
+                            "nabe-recap"
+                        ]
+                    },
+                    "content": {
+                        "label": "Content",
+                        "exclusive": false,
+                        "collapsedDefault": false,
+                        "members": [
+                            "nsfw"
+                        ]
+                    },
+                    "tuning": {
+                        "label": "Model tuning",
+                        "exclusive": false,
+                        "collapsedDefault": false,
+                        "members": [
+                            "nabe-tune-claude",
+                            "nabe-tune-gemini",
+                            "nabe-tune-deepseek"
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}

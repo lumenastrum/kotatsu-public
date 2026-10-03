@@ -185,3 +185,108 @@ body[data-k-layout="rails"] #cfgConfig .checkbox_label {
     flex-wrap: wrap;
     row-gap: 4px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. WIDE POPUPS — `--sheldWidth` IS NOT THE CHAT COLUMN HERE
+   ───────────────────────────────────────────────────────────────────────────
+   Core says `.wide_dialogue_popup { min-width: var(--sheldWidth) }`
+   (style.css:3738-3743). In stock that variable is the chat column (50vw by
+   default, ~55 once the user widens it): "a wide popup is as wide as the chat".
+   Under rails it is the centre TRACK, `calc(100dvw - left rail - right rail)`
+   (css/shell-frame.css:61-62), so the same rule read at 1680px gives:
+
+     library / home view (both rail widths resolve to 0)   1680px, edge to edge
+     chat view                                              1060px (column: 776)
+     stock                                                   ~924px
+
+   A popup is a dialog over the whole viewport, not a tenant of the track, so
+   it must not read the track at all. It gets its own width, declared sheet-local
+   on the body (NOT in css/tokens.css — a token there has to be mirrored into the
+   Blue Hour manifest or `theme:check --drift` goes red, and this is layout
+   arithmetic, not a themeable value):
+
+     clamp(750px, 55dvw, 1100px)
+       55dvw   stock parity: 924px at 1680, 1056px at 1920.
+       750px   the floor is `.wider_dialogue_popup`'s own min-width
+               (style.css:3745-3748), so `wide` is never narrower than `wider`.
+               It is what a 1040-1360px window gets (572-748px of 55dvw).
+       1100px  the ceiling. At 3440 an uncapped 55dvw is 1892px, a popup nobody
+               can read across; 1100 keeps it a dialog.
+
+   `min(…, 90dvw)` is the guard rail, and what keeps min-width from ever
+   exceeding a max-width. The two max-widths that can apply are
+   `dialog.popup`'s `calc(100dvw - 2em)` (css/popup.css:22) and
+   `.large_dialogue_popup`'s `90dvw !important` (style.css:3731-3736). 90dvw is
+   at most the second, and at most the first whenever 10dvw >= 2em — true from
+   ~320px up at a 16px em — so at every width from 800px the minimum sits inside
+   the maximum. (`.wider_dialogue_popup`'s `max-width: 90%` is the same number:
+   a fixed-position dialog resolves % against the viewport.)
+
+   Specificity: (0,2,1) against core's (0,1,0), and this sheet links after
+   style.css, so no `!important` is needed. Nothing else in the cascade sets a
+   `min-width` on a popup (css/popup.css, css/rechrome-popups.css), so there is
+   no competing rule to name. `large_dialogue_popup` (height and max-width only)
+   and `vertical_scrolling_dialogue_popup` (overflow only) touch no property
+   written here.
+
+   No media query on purpose: `min()` already yields 90dvw on a narrow window,
+   and the mobile sheet (css/mobile-styles.css) writes no popup min-width to
+   walk back.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] {
+    --k-popup-wide: clamp(750px, 55dvw, 1100px);
+}
+
+body[data-k-layout="rails"] .wide_dialogue_popup {
+    min-width: min(var(--k-popup-wide), 90dvw);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. `--topBarBlockSize` — THE BAR IS 44px TALL HERE, NOT 64
+   ───────────────────────────────────────────────────────────────────────────
+   The second core variable that kept a classic meaning under rails (ext gauntlet
+   2026-10-02, finding 4). css/kotatsu-chrome.css:188 resolves it to
+   `--k-topbar-height`, 64px: the floating pill plus its top inset plus an equal
+   gap below. The rails bar is a flush 44px strip (`--k-topbar-pill-height`), so
+   everything that anchors to "the bottom of the top bar" sat 20px low.
+
+   Third-party side panels are the visible case — `top: var(--topBarBlockSize)`
+   left a 20px band between the bar and RPG Companion's or Variable Viewer's
+   panel — but they are not the only readers, so every consumer outside
+   `third-party/` was traced before this was written:
+
+     no change   #sheld, #chat, .drawer-content, .fillLeft / .fillRight,
+                 #character_popup, the three floating panels (§1 anchors those
+                 to `--k-topbar-pill-height` already), #top-settings-holder —
+                 each is reset, parked or hidden under rails.
+     moves 20px  core toasts (`body #toast-container { margin-top }`,
+                 style.css:4031): y=76 becomes y=56, which is `--toast-edge`
+                 (12px) under the real bar instead of 32px. The same offset
+                 inside a popup (css/popup.css:138-147) moves with it.
+     grows 20px  #select_chat_popup's max-height cap, the expressions wrapper
+                 (scripts/extensions/expressions/style.css:9), and
+                 #completion_prompt_manager_popup, whose top edge meets the bar.
+
+   All of those were 20px too low for the same reason; none was compensating.
+   Below 1000px css/kotatsu-chrome.css already sets this same value on :root, so
+   this only changes desktop widths. Declared on `body`, like `--sheldWidth` in
+   css/shell-frame.css, so it reaches every body-level reader by inheritance.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] {
+    --topBarBlockSize: var(--k-topbar-pill-height);
+}
+
+/* The honest value exposed a gap core never had to state. toastr gives its top-left and
+   top-right containers `top: var(--toast-edge)` and gives top-center none (css/popup.css:143
+   says so out loud), which was invisible while the 64px block size carried 20px of air below
+   the pill. Against a flush 44px bar a top-center toast lands ON the bar's hairline — measured
+   at y=44, gap 0, and it reads as hanging off the command pill. So top-center gets the same
+   edge the other two positions already have: y=56, 12px under the bar.
+
+   Child combinator on purpose: while a popup is open core moves the container INSIDE the
+   dialog, where there is no bar and css/popup.css owns the offset. That case is not touched. */
+body[data-k-layout="rails"] > #toast-container.toast-top-center {
+    margin-top: calc(var(--topBarBlockSize) + var(--toast-edge));
+}

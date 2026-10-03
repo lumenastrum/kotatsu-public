@@ -73,6 +73,13 @@
         "--k-motion-duration": "150ms",
         "--k-motion": "var(--k-motion-duration) ease",
         "--k-avatar-motion": "180ms ease",
+        "--k-dur-1": "120ms",
+        "--k-dur-2": "180ms",
+        "--k-dur-3": "240ms",
+        "--k-ease-out": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "--k-ease-in": "cubic-bezier(0.55, 0, 1, 0.45)",
+        "--k-ease-glide": "cubic-bezier(0.65, 0, 0.35, 1)",
+        "--k-rise": "6px",
         "--k-avatar-border-w": "2px",
         "--k-avatar-gap": "2px",
         "--k-avatar-bot-shadow": "0 4px 16px color-mix(in srgb, var(--k-elevation-shadow) 45%, transparent),\n        0 0 12px color-mix(in srgb, var(--k-rose) 10%, transparent)",
@@ -107,6 +114,12 @@
         "--k-code-emphasis": "var(--k-italics)",
         "--k-code-meta": "var(--k-text-muted)",
         "--k-code-meta-keyword": "var(--k-accent)",
-        "--k-code-meta-string": "var(--k-rose)"
+        "--k-code-meta-string": "var(--k-rose)",
+        "--k-viz-1": "#3987e5",
+        "--k-viz-2": "#d95926",
+        "--k-viz-3": "#199e70",
+        "--k-viz-4": "#c98500",
+        "--k-viz-5": "#d55181",
+        "--k-viz-other": "#7d8190"
     }
 }

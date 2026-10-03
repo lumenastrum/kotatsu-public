@@ -159,3 +159,53 @@ input.enable_scoped {
 .regex-script-label:not(:has(input[name="regex_expand"]:checked)) .regex_script_buttons {
     display: none;
 }
+
+/* The allow prompt for embedded scripts, and the import dialog. Both now say what they are
+   about to do: a count, the script names grouped by what they affect, a hint per target. A
+   preset can carry dozens of scripts, so the list scrolls inside the popup rather than
+   pushing its buttons off screen. */
+.regex_allow_meta {
+    margin: 0 0 10px;
+    opacity: 0.85;
+    overflow-wrap: anywhere;
+}
+
+.regex_allow_groups {
+    max-height: 38vh;
+    max-height: 38dvh;
+    overflow-y: auto;
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+    text-align: left;
+}
+
+.regex_allow_group + .regex_allow_group {
+    margin-top: 10px;
+}
+
+.regex_allow_group ul {
+    margin: 4px 0 0;
+    padding-left: 1.2em;
+}
+
+.regex_allow_group li {
+    overflow-wrap: anywhere;
+}
+
+.regex_import_target label {
+    display: block;
+    text-align: left;
+    padding: 4px 0;
+}
+
+.regex_import_target label:has(input:disabled) {
+    opacity: 0.5;
+}
+
+.regex_import_target .regex_import_hint {
+    display: block;
+    margin-left: 1.9em;
+    opacity: 0.7;
+}

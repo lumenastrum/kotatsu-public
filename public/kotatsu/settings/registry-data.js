@@ -108,7 +108,7 @@
  * within keep their own stock bindings, their own stock lanes — including DIE lanes — and get
  * no registry entries of their own, which is what keeps the "zero DIE-lane keys" assertion
  * honest rather than merely narrow.
- * @typedef {'select'|'checkbox'|'range'|'number'|'textarea'|'color'|'buttongroup'|'button'|'block'|'kotatsu-layout'|'kotatsu-rails'} ControlKind
+ * @typedef {'select'|'checkbox'|'range'|'number'|'textarea'|'color'|'buttongroup'|'button'|'block'|'kotatsu-layout'|'kotatsu-rails'|'kotatsu-tour'|'kotatsu-phone'} ControlKind
  */
 
 /** @typedef {import('./registry.js').Entry} Entry */
@@ -161,7 +161,7 @@ export const AFFECTS = Object.freeze([
 /** Every legal `control` value. */
 export const CONTROLS = Object.freeze([
     'select', 'checkbox', 'range', 'number', 'textarea', 'color', 'buttongroup', 'button',
-    'block', 'kotatsu-layout', 'kotatsu-rails',
+    'block', 'kotatsu-layout', 'kotatsu-rails', 'kotatsu-tour', 'kotatsu-phone',
 ]);
 
 /** Every legal `store` value. See the `EntryStore` typedef in `registry.js` for the lane rules. */
@@ -226,7 +226,7 @@ export const SECTIONS = Object.freeze([
     {
         id: 'system',
         label: 'System',
-        blurb: 'Startup, language, media policy, and the prompt-affecting character keys.',
+        blurb: 'Startup, language, using Kotatsu on your phone, media policy, and the prompt-affecting character keys.',
     },
 ]);
 
@@ -1982,7 +1982,8 @@ export const ENTRIES = Object.freeze([
             'extension', 'extensions', 'plugin', 'plugins', 'addon', 'add-on', 'add on',
             'manage extensions', 'install extension', 'install', 'update extensions', 'git',
             'third party', 'notify updates', 'extension settings', 'panel', 'panels',
-            'extras', 'extras api', 'extras url', 'auto-update',
+            // No 'extras' terms: the Extras API strip is retired (baggage-audit-v0 §1).
+            'auto-update',
         ],
         tier: 'advanced',
         // Vacuous — `keys: []`. Extension state lives in `extension_settings`, a SURVIVE lane
@@ -2294,6 +2295,24 @@ export const ENTRIES = Object.freeze([
         surface: 'modal',
     },
     {
+        id: 'k-onboarding-replay',
+        keys: ['kotatsu_onboarding'],
+        label: 'Welcome Tour',
+        section: 'system',
+        group: 'Startup',
+        control: 'kotatsu-tour',
+        // Onboarding v0 (docs/onboarding-v0.md §3): drawn by the modal (`#renderTourReplay`),
+        // no stock node. It writes nothing itself — it closes settings and dispatches
+        // `k-open-onboarding`; the tour writes `kotatsu_onboarding` as it moves.
+        binding: { by: 'id', ref: 'k-onboarding-replay', runtime: true },
+        affects: ['startup'],
+        keywords: ['welcome', 'tour', 'onboarding', 'tutorial', 'mikan-chan', 'kotatsu-chan', 'mascot', 'first run', 'setup', 'kotatsu_onboarding'],
+        // An affordance, not a measured setting: advanced, like every other action row.
+        tier: 'advanced',
+        store: 'power_user',
+        surface: 'modal',
+    },
+    {
         id: 'auto-load-chat-checkbox',
         keys: ['auto_load_chat'],
         label: 'Auto-load Last Chat',
@@ -2303,6 +2322,28 @@ export const ENTRIES = Object.freeze([
         binding: { by: 'id', ref: 'auto-load-chat-checkbox' },
         affects: ['startup', 'chat-column'],
         keywords: ['auto load', 'last chat', 'startup', 'resume', 'boot', 'auto_load_chat'],
+        tier: 'advanced',
+        store: 'power_user',
+        surface: 'modal',
+    },
+    {
+        id: 'k-phone-card',
+        keys: [],
+        label: 'Use Kotatsu on your phone',
+        section: 'system',
+        group: 'Phone',
+        control: 'kotatsu-phone',
+        // Phone v0 (docs/phone-v0.md §4.1): drawn by the modal (`#renderNative` →
+        // `<k-phone-card variant="settings">`). It owns no settings key: the switch writes
+        // `listen` and `hostWhitelist.enabled` to config.yaml through `/api/kotatsu/phone/lan`, and
+        // the paired list lives in `.kotatsu/paired-devices.json`. NOT a `block` — a block turns
+        // off the System tab's two-column flow and needs a stock region to adopt.
+        binding: { by: 'id', ref: 'k-phone-card', runtime: true },
+        affects: ['startup'],
+        keywords: [
+            'phone', 'mobile', 'lan', 'local network', 'wifi', 'wi-fi', 'qr', 'qr code', 'tailscale',
+            'pair', 'paired devices', 'device', 'forget', 'remote', 'listen', 'network',
+        ],
         tier: 'advanced',
         store: 'power_user',
         surface: 'modal',
@@ -2320,6 +2361,39 @@ export const ENTRIES = Object.freeze([
         // Enforced ENTIRELY in the browser (`chats.js:852` `isExternalMediaAllowed()`); a grep
         // for `external_media` in `src/` returns zero hits (census §4). Per-character overrides
         // live in `external_media_*_overrides` and are set from the character UI, not here.
+        tier: 'advanced',
+        store: 'power_user',
+        surface: 'modal',
+    },
+    // Character marketplace v0 slice E (`character-marketplace-v0.md` §7, §13 "the gate is
+    // region"). Two string enums owned by `market/settings.js`, which resolves what unset means
+    // (NSFW unset → off; blur unset → on) — the registry stores no default, persistence §7.2
+    // rule 4. The Browse view also offers the NSFW switch inline; both write through the same
+    // module, so the two never disagree.
+    {
+        id: 'kotatsu_market_nsfw',
+        keys: ['kotatsu_market_nsfw'],
+        label: 'Include NSFW cards when browsing',
+        section: 'system',
+        group: 'Browse Characters',
+        control: 'checkbox',
+        binding: { by: 'id', ref: 'kotatsu_market_nsfw' },
+        affects: ['library'],
+        keywords: ['nsfw', 'adult', 'browse', 'chub', 'marketplace', 'card site', 'kotatsu_market_nsfw'],
+        tier: 'advanced',
+        store: 'power_user',
+        surface: 'modal',
+    },
+    {
+        id: 'kotatsu_market_blur',
+        keys: ['kotatsu_market_blur'],
+        label: 'Blur NSFW portraits',
+        section: 'system',
+        group: 'Browse Characters',
+        control: 'checkbox',
+        binding: { by: 'id', ref: 'kotatsu_market_blur' },
+        affects: ['library'],
+        keywords: ['blur', 'nsfw', 'portrait', 'thumbnail', 'browse', 'kotatsu_market_blur'],
         tier: 'advanced',
         store: 'power_user',
         surface: 'modal',

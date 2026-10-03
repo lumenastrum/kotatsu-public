@@ -286,6 +286,48 @@ body[data-k-layout="rails"] .k-tr-page .drawer-content.k-docked:is(#left-nav-pan
     overflow: visible;
 }
 
+/* A FOREIGN drawer (ext gauntlet 2026-10-02, finding 2): a third-party `.drawer` the tab
+   rail found in `#top-settings-holder` and docked as a tab. Its panel's id is the
+   extension's, unknown here, so the reset above cannot name it; `data-k-foreign` is set
+   by the rail at dock time and removed on undock, which keeps this a marker of ours and
+   not a wildcard on every `.drawer-content`. Same reset, and `display: block` for the
+   force-show: an extension's panel is block-shaped stock markup, not a `.fillLeft` column. */
+body[data-k-layout="rails"] .k-tr-page .drawer-content.k-docked[data-k-foreign] {
+    position: relative;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+    height: auto !important;
+    max-height: none;
+    min-height: 0;
+    margin: 0 !important;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: none;
+    resize: none;
+    overflow: visible;
+    display: block;
+}
+
+/* The extension's own Font Awesome glyph on its tab — its identity, kept. */
+body[data-k-layout="rails"] .k-tr-icon--fa {
+    display: inline-block;
+    width: 14px;
+    font-size: 13px;
+    line-height: 1;
+    text-align: center;
+}
+
 /* Force-shown regardless of `openDrawer`. The class normally stays on for the
    whole mount, but core toggles it from several places (the Escape cascade, the
    click-outside autoclose, doNavbarIconClick) and a dock must not blink out of
@@ -310,7 +352,7 @@ body[data-k-layout="rails"] .k-tr-quiet {
     box-sizing: border-box;
     min-height: var(--k-tr-row-height);
     padding: 0 var(--k-tr-row-pad);
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
     font-size: var(--k-tr-quiet-size);
 }
 
@@ -349,7 +391,8 @@ body[data-k-layout="rails"] .k-tr-quiet-text {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media screen and (max-width: 1000px) {
-    body[data-k-layout="rails"] .k-tr-page .drawer-content.k-docked:is(#left-nav-panel) {
+    body[data-k-layout="rails"] .k-tr-page .drawer-content.k-docked:is(#left-nav-panel),
+    body[data-k-layout="rails"] .k-tr-page .drawer-content.k-docked[data-k-foreign] {
         width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;

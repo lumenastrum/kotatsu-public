@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process';
+import childProcess from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -52,38 +52,41 @@ export function resolveClaudeBinary() {
 /**
  * Runs the Claude CLI with a fixed argument list.
  * @param {string[]} args Arguments
- * @returns {{ok: boolean, stdout: string, stderr: string, status: number|null, error?: string}} Result
+ * @returns {Promise<{ok: boolean, stdout: string, stderr: string, status: number|null, error?: string}>} Result
  */
-function runClaude(args) {
+async function runClaude(args) {
     const binary = resolveClaudeBinary();
     if (!binary) {
         return { ok: false, stdout: '', stderr: '', status: null, error: 'claude was not found on PATH; install Claude Code and run `claude auth login` as the same OS user that runs Kotatsu' };
     }
 
-    const result = spawnSync(binary, args, {
-        shell: false,
-        encoding: 'utf8',
-        timeout: CLI_TIMEOUT_MS,
-        windowsHide: true,
+    return new Promise((resolve) => {
+        childProcess.execFile(binary, args, {
+            shell: false,
+            encoding: 'utf8',
+            timeout: CLI_TIMEOUT_MS,
+            windowsHide: true,
+        }, (error, stdout, stderr) => {
+            if (error && !Number.isInteger(error.code)) {
+                resolve({ ok: false, stdout: '', stderr: '', status: null, error: String(error.message ?? error) });
+                return;
+            }
+            resolve({
+                ok: !error,
+                stdout: String(stdout ?? '').trim(),
+                stderr: String(stderr ?? '').trim(),
+                status: error ? Number(error.code) : 0,
+            });
+        });
     });
-
-    if (result.error) {
-        return { ok: false, stdout: '', stderr: '', status: null, error: String(result.error.message ?? result.error) };
-    }
-    return {
-        ok: result.status === 0,
-        stdout: String(result.stdout ?? '').trim(),
-        stderr: String(result.stderr ?? '').trim(),
-        status: result.status,
-    };
 }
 
 /**
  * Reads `claude --version`.
- * @returns {{available: boolean, version: string|null, error?: string}} CLI version report
+ * @returns {Promise<{available: boolean, version: string|null, error?: string}>} CLI version report
  */
-export function readClaudeCliVersion() {
-    const result = runClaude(['--version']);
+export async function readClaudeCliVersion() {
+    const result = await runClaude(['--version']);
     if (!result.ok) {
         return { available: false, version: null, error: result.error ?? result.stderr ?? `claude --version exited ${result.status}` };
     }
@@ -92,10 +95,10 @@ export function readClaudeCliVersion() {
 
 /**
  * Reads `claude auth status` and keeps only {@link AUTH_STATUS_FIELDS}.
- * @returns {object} Reduced auth status
+ * @returns {Promise<object>} Reduced auth status
  */
-export function readClaudeAuthStatus() {
-    const result = runClaude(['auth', 'status']);
+export async function readClaudeAuthStatus() {
+    const result = await runClaude(['auth', 'status']);
     if (!result.ok) {
         return { available: false, error: result.error ?? result.stderr ?? `claude auth status exited ${result.status}` };
     }
@@ -119,16 +122,16 @@ export function readClaudeAuthStatus() {
  * actually bitten us — an SDK upgraded underneath a running listener, and a CLI too old
  * for the models the bridge advertises.
  * @param {object} health The /health payload
- * @returns {object} The doctor report
+ * @returns {Promise<object>} The doctor report
  */
-export function buildDoctorReport(health) {
+export async function buildDoctorReport(health) {
     const sdkOnDisk = detectSdkVersion();
     const sdkRunning = health?.sdkVersion ?? null;
     // A listener that booted before the SDK on disk changed keeps serving the old one
     // until Kotatsu restarts, which shows up as confusing upstream 400s on new models.
     const restartRequired = Boolean(health?.listening) && sdkRunning !== null && sdkRunning !== sdkOnDisk;
-    const cli = readClaudeCliVersion();
-    const auth = readClaudeAuthStatus();
+    const cli = await readClaudeCliVersion();
+    const auth = await readClaudeAuthStatus();
 
     return {
         ...health,

@@ -504,20 +504,56 @@ const LOADER_WORD_FADE_MS = 220;
 /** Monotonic suffix so overlapping overlays never share an SVG gradient id. */
 let loaderOverlayCounter = 0;
 
-/**
- * Creates the default loader overlay element: the bubble hearth breathing over a
- * cycling cozy word. Token-tinted like the welcome lockup, so theme packs re-tint
- * it for free. Always returns a fresh element instance.
- *
- * @returns {HTMLDivElement} A new loader overlay element
- */
-export function createDefaultLoaderOverlay() {
-    const loaderElement = document.createElement('div');
-    loaderElement.id = 'loader';
+/** A four-point sparkle; `fill` is a literal or `currentColor`. */
+const sparkle = (fill) => `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0 C8.6 5.4 10.6 7.4 16 8 C10.6 8.6 8.6 10.6 8 16 C7.4 10.6 5.4 8.6 0 8 C5.4 7.4 7.4 5.4 8 0Z" fill="${fill}"/></svg>`;
 
+/** The bigger "kira!" flare one eye throws once a loop. */
+const KIRA_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L13 10.6 L24 12 L13 13.4 L12 24 L11 13.4 L0 12 L11 10.6Z" fill="#fffbe8"/><circle cx="12" cy="12" r="2.4" fill="#fff"/></svg>';
+
+/**
+ * Whether the active theme pack hides Mikan-chan (`--k-mascot-display: none`, docs/brand.md).
+ * Pack tokens are on :root before any module runs (the first-paint script in index.html).
+ * @returns {boolean} True when she should stay hidden
+ */
+function isMascotHidden() {
+    try {
+        return getComputedStyle(document.documentElement).getPropertyValue('--k-mascot-display').trim() === 'none';
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Star-Eyes: chibi Mikan-chan hugging her mikan. She breathes, sways, blinks, and her star
+ * pupils twinkle (docs/loader-v0.md). The glint positions live in loader.css.
+ * @param {HTMLDivElement} spinnerElement The `#load-spinner` element to fill
+ */
+function fillChibiSpinner(spinnerElement) {
+    spinnerElement.classList.add('k-chibi');
+    spinnerElement.setAttribute('role', 'img');
+    spinnerElement.setAttribute('aria-label', 'Loading');
+    spinnerElement.innerHTML = `
+        <span class="k-chibi-shadow"></span>
+        <div class="k-chibi-sway"><div class="k-chibi-breathe">
+            <img class="k-chibi-open" src="kotatsu/brand/mascot/chibi.webp" alt="" draggable="false">
+            <img class="k-chibi-blink" src="kotatsu/brand/mascot/chibi-blink.webp" alt="" draggable="false">
+            <div class="k-chibi-fx">
+                <span class="k-chibi-glint is-left">${sparkle('#fffbe8')}</span>
+                <span class="k-chibi-glint is-right">${sparkle('#fffbe8')}</span>
+                <span class="k-chibi-kira">${KIRA_SVG}</span>
+            </div>
+        </div></div>
+        <span class="k-chibi-pop is-1">${sparkle('currentColor')}</span>
+        <span class="k-chibi-pop is-2">${sparkle('currentColor')}</span>
+        <span class="k-chibi-pop is-3">${sparkle('currentColor')}</span>`;
+}
+
+/**
+ * The bubble hearth breathing: the overlay when a theme pack hides Mikan-chan.
+ * @param {HTMLDivElement} spinnerElement The `#load-spinner` element to fill
+ */
+function fillHearthSpinner(spinnerElement) {
     const glowId = `k-loader-glow-${++loaderOverlayCounter}`;
-    const spinnerElement = document.createElement('div');
-    spinnerElement.id = 'load-spinner';
     spinnerElement.innerHTML = `
         <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Loading">
             <defs>
@@ -530,6 +566,26 @@ export function createDefaultLoaderOverlay() {
             <ellipse class="k-loader-glow" cx="32" cy="30" rx="12" ry="8" fill="url(#${glowId})" />
             <circle class="k-loader-dot" cx="32" cy="30" r="6.5" style="fill: var(--k-rose, #dca9a4)" />
         </svg>`;
+}
+
+/**
+ * Creates the default loader overlay element: Star-Eyes Mikan-chan (or the bubble hearth, when
+ * a pack hides her) over a cycling cozy word. Always returns a fresh element instance.
+ *
+ * @returns {HTMLDivElement} A new loader overlay element
+ */
+export function createDefaultLoaderOverlay() {
+    const loaderElement = document.createElement('div');
+    loaderElement.id = 'loader';
+
+    const spinnerElement = document.createElement('div');
+    spinnerElement.id = 'load-spinner';
+    if (isMascotHidden()) {
+        fillHearthSpinner(spinnerElement);
+    } else {
+        loaderElement.classList.add('k-loader--chibi');
+        fillChibiSpinner(spinnerElement);
+    }
 
     const wordElement = document.createElement('div');
     wordElement.id = 'load-word';

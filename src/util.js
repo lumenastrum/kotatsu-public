@@ -49,6 +49,15 @@ export function setConfigFilePath(configFilePath) {
 }
 
 /**
+ * The config file path, once set. Kotatsu: the Claude bridge settings writer (connections-v0 C4)
+ * writes `kotatsu.claudeBridge` keys back to this file.
+ * @returns {string|null} Absolute path, or null before {@link setConfigFilePath}
+ */
+export function getConfigFilePath() {
+    return CONFIG_PATH;
+}
+
+/**
  * Returns the config object from the config.yaml file.
  * @returns {object} Config object
  */

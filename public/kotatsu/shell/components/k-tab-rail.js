@@ -83,6 +83,7 @@
  */
 
 import { LitElement, html } from '../lit.js';
+import { glideIndicator } from '../glide-indicator.js';
 
 /**
  * What a docked `.drawer-content` wears while it lives in the rail.
@@ -115,6 +116,13 @@ const icons = {
             <path d="M2.6 2.4v11h11" />
             <path d="M4.8 10.6 7.3 7.4l2.4 2 3.2-4.4" />
         </svg>`,
+    /** A foreign drawer with no glyph of its own: a puzzle piece. */
+    puzzle: html`
+        <svg class="k-tr-icon" viewBox="0 0 16 16" width="14" height="14" fill="none"
+             stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <path d="M6 2.5h3.5v2a1.5 1.5 0 1 0 2 0h2v3.5h-2a1.5 1.5 0 1 0 0 2h2V13.5H9.5v-2a1.5 1.5 0 1 0-2 0v2H4V10h2a1.5 1.5 0 1 0 0-2H4V4.5h2z" />
+        </svg>`,
     /** Quiet-state bullet, matching the left rail's stub rows. */
     dot: html`
         <svg class="k-tr-icon" viewBox="0 0 16 16" width="14" height="14" fill="none"
@@ -135,7 +143,50 @@ const icons = {
  * @property {() => unknown} [view] Renders an ordinary Lit child instead of docking
  *   core DOM or showing a stub line — for a tab whose page is a live surface with its
  *   own empty state. Mutually exclusive with `wrapper`/`content` and with `stub`.
+ * @property {boolean} [foreign] A third-party drawer found in `#top-settings-holder`
+ *   (ext gauntlet 2026-10-02, finding 2). Docked like Prompt; dressed with `data-k-foreign`
+ *   so `shell-right.css` can reset its geometry without a wildcard on every panel.
  */
+
+/**
+ * The nine drawers stock ships in `#top-settings-holder` (CONTRACT.md's frozen ids). Anything
+ * else that turns up there is an extension's, and under rails it would be a zero-size node in
+ * a hidden holder with no other way in — Horae's whole UI lives that way. It becomes a tab.
+ */
+const STOCK_DRAWERS = new Set([
+    'ai-config-button', 'sys-settings-button', 'advanced-formatting-button', 'WI-SP-button',
+    'user-settings-button', 'backgrounds-button', 'extensions-settings-button',
+    'persona-management-button', 'rightNavHolder',
+]);
+
+/** Marker on a foreign `.drawer-content` while it is docked here; removed on undock. */
+const FOREIGN_ATTR = 'data-k-foreign';
+
+let foreignSerial = 0;
+
+/**
+ * Reads a foreign drawer into a tab. Label and glyph come from the extension's own
+ * `.drawer-icon` (its `title`, and its Font Awesome classes — the extension's identity, not
+ * ours, so the house rule on glyph fonts does not apply to it); a drawer with neither gets its
+ * id spelled out and a generic puzzle piece.
+ * @param {Element} wrapper The `.drawer` in the holder.
+ * @returns {TabSpec} The tab.
+ */
+function foreignTab(wrapper) {
+    if (!wrapper.id) wrapper.id = `k-ext-drawer-${++foreignSerial}`;
+    const iconNode = wrapper.querySelector('.drawer-icon');
+    const fa = iconNode ? [...iconNode.classList].filter(name => /^fa[srlb]?-|^fa-/.test(name)) : [];
+    // A toggle's title names an action ("Open Horae panel"); a tab names a place ("Horae").
+    const title = (iconNode?.getAttribute('title') ?? iconNode?.getAttribute('aria-label') ?? '')
+        .replace(/^(open|toggle|show|click to open)\s+(the\s+)?/i, '')
+        .replace(/\s+(panel|drawer|menu|settings)$/i, '')
+        .trim();
+    const label = title || wrapper.id.replace(/[_-]+/g, ' ').replace(/\b(drawer|button|holder)\b/gi, '').replace(/\s+/g, ' ').trim() || 'Extension';
+    const icon = fa.length
+        ? html`<i class="k-tr-icon k-tr-icon--fa ${fa.join(' ')}" aria-hidden="true"></i>`
+        : icons.puzzle;
+    return { id: `ext-${wrapper.id.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, label, icon, wrapper: wrapper.id, foreign: true };
+}
 
 /**
  * The strip. Prompt is the only dock left (see the header); Trackers keeps the
@@ -170,6 +221,7 @@ const TABS = [
  * @property {Element | null} content Its `.drawer-content`, when it has one.
  * @property {string[]} addedClasses Only the classes THIS component added.
  * @property {boolean} restoreClosedDrawer Whether `closedDrawer` was removed on dock.
+ * @property {boolean} foreign Whether the `data-k-foreign` marker was set on the content.
  */
 
 /**
@@ -196,6 +248,7 @@ export class KTabRail extends LitElement {
         /** SPEC §13 — present even though `tabs` is the only v0 variant. */
         variant: { type: String, reflect: true },
         _active: { state: true },
+        _foreign: { state: true },
     };
 
     /**
@@ -205,12 +258,21 @@ export class KTabRail extends LitElement {
      */
     #docked = new Map();
 
+    /**
+     * Watches `#top-settings-holder` for drawers that are not stock's. Extensions add theirs
+     * after boot (`extensions.js` loads them late), so a one-time scan would miss most.
+     * @type {MutationObserver|null}
+     */
+    #holderWatch = null;
+
     constructor() {
         super();
         /** @type {string} */
         this.variant = 'tabs';
         /** @type {string} */
         this._active = DEFAULT_TAB;
+        /** @type {TabSpec[]} Third-party drawers found in the holder, in discovery order. */
+        this._foreign = [];
         /**
          * Core's welcome screen offers `.drawer-opener` buttons that target a drawer
          * by wrapper id (`templates/welcome.html:11, :22, :49`). When that drawer is
@@ -242,16 +304,55 @@ export class KTabRail extends LitElement {
             this.setAttribute('variant', this.variant);
         }
         document.addEventListener('click', this._onDrawerOpener);
+        this.#watchHolder();
         void this.#dockWhenRendered();
     }
 
     disconnectedCallback() {
         document.removeEventListener('click', this._onDrawerOpener);
+        this.#holderWatch?.disconnect();
+        this.#holderWatch = null;
         // Synchronous, and deliberately before super: rails.js clears #k-rail-right
         // and then calls restoreAll(), so the drawers have to be back in the holder
         // by the time this call returns.
         this.#undockAll();
+        this._foreign = [];
         super.disconnectedCallback();
+    }
+
+    /** @returns {TabSpec[]} Every tab in strip order: the spec's, then the foreign ones. */
+    #allTabs() {
+        return [...TABS, ...this._foreign];
+    }
+
+    /**
+     * Scans the holder for drawers that are not stock's and makes a tab for each new one.
+     * Docking happens on the render that follows, through the same `#dockAll()`.
+     * @returns {void}
+     */
+    #discoverForeign() {
+        const holder = document.getElementById('top-settings-holder');
+        if (!holder) return;
+        const known = new Set(this._foreign.map(tab => tab.wrapper));
+        /** @type {TabSpec[]} */
+        const found = [];
+        for (const child of holder.children) {
+            if (!child.classList.contains('drawer') || STOCK_DRAWERS.has(child.id) || known.has(child.id)) continue;
+            // Our own parked nodes never wear `.drawer`; anything else here is an extension's.
+            found.push(foreignTab(child));
+        }
+        if (found.length === 0) return;
+        this._foreign = [...this._foreign, ...found];
+        void this.#dockWhenRendered();
+    }
+
+    /** Scans now and on every later change to the holder's children. @returns {void} */
+    #watchHolder() {
+        this.#discoverForeign();
+        const holder = document.getElementById('top-settings-holder');
+        if (!holder || typeof MutationObserver !== 'function') return;
+        this.#holderWatch = new MutationObserver(() => this.#discoverForeign());
+        this.#holderWatch.observe(holder, { childList: true });
     }
 
     /**
@@ -279,7 +380,7 @@ export class KTabRail extends LitElement {
      * @returns {void}
      */
     #dockAll() {
-        for (const tab of TABS) {
+        for (const tab of this.#allTabs()) {
             if (!tab.wrapper || this.#docked.has(tab.id)) {
                 continue;
             }
@@ -297,7 +398,11 @@ export class KTabRail extends LitElement {
                 continue;
             }
 
-            const content = tab.content ? document.getElementById(tab.content) : null;
+            // A foreign drawer's panel has whatever id its author gave it, or none: it is
+            // found by shape, the way core itself resolves icon↔content.
+            const content = tab.foreign
+                ? wrapper.querySelector(':scope > .drawer-content')
+                : tab.content ? document.getElementById(tab.content) : null;
             if (tab.content && !content) {
                 console.warn(`[k-tab-rail] #${tab.content} is missing; docking #${tab.wrapper} without its panel state`);
             }
@@ -310,6 +415,7 @@ export class KTabRail extends LitElement {
                 content,
                 addedClasses: [],
                 restoreClosedDrawer: false,
+                foreign: tab.foreign === true,
             };
 
             page.appendChild(wrapper);
@@ -325,6 +431,7 @@ export class KTabRail extends LitElement {
                     content.classList.remove(CLOSED_CLASS);
                     record.restoreClosedDrawer = true;
                 }
+                if (record.foreign) content.setAttribute(FOREIGN_ATTR, '');
             }
 
             this.#docked.set(tab.id, record);
@@ -355,12 +462,16 @@ export class KTabRail extends LitElement {
                 if (record.restoreClosedDrawer) {
                     content.classList.add(CLOSED_CLASS);
                 }
+                if (record.foreign) content.removeAttribute(FOREIGN_ATTR);
             }
 
             if (!record.parent.isConnected) {
                 console.warn('[k-tab-rail] original drawer parent is gone; leaving the wrapper in place');
                 continue;
             }
+            // A foreign drawer its extension has since removed must not be put back into the
+            // holder by us: a detached wrapper stays detached.
+            if (!record.wrapper.isConnected) continue;
             const before = record.nextSibling && record.nextSibling.parentNode === record.parent
                 ? record.nextSibling
                 : null;
@@ -375,7 +486,7 @@ export class KTabRail extends LitElement {
      * @returns {void}
      */
     #select(id, focus = false) {
-        if (!TABS.some(tab => tab.id === id)) {
+        if (!this.#allTabs().some(tab => tab.id === id)) {
             return;
         }
         this._active = id;
@@ -399,28 +510,29 @@ export class KTabRail extends LitElement {
      * @returns {void}
      */
     #onTabKeydown(event, index) {
+        const tabs = this.#allTabs();
         /** @type {number | null} */
         let next = null;
         switch (event.key) {
             case 'ArrowRight':
             case 'ArrowDown':
-                next = (index + 1) % TABS.length;
+                next = (index + 1) % tabs.length;
                 break;
             case 'ArrowLeft':
             case 'ArrowUp':
-                next = (index - 1 + TABS.length) % TABS.length;
+                next = (index - 1 + tabs.length) % tabs.length;
                 break;
             case 'Home':
                 next = 0;
                 break;
             case 'End':
-                next = TABS.length - 1;
+                next = tabs.length - 1;
                 break;
             default:
                 return;
         }
         event.preventDefault();
-        this.#select(TABS[next].id, true);
+        this.#select(tabs[next].id, true);
     }
 
     /**
@@ -448,7 +560,7 @@ export class KTabRail extends LitElement {
         if (!wanted) {
             return;
         }
-        const tab = TABS.find(entry => entry.wrapper === wanted);
+        const tab = this.#allTabs().find(entry => entry.wrapper === wanted);
         if (tab && this.#docked.has(tab.id)) {
             this.#select(tab.id);
             this.#requestRail();
@@ -581,14 +693,19 @@ export class KTabRail extends LitElement {
         return this.#dockPage(tab);
     }
 
+    /** The strip's pill follows the active tab (blue-hour-polish-v0 §4 M2). */
+    updated() {
+        glideIndicator(this.querySelector('.k-tr-strip'), '.k-tr-tab.is-active');
+    }
+
     /** @returns {unknown} The rail. */
     render() {
         return html`
             <div class="k-tr-strip" role="tablist" aria-label="Right rail panels">
-                ${TABS.map((tab, index) => this.#tab(tab, index))}
+                ${this.#allTabs().map((tab, index) => this.#tab(tab, index))}
             </div>
             <div class="k-tr-pages">
-                ${TABS.map(tab => this.#page(tab))}
+                ${this.#allTabs().map(tab => this.#page(tab))}
             </div>`;
     }
 }

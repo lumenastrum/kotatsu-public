@@ -64,7 +64,7 @@
  * Ledger rows (label + control) for heavyweight controls; a two-column weave only for
  * homogeneous checkbox clusters; eyebrow group headers from the registry's `group` field, which
  * is contiguous over `getEntries()` order by construction (registry.js's own guarantee, gated in
- * `tests/settings-registry.test.js`). **The weave threshold is FOUR** — see `WEAVE_MIN`.
+ * `tests/settings-registry.test.js`). Compact spans weave at four rows; see `region-plan.js`.
  *
  * ── Shape ────────────────────────────────────────────────────────────────────────────────
  * A fixed, centred sheet over its OWN scrim, appended to `<body>` so no ancestor `filter` /
@@ -82,14 +82,16 @@
 import { LitElement, html, nothing } from '../shell/lit.js';
 import { DEFAULT_LAYOUT, setLayout } from '../shell/persistence.js';
 import { toggleRail } from '../shell/rail-collapse.js';
-// MERGE SEAM — the ONE line that changes when chibi A's registry lands. The modal is written
-// against these three functions and nothing else (`getAllEntries` exists in the contract and is
-// deliberately not used here), so this becomes `./registry.js` and the stub is deleted. See
-// registry.js's JSDoc typedefs for the shape and the one optional extension.
+import { glideIndicator } from '../shell/glide-indicator.js';
 import { getEntries, getSections, searchEntries } from './registry.js';
+import { regionsFor } from './region-plan.js';
+import { OPEN_TOUR_EVENT } from '../onboarding/k-onboarding.js';
+import '../phone/k-phone-card.js';
 
 /** @typedef {import('./registry.js').Entry} Entry */
 /** @typedef {import('./registry.js').Section} Section */
+/** @typedef {import('./region-plan.js').Run} Run */
+/** @typedef {import('./region-plan.js').Region} Region */
 
 /**
  * Stacking rungs, declared here and consumed by `--k-set-z-*` in `settings-modal.css`.
@@ -141,42 +143,6 @@ function isRuntimeControl(entry) {
 }
 
 /**
- * How many consecutive checkbox rows a group needs before the layout weaves them two-up.
- *
- * **Four.** `settings-v0.md` §9 pins "a two-column weave only for homogeneous clusters (selects,
- * toggle walls)", and the word doing the work is *wall*. The registry's nine tabs contain 19
- * homogeneous checkbox runs of length ≥ 2; the threshold decides which of them read as a
- * deliberate grid and which read as an accident.
- *
- * The measurable argument is the hole. A two-column grid of an ODD run leaves one empty cell,
- * and its share of the cluster is what the eye reads as "something is missing": at 3 that hole is
- * a quarter of the block, at 5 a sixth, at 7 an eighth. Four is where the hole stops being the
- * loudest thing in the cluster — and a run of exactly 4 has none at all. Below it, a single
- * column is not tall enough for the horizontal split to buy anything: the eyebrow above already
- * says these rows belong together, so a 2- or 3-row weave spends the width and adds no grouping
- * the reader did not already have.
- *
- * At 4 the nine tabs weave three clusters — Chat's *Message Readouts* (7) and *Response
- * Formatting* (4), and Streaming's *Input Field* (5) — which are precisely the three places a
- * one-column ledger runs past the fold. Everything else stays a ledger.
- */
-const WEAVE_MIN = 4;
-
-/**
- * One run of rows inside a group: the two-column weave, the horizontal actions strip, or the
- * ledger.
- * @typedef {object} Run
- * @property {boolean} weave
- * @property {boolean} [actions] A consecutive button span — rendered as one right-aligned strip.
- * @property {Entry[]} entries
- */
-
-/**
- * One region of a tab: an adopted block (full-bleed, no chrome) or an eyebrow group of rows.
- * @typedef {{ kind: 'block', entry: Entry } | { kind: 'group', label: string, runs: Run[] }} Region
- */
-
-/**
  * The running search query, resolved once per render.
  * @typedef {object} Matches
  * @property {Set<string>} ids Entry ids to leave visible — hits, plus the block carrying a hit.
@@ -184,135 +150,6 @@ const WEAVE_MIN = 4;
  * @property {Map<string, string[]>} folded block id → the labels of the folded rows it carries
  *   that matched, so the block can say why it is on screen.
  */
-
-/**
- * section id → its render plan. Computed once per tab and reused forever.
- *
- * The memo is not an optimisation, it is a CORRECTNESS requirement: rule 2 in the module header
- * only holds if every render walks the identical nesting, and `getEntries()` returns a frozen
- * array so the plan can never go stale.
- * @type {Map<string, ReadonlyArray<Region>>}
- */
-const REGIONS = new Map();
-
-/**
- * Appends rows to the trailing ledger run, opening one if the last run is a weave.
- * @param {Run[]} runs Runs so far.
- * @param {ReadonlyArray<Entry>} entries Rows to place.
- * @returns {void}
- */
-function pushLedger(runs, entries) {
-    if (entries.length === 0) return;
-    const last = runs[runs.length - 1];
-    if (last && !last.weave) {
-        last.entries.push(...entries);
-        return;
-    }
-    runs.push({ weave: false, entries: [...entries] });
-}
-
-/**
- * Control kinds that read as one visual weight and can sit two-up without ragged heights.
- *
- * §10 (and the winning canvas) weave "homogeneous clusters (selects, toggle walls)" — the
- * 2026-08-25 build read that as checkbox-only and Andres's eyeball caught Appearance rendering
- * 100% ledger (§10.1 amendment, 2026-08-26). Heavyweights (range, textarea, color, block) and
- * action buttons stay out: a slider needs its full measure, and buttons cluster instead.
- */
-const COMPACT_KINDS = new Set(['checkbox', 'select', 'buttongroup', 'kotatsu-layout', 'kotatsu-rails']);
-
-/**
- * The three shapes a span can take, in planning order.
- * @param {Entry} entry One row.
- * @returns {'actions'|'compact'|'ledger'}
- */
-function spanKind(entry) {
-    if (entry.control === 'button') return 'actions';
-    return COMPACT_KINDS.has(entry.control) ? 'compact' : 'ledger';
-}
-
-/**
- * Splits one eyebrow group into weave, actions and ledger runs.
- *
- * A run is a MAXIMAL span of consecutive same-kind entries (`spanKind`). A COMPACT span weaves
- * at `WEAVE_MIN` and otherwise dissolves into the surrounding ledger, so a short pair never
- * becomes an orphan container. A `button` span always becomes ONE actions run — the strip lays
- * its rows horizontally (`.k-set-run--actions`), which is the canvas mock's icon cluster
- * without any data coupling: every entry keeps its own row, slot and search identity, so the
- * probes' row arithmetic is untouched by clustering.
- * @param {ReadonlyArray<Entry>} entries One group's rows, in registry order.
- * @returns {Run[]}
- */
-function planRuns(entries) {
-    /** @type {Run[]} */
-    const runs = [];
-    let index = 0;
-    while (index < entries.length) {
-        const kind = spanKind(entries[index]);
-        let end = index;
-        while (end < entries.length && spanKind(entries[end]) === kind) end += 1;
-        const span = entries.slice(index, end);
-        if (kind === 'actions') {
-            // File transfer and saving are separate, stable runs; keyboard order stays intact.
-            const saveIndex = span.findIndex(entry => entry.id === 'ui-preset-update-button');
-            if (saveIndex > 0) runs.push({ weave: false, actions: true, entries: span.slice(0, saveIndex) });
-            runs.push({ weave: false, actions: true, entries: saveIndex > 0 ? span.slice(saveIndex) : span });
-        } else if (kind === 'compact' && span.length >= WEAVE_MIN) runs.push({ weave: true, entries: span });
-        else pushLedger(runs, span);
-        index = end;
-    }
-    return runs;
-}
-
-/**
- * The regions one tab renders, in order.
- *
- * Blocks are their own regions: a block is a whole adopted stock region and carries its own
- * headings, so it gets no eyebrow and no label column from us (`settings-v0.md` §10). It also
- * CLOSES the group it interrupts, which costs nothing today — the registry gives blocks no
- * `group`, and the four block tabs contain nothing else.
- * @param {string} sectionId Tab to plan.
- * @returns {ReadonlyArray<Region>}
- */
-function regionsFor(sectionId) {
-    const cached = REGIONS.get(sectionId);
-    if (cached) return cached;
-
-    /** @type {Region[]} */
-    const regions = [];
-    /** @type {Entry[]} */
-    let pending = [];
-    /** @type {string} */
-    let label = '';
-
-    const flush = () => {
-        if (pending.length === 0) return;
-        regions.push({ kind: 'group', label, runs: planRuns(pending) });
-        pending = [];
-    };
-
-    for (const entry of getEntries(sectionId)) {
-        if (entry.control === 'block') {
-            flush();
-            label = '';
-            regions.push({ kind: 'block', entry });
-            continue;
-        }
-        const group = entry.group ?? '';
-        // Groups are CONTIGUOUS runs of registry order (registry.js `getEntries` contract), so a
-        // change of string is a new eyebrow and the same string can never appear twice in a tab.
-        if (group !== label) {
-            flush();
-            label = group;
-        }
-        pending.push(entry);
-    }
-    flush();
-
-    const frozen = Object.freeze(regions);
-    REGIONS.set(sectionId, frozen);
-    return frozen;
-}
 
 /** The two layouts, in the order the switch prints them. */
 const LAYOUT_OPTIONS = Object.freeze([
@@ -713,6 +550,14 @@ export class KSettingsModal extends LitElement {
     firstUpdated() {
         this.#place(this.tab);
         this.#focusSearch();
+    }
+
+    /** The section nav's pill follows the active tab (blue-hour-polish-v0 §4 M3). */
+    updated() {
+        glideIndicator(this.querySelector('.k-set-tabs'), '.k-set-tab.is-active');
+        // A running search shows every match in place: the Connection tab's stock panel, folded
+        // behind its disclosure otherwise (connections-v0 C3), stands open while one runs.
+        this.toggleAttribute('data-searching', Boolean(this._query.trim()));
     }
 
     /**
@@ -1369,8 +1214,31 @@ export class KSettingsModal extends LitElement {
         if (entry.control === 'kotatsu-rails') {
             return this.#renderRailsSwitch(entry.binding.ref);
         }
+        if (entry.control === 'kotatsu-tour') {
+            return this.#renderTourReplay(entry.binding.ref);
+        }
+        if (entry.control === 'kotatsu-phone') {
+            return html`<k-phone-card id=${entry.binding.ref} variant="settings"></k-phone-card>`;
+        }
         console.warn(`[k-settings-modal] "${entry.control}" is not a native control kind this modal can draw.`);
         return nothing;
+    }
+
+    /**
+     * The welcome tour's replay door (onboarding v0 §3). Settings closes first: the tour sits a
+     * rung below this sheet (4080 vs 4090) and steps aside while settings is up, so opening it
+     * underneath would show nothing. The tour owns `kotatsu_onboarding` from there.
+     * @param {string} buttonId The id to stamp on the button — the entry's `binding.ref`.
+     * @returns {unknown} A Lit template.
+     */
+    #renderTourReplay(buttonId) {
+        const replay = () => {
+            this.close();
+            window.dispatchEvent(new CustomEvent(OPEN_TOUR_EVENT));
+        };
+        // No hint span: inside a control cell it wraps into a ladder (settings-modal.css, pixel QA
+        // defect 3), and the button's own words say what it does.
+        return html`<button id=${buttonId} type="button" class="menu_button" @click=${replay}>Take the welcome tour</button>`;
     }
 
     /**

@@ -272,11 +272,19 @@
         "type": "openai_preset"
     },
     {
-        "filename": "presets/openai/Clio's Sparkle Sauce v1.json",
+        "filename": "presets/openai/Kotatsu Nabe.json",
         "type": "openai_preset"
     },
     {
-        "filename": "presets/openai/Marinara's Spaghetti Recipe 10.json",
+        "filename": "presets/openai/Sola V2 Ember.json",
+        "type": "openai_preset"
+    },
+    {
+        "filename": "presets/openai/Sola V2 Flame.json",
+        "type": "openai_preset"
+    },
+    {
+        "filename": "presets/openai/Nemo Vivarium v1.0 Beta.json",
         "type": "openai_preset"
     },
     {

@@ -98,7 +98,9 @@ const CHIPPED_ROLES = Object.freeze(['user', 'assistant']);
  * component reads nothing else off core per row.
  * @typedef {object} RowView
  * @property {string} identifier
- * @property {string} label Cleaned label from the tree, or the raw name when there is none.
+ * @property {string} label Cleaned label from the tree, or the raw name when there is none,
+ *   without a leading `[Tag]` (see `tag`).
+ * @property {string} tag A leading `[Tag]` peeled off the label, '' when the name has none.
  * @property {string} name Raw `prompts[].name` — the search corpus, per slice A's note.
  * @property {boolean} enabled Read from the LIVE order, never from the tree snapshot.
  * @property {boolean} present False when `prompts[]` has no record for this identifier.
@@ -313,17 +315,52 @@ export function indexPrompts(prompts) {
  * @property {Map<string, RowView>} rows
  */
 
+/** A bracketed tag in front of a name: `[Module] Voice: Idiolect`. The tag is kept short on purpose. */
+const LEADING_TAG = /^\[([^\][]{1,24})\]\s*(\S[\s\S]*)$/;
+/** Sola V2's "this is one of a set" marker, written into each option's own name. */
+const PICK_ONE_TAG = /\s*\(\s*pick\s*(?:1|one)\s*\)/i;
+
+/**
+ * Splits a label into the words that tell rows apart and the tag in front of them.
+ *
+ * Sola V2 opens all 70 of its names with `[Core]` or `[Module]`. In a narrow dock the tag is the
+ * first thing drawn and the last thing anyone needs, so the row shows it as a chip that can step
+ * aside and starts the name at the first real word. A row that is one option of a pick-one group
+ * also drops its "(Pick 1)": the group header already says so.
+ *
+ * Display only. `name` stays raw, which is what search and the tooltip read.
+ * @param {string} label The label so far.
+ * @param {boolean} option Whether the row is an option of a pick-one group.
+ * @returns {{label: string, tag: string}} The label to draw and the tag peeled off it.
+ */
+export function splitLabel(label, option = false) {
+    let text = String(label ?? '');
+    let tag = '';
+    const tagged = LEADING_TAG.exec(text);
+    if (tagged) {
+        tag = tagged[1].trim();
+        text = tagged[2];
+    }
+    if (option) {
+        const stripped = text.replace(PICK_ONE_TAG, '').trim();
+        if (stripped) text = stripped;
+    }
+    return { label: text, tag };
+}
+
 /**
  * Builds one row.
  * @param {string} identifier Prompt identifier.
  * @param {string} label Cleaned label from the tree, when the tree had one.
  * @param {string} sigil Leading token the tree stripped.
  * @param {BuildContext} ctx Build context.
+ * @param {boolean} [option] Whether the row is an option of a pick-one group.
  * @returns {RowView} The row.
  */
-function buildRow(identifier, label, sigil, ctx) {
+function buildRow(identifier, label, sigil, ctx, option = false) {
     const prompt = ctx.prompts.get(identifier) ?? null;
     const name = prompt && typeof prompt.name === 'string' ? prompt.name : '';
+    const shown = splitLabel(label || name || identifier, option);
     const enabled = ctx.enabled.get(identifier) === true;
     const kind = classifyPromptKind(prompt);
     const tokens = tokenBadge({ identifier, prompt, enabled, counts: ctx.counts, contributed: ctx.contributed });
@@ -333,7 +370,8 @@ function buildRow(identifier, label, sigil, ctx) {
     /** @type {RowView} */
     const row = {
         identifier,
-        label: label || name || identifier,
+        label: shown.label,
+        tag: shown.tag,
         name,
         enabled,
         present: prompt !== null,
@@ -393,7 +431,7 @@ function walkNodes(nodes, ctx) {
     for (const node of Array.isArray(nodes) ? nodes : []) {
         if (!isPlainObject(node)) continue;
         const identifier = typeof node.identifier === 'string' ? node.identifier : '';
-        const row = identifier ? buildRow(identifier, node.label ?? '', node.sigil ?? '', ctx) : null;
+        const row = identifier ? buildRow(identifier, node.label ?? '', node.sigil ?? '', ctx, node.kind === 'option') : null;
         const isContainer = node.kind === 'group' || node.kind === 'span';
         const inner = isContainer ? walkNodes(node.children, ctx) : { views: [], counter: ZERO_COUNTER };
         const closeIdentifier = node.kind === 'span' && typeof node.closeIdentifier === 'string'
@@ -653,4 +691,42 @@ export function counterPercent(counter) {
     const enabled = Number(counter.enabled);
     if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(enabled)) return 0;
     return Math.max(0, Math.min(100, Math.round((enabled / total) * 100)));
+}
+
+/**
+ * The header chip for the regex scripts a preset carries (issue #6).
+ *
+ * A preset can embed regex scripts that stay inert until its owner allows them, and nothing on
+ * the preset's own surface said so: declining core's one-time prompt left a half-working preset
+ * with no sign of why and no way back short of knowing where the switch is. The chip is that
+ * sign and that way back. No badge without a number: a preset with no scripts gets no chip.
+ *
+ * @typedef {object} RegexChip
+ * @property {string} label The chip's text.
+ * @property {'on'|'off'} state Whether the scripts are allowed to run.
+ * @property {string} title The tooltip: what is there, whether it runs, what a click does.
+ *
+ * @param {{ total?: number, prompt?: number }} counts `total` scripts in the preset, of which
+ *     `prompt` change what is sent to the model.
+ * @param {boolean} allowed Whether this preset's scripts are allowed.
+ * @returns {RegexChip|null} The chip, or null when the preset carries no scripts.
+ */
+export function regexChip(counts, allowed) {
+    const total = Number(counts?.total);
+    if (!Number.isFinite(total) || total <= 0) return null;
+    const prompt = Math.max(0, Number(counts?.prompt) || 0);
+    const noun = total === 1 ? 'regex script' : 'regex scripts';
+    const reach = prompt > 0 ? ` ${prompt} of them change${prompt === 1 ? 's' : ''} what is sent to the model.` : '';
+    if (!allowed) {
+        return {
+            label: `regex ${total} off`,
+            state: 'off',
+            title: `This preset carries ${total} ${noun}, and they are off.${reach} Click to see them and decide.`,
+        };
+    }
+    return {
+        label: `regex ${total}`,
+        state: 'on',
+        title: `This preset's ${total} ${noun} ${total === 1 ? 'is' : 'are'} allowed.${reach} Click to manage them in the Regex settings.`,
+    };
 }

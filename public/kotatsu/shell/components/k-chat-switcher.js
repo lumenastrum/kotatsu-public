@@ -39,6 +39,7 @@
  * core, kotatsu → kotatsu peers only.
  */
 
+import { toRelative } from '../relative-time.js';
 import { LitElement, html, nothing } from '../lit.js';
 import {
     characters,
@@ -51,6 +52,7 @@ import { event_types, eventSource } from '../../../scripts/events.js';
 import { selected_group } from '../../../scripts/group-chats.js';
 import { timestampToMoment } from '../../../scripts/utils.js';
 import { branchStore } from '../../branches/store.js';
+import { chatLabelText } from '../chat-label.js';
 
 /** The popover's DOM id, for `aria-controls`. */
 const POP_ID = 'k-chat-switcher-pop';
@@ -91,37 +93,6 @@ function toEpochMs(value) {
     }
 }
 
-/**
- * Compact relative time ("now", "5m", "3h", "2d", "2w") — the rail's exact
- * semantics, so the two surfaces never disagree about the same chat.
- * @param {number} ms Epoch milliseconds.
- * @returns {string} Compact label, or '' when there is nothing honest to show.
- */
-function toRelative(ms) {
-    if (!Number.isFinite(ms) || ms <= 0) {
-        return '';
-    }
-    const delta = Date.now() - ms;
-    if (delta < 60_000) {
-        return 'now';
-    }
-    const minutes = Math.floor(delta / 60_000);
-    if (minutes < 60) {
-        return `${minutes}m`;
-    }
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) {
-        return `${hours}h`;
-    }
-    const days = Math.floor(hours / 24);
-    if (days < 7) {
-        return `${days}d`;
-    }
-    if (days < 365) {
-        return `${Math.floor(days / 7)}w`;
-    }
-    return `${Math.floor(days / 365)}y`;
-}
 
 /** @returns {number} The active character index, or -1 when none is selected. */
 function activeCharacterIndex() {
@@ -133,6 +104,12 @@ function activeCharacterIndex() {
     }
     const index = Number(this_chid);
     return Number.isInteger(index) && index >= 0 ? index : -1;
+}
+
+/** @returns {string} The active character's name, or '' in a group / with none selected. */
+function activeCharacterName() {
+    const index = activeCharacterIndex();
+    return index >= 0 && Array.isArray(characters) ? String(characters[index]?.name ?? '').trim() : '';
 }
 
 /**
@@ -527,7 +504,7 @@ export class KChatSwitcher extends LitElement {
         // Groups: no chat list exists on the character-chats endpoint, so the
         // title stays plain text — no dead button, no fake list.
         if (activeCharacterIndex() < 0) {
-            return html`<span class="k-cs__plain" title=${this._chatId}>${this._chatId}</span>`;
+            return html`<span class="k-cs__plain" title=${this._chatId}>${chatLabelText(this._chatId)}</span>`;
         }
         return html`
             ${this._parentName ? html`
@@ -535,14 +512,14 @@ export class KChatSwitcher extends LitElement {
                     title="Branched from ${this._parentName} — open the branch map"
                     @click=${() => this._openMap()}>
                     ${branchIcon()}
-                    <span class="k-cs__chip-name">${this._parentName}</span>
+                    <span class="k-cs__chip-name">${chatLabelText(this._parentName, activeCharacterName())}</span>
                 </button>
             ` : nothing}
             <button type="button" class="k-cs__trigger" title=${this._chatId}
                 aria-haspopup="true" aria-expanded=${this._open ? 'true' : 'false'}
                 aria-controls="${POP_ID}"
                 @click=${() => this._toggle()} @keydown=${this._onKeyDown}>
-                <span class="k-cs__title">${this._chatId}</span>
+                <span class="k-cs__title">${chatLabelText(this._chatId, activeCharacterName())}</span>
                 ${caretIcon()}
             </button>
             ${this._open ? this._renderPopover() : nothing}
@@ -554,15 +531,12 @@ export class KChatSwitcher extends LitElement {
      */
     _renderPopover() {
         const query = this._query.trim().toLowerCase();
+        const characterName = activeCharacterName();
+        // The filter answers to both: the id someone remembers and the date the row prints.
         const rows = query
-            ? this._rows.filter((row) => row.id.toLowerCase().includes(query))
+            ? this._rows.filter((row) => row.id.toLowerCase().includes(query)
+                || chatLabelText(row.id, characterName).toLowerCase().includes(query))
             : this._rows;
-        const characterName = (() => {
-            const index = activeCharacterIndex();
-            return index >= 0 && Array.isArray(characters)
-                ? String(characters[index]?.name ?? '').trim()
-                : '';
-        })();
         const canNew = document.getElementById('option_start_new_chat') !== null;
         const canBrowse = document.getElementById('option_select_chat') !== null;
         return html`
@@ -591,10 +565,11 @@ export class KChatSwitcher extends LitElement {
                     ` : rows.map((row) => html`
                         <button type="button" class="k-cs__row ${row.id === this._chatId ? 'k-cs--selected' : ''}"
                             aria-pressed=${row.id === this._chatId ? 'true' : 'false'}
+                            title=${row.id}
                             @click=${() => this._pick(row.id)}>
                             <span class="k-cs__mark">${row.id === this._chatId ? checkIcon() : nothing}</span>
                             <span class="k-cs__copy">
-                                <span class="k-cs__name">${row.id}</span>
+                                <span class="k-cs__name">${chatLabelText(row.id, characterName)}</span>
                                 ${row.micro ? html`<span class="k-cs__micro">${row.micro}</span>` : nothing}
                             </span>
                             ${row.branchCount > 0 ? html`

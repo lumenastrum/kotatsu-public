@@ -1,0 +1,363 @@
+/*
+ * kotatsu-chatgpt.css — the ChatGPT card and the plan indicator (docs/chatgpt-bridge-v0.md, C2).
+ *
+ * Paints `<k-chatgpt-card>` (kotatsu/connections/k-chatgpt-card.js), seated right after the Claude
+ * Code card in core's `#rm_api_block`, and the `.k-gc-using` line above the composer that OpenAI's
+ * UI guidelines require while ChatGPT is the active connection. Rails only; classic keeps
+ * upstream's drawer and composer. Tokens only. Class prefix `k-gc`.
+ */
+
+body:not([data-k-layout="rails"]) k-chatgpt-card,
+body:not([data-k-layout="rails"]) .k-gc-using {
+    display: none;
+}
+
+body[data-k-layout="rails"] k-chatgpt-card {
+    display: block;
+    margin: 0 0 18px;
+}
+
+body[data-k-layout="rails"] .k-gc {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px 20px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    border-radius: var(--k-radius-xl);
+    background: var(--k-surface);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+}
+
+body[data-k-layout="rails"] .k-gc[data-active="true"] {
+    border-color: color-mix(in srgb, var(--k-rose) 55%, transparent);
+}
+
+body[data-k-layout="rails"] .k-gc__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+body[data-k-layout="rails"] .k-gc__mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-ground-deep);
+    color: var(--k-rose);
+}
+
+body[data-k-layout="rails"] .k-gc__title {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-gc__name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+body[data-k-layout="rails"] .k-gc__name h2 {
+    margin: 0;
+    font-family: var(--k-font-display);
+    font-size: 21px;
+    font-weight: var(--k-display-weight);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-gc p,
+body[data-k-layout="rails"] .k-gc__note p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-gc__title > p,
+body[data-k-layout="rails"] .k-gc__hint {
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-gc__hint {
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-gc__pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+body[data-k-layout="rails"] .k-gc__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    padding: 0 10px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 50%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-surface-2);
+    font-size: 12px;
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-gc__pill[data-tone="success"] {
+    border-color: color-mix(in srgb, var(--k-success) 50%, transparent);
+}
+
+body[data-k-layout="rails"] .k-gc__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-gc__pill[data-tone="success"] .k-gc__dot {
+    background: var(--k-success);
+}
+
+body[data-k-layout="rails"] .k-gc__account {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-gc__headactions,
+body[data-k-layout="rails"] .k-gc__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-gc__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 34px;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-sunken);
+    color: var(--k-text);
+    font: 500 13px var(--k-font-ui);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--k-motion), border-color var(--k-motion), color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-gc__btn:hover,
+body[data-k-layout="rails"] .k-gc__btn:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-gc__btn--primary {
+    border-color: var(--k-rose);
+    background: var(--k-rose);
+    color: var(--k-ground-deep);
+}
+
+body[data-k-layout="rails"] .k-gc__btn--primary:hover,
+body[data-k-layout="rails"] .k-gc__btn--primary:focus-visible {
+    border-color: var(--k-rose-bright);
+    background: var(--k-rose-bright);
+    color: var(--k-ground-deep);
+}
+
+body[data-k-layout="rails"] .k-gc__btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+body[data-k-layout="rails"] .k-gc__btn--small {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-gc__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px 16px;
+}
+
+body[data-k-layout="rails"] .k-gc__field {
+    display: flex;
+    flex: 1 1 220px;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    max-width: 320px;
+}
+
+body[data-k-layout="rails"] .k-gc__cap {
+    font: 600 11px var(--k-font-ui);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-gc__field select {
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-sunken);
+    color: var(--k-text);
+    font: 13px var(--k-font-ui);
+}
+
+body[data-k-layout="rails"] .k-gc__field select:focus-visible {
+    outline: 2px solid var(--k-accent);
+    outline-offset: 1px;
+}
+
+/* A problem card: its border tone says how blocking it is. */
+body[data-k-layout="rails"] .k-gc__problem {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] .k-gc__problem[data-tone="warning"] {
+    border-color: color-mix(in srgb, var(--k-warning) 55%, transparent);
+}
+
+body[data-k-layout="rails"] .k-gc__problem[data-tone="danger"] {
+    border-color: color-mix(in srgb, var(--k-danger) 55%, transparent);
+}
+
+body[data-k-layout="rails"] .k-gc__problem strong {
+    font-size: 13px;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-gc__waiting {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-gc__spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid color-mix(in srgb, var(--k-text-muted) 40%, transparent);
+    border-top-color: var(--k-rose);
+    border-radius: 50%;
+    animation: k-gc-spin 0.9s linear infinite;
+}
+
+@keyframes k-gc-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"] .k-gc__spinner {
+        animation: none;
+    }
+}
+
+body[data-k-layout="rails"] .k-gc__status {
+    font-size: 12.5px;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-gc__status[data-tone="danger"] {
+    color: var(--k-danger);
+}
+
+/* OpenAI's one-time first-sign-in note: a plain modal, one action. */
+body[data-k-layout="rails"] .k-gc__note {
+    width: min(26rem, calc(100vw - 32px));
+    padding: 22px 22px 18px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
+    border-radius: var(--k-radius-xl);
+    background: var(--k-surface);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+}
+
+body[data-k-layout="rails"] .k-gc__note::backdrop {
+    background: color-mix(in srgb, var(--k-ground-deep) 70%, transparent);
+}
+
+body[data-k-layout="rails"] .k-gc__note h3 {
+    margin: 0 0 8px;
+    font-family: var(--k-font-display);
+    font-size: 18px;
+    font-weight: var(--k-display-weight);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-gc__note .k-gc__actions {
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+/* ── "Using ChatGPT plan · Manage usage" (protocol §8) ──────────────────────────────────────────
+   One quiet line right above `#send_form` while ChatGPT is the active connection. */
+
+body[data-k-layout="rails"] .k-gc-using {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0 0 6px;
+    font: 12px var(--k-font-ui);
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-gc-using[hidden] {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-gc-using__link {
+    color: var(--k-text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+body[data-k-layout="rails"] .k-gc-using__link:hover,
+body[data-k-layout="rails"] .k-gc-using__link:focus-visible {
+    color: var(--k-text-strong);
+}
+
+@media (max-width: 600px) {
+    body[data-k-layout="rails"] .k-gc {
+        padding: 16px;
+    }
+
+    body[data-k-layout="rails"] .k-gc__head {
+        flex-wrap: wrap;
+    }
+
+    body[data-k-layout="rails"] .k-gc__headactions {
+        width: 100%;
+    }
+
+    body[data-k-layout="rails"] .k-gc__field {
+        max-width: none;
+    }
+}

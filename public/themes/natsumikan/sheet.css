@@ -1,0 +1,20 @@
+/*
+ * Natsumikan — tracked debt (docs/theme-packs-v0.md decision 11: every rule here is a
+ * missing token). The loader prefixes each rule with body[data-k-theme="natsumikan"].
+ *
+ * The library's --k-lib-* knobs are component-scope, not tokens.css names, so a pack can
+ * only reach them from here. Its scrim and glass are built on --k-scrim, which on a light
+ * pack is the modal dim (deep indigo) — right for dimming a page, wrong for a fade under
+ * indigo card copy. Cards fade to cream instead, and the per-card accent band drops from
+ * Blue Hour's pastel register (72% L, unreadable as text on cream) to an inked one.
+ */
+
+k-library {
+    --k-lib-accent-s: 58%;
+    --k-lib-accent-l: 34%;
+    --k-lib-scrim-mid: color-mix(in srgb, var(--k-surface) 82%, transparent);
+    --k-lib-scrim-deep: color-mix(in srgb, var(--k-surface) 96%, transparent);
+    --k-lib-scrim-edge: color-mix(in srgb, var(--k-surface) 40%, transparent);
+    --k-lib-glass: color-mix(in srgb, var(--k-surface) 72%, transparent);
+    --k-lib-field-fill: color-mix(in srgb, var(--k-surface) 80%, transparent);
+}

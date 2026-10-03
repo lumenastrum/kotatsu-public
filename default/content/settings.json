@@ -225,16 +225,16 @@
                     "mode": "cc",
                     "exclude": [],
                     "api": "custom",
-                    "preset": "Clio's Sparkle Sauce v1",
+                    "preset": "Kotatsu Nabe",
                     "api-url": "http://127.0.0.1:5107/v1",
-                    "model": "claude-sonnet-4-6",
+                    "model": "claude-sonnet-5-5",
                     "proxy": "None",
                     "stop-strings": "[]",
                     "start-reply-with": "",
                     "reasoning-template": "Think XML",
                     "prompt-post-processing": "none",
                     "secret-id": "kotatsu-ccrp",
-                    "name": "Claude"
+                    "name": "Claude Code"
                 }
             ],
             "selectedProfile": "kotatsu-claude"
@@ -265,8 +265,8 @@
             "minLengthPenalty": -4,
             "maxLengthPenalty": 4,
             "lengthPenaltyStep": 0.1,
-            "memoryFrozen": false,
-            "source": "extras",
+            "memoryFrozen": true,
+            "source": "main",
             "prompt": "Ignore previous instructions. Summarize the most important facts and events in the story so far. If a summary already exists in your memory, use that as a base and expand with new facts. Limit the summary to {{words}} words or less. Your response should include nothing but the summary.",
             "promptWords": 200,
             "promptMinWords": 25,
@@ -488,14 +488,14 @@
         "grammar": ""
     },
     "oai_settings": {
-        "preset_settings_openai": "Clio's Sparkle Sauce v1",
+        "preset_settings_openai": "Kotatsu Nabe",
         "temp_openai": 1.0,
         "freq_pen_openai": 0,
         "pres_pen_openai": 0,
         "top_p_openai": 1,
         "top_k_openai": 0,
         "stream_openai": true,
-        "openai_max_context": 4095,
+        "openai_max_context": 1000000,
         "openai_max_tokens": 300,
         "prompts": [
             {
@@ -661,7 +661,7 @@
         "reverse_proxy": "",
         "chat_completion_source": "custom",
         "custom_url": "http://127.0.0.1:5107/v1",
-        "custom_model": "claude-sonnet-4-6",
+        "custom_model": "claude-sonnet-5-5",
         "max_context_unlocked": false,
         "api_url_scale": "",
         "show_external_models": false,

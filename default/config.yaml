@@ -404,8 +404,9 @@ kotatsu:
     # Loopback only. The bridge refuses any other host.
     host: 127.0.0.1
     port: 5107
-    defaultModel: claude-sonnet-4-6
+    defaultModel: claude-sonnet-5-5
     models:
+      - claude-sonnet-5-5
       - claude-sonnet-4-6
       - claude-fable-5-1
       - claude-opus-5-5
@@ -436,3 +437,8 @@ kotatsu:
     enabled: true
     repo: lumenastrum/kotatsu-public
     branch: main
+  # Browse Characters: search card sites (Chub) from the library and read a card before
+  # importing it. The server asks the site on the user's behalf and identifies itself as
+  # Kotatsu/<version>. Set to false and nothing here ever contacts a card site.
+  marketplace:
+    enabled: true

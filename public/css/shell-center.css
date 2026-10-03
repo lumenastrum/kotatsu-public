@@ -40,7 +40,10 @@
  *    kotatsu-chrome.css:784-793, and `.mes_media_wrapper`) keep reading as their own
  *    things instead of being boxed twice.
  *
- * 2. `#chat`'s BACKDROP-FILTER IS LEFT ALONE. Slice A's breadcrumb (shell-frame.css §2)
+ * 2. `#chat`'s PAINT MOVED TO `#sheld::before` (revised 10/2 — §2 has the why: the
+ *    scroller's bottom edge drew a seam over the composer row). The original decision is
+ *    kept below because its containing-block reasoning is still the audit trail.
+ *    Was: `#chat`'s BACKDROP-FILTER IS LEFT ALONE. Slice A's breadcrumb (shell-frame.css §2)
  *    says to move the blur to a `::before` "the moment the centre column gains a
  *    fixed-position child". It has not: `<k-chat-header>` is a flex child of `#k-center`,
  *    outside `#chat` entirely, and a full grep of style.css + css/*.css finds exactly one
@@ -408,7 +411,7 @@ body[data-k-layout="rails"] .k-cs__label-char {
     font-weight: 400;
     letter-spacing: 0;
     text-transform: none;
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
 }
 
 body[data-k-layout="rails"] .k-cs__filter {
@@ -532,7 +535,7 @@ body[data-k-layout="rails"] .k-cs__name--quiet {
 body[data-k-layout="rails"] .k-cs__micro {
     font-family: var(--k-font-mono);
     font-size: 10.5px;
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -545,7 +548,7 @@ body[data-k-layout="rails"] .k-cs__badge {
     flex: 0 0 auto;
     font-family: var(--k-font-mono);
     font-size: 10.5px;
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
 }
 
 body[data-k-layout="rails"] .k-cs--selected {
@@ -648,7 +651,7 @@ body[data-k-layout="rails"] .k-ch__count {
     flex: 0 0 auto;
     font-family: var(--k-font-mono);
     font-size: var(--k-cc-count-size);
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
 }
 
 body[data-k-layout="rails"] .k-ch__count-value {
@@ -659,8 +662,8 @@ body[data-k-layout="rails"] .k-ch__count-value {
    2. THE SCROLL TRACK — #chat
    ───────────────────────────────────────────────────────────────────────────
    `#chat` stays full-track so the scrollbar rides the track edge, the way every
-   long-form reader does it; the ROWS are what get constrained (§3). Paint is
-   untouched here — see decision 2 in the file header.
+   long-form reader does it; the ROWS are what get constrained (§3). Its paint moves
+   to `#sheld::before` — see decision 2 in the file header.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 body[data-k-layout="rails"] #chat {
@@ -672,6 +675,51 @@ body[data-k-layout="rails"] #chat {
        supported the column is ~7px off centre and nothing breaks. */
     scrollbar-gutter: stable both-edges;
     scroll-padding-block: var(--k-cc-row-pad-y);
+}
+
+/* THE TRACK'S PAINT LIVES ON `#sheld::before`, NOT ON `#chat` (decision 2, revised 10/2).
+   Core paints the scroller itself — `--SmartThemeChatTintColor` plus an 11px
+   `backdrop-filter` (style.css:880-882). Under rails `#chat` is full-track but stops where
+   the composer row begins (§4 puts `#form_sheld` in flow below it), and that row painted
+   nothing — so the scroller's bottom edge drew a hard horizontal seam across the whole
+   track: tinted-and-blurred glow above, raw `--k-app-backdrop` below. Invisible where the
+   backdrop is flat, a measured +7/+6/+5 one-pixel step at x=120 in his screenshot where the
+   rose glow (`4% 112%`, bottom left) runs under it; both packs, both engines.
+
+   One layer behind the scroller AND the composer row has no edge between them. `#sheld` goes
+   `position: relative` only to anchor the pseudo. It stays `z-index: auto`, so no stacking
+   context is created and every rung beneath (#chat's 30, the composer) stacks exactly as it
+   did while #sheld was static. The insets are pinned `!important` because shell-frame.css §6
+   promised "#sheld is position: static, so a saved inline drag state has nothing to move".
+   MovingUI writes `top`/`left` inline, and inline beats this rule without the pin. (Neither
+   install carries a #sheld drag state on 10/2; the pin keeps that promise true for anyone
+   who does.) Moving the blur onto a pseudo also settles the containing-block breadcrumb in
+   shell-frame.css §2 for good: `#chat` stops being the containing block for its `fixed`
+   descendants, and a pseudo has no descendants of its own. */
+body[data-k-layout="rails"] #sheld {
+    position: relative;
+    z-index: auto;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+}
+
+body[data-k-layout="rails"] #sheld::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-color: var(--SmartThemeChatTintColor);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
+}
+
+body[data-k-layout="rails"] #chat {
+    background-color: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 /* The MovingUI drag grabber (index.html:8141). Rails never invokes MovingUI
@@ -789,6 +837,17 @@ body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .timestamp {
     color: var(--k-text-dim);
 }
 
+/* Stock (style.css:631) stamps `opacity: 0.7` on the metadata row, which the 2026-08-25 fix
+   above never saw — it measured the color, the opacity multiplied it back down to 3.64:1
+   (timestamp) and 2.69:1 (`#0`). The color is the dimmer here; opacity stays whole so the
+   token's measured ratio is the rendered one (blue-hour-polish-v0 §A1). */
+body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .timestamp,
+body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .mesIDDisplay,
+body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .mes_timer,
+body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .tokenCounterDisplay {
+    opacity: 1;
+}
+
 /* ── The bubble ────────────────────────────────────────────────────────────── */
 
 /* Where a swipe arrow CAN render, the gutter comes back (§1 `--k-cc-swipe-gutter`): the
@@ -799,6 +858,176 @@ body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .timestamp {
 body[data-k-layout="rails"] #chat .mes.last_mes[is_user="false"]:not(.smallSysMes) .mes_text,
 body[data-k-layout="rails"].swipeAllMessages #chat .mes[is_user="false"]:not(.smallSysMes) .mes_text {
     padding-right: var(--k-cc-swipe-gutter);
+}
+
+/* ── The swipe cluster (blue-hour-polish-v0 §C1) ──────────────────────────────────────────
+   Andres, 2026-10-01: swipe controls match the reader style. Under a BUBBLE look the arrows
+   leave the row's flanks — where they floated ~90px from the text at the bubble's vertical
+   middle — and become one pill pinned on the bubble's bottom edge, `‹ 2/5 ›`, where the eye
+   lands when a reply ends. Under a non-bubble look (flat, script, broadcast) there is no edge
+   to pin to, so the flanks stay exactly as they were: none of these rules match.
+
+   Bubble looks, measured live: card (the default — no attribute, or "card"), portrait and
+   portrait-column paint `.mes_text`; bubble paints `.mes_block`, a fit-content pill whose right
+   edge moves per message; bubble-split paints each paragraph. A moving edge is why this is
+   anchor positioning rather than arithmetic: each bubble names itself `--k-bubble`, each row
+   scopes the name so rows never cross-wire, and both swipe nodes position off it.
+
+   Core's DOM is untouched (CONTRACT §1): `.swipe_left` is an absolute child of `.mes` BEFORE
+   the block, `.swipeRightBlock` (arrow + counter) one AFTER it. The right block paints the
+   pill and lays out `[counter][›]`; the left arrow cannot anchor to it (a later absolute
+   sibling is not an acceptable anchor), so it sits at a fixed offset from the same bubble edge
+   — the counter gets a fixed width for exactly that reason. Core's show/hide rules
+   (style.css:1359-1376, opacity + visibility) still decide WHICH controls exist; this only
+   decides WHERE. A row with one swipe shows just `›` (regenerate): the hidden counter folds to
+   zero width and the pill drops its left pocket.
+
+   No anchor support → the @supports gate fails and the flanks stay. */
+body[data-k-layout="rails"] #chat {
+    --k-swipe-h: 26px;
+    --k-swipe-arrow: 26px;
+    --k-swipe-count-w: 42px;
+    --k-swipe-inset: 12px;
+}
+
+@supports (anchor-scope: --k-bubble) {
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) {
+        anchor-scope: --k-bubble;
+    }
+
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mes_text,
+    body[data-k-layout="rails"] #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block,
+    /* Split: each paragraph is its own bubble and the last one is often narrower than the
+       column. A later anchor wins, so the last block takes the name when it exists and the
+       column above stays the fallback. */
+    body[data-k-layout="rails"] #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_text > :last-child {
+        anchor-name: --k-bubble;
+    }
+
+    /* The pill: `[counter][›]`, with a left pocket for `‹` when core shows it. */
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .swipeRightBlock {
+        position-anchor: --k-bubble;
+        inset: auto;
+        top: anchor(bottom);
+        right: calc(anchor(right) + var(--k-swipe-inset));
+        translate: 0 -50%;
+        flex-direction: row;
+        align-items: center;
+        box-sizing: border-box;
+        height: var(--k-swipe-h);
+        padding: 0;
+        border: 1px solid var(--k-cc-bubble-border);
+        border-radius: var(--k-radius-pill);
+        background-color: var(--k-surface);
+        box-shadow: var(--k-elev-1);
+    }
+
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes.swipes_visible:not(.smallSysMes) .swipeRightBlock {
+        padding-left: var(--k-swipe-arrow);
+    }
+
+    /* Nothing to pin when the right arrow itself is hidden (not the last row, or
+       hideAllSwipeButtons): the pill goes with it rather than hanging empty. */
+    body[data-k-layout="rails"]:not(.swipeAllMessages) #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.last_mes):not(.smallSysMes) .swipeRightBlock,
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.swipes_visible, .last_swipe):not(.smallSysMes) .swipeRightBlock,
+    body[data-k-layout="rails"].hideAllSwipeButtons #chat .mes .swipeRightBlock {
+        visibility: hidden;
+    }
+
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) :is(.swipe_left, .swipe_right) {
+        display: flex;
+        flex-flow: row;
+        align-items: center;
+        justify-content: center;
+        width: var(--k-swipe-arrow);
+        height: var(--k-swipe-h);
+        margin: 0;
+        padding: 0;
+        font-size: 12px;
+        line-height: 1;
+        color: var(--k-text-dim);
+        transition: color var(--k-motion), opacity var(--k-motion);
+    }
+
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .swipe_right {
+        position: static;
+        align-self: center;
+    }
+
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .swipe_left {
+        position-anchor: --k-bubble;
+        inset: auto;
+        top: anchor(bottom);
+        right: calc(anchor(right) + var(--k-swipe-inset) + var(--k-swipe-count-w) + var(--k-swipe-arrow) + 1px);
+        translate: 0 -50%;
+    }
+
+    /* Core rests the arrows at 0.3 and the last swipe at 0.7 — tuned for a bare chevron on
+       the chat ground. On a pill they read as disabled; the pill is the quiet part now. Core's
+       hide chain is `opacity: 0 !important`, so a hidden control stays hidden over this. */
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) :is(.swipe_left, .swipe_right, .swipes-counter) {
+        opacity: 1;
+    }
+
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) :is(.swipe_left, .swipe_right):is(:hover, :focus-visible) {
+        color: var(--k-accent-bright);
+    }
+
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .swipes-counter {
+        order: -1;
+        box-sizing: border-box;
+        width: var(--k-swipe-count-w);
+        min-width: 0;
+        height: auto;
+        margin: 0;
+        padding: 0;
+        align-items: center;
+        font-family: var(--k-font-mono);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+        color: var(--k-text-muted);
+        /* Core's `.last_swipe` rule stretches whatever transition it finds to ~580ms; the
+           pocket opening (0 → count width when a second swipe lands) is ours and short. */
+        transition: width var(--k-motion), opacity var(--k-motion), color var(--k-motion);
+    }
+
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[data-k-swipes="1"]:not(.smallSysMes) .swipes-counter {
+        width: 0;
+        overflow: hidden;
+    }
+
+    /* …and `‹` closes the gap the folded counter left (a pristine greeting shows `‹` for its
+       alternates while its own count is still 1). */
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[data-k-swipes="1"]:not(.smallSysMes) .swipe_left {
+        right: calc(anchor(right) + var(--k-swipe-inset) + var(--k-swipe-arrow) + 1px);
+    }
+
+    /* The pill straddles the bubble's bottom border, so the swipe-capable bubble trades its
+       34px right gutter (the flank arrow's old parking spot) for a little more floor: the
+       measure gets its 20px back and the pill's upper half lands in padding, never on a
+       descender. Card / portrait / portrait-column pad `.mes_text`; bubble pads its pill. */
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"]) .mes.last_mes[is_user="false"]:not(.smallSysMes) .mes_text,
+    body[data-k-layout="rails"].swipeAllMessages #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"]) .mes[is_user="false"]:not(.smallSysMes) .mes_text {
+        padding-right: var(--k-cc-bubble-pad-x);
+        padding-bottom: calc(var(--k-cc-bubble-pad-y) + var(--k-swipe-h) / 2);
+    }
+
+    body[data-k-layout="rails"] #chat[data-k-mes-variant="bubble"] .mes.last_mes[is_user="false"]:not(.smallSysMes) .mes_block,
+    body[data-k-layout="rails"].swipeAllMessages #chat[data-k-mes-variant="bubble"] .mes[is_user="false"]:not(.smallSysMes) .mes_block {
+        padding-bottom: calc(var(--k-bubble-pad-y) + var(--k-swipe-h) / 2);
+    }
+
+    body[data-k-layout="rails"] #chat[data-k-mes-variant="bubble-split"] .mes.last_mes[is_user="false"]:not(.smallSysMes) .mes_text > :last-child,
+    body[data-k-layout="rails"].swipeAllMessages #chat[data-k-mes-variant="bubble-split"] .mes[is_user="false"]:not(.smallSysMes) .mes_text > :last-child {
+        padding-bottom: calc(var(--k-split-pad-y) + var(--k-swipe-h) / 2);
+    }
+
+    /* The pill hangs half below the bubble: give the row that half back so it never kisses
+       the next row or the composer. */
+    body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes.last_mes[is_user="false"]:not(.smallSysMes),
+    body[data-k-layout="rails"].swipeAllMessages #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="portrait"], [data-k-mes-variant="portrait-column"], [data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="false"]:not(.smallSysMes) {
+        margin-bottom: calc(var(--k-swipe-h) / 2);
+    }
 }
 
 /* A "1/1" says nothing. The swipe-count marker (kotatsu/renderer/swipe-count.js) writes each
@@ -1124,7 +1353,7 @@ body[data-k-layout="rails"] #form_sheld::after {
     font-family: var(--k-font-mono);
     font-size: var(--k-cc-hint-size);
     letter-spacing: 0.02em;
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
 }
 
 body[data-k-layout="rails"][data-k-send-on-enter="yes"] #form_sheld::after {
@@ -1164,16 +1393,22 @@ body[data-k-layout="rails"][data-k-send-on-enter="no"] #form_sheld::after {
    Both classes keep working untouched under classic; every rule below is gated.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .mesAvatarWrapper {
+/* Every pin below is scoped to `.documentstyle` — the only thing it exists to counter. Until
+   2026-10-01 they were unconditional, and the timestamp pin at (1,6,1) !important beat the
+   user's own "Chat Timestamps" (`body.no-timestamps .timestamp`, toggle-dependent.css:24) and
+   "Model Icons" (`body.no-modelIcons .icon-svg`, :27 — the icon is also `.timestamp-icon`)
+   toggles, so neither could be switched off under rails (baggage-audit-v0 §3). Under
+   documentstyle the timestamp pins also step aside for those two toggles. */
+body[data-k-layout="rails"].documentstyle #chat .mes:not(.smallSysMes) .mesAvatarWrapper {
     display: flex !important;
 }
 
-body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .mes_block .ch_name .name_text {
+body[data-k-layout="rails"].documentstyle #chat .mes:not(.smallSysMes) .mes_block .ch_name .name_text {
     display: inline !important;
 }
 
-body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .mes_block .ch_name .timestamp,
-body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .mes_block .ch_name .timestamp-icon {
+body[data-k-layout="rails"].documentstyle:not(.no-timestamps) #chat .mes:not(.smallSysMes) .mes_block .ch_name .timestamp,
+body[data-k-layout="rails"].documentstyle:not(.no-modelIcons) #chat .mes:not(.smallSysMes) .mes_block .ch_name .timestamp-icon {
     display: inline !important;
 }
 
@@ -1184,7 +1419,7 @@ body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .mes_block .ch_name .ti
    AND keeps this `!important` away from style.css:4597-4603, which hides
    `#chat .last_mes .mes_buttons` while `body[data-generating]` / `[data-swiping]` is set.
    Widening this selector would put edit and delete buttons on a message mid-stream. */
-body[data-k-layout="rails"] #chat .mes:not(.smallSysMes):not(.last_mes) .ch_name .mes_buttons {
+body[data-k-layout="rails"].documentstyle #chat .mes:not(.smallSysMes):not(.last_mes) .ch_name .mes_buttons {
     display: flex !important;
 }
 

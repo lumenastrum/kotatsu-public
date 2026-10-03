@@ -1,0 +1,67 @@
+/* Kotatsu shell — extension dock yield (ext gauntlet 2026-10-02, finding 1).
+
+   Third-party panels park themselves in the empty margins stock SillyTavern leaves around
+   its centred chat column (`position: fixed`, flush to a viewport edge, nearly full height).
+   The rails layout fills those margins, so the panels used to land on top of the rails.
+   kotatsu/shell/ext-dock.js measures them and publishes `--k-ext-inset-left` /
+   `--k-ext-inset-right` on <body>; this sheet makes the frame give that much of each edge
+   up. The top bar is not touched and stays full width.
+
+   Every rule is gated on the rails layout, and every read has a `0px` fallback, so the sheet
+   is inert under classic and before the script has run. Loaded after shell-frame.css so the
+   same-specificity overrides below win. */
+
+body[data-k-layout="rails"] {
+    /* --sheldWidth stays honest (see shell-frame.css §1): the real centre track is the
+       viewport minus both rails minus both dock insets. Same double declaration, same
+       reason — 100dvw where supported, 100vw as the fallback. */
+    --sheldWidth: calc(100vw - var(--k-rail-left-width) - var(--k-rail-right-width) - var(--k-ext-inset-left, 0px) - var(--k-ext-inset-right, 0px));
+    --sheldWidth: calc(100dvw - var(--k-rail-left-width) - var(--k-rail-right-width) - var(--k-ext-inset-left, 0px) - var(--k-ext-inset-right, 0px));
+}
+
+/* The other half of the same variable: what a FOREIGN element at <body> level reads.
+
+   Extension side panels size themselves with core's gutter formula — RPG Companion's
+   `width: calc(50vw - var(--sheldWidth) / 2)`, Variable Viewer's
+   `calc((100vw - var(--sheldWidth)) / 2)` — which in stock means "one side margin". Fed the
+   track value above, that formula closes a loop: the panel's width sets the inset, the inset
+   shrinks the track, the track changes the panel's width. Measured live at 1680px it never
+   settled (inset 324 → 302 → 291 → right rail reopens → 456 → rail folds → 368 → …), with the
+   frame breathing and the rail flapping. The same coupling predates the dock yield: with one
+   rail collapsed those panels were 140px wide, and with both collapsed, 0px.
+
+   So an element outside the shell is told a stock-shaped value that depends on nothing that
+   moves: a chat column that leaves `--k-ext-gutter` on each side. 22.5dvw is stock's own
+   gutter at its default 55vw column; the clamp keeps a panel usable on a small window and
+   stops it taking 774px of a 3440px one.
+
+   The exclusions are the body children that are ours or core's and already have their own
+   repair for this variable (css/shell-panels.css) or are deliberately left as they were:
+   this rule is for third-party nodes and must not move a core element. A selector cannot
+   know "foreign", so it is everything at body level minus the known. */
+body[data-k-layout="rails"] {
+    --k-ext-gutter: clamp(280px, 22.5dvw, 380px);
+}
+
+body[data-k-layout="rails"] > :not(#k-shell, #k-topbar, #k-offstage, [id^="k-"], dialog, #movingDivs, #bg1, #top-bar, #top-settings-holder, #toast-container, #expression-wrapper, #visual-novel-wrapper, .zoomed_avatar, .draggable) {
+    --sheldWidth: calc(100vw - 2 * var(--k-ext-gutter));
+    --sheldWidth: calc(100dvw - 2 * var(--k-ext-gutter));
+}
+
+/* #k-frame is a grid item of #k-shell, so a margin shrinks it. The grid inside it
+   (rails + centre) re-flows into what is left. */
+body[data-k-layout="rails"] #k-frame {
+    margin-left: var(--k-ext-inset-left, 0px);
+    margin-right: var(--k-ext-inset-right, 0px);
+}
+
+/* The collapse handles sit on a rail's inner edge, measured from the SHELL's edge
+   (shell-frame.css §5), so they have to travel with the frame. Same selectors as
+   shell-frame.css, so source order decides. */
+body[data-k-layout="rails"] .k-rail-handle[data-k-rail-side="left"] {
+    left: calc(var(--k-ext-inset-left, 0px) + var(--k-rail-left-width));
+}
+
+body[data-k-layout="rails"] .k-rail-handle[data-k-rail-side="right"] {
+    right: calc(var(--k-ext-inset-right, 0px) + var(--k-rail-right-width));
+}

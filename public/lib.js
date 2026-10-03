@@ -30,6 +30,8 @@ import { sha256 } from 'js-sha256';
 // stylesheet template is vendored as `litCss` and mapped back to `css` by the
 // facade at public/kotatsu/shell/lit.js — the single import point for Lit.
 import { LitElement, html, css as litCss, svg, nothing, render } from 'lit';
+// QR codes for phone pairing (docs/phone-v0.md §4.3). Facade: public/kotatsu/phone/qr.js.
+import qrcode from 'qrcode-generator';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -118,6 +120,7 @@ export default {
     svg,
     nothing,
     render,
+    qrcode,
 };
 
 export {
@@ -152,4 +155,5 @@ export {
     svg,
     nothing,
     render,
+    qrcode,
 };

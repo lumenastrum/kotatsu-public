@@ -10,8 +10,9 @@
  *
  * Usage:
  *   node scripts/release.mjs --dry-run          export + verify, touch nothing remote
- *   node scripts/release.mjs                    build, export, commit, tag, push
+ *   node scripts/release.mjs --clio "Opus 5.5"  build, export, commit, tag, push
  * Flags:
+ *   --clio <model>     the Clio cutting it, for the commit trailer (required unless --dry-run)
  *   --mirror <url>     default https://github.com/lumenastrum/kotatsu-public.git
  *   --work <dir>       local clone of the mirror; default ../kotatsu-public next to this repo
  *   --tag <name>       default v<package.json kotatsu.version>
@@ -31,11 +32,18 @@ const MIRROR_DEFAULT = 'https://github.com/lumenastrum/kotatsu-public.git';
 const MIRROR_BRANCH = 'main';
 const COMMIT_EMAIL = '43384618+lumenastrum@users.noreply.github.com';
 const COMMIT_NAME = 'lumenastrum';
-const CO_AUTHOR = 'Co-Authored-By: Clio (Fable 5.1) <sparklenailsclio@gmail.com>';
+/**
+ * The release commit's trailer names the Clio cutting it (`--clio "Opus 5.5"`). It used to be a
+ * constant, and a constant names whichever model wrote the script, forever.
+ * @param {string} model
+ * @returns {string}
+ */
+const coAuthor = (model) => `Co-Authored-By: Clio (${model}) <sparklenailsclio@gmail.com>`;
 
 /** Public-facing contracts the README links to; everything else under docs/ is internal. */
 const KEEP_DOCS = new Set(['docs/data-contract.md', 'docs/providers.md']);
-const STRIP_PREFIXES = ['docs/', 'tests/', '.claude/'];
+// default/presets-upstream/ holds authors' original files; the mirror ships the normalized copies.
+const STRIP_PREFIXES = ['docs/', 'tests/', '.claude/', 'default/presets-upstream/'];
 const STRIP_FILES = new Set(['CLAUDE.md']);
 /**
  * Anything matching these must never reach the mirror — checked on the exported tree, not the
@@ -53,7 +61,7 @@ const isForbidden = (rel) => !PLACEHOLDERS.has(rel) && FORBIDDEN.some((re) => re
 const DIST_FILES = ['dist/lib.js', 'dist/lib.js.LICENSE.txt'];
 
 function parseArgs(argv) {
-    const out = { dryRun: false, allowDirty: false, build: true, force: false, mirror: MIRROR_DEFAULT, work: null, tag: null };
+    const out = { dryRun: false, allowDirty: false, build: true, force: false, mirror: MIRROR_DEFAULT, work: null, tag: null, clio: null };
     for (let i = 0; i < argv.length; i++) {
         const a = argv[i];
         if (a === '--dry-run') out.dryRun = true;
@@ -63,6 +71,7 @@ function parseArgs(argv) {
         else if (a === '--mirror') out.mirror = argv[++i];
         else if (a === '--work') out.work = path.resolve(argv[++i]);
         else if (a === '--tag') out.tag = argv[++i];
+        else if (a === '--clio') out.clio = argv[++i];
         else throw new Error(`Unknown argument: ${a}`);
     }
     out.work ??= path.resolve(repoDir, '..', 'kotatsu-public');
@@ -114,11 +123,22 @@ function main() {
         throw new Error(`package.json kotatsu.version is missing or malformed: ${String(version)}`);
     }
     const tag = args.tag ?? `v${version}`;
+    if (!args.dryRun && !args.clio) {
+        throw new Error('Say which Clio is cutting this release: --clio "<model>", e.g. --clio "Opus 5.5"');
+    }
 
     // --- preflight on the source ---
     const dirty = git(repoDir, ['status', '--porcelain']);
     if (dirty && !args.allowDirty) {
         throw new Error(`Source tree is not clean; commit or stash first (or --allow-dirty for a dry run):\n${dirty}`);
+    }
+    // Bundled presets (docs/preset-bundle-v0.md §6): every shipped preset is in the credits
+    // manifest with an "own" or "granted" permission, its upstream bytes are the author's, and its
+    // shipped copy is current. A preset whose author hasn't answered can't reach strangers.
+    try {
+        execFileSync(process.execPath, [path.join(repoDir, 'scripts', 'normalize-shipped-presets.mjs'), '--check'], { cwd: repoDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (error) {
+        throw new Error(`Bundled presets are not releasable (run node scripts/normalize-shipped-presets.mjs --check):\n${error.stderr || error.stdout || error.message}`);
     }
     const branch = git(repoDir, ['rev-parse', '--abbrev-ref', 'HEAD']);
     const sha = git(repoDir, ['rev-parse', 'HEAD']);
@@ -229,7 +249,7 @@ function main() {
         '',
         `Built from lumenastrum/kotatsu ${shortSha} (${branch}). Frontend bundle prebuilt; internal docs and tests stripped.`,
         '',
-        CO_AUTHOR,
+        coAuthor(args.clio),
     ].join('\n');
     const messageFile = path.join(exportDir, '.release-message.txt');
     fs.writeFileSync(messageFile, `${message}\n`);

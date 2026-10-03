@@ -35,29 +35,10 @@
 
 import { LitElement, css, html, nothing } from '../lit.js';
 import { getRequestHeaders } from '../../../script.js';
+import { restartAndWait } from '../restart.js';
 
 /** Same cadence as the server's own cache — a second check inside 6 h is served from it. */
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
-
-/** Restart poll: how often to ask `/version` whether the server is back. */
-const POLL_INTERVAL_MS = 1000;
-
-/** Restart poll ceiling. Past this the reload is not going to help; say so instead. */
-const POLL_MAX_ATTEMPTS = 90;
-
-/**
- * How long after the restart ack a successful `/version` is accepted as the NEW process
- * even when the poll never caught the server down.
- *
- * Measured on the update drill (2026-09-07, this box): the server stops answering 144 ms
- * after it acks `POST /restart` and answers again 2435 ms later — but the page's FIRST
- * poll consistently lands at ack + ~2.7 s, i.e. after the gap has already closed. An
- * "only accept a success once a failure has been observed" rule therefore never fires,
- * and the pill hangs in `restarting` until the ceiling. The gap is real; catching it is
- * not reliable. Three seconds is twenty times the measured 144 ms in which the old
- * process stops answering, so a success past this point cannot be the old one.
- */
-const RESTART_GRACE_MS = 3000;
 
 /**
  * Shortens a sha for display. The full value stays on the `title`.
@@ -437,73 +418,22 @@ export class KUpdatePill extends LitElement {
      */
     async #restart() {
         this._state = 'restarting';
-        let ackAt = Date.now();
-        try {
-            const response = await fetch('/api/kotatsu/update/restart', {
-                method: 'POST',
-                headers: getRequestHeaders(),
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+        let failure = '';
+        const result = await restartAndWait({
+            onState: (state, detail) => {
+                if (state === 'failed') failure = detail ?? '';
+            },
+        });
+        if (result === 'failed') {
+            // A refused POST and a server that never returned read differently: the first
+            // means nothing restarted, the second means it may have and the launcher is gone.
+            if (failure === 'timeout') {
+                toastr.warning('Kotatsu did not come back on its own. Run Start.bat to finish the update.', 'Kotatsu update');
+            } else {
+                toastr.error('Kotatsu could not be restarted. Close the window and run Start.bat.', 'Kotatsu update');
             }
-            // Drain the body: the server is about to die, and an unread stream leaves the
-            // socket occupied while the connection is torn down under it.
-            await response.text().catch(() => undefined);
-            ackAt = Date.now();
-        } catch (error) {
-            console.error('[k-update-pill] restart request failed', error);
-            toastr.error('Kotatsu could not be restarted. Close the window and run Start.bat.', 'Kotatsu update');
             this._state = 'restart';
-            return;
         }
-
-        const back = await this.#waitForServer(ackAt);
-        if (!back) {
-            toastr.warning('Kotatsu did not come back on its own. Run Start.bat to finish the update.', 'Kotatsu update');
-            this._state = 'restart';
-            return;
-        }
-        location.reload();
-    }
-
-    /**
-     * Polls `/version` until the server answers again — and until that answer can only be
-     * coming from the NEW process.
-     *
-     * Two independent proofs, either of which is enough:
-     *   - the poll watched the server go down, so the next success is the restarted one; or
-     *   - the success arrived more than `RESTART_GRACE_MS` after the ack, by which point
-     *     the old process has measurably stopped answering.
-     * The second is not belt-and-braces: on this box the first poll lands AFTER the whole
-     * gap, so downtime is never observed and the first proof alone hangs the pill (measured
-     * 2026-09-07 — see `RESTART_GRACE_MS`).
-     * @param {number} ackAt `Date.now()` when the restart request was acknowledged.
-     * @returns {Promise<boolean>} Whether the server came back.
-     */
-    async #waitForServer(ackAt) {
-        let sawDown = false;
-        for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
-            await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
-            let up = false;
-            try {
-                const response = await fetch('/version', {
-                    headers: getRequestHeaders(),
-                    cache: 'no-store',
-                });
-                up = response.ok;
-                await response.text().catch(() => undefined);
-            } catch {
-                up = false;
-            }
-            if (!up) {
-                sawDown = true;
-                continue;
-            }
-            if (sawDown || Date.now() - ackAt >= RESTART_GRACE_MS) {
-                return true;
-            }
-        }
-        return false;
     }
 }
 

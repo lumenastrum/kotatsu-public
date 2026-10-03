@@ -55,6 +55,7 @@
  * `COMPONENT_SLOTS`, no new placeholder-degradation path to maintain.
  */
 
+import { toRelative } from '../relative-time.js';
 import { LitElement, html, nothing } from '../lit.js';
 import {
     characters,
@@ -73,6 +74,7 @@ import { selected_group } from '../../../scripts/group-chats.js';
 import { timestampToMoment } from '../../../scripts/utils.js';
 // Side-effect import: defines <k-persona-menu>, rendered in the footer below.
 import './k-persona-menu.js';
+import { chatLabelText } from '../chat-label.js';
 
 /** @typedef {import('../../branches/store.js').BranchTree} BranchTree */
 /** @typedef {import('../../branches/store.js').BranchTreeEdge} BranchTreeEdge */
@@ -186,38 +188,6 @@ function toInitials(name) {
     return (first + second).toUpperCase();
 }
 
-/**
- * Compact relative time for the mono right column ("now", "5m", "3h", "2d").
- * Returns an empty string for a missing or nonsensical timestamp so the caller
- * can drop the column rather than print a placeholder.
- * @param {number} ms Epoch milliseconds.
- * @returns {string} Compact label, or '' when there is nothing honest to show.
- */
-function toRelative(ms) {
-    if (!Number.isFinite(ms) || ms <= 0) {
-        return '';
-    }
-    const delta = Date.now() - ms;
-    if (delta < 60_000) {
-        return 'now';
-    }
-    const minutes = Math.floor(delta / 60_000);
-    if (minutes < 60) {
-        return `${minutes}m`;
-    }
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) {
-        return `${hours}h`;
-    }
-    const days = Math.floor(hours / 24);
-    if (days < 7) {
-        return `${days}d`;
-    }
-    if (days < 365) {
-        return `${Math.floor(days / 7)}w`;
-    }
-    return `${Math.floor(days / 365)}y`;
-}
 
 /**
  * Normalises the `last_mes` field of a chat record. The chats endpoint hands
@@ -248,6 +218,12 @@ function activeCharacterIndex() {
     }
     const index = Number(this_chid);
     return Number.isInteger(index) && index >= 0 ? index : -1;
+}
+
+/** @returns {string} The active character's name, or '' in a group / with none selected. */
+function activeCharacterName() {
+    const index = activeCharacterIndex();
+    return index >= 0 && Array.isArray(characters) ? String(characters[index]?.name ?? '').trim() : '';
 }
 
 /**
@@ -1102,7 +1078,7 @@ export class KRailLeft extends LitElement {
                     title=${row.title}
                     @click=${() => this.#onOpenChat(row.id)}
                 >
-                    <span class="k-rl-name">${row.title}</span>
+                    <span class="k-rl-name">${chatLabelText(row.title, activeCharacterName())}</span>
                     ${meta ? html`<span class="k-rl-meta">${meta}</span>` : nothing}
                 </button>
                 <button
@@ -1213,7 +1189,7 @@ export class KRailLeft extends LitElement {
         return html`
             <div class="k-rl-ghost" title=${`${name} — named as the parent, but no such chat file exists`}>
                 ${icons.ghost}
-                <span class="k-rl-name">${name}</span>
+                <span class="k-rl-name">${chatLabelText(name, activeCharacterName())}</span>
                 <span class="k-rl-meta">missing</span>
             </div>`;
     }
@@ -1256,7 +1232,7 @@ export class KRailLeft extends LitElement {
                 @click=${() => this.#onOpenBranch(fileId)}
             >
                 <span class="k-rl-glyph" aria-hidden="true">${glyph}</span>
-                <span class="k-rl-name">${fileId}</span>
+                <span class="k-rl-name">${chatLabelText(fileId, activeCharacterName())}</span>
                 ${checkpoints > 0 ? this.#checkpointBadge(checkpoints) : nothing}
             </button>`;
     }
@@ -1287,7 +1263,7 @@ export class KRailLeft extends LitElement {
                 @click=${() => this.#onOpenBranch(fileId)}
             >
                 <span class="k-rl-glyph" aria-hidden="true">${adopted ? icons.elbowAdopted : icons.elbow}</span>
-                <span class="k-rl-name">${fileId}</span>
+                <span class="k-rl-name">${chatLabelText(fileId, activeCharacterName())}</span>
                 ${forkIndex === null ? nothing : html`<span class="k-rl-fork">forked @${forkIndex}</span>`}
                 ${relative ? html`<span class="k-rl-meta">${relative}</span>` : nothing}
             </button>`;

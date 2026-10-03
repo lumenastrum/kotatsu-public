@@ -196,13 +196,13 @@
 
        `--k-chrome-fill` rides over the chat and stays translucent enough for the
        blur behind it to read. `--k-panel-fill` is for surfaces that must be
-       legible over arbitrary content. */
+       legible over arbitrary content, so it is fully opaque: at 96-97% the model
+       menu ghosted the landing page's buttons through its model list (measured
+       2026-10-01, connections-v0 §10), and every popover here shares the fill. */
     --k-chrome-fill: linear-gradient(180deg,
             color-mix(in srgb, var(--k-surface-2) 94%, transparent),
             color-mix(in srgb, var(--k-ground-deep) 92%, transparent));
-    --k-panel-fill: linear-gradient(180deg,
-            color-mix(in srgb, var(--k-surface-2) 97%, transparent),
-            color-mix(in srgb, var(--k-ground-deep) 96%, transparent));
+    --k-panel-fill: linear-gradient(180deg, var(--k-surface-2), var(--k-ground-deep));
 
     /* Interior card layer (inline drawers, roster entries, inset fields). */
     --k-inset-fill: color-mix(in srgb, var(--k-surface-sunken) 55%, transparent);
@@ -269,9 +269,21 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* The four reading sizes (§2 `--k-prose-scale`). M is the 15px the 2026-08-24 A/B was
-   tuned at and writes no attribute at all, so the default is byte-identical; S is a hair
-   under it for dense readers; L and XL are the ultrawide sizes — 18px and 20px at the
-   default `font_scale`. The user's `font_scale` still multiplies underneath. */
+   tuned at; S is a hair under it for dense readers; L and XL are the ultrawide sizes — 18px
+   and 20px at the default `font_scale`. The user's `font_scale` still multiplies underneath.
+
+   No attribute = AUTO, the default (blue-hour-polish-v0 §B1, Andres 2026-10-01: "18px on
+   monitors, 15px on laptops"). 1800px is the line: every MacBook's default viewport (Air
+   1280–1710, Pro 14 1512, Pro 16 1728) sits under it, 1920 / 2560 / 3440 monitors over it.
+   A monitor under Windows 125% scaling reports 1536 and reads as a laptop — an explicit
+   Large is the answer there. An explicit M writes `="m"` and matches nothing below, so it
+   inherits the §2 root value of 1. */
+@media (min-width: 1800px) {
+    body:not([data-k-prose-scale]) {
+        --k-prose-scale: 1.2;
+    }
+}
+
 body[data-k-prose-scale="s"] {
     --k-prose-scale: 0.933;
 }
@@ -813,7 +825,7 @@ body {
     background-color: transparent;
     font-size: 0.72em;
     letter-spacing: 0.04em;
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
     transition: color var(--k-motion), background-color var(--k-motion);
 }
 
@@ -1307,7 +1319,7 @@ body {
 .mes .tokenCounterDisplay {
     font-family: var(--k-font-mono);
     font-size: 0.72em;
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
 }
 
 /* [10] Resting swipe affordances. */
@@ -1350,7 +1362,7 @@ body {
 .ch_additional_info {
     font-family: var(--k-font-mono);
     font-size: 0.7em;
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
 }
 
 /* [62] Popup titles receive Blue Hour's stronger title color and tracking;

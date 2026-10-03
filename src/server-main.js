@@ -74,6 +74,8 @@ import { ServerStartup, setupPrivateEndpoints } from './server-startup.js';
 import { diskCache } from './endpoints/characters.js';
 import { migrateFlatSecrets } from './endpoints/secrets.js';
 import { startClaudeBridge, stopClaudeBridge } from './endpoints/kotatsu/claude-bridge/index.js';
+import { startChatGPTBridge, stopChatGPTBridge } from './endpoints/kotatsu/chatgpt-bridge/index.js';
+import { installPhone, pairRouter } from './endpoints/kotatsu/phone/index.js';
 import { migrateGroupChatsMetadataFormat } from './endpoints/groups.js';
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
@@ -138,6 +140,11 @@ if (corsEnabled) {
     }
     app.use(cors(corsOptions));
 }
+
+// Kotatsu phone pairing (docs/phone-v0.md §3.3): paired phones join the IP whitelist live, and
+// `/k-pair` is the one route a phone that hasn't paired yet may reach. It only spends a code.
+installPhone(globalThis.DATA_ROOT);
+app.use(pairRouter);
 
 if (cliArgs.listen && cliArgs.basicAuthMode) {
     app.use(basicAuthMiddleware);
@@ -306,6 +313,7 @@ async function preSetupTasks() {
     await diskCache.verify(directories);
     migrateFlatSecrets(directories);
     await startClaudeBridge({ directories });
+    await startChatGPTBridge({ directories });
     cleanUploads();
     migrateAccessLog();
 
@@ -325,6 +333,7 @@ async function preSetupTasks() {
             await cleanupPlugins();
         }
         await stopClaudeBridge();
+        await stopChatGPTBridge();
         diskCache.dispose();
         setWindowTitle(consoleTitle);
         process.exit();

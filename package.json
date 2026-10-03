@@ -66,6 +66,7 @@
         "ipaddr.js": "^2.2.0",
         "is-docker": "^3.0.0",
         "isomorphic-git": "^1.36.3",
+        "jose": "6.2.12",
         "js-sha256": "^0.11.1",
         "lit": "^3.3.3",
         "localforage": "^1.10.0",
@@ -80,6 +81,7 @@
         "png-chunk-text": "^1.0.0",
         "png-chunks-extract": "^1.0.0",
         "proxy-agent": "^6.5.0",
+        "qrcode-generator": "2.0.4",
         "rate-limiter-flexible": "^5.0.5",
         "response-time": "^2.3.4",
         "sanitize-filename": "^1.6.3",
@@ -120,7 +122,7 @@
     },
     "version": "1.18.0",
     "kotatsu": {
-        "version": "0.1.1"
+        "version": "0.2.0"
     },
     "scripts": {
         "init": "node src/server-init.js",

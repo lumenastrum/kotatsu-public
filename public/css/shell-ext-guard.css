@@ -1,0 +1,91 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Kotatsu shell — the incompatible-extension guard, <k-ext-guard variant="banner">
+   (kotatsu/shell/ext-guard.js; ext gauntlet 2026-10-02, finding 5).
+   ───────────────────────────────────────────────────────────────────────────
+   Fixed under the top bar at stock's rung + 1 (3006): the layer the notice is
+   about (LandingPage's z 2000) cannot cover it, and every overlay of ours
+   (3999 and up) still can. Centred on the viewport, not the reading column,
+   because the column may be the thing that is gone.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] k-ext-guard {
+    display: none;
+}
+
+body[data-k-layout="rails"] k-ext-guard[open] {
+    position: fixed;
+    top: calc(var(--topBarBlockSize, 44px) + 12px);
+    left: 50%;
+    z-index: 3006;
+    display: block;
+    width: min(640px, calc(100vw - 32px));
+    transform: translateX(-50%);
+}
+
+body[data-k-layout="rails"] .k-eg {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 1px solid color-mix(in srgb, var(--k-rose, var(--k-accent)) 55%, transparent);
+    border-left: 3px solid var(--k-rose, var(--k-accent));
+    border-radius: var(--k-radius-md, 8px);
+    background: var(--k-surface-2, var(--k-ground));
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: var(--k-elev-2);
+}
+
+body[data-k-layout="rails"] .k-eg-line {
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-eg-line code {
+    font-family: var(--k-font-mono);
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-eg-why {
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-eg-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+body[data-k-layout="rails"] .k-eg-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    margin: 0;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-eg-btn:hover,
+body[data-k-layout="rails"] .k-eg-btn:focus-visible {
+    border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
+    color: var(--k-accent-bright);
+}
+
+body[data-k-layout="rails"] .k-eg-btn--primary {
+    border-color: color-mix(in srgb, var(--k-rose, var(--k-accent)) 60%, transparent);
+    background: color-mix(in srgb, var(--k-rose, var(--k-accent)) 18%, transparent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-eg-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}

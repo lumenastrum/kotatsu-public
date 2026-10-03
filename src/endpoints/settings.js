@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -10,6 +11,7 @@ import { SETTINGS_FILE } from '../constants.js';
 import { getConfigValue, generateTimestamp, removeOldBackups } from '../util.js';
 import { getAllUserHandles, getUserDirectories } from '../users.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
+import { applyOps, SettingsPatchError } from '../settings-merge.js';
 
 const ENABLE_EXTENSIONS = !!getConfigValue('extensions.enabled', true, 'boolean');
 const ENABLE_EXTENSIONS_AUTO_UPDATE = !!getConfigValue('extensions.autoUpdate', true, 'boolean');
@@ -201,6 +203,49 @@ function getLatestBackup(handle) {
     return path.join(userDirectories.backups, latestBackup);
 }
 
+/**
+ * Settings sync (docs/phone-v0.md §5.3): the identity of a settings.json version. A hash of the
+ * bytes rather than a counter inside the file, so it also notices snapshot restores, resets and
+ * hand edits, and leaves the file's bytes alone.
+ * @param {Buffer|string} bytes The file's contents.
+ * @returns {string} sha256, first 16 hex characters.
+ */
+export function hashSettingsBytes(bytes) {
+    return crypto.createHash('sha256').update(bytes).digest('hex').slice(0, 16);
+}
+
+/**
+ * Applies a client's ops to settings.json, synchronously (read → hash → apply → write → hash),
+ * so two patches can never interleave inside one Node process.
+ * @param {string} pathToSettings Absolute path to the user's settings.json.
+ * @param {string|null} base The hash the client last saw (from `/get` or its previous patch).
+ * @param {any} ops The client's op list (validated by `applyOps`).
+ * @returns {{ hash: string|null, foreign: boolean }} The new file's hash; `foreign` when the file
+ * on disk before this patch was not the version the client last saw.
+ * @throws {SettingsPatchError} For a malformed or refused op list (nothing is written).
+ */
+export function patchSettingsFile(pathToSettings, base, ops) {
+    /** @type {Buffer|null} */
+    let before = null;
+    try {
+        before = fs.readFileSync(pathToSettings);
+    } catch (error) {
+        if (error?.code !== 'ENOENT') throw error;
+    }
+    const beforeHash = before === null ? null : hashSettingsBytes(before);
+    const foreign = (typeof base === 'string' ? base : null) !== beforeHash;
+    // A corrupt file throws here, before anything is written: a patch never replaces bytes it
+    // could not read.
+    const current = before === null ? {} : JSON.parse(before.toString('utf8'));
+    const patched = applyOps(current, ops);
+    if (before !== null && ops.length === 0) {
+        return { hash: beforeHash, foreign };
+    }
+    const text = JSON.stringify(patched, null, 4);
+    writeFileAtomicSync(pathToSettings, text, 'utf8');
+    return { hash: hashSettingsBytes(Buffer.from(text, 'utf8')), foreign };
+}
+
 export const router = express.Router();
 
 router.post('/save', function (request, response) {
@@ -211,16 +256,41 @@ router.post('/save', function (request, response) {
         response.send({ result: 'ok' });
     } catch (err) {
         console.error(err);
-        response.send(err);
+        // Kotatsu (docs/phone-v0.md §5.3): upstream answered a failed write with 200 and the
+        // error object, so the client's `!result.ok` check never fired and the failure toast
+        // never showed.
+        response.status(500).send({ error: 'Settings could not be written' });
+    }
+});
+
+// Kotatsu settings sync (docs/phone-v0.md §5.2-5.3): only the leaves a client changed, merged
+// into whatever is on disk now, so a stale device no longer erases another device's changes.
+router.post('/patch', function (request, response) {
+    try {
+        const pathToSettings = path.join(request.user.directories.root, SETTINGS_FILE);
+        const { hash, foreign } = patchSettingsFile(pathToSettings, request.body?.base ?? null, request.body?.ops);
+        triggerAutoSave(request.user.profile.handle);
+        response.send({ ok: true, hash, foreign });
+    } catch (err) {
+        if (err instanceof SettingsPatchError) {
+            console.warn('Settings patch refused:', err.message);
+            return response.status(400).send({ ok: false, error: err.message });
+        }
+        console.error('Settings patch failed', err);
+        response.status(500).send({ ok: false, error: 'Settings could not be written' });
     }
 });
 
 // Wintermute's code
 router.post('/get', (request, response) => {
     let settings;
+    let settingsHash;
     try {
         const pathToSettings = path.join(request.user.directories.root, SETTINGS_FILE);
-        settings = fs.readFileSync(pathToSettings, 'utf8');
+        const bytes = fs.readFileSync(pathToSettings);
+        // Kotatsu settings sync: the version this client's base is, for `/patch`'s `foreign`.
+        settingsHash = hashSettingsBytes(bytes);
+        settings = bytes.toString('utf8');
     } catch (e) {
         return response.sendStatus(500);
     }
@@ -267,6 +337,7 @@ router.post('/get', (request, response) => {
 
     response.send({
         settings,
+        settingsHash,
         koboldai_settings,
         koboldai_setting_names,
         world_names,

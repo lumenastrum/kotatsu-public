@@ -100,6 +100,23 @@ const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
  * Module-scoped Claude caching configuration values.
  */
 const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
+
+/**
+ * Whether a custom Chat Completion URL is Kotatsu's built-in Claude bridge: a loopback host on
+ * the bridge's configured port. Read per call so a config change needs no restart of this file.
+ * @param {unknown} url Custom URL from the request
+ * @returns {boolean} True for the bridge's own listener
+ */
+function isKotatsuBridgeUrl(url) {
+    if (typeof url !== 'string' || !url) return false;
+    try {
+        const parsed = new URL(url);
+        const port = String(getConfigValue('kotatsu.claudeBridge.port', 5107, 'number'));
+        return ['127.0.0.1', 'localhost', '[::1]'].includes(parsed.hostname) && parsed.port === port;
+    } catch {
+        return false;
+    }
+}
 const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean');
 const cachingAtDepth = (() => {
     const value = getConfigValue('claude.cachingAtDepth', -1, 'number');
@@ -2522,6 +2539,15 @@ router.post('/generate', async function (request, response) {
             }
             if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM && /(?:^|\/)grok-4\.5(?:$|[-:])/.test(request.body.model)) {
                 bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+            }
+            // Kotatsu's built-in Claude bridge reads reasoning_effort per request (claude-bridge/
+            // runtime.js normalizeEffort). Scoped to the bridge's own loopback listener, so no other
+            // custom endpoint sees a new field. 'auto' arrives as nothing (config.yaml stays in
+            // charge); the client's "minimum" spellings are not Claude efforts and map to 'low'.
+            // baggage-audit-v0 D3.
+            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM && isKotatsuBridgeUrl(request.body.custom_url)) {
+                const effort = String(request.body.reasoning_effort);
+                bodyParams['reasoning_effort'] = ['min', 'minimal', 'none'].includes(effort) ? 'low' : effort;
             }
         }
 

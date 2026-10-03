@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 import express from 'express';
@@ -24,8 +25,9 @@ import { getConfigValue } from '../../util.js';
  * we did not publish. The configured `kotatsu.update.repo` is the release mirror;
  * this module refuses to fetch, and refuses to pull, unless the checkout's `origin`
  * actually points there. Two shapes count as a match:
- *   1. a slug (`lumenastrum/kotatsu-public`) appearing in origin's URL — covers
- *      https, ssh and `git@` forms without parsing three URL grammars; and
+ *   1. a GitHub slug (`lumenastrum/kotatsu-public`) matching origin's exact host
+ *      and repository path: HTTPS, `ssh://git@github.com[:22]/…`, or
+ *      `git@github.com:…`, with an optional `.git` suffix and trailing slash; and
  *   2. an absolute filesystem path equal to origin's, resolved — that is how the
  *      update drill stands a local bare repo in for the mirror, and how anyone
  *      testing a release without pushing to GitHub does the same.
@@ -115,45 +117,59 @@ function openGit() {
 }
 
 /**
- * Normalizes a git remote URL for slug matching: strips a trailing `.git`, folds
- * separators and case. Not a URL parser on purpose — see the guard note above.
- * @param {string} value Remote URL or path.
- * @returns {string} Comparable form.
+ * Reads a GitHub owner/name slug from a remote path, rejecting extra path segments.
+ * @param {string} remotePath Repository path, without a leading slash.
+ * @returns {string|null} Case-folded owner/name, or null for an unsupported path.
  */
-function normalizeRemote(value) {
-    return String(value ?? '')
-        .trim()
-        .replace(/\\/g, '/')
-        .replace(/\/+$/, '')
-        .replace(/\.git$/i, '')
-        .toLowerCase();
+function githubSlug(remotePath) {
+    const slug = remotePath.replace(/\/$/, '').replace(/\.git$/i, '');
+    return /^[a-z0-9-]+\/[a-z0-9_.-]+$/i.test(slug) ? slug.toLowerCase() : null;
 }
 
 /**
- * Whether `origin` is the configured release mirror.
+ * Whether `origin` is the configured release mirror. A slug trusts only GitHub's exact
+ * host and repository; a local mirror trusts only the configured resolved path.
  * @param {string} originUrl Origin's fetch URL as git reports it.
  * @param {string} repo Configured `kotatsu.update.repo`.
  * @returns {boolean}
  */
 function originIsMirror(originUrl, repo) {
-    if (!originUrl || !repo) {
-        return false;
-    }
+    const origin = String(originUrl ?? '').trim();
+    const mirror = String(repo ?? '').trim();
+    if (!origin || !mirror) return false;
 
-    // Local-mirror form: an absolute path, compared as a path so `mirror.git` matches
-    // `mirror.git` and Windows' separator and case rules are respected.
-    if (path.isAbsolute(repo)) {
-        const originPath = originUrl.trim().replace(/^file:\/\//i, '');
-        if (!path.isAbsolute(originPath)) {
+    if (path.isAbsolute(mirror)) {
+        try {
+            const fileUrl = /^file:/i.test(origin) ? new URL(origin) : null;
+            if (fileUrl?.search || fileUrl?.hash) return false;
+            const originPath = fileUrl ? fileURLToPath(fileUrl) : origin;
+            if (!path.isAbsolute(originPath)) return false;
+            const a = path.resolve(originPath);
+            const b = path.resolve(mirror);
+            return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
+        } catch {
             return false;
         }
-        const a = path.resolve(originPath);
-        const b = path.resolve(repo);
-        return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
     }
 
-    // Slug form: `owner/name` must appear in origin's URL.
-    return normalizeRemote(originUrl).includes(normalizeRemote(repo));
+    // The configured form is owner/name, not an arbitrary remote URL or path fragment.
+    // A configured `.git` suffix or trailing slash folds the same way origin's does.
+    const wanted = githubSlug(mirror);
+    if (!wanted) return false;
+    const scpPath = /^git@github\.com:(.+)$/i.exec(origin)?.[1];
+    if (scpPath) return githubSlug(scpPath) === wanted;
+
+    try {
+        const url = new URL(origin);
+        if (url.hostname.toLowerCase() !== 'github.com' || url.search || url.hash) return false;
+        const https = url.protocol === 'https:' && !url.port && !url.username && !url.password;
+        const ssh = url.protocol === 'ssh:' && (!url.port || url.port === '22')
+            && url.username === 'git' && !url.password;
+        if (!https && !ssh) return false;
+        return githubSlug(url.pathname.slice(1)) === wanted;
+    } catch {
+        return false;
+    }
 }
 
 /**

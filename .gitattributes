@@ -1,0 +1,5 @@
+# Byte-identity fixtures: never normalize line endings or anything else (CLAUDE.md, "Verify before done").
+tests/fixtures/** -text
+# Authors' presets kept byte-exact (docs/preset-bundle-v0.md); the shipped copies are proven byte-for-byte.
+default/presets-upstream/** -text
+default/content/presets/openai/** -text

@@ -15,7 +15,8 @@
  * Every rule is gated on `body[data-k-layout="rails"]`. Classic must stay
  * pixel-identical, so a rule that matches without that attribute is a bug. There
  * is exactly ONE exception, a `display: none` on a shell-only node — the
- * `#k-shell` default, which is what makes the skeleton inert under classic in
+ * `#k-shell` / `#k-topbar` default (one rule, two selectors: the bar is a body-level
+ * sibling of the shell, not a child), which is what makes the skeleton inert under classic in
  * the first place. There were two until settings v0.1 retired `#k-settings-scrim`
  * along with the drawer-rack reveal it backed (§4).
  *
@@ -32,8 +33,11 @@
    1. THE FRAME
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Inert under classic. This is the one ungated rule in the file. */
-#k-shell {
+/* Inert under classic. These are the only ungated rules in the file. #k-topbar
+   is a body-level sibling of #k-shell (see its rails rule below), so it needs its
+   own default: hiding the shell no longer hides the bar. */
+#k-shell,
+#k-topbar {
     display: none;
 }
 
@@ -70,6 +74,7 @@ body[data-k-layout="rails"] {
    exactly as they do over #sheld today. */
 body[data-k-layout="rails"] #k-shell {
     display: grid;
+    /* Row 1 is EMPTY: it is the space the fixed, body-level #k-topbar occupies. */
     grid-template-rows: var(--k-topbar-pill-height) minmax(0, 1fr);
     position: fixed;
     inset: 0;
@@ -94,13 +99,43 @@ body[data-k-layout="rails"] #k-shell {
     color: var(--k-text);
 }
 
+/* The top bar is NOT inside #k-shell. A fixed element is a stacking context, so
+   anything inside #k-shell is capped at z 30 against body-level siblings, and
+   extensions assume stock's layout, where the top bar sits at 3005 and their own
+   full-viewport or edge layers sit at 1000-2000 (measured: LandingPage appends an
+   `absolute; z-index: 2000` div to <body> that made the gear, model pill and branch
+   map unclickable). So the bar is a body-level sibling of the shell, fixed to the
+   top, on stock's 3005 rung: it paints and hit-tests above every body-level layer
+   at <=3004. Everything of ours that must cover it is higher (AN scrim 3999,
+   `#movingDivs > div` 4000, onboarding 4080, settings 4090, studio 4100, core
+   popups 9999, branch map 30000). It is still DOM-after #top-settings-holder
+   (also 3005, parked and hidden under rails), so a tie would resolve to us.
+   NOT the Popover API / top layer: that would put the bar above toasts and core
+   menus.
+
+   The shell's grid keeps `var(--k-topbar-pill-height)` as an empty first row and
+   #k-frame is pinned to row 2, so the frame still starts directly below the bar.
+   Geometry restates the shell's own hardening (see #k-shell above): <html> is
+   transformed, so it is the containing block for fixed descendants, and at <=1000px
+   body goes `position: fixed` and <html> collapses; `inset` would resolve against
+   nothing, so width/height are stated explicitly in dvw/dvh terms. `top`/`left`
+   are 0 against <html> at its (restored, see §7) viewport size. font-family and
+   color are restated because they used to be inherited from #k-shell. */
 body[data-k-layout="rails"] #k-topbar {
-    grid-row: 1;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 3005;
+    box-sizing: border-box;
     display: flex;
     align-items: stretch;
+    width: 100dvw;
+    height: var(--k-topbar-pill-height);
     min-width: 0;
     border-bottom: var(--k-frame-hairline) solid var(--k-frame-border-color);
     background: var(--k-surface-2);
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
 }
 
 body[data-k-layout="rails"] #k-frame {
@@ -171,7 +206,9 @@ body[data-k-layout="rails"] #sheld {
    blur to a ::before. Nothing in the frame trips it today (#options and the wand
    menu are Popper-anchored from OUTSIDE #sheld), so the blur is left alone here.
    Move it to ::before in shell-center.css the moment the centre column gains a
-   fixed-position child. */
+   fixed-position child.
+   DONE 10/2, for a different reason: the paint now lives on `#sheld::before`
+   (shell-center.css §2), so #chat no longer carries the blur or the containing block. */
 body[data-k-layout="rails"] #chat {
     max-height: none;
     min-height: 0;
@@ -205,7 +242,7 @@ body[data-k-layout="rails"] .k-slot-placeholder-title {
 }
 
 body[data-k-layout="rails"] .k-slot-placeholder-note {
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
 }
 
 /* The top bar's placeholder is a row, and it carries the only guaranteed way into
@@ -487,8 +524,9 @@ body[data-k-layout="rails"]:not([data-k-rail-right="collapsed"]) .k-rail-handle[
      to keep working under rails. Left alone.
    - `movingUI` gates style.css:5626-5635 and the drag machinery. Rails simply
      never invokes MovingUI (docs/shell-v0.md non-goals; recon 3.3 holds the
-     removal order), and #sheld is `position: static` here, so a saved inline
-     drag state has nothing to move. Left alone.
+     removal order), and #sheld's insets are pinned `auto !important` (it went
+     `position: relative` on 10/2 to anchor its paint pseudo — shell-center.css §2),
+     so a saved inline drag state has nothing to move. Left alone.
 
    Only one of the four named in the recon actually needed gating.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -547,6 +585,21 @@ body[data-k-layout="rails"].waifuMode #sheld {
 html:has(body[data-k-layout="rails"]) {
     height: 100vh;
     height: 100dvh;
+}
+
+/* Phone drawers (kotatsu-phone.css, <=600px): the open rail sheet and its scrim
+   are `position: fixed; top: 0` INSIDE #k-shell (z 30) and used to paint over the
+   top bar, because the bar lived in that same context. With the bar at root 3005
+   it would now float above the drawer's first 44px and hide its header. While a
+   drawer is open the bar drops to z 29, under the shell, which reproduces the old
+   order (scrim and sheet cover it). The shell is a transparent full-viewport box,
+   so the bar is not clickable then, but the scrim is up anyway and tapping it
+   closes the drawer. The extension-protection rung is back as soon as the drawer
+   closes. Selector mirrors the scrim's own in kotatsu-phone.css. */
+@media (max-width: 600px) {
+    body[data-k-layout="rails"]:is([data-k-rail-left="open"], [data-k-rail-right="open"]):not([data-k-view="home"]) #k-topbar {
+        z-index: 29;
+    }
 }
 
 /* ── View state: home runs full-bleed ────────────────────────────────────────

@@ -18,7 +18,7 @@ const THEMES_DIRECTORY = path.join(REPO_ROOT, 'public', 'themes');
 const TOKENS_PATH = path.join(REPO_ROOT, 'public', 'css', 'tokens.css');
 const SCHEMA_PATH = path.join(REPO_ROOT, 'public', 'kotatsu', 'theme', 'theme.schema.json');
 const ID_PATTERN = /^[a-z0-9-]+$/;
-const TEXT_TOKENS = ['--k-text', '--k-text-prose', '--k-text-muted', '--k-text-strong', '--k-accent'];
+const TEXT_TOKENS = ['--k-text', '--k-text-prose', '--k-text-dim', '--k-text-muted', '--k-text-strong', '--k-accent'];
 const SURFACE_TOKENS = ['--k-surface', '--k-surface-sunken'];
 const WCAG_AA_RATIO = 4.5;
 

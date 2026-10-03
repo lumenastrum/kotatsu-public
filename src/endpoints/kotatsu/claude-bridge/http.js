@@ -4,12 +4,11 @@ import http from 'node:http';
 
 import { detectSdkVersion } from './runtime.js';
 
-const LOG_PREFIX = '[Claude bridge]';
 
 /**
  * An error carrying the HTTP status the client should see.
  */
-class HttpError extends Error {
+export class HttpError extends Error {
     /**
      * @param {number} status HTTP status code
      * @param {string} message Error message
@@ -21,6 +20,23 @@ class HttpError extends Error {
 }
 
 /**
+ * A message made safe for an HTTP/1.1 reason phrase: printable ASCII only (Node throws on
+ * anything else), whitespace collapsed, capped so a stack trace can't become a header.
+ * @param {unknown} message Error message
+ * @returns {string} The phrase, or '' when there is nothing usable
+ */
+export function reasonPhrase(message) {
+    if (typeof message !== 'string') return '';
+    const typographic = { '\u2018': '\'', '\u2019': '\'', '\u201C': '"', '\u201D': '"', '\u2013': '-', '\u2014': '-', '\u2026': '...' };
+    const ascii = message
+        .replace(/[\u2018\u2019\u201C\u201D\u2013\u2014\u2026]/g, (c) => typographic[/** @type {keyof typeof typographic} */ (c)])
+        .replace(/[^\x20-\x7E]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return ascii.length > 240 ? `${ascii.slice(0, 237)}...` : ascii;
+}
+
+/**
  * Writes a JSON response with no-store caching.
  * @param {import('node:http').ServerResponse} response Response
  * @param {number} status HTTP status
@@ -29,7 +45,12 @@ class HttpError extends Error {
  */
 function jsonResponse(response, status, value) {
     const body = JSON.stringify(value);
-    response.writeHead(status, {
+    // On an error, the HTTP reason phrase carries the real message. Core relays a failed custom
+    // request to the browser as `fetchResponse.statusText` (chat-completions.js), so without this
+    // every bridge failure — "not signed in", "model not supported" — reached the toast as
+    // "Internal Server Error". docs/connections-v0.md C0.
+    const reason = status >= 400 ? reasonPhrase(/** @type {any} */ (value)?.error?.message) : '';
+    response.writeHead(status, ...(reason ? [reason] : []), {
         'Content-Type': 'application/json; charset=utf-8',
         'Content-Length': Buffer.byteLength(body),
         'Cache-Control': 'no-store',
@@ -129,6 +150,16 @@ async function writeWithBackpressure(response, value) {
 }
 
 /**
+ * Writes one JSON payload using the bridge's SSE framing.
+ * @param {import('node:http').ServerResponse} response Response
+ * @param {object} payload Event body
+ * @returns {Promise<boolean>} True when the response is still writable
+ */
+function writeSseEvent(response, payload) {
+    return writeWithBackpressure(response, `data: ${JSON.stringify(payload)}\n\n`);
+}
+
+/**
  * @returns {string} A completion id in the OpenAI shape
  */
 function completionId() {
@@ -174,17 +205,39 @@ function abortReason(error) {
 }
 
 /**
- * Creates the loopback OpenAI-compatible listener in front of the Claude runner.
- * @param {{config: object, runner: Function, logger?: object}} params Inputs
+ * Creates a loopback OpenAI-compatible listener in front of a runner. The Claude bridge is the
+ * original tenant; the ChatGPT bridge (`../chatgpt-bridge/`) reuses it with its own engine, a model
+ * lister that asks OpenAI, and a pre-auth route for its OAuth callback.
+ * @param {object} params Inputs
+ * @param {object} params.config Listener config (host, port, apiToken, models, defaultModel, timeouts, body cap)
+ * @param {Function} params.runner `(body, signal) => AsyncGenerator<{type, data}, {actualModel?, usage?}>`
+ * @param {object} [params.logger] Logger
+ * @param {string} [params.service] `/health` service name
+ * @param {string} [params.label] Name used in timeout and log messages
+ * @param {string} [params.ownedBy] `owned_by` on `/v1/models` entries
+ * @param {() => Promise<string[]>} [params.listModels] Model ids; defaults to `config.models`
+ * @param {() => object} [params.health] Extra `/health` fields
+ * @param {(request: http.IncomingMessage, response: http.ServerResponse, url: URL) => Promise<boolean>|boolean} [params.preAuth]
+ *   Handles a request before the bearer check; returns true when it answered it
  * @returns {object} The bridge handle (server, address, inFlight, listen, close)
  */
 export function createOpenAIBridge({
     config,
     runner,
     logger = console,
+    service = 'kotatsu-claude-bridge',
+    label = 'Claude',
+    ownedBy = 'claude-subscription',
+    listModels = async () => config.models,
+    // The SDK version this RUNNING process loaded. Reinstalling the SDK does not change it — only
+    // a restart does. /doctor compares this against what's on disk so a stale listener can't sit
+    // there rejecting new models with a confusing upstream 400.
+    health = () => ({ sdkVersion: config.sdkVersion ?? detectSdkVersion() }),
+    preAuth = null,
 }) {
     const requestControllers = new Set();
     let listeningAddress = null;
+    const logPrefix = `[${label} bridge]`;
 
     const server = http.createServer(async (request, response) => {
         const url = new URL(request.url ?? '/', 'http://127.0.0.1');
@@ -193,16 +246,13 @@ export function createOpenAIBridge({
         if (request.method === 'GET' && url.pathname === '/health') {
             return jsonResponse(response, 200, {
                 ok: true,
-                service: 'kotatsu-claude-bridge',
+                service,
                 inFlight: requestControllers.size,
                 model: config.defaultModel,
-                // The version this RUNNING process loaded. Reinstalling the SDK
-                // does not change it — only a restart does. /doctor compares
-                // this against what's on disk so a stale listener can't sit
-                // there rejecting new models with a confusing upstream 400.
-                sdkVersion: config.sdkVersion ?? detectSdkVersion(),
+                ...health(),
             });
         }
+        if (preAuth && await preAuth(request, response, url)) return;
         if (request.method === 'OPTIONS') {
             response.writeHead(204, { Allow: 'GET, POST, OPTIONS' });
             return response.end();
@@ -211,15 +261,21 @@ export function createOpenAIBridge({
             return jsonResponse(response, 401, openAIError('Unauthorized', 'authentication_error'));
         }
         if (request.method === 'GET' && url.pathname === '/v1/models') {
-            return jsonResponse(response, 200, {
-                object: 'list',
-                data: config.models.map((id) => ({
-                    id,
-                    object: 'model',
-                    created: 0,
-                    owned_by: 'claude-subscription',
-                })),
-            });
+            try {
+                const ids = await listModels();
+                return jsonResponse(response, 200, {
+                    object: 'list',
+                    data: ids.map((id) => ({
+                        id,
+                        object: 'model',
+                        created: 0,
+                        owned_by: ownedBy,
+                    })),
+                });
+            } catch (error) {
+                const status = error instanceof HttpError ? error.status : 502;
+                return jsonResponse(response, status, openAIError(error instanceof Error ? error.message : String(error), 'server_error'));
+            }
         }
         if (request.method !== 'POST' || url.pathname !== '/v1/chat/completions') {
             return jsonResponse(response, 404, openAIError('Not found'));
@@ -228,7 +284,7 @@ export function createOpenAIBridge({
         const requestAbort = new AbortController();
         requestControllers.add(requestAbort);
         const timeout = setTimeout(() => {
-            requestAbort.abort(new Error(`Claude request timed out after ${config.requestTimeoutMs}ms`));
+            requestAbort.abort(new Error(`${label} request timed out after ${config.requestTimeoutMs}ms`));
         }, config.requestTimeoutMs);
         timeout.unref?.();
 
@@ -250,38 +306,32 @@ export function createOpenAIBridge({
             const generator = runner({ ...body, model: requestedModel }, requestAbort.signal);
 
             if (body.stream === true) {
+                const writeCompletionChunk = (fields) => writeSseEvent(response, streamChunk({
+                    id,
+                    created,
+                    model: requestedModel,
+                    ...fields,
+                }));
                 response.writeHead(200, {
                     'Content-Type': 'text/event-stream; charset=utf-8',
                     'Cache-Control': 'no-cache, no-transform',
                     Connection: 'keep-alive',
                     'X-Accel-Buffering': 'no',
                 });
-                await writeWithBackpressure(response, `data: ${JSON.stringify(streamChunk({
-                    id,
-                    created,
-                    model: requestedModel,
-                    delta: { role: 'assistant' },
-                }))}\n\n`);
+                await writeCompletionChunk({ delta: { role: 'assistant' } });
 
                 const result = await consumeGenerator(generator, async (chunk) => {
                     const delta = chunk.type === 'reasoning'
                         ? { reasoning_content: chunk.data }
                         : { content: chunk.data };
-                    await writeWithBackpressure(response, `data: ${JSON.stringify(streamChunk({
-                        id,
-                        created,
-                        model: requestedModel,
-                        delta,
-                    }))}\n\n`);
+                    await writeCompletionChunk({ delta });
                 });
                 if (!requestAbort.signal.aborted) {
-                    await writeWithBackpressure(response, `data: ${JSON.stringify(streamChunk({
-                        id,
-                        created,
+                    await writeCompletionChunk({
                         model: result?.actualModel ?? requestedModel,
                         finishReason: 'stop',
                         usage: result?.usage,
-                    }))}\n\n`);
+                    });
                     await writeWithBackpressure(response, 'data: [DONE]\n\n');
                     response.end();
                 }
@@ -322,12 +372,12 @@ export function createOpenAIBridge({
 
             const status = error instanceof HttpError ? error.status : 500;
             const message = error instanceof Error ? error.message : String(error);
-            logger.error?.(`${LOG_PREFIX} ${message}`);
+            logger.error?.(`${logPrefix} ${message}`);
             if (!response.headersSent) {
                 return jsonResponse(response, status, openAIError(message, status >= 500 ? 'server_error' : 'invalid_request_error'));
             }
             if (!response.writableEnded && !response.destroyed) {
-                await writeWithBackpressure(response, `data: ${JSON.stringify(openAIError(message, 'server_error'))}\n\n`);
+                await writeSseEvent(response, openAIError(message, 'server_error'));
                 await writeWithBackpressure(response, 'data: [DONE]\n\n');
                 response.end();
             }

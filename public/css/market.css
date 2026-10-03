@@ -1,0 +1,441 @@
+/*
+ * Browse Characters — `<k-market>` inside `<k-library>` (docs/character-marketplace-v0.md §9).
+ *
+ * This sheet is small on purpose. The view is the gallery's second source, so its search box,
+ * selects, grid, poster card and empty states ARE the gallery's (`.k-lib-*`, css/library.css).
+ * Only what Browse Characters adds lives here: the view switch, the filter chips, the note
+ * line, the "In your library" mark, the NSFW blur, and the tail under the grid.
+ *
+ * No new tokens: everything is spent from the gallery's `--k-lib-*` set and the theme's
+ * `--k-*` tokens, so a pack that restyles the gallery restyles this with it.
+ *
+ * Load order: IMMEDIATELY after css/library.css and css/studio.css, because it sizes and
+ * extends `.k-lib-*` rules that must already be in the cascade. Rails-only, gated the same way.
+ */
+
+/* The view switch itself (Your cast / Browse Characters) is the gallery's, drawn by
+   `<k-library>` whether or not this view has ever been opened: its rules are in
+   css/library.css beside the filter tabs. */
+
+/* ── The element is a block that carries the gallery's vertical rhythm ──────── */
+
+body[data-k-layout="rails"] k-market {
+    display: flex;
+    flex-direction: column;
+    gap: var(--k-lib-block-gap);
+    min-width: 0;
+}
+
+/* ── Tools: the yes/no filters ──────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-mkt-chips {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-mkt-chip {
+    display: inline-flex;
+    align-items: center;
+    height: var(--k-lib-chrome-size);
+    margin: 0;
+    padding: 0 12px;
+    border: 1px solid var(--k-lib-hairline);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-lib-field-fill);
+    color: var(--k-text-muted);
+    font-family: inherit;
+    font-size: var(--k-lib-ui-size);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-mkt-chip:hover,
+body[data-k-layout="rails"] .k-mkt-chip:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-mkt-chip.is-on {
+    border-color: color-mix(in srgb, var(--k-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--k-accent) 20%, transparent);
+    color: var(--k-text-strong);
+}
+
+/* The NSFW switch is not a "must have" chip: it widens the question instead of narrowing it,
+   and it is remembered (Settings → System → Browse Characters). A checkbox in chip clothing,
+   set apart at the end of the row. */
+body[data-k-layout="rails"] .k-mkt-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: var(--k-lib-chrome-size);
+    margin: 0 0 0 auto;
+    padding: 0 12px 0 10px;
+    border: 1px dashed var(--k-lib-hairline);
+    border-radius: var(--k-radius-pill);
+    color: var(--k-text-muted);
+    font-size: var(--k-lib-ui-size);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+
+body[data-k-layout="rails"] .k-mkt-switch:hover,
+body[data-k-layout="rails"] .k-mkt-switch:focus-within {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-mkt-switch:has(input:checked) {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--k-rose, var(--k-accent)) 60%, transparent);
+    background: color-mix(in srgb, var(--k-rose, var(--k-accent)) 16%, transparent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-mkt-switch input {
+    margin: 0;
+    accent-color: var(--k-rose, var(--k-accent));
+}
+
+/* ── The note: how many ─────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-mkt-note {
+    margin: calc(var(--k-lib-block-gap) * -0.5) 0 0;
+    color: var(--k-text-faint);
+    font-size: var(--k-lib-micro-size);
+}
+
+body[data-k-layout="rails"] .k-mkt-note-count {
+    color: var(--k-text-muted);
+    font-family: var(--k-font-mono);
+}
+
+/* The one measured reason: NSFW is on and the site serves none here. A sentence and a door,
+   not an error — the grid underneath is still the grid. */
+body[data-k-layout="rails"] .k-mkt-nsfw-notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    margin: calc(var(--k-lib-block-gap) * -0.5) 0 0;
+    padding: 10px 14px;
+    border: 1px solid var(--k-lib-hairline);
+    border-left: 3px solid color-mix(in srgb, var(--k-rose, var(--k-accent)) 70%, transparent);
+    border-radius: var(--k-radius-md, 8px);
+    background: var(--k-lib-field-fill);
+    color: var(--k-text-muted);
+    font-size: var(--k-lib-ui-size);
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-mkt-nsfw-notice .k-mkt-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+/* ── The poster: what Browse Characters adds to the gallery's card ──────────── */
+
+/* The gallery's chrome sits top-right (heart, edit). This card has neither; its one mark goes
+   top-left, where it reads before the name does. */
+body[data-k-layout="rails"] .k-mkt-card-chrome {
+    right: auto;
+    left: 10px;
+}
+
+body[data-k-layout="rails"] .k-mkt-card-owned {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 24px;
+    padding: 0 9px;
+    border: 1px solid color-mix(in srgb, var(--k-accent) 45%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-lib-glass);
+    color: var(--k-accent-bright);
+    font-size: var(--k-lib-micro-size);
+    font-weight: 600;
+    white-space: nowrap;
+    backdrop-filter: blur(var(--k-blur-panel));
+}
+
+/* A portrait the site flags as NSFW stays blurred until the card is hovered or focused. The
+   scale hides the blur's soft edge inside the card's own clip. */
+body[data-k-layout="rails"] .k-mkt-card--blur .k-lib-card-portrait {
+    filter: blur(22px);
+    transform: scale(1.12);
+}
+
+body[data-k-layout="rails"] .k-mkt-card--blur:hover .k-lib-card-portrait,
+body[data-k-layout="rails"] .k-mkt-card--blur:focus-visible .k-lib-card-portrait {
+    filter: none;
+    transform: none;
+}
+
+/* ── The tail under the grid: next page, its progress, its failure ──────────── */
+
+body[data-k-layout="rails"] .k-mkt-tail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 8px 0 24px;
+    color: var(--k-text-muted);
+    font-size: var(--k-lib-ui-size);
+    text-align: center;
+}
+
+/* ── The preview sheet: read the card before you bring it home ──────────────── */
+
+/* The overlay wears the card studio's scrim and sheet rules (css/studio.css §1): same
+   z rung, same centring, same fill. The two never coexist. Only the width and the
+   insides are this sheet's own. */
+body[data-k-layout="rails"] k-market-preview {
+    display: contents;
+}
+
+body[data-k-layout="rails"] .k-studio-sheet.k-mkt-preview {
+    width: min(820px, calc(100vw - 64px));
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-head {
+    align-items: stretch;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-art {
+    flex: 0 0 auto;
+    width: 112px;
+    aspect-ratio: var(--k-lib-card-ratio);
+    overflow: hidden;
+    border: 1px solid var(--k-lib-card-border);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-lib-card-fill);
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-portrait {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-art .k-lib-card-initials {
+    font-size: 32px;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-copy {
+    flex: 1 1 auto;
+    justify-content: center;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-copy .k-mkt-card-owned {
+    align-self: flex-start;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-tagline {
+    margin: 0;
+    color: var(--k-text-muted);
+    font-size: var(--k-lib-sub-size);
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-close {
+    align-self: flex-start;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: calc(var(--k-studio-pad) * 0.8) var(--k-studio-pad);
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-notice {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--k-rose) 45%, transparent);
+    border-radius: var(--k-radius-lg);
+    color: var(--k-text);
+    font-size: var(--k-lib-ui-size);
+}
+
+/* `flex: none` on both rows: the body is a flex column that scrolls, and a row with
+   `overflow: hidden` (the gallery's tag list) would otherwise be shrunk to nothing to make
+   room for a long greeting. */
+body[data-k-layout="rails"] .k-mkt-preview-tags {
+    flex: none;
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-chips {
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* A chip that states a fact is not a control: no hover, no hand. */
+body[data-k-layout="rails"] .k-mkt-chip.is-static {
+    height: 26px;
+    padding: 0 10px;
+    color: var(--k-text);
+    font-weight: 500;
+    cursor: default;
+}
+
+body[data-k-layout="rails"] .k-mkt-chip.is-static:hover {
+    border-color: var(--k-lib-hairline);
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-greeting {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-greeting-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-greeting-head .k-lib-sectiontitle {
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-lib-micro-size);
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--k-lib-hairline);
+    border-radius: var(--k-radius-round);
+    background: var(--k-lib-field-fill);
+    color: var(--k-text-muted);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-step:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-step:not(:disabled):hover,
+body[data-k-layout="rails"] .k-mkt-preview-step:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+/* The card's own words, as text. `pre-wrap` keeps its paragraphs; nothing is rendered. */
+body[data-k-layout="rails"] .k-mkt-preview-text {
+    margin: 0;
+    padding: 14px 16px;
+    border: 1px solid var(--k-lib-hairline);
+    border-radius: var(--k-radius-lg);
+    background: color-mix(in srgb, var(--k-surface-2) 40%, transparent);
+    color: var(--k-text);
+    font-family: var(--k-font-prose, inherit);
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-fold {
+    border-top: 1px solid var(--k-lib-hairline);
+    padding-top: 10px;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-fold-title {
+    color: var(--k-text-muted);
+    font-size: var(--k-lib-section-size);
+    font-weight: 700;
+    letter-spacing: var(--k-lib-eyebrow-track);
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-fold[open] .k-mkt-preview-fold-title {
+    margin-bottom: 8px;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex: 0 0 auto;
+    padding: calc(var(--k-studio-pad) * 0.6) var(--k-studio-pad);
+    border-top: 1px solid var(--k-studio-hairline);
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-outcome {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--k-lib-ui-size);
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-outcome.is-good {
+    color: var(--k-accent-bright);
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-outcome.is-bad {
+    color: var(--k-rose-bright);
+}
+
+/* ── The 18+ line ───────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-mkt-gate .k-lib-empty-sub {
+    max-width: 56ch;
+    line-height: 1.6;
+}
+
+body[data-k-layout="rails"] .k-mkt-link {
+    color: var(--k-accent-bright);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+/* An <a> wearing the gallery's button: the button rules assume a <button>. */
+body[data-k-layout="rails"] a.k-lib-btn {
+    text-decoration: none;
+}

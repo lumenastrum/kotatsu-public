@@ -363,9 +363,672 @@ body[data-k-layout="rails"] .k-rt-history-detail {
     border-left: 1px solid color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
 }
 
+/* ── Category colour (receipt chart v0) ─────────────────────────────────────────
+   The ONE place a category meets a colour slot. Order = receipt-tracker-view.js's
+   RECEIPT_CATEGORIES = tokens.css `--k-viz-N`: change one, change all three. Each
+   carrier gets `--k-rc-cat` and paints only through it, so the rail bar, the popup's
+   segments, swatches and entry bars can never disagree. */
+
+body[data-k-layout="rails"] [data-k-cat="chat"] { --k-rc-cat: var(--k-viz-1); }
+body[data-k-layout="rails"] [data-k-cat="preset"] { --k-rc-cat: var(--k-viz-2); }
+body[data-k-layout="rails"] [data-k-cat="character"] { --k-rc-cat: var(--k-viz-3); }
+body[data-k-layout="rails"] [data-k-cat="world"] { --k-rc-cat: var(--k-viz-4); }
+body[data-k-layout="rails"] [data-k-cat="persona"] { --k-rc-cat: var(--k-viz-5); }
+body[data-k-layout="rails"] [data-k-cat="other"] { --k-rc-cat: var(--k-viz-other); }
+
+/* The rail's own bars wear their category too, so the popup's legend reads back onto
+   the rail at a glance. */
+body[data-k-layout="rails"] .k-rt-entry[data-k-cat] .k-rt-bar-fill {
+    background-color: var(--k-rc-cat);
+}
+
+/* ── "Chart" buttons — live card header + expanded history row ─────────────────── */
+
+body[data-k-layout="rails"] .k-rt-chart-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    padding: 3px 9px;
+    border: 0;
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-inset-fill);
+    box-shadow: inset 0 0 0 1px var(--k-inset-border);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-tr-quiet-size);
+    font-weight: 600;
+    color: var(--k-text-muted);
+    cursor: pointer;
+    transition: color var(--k-motion), background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rt-chart-button:hover {
+    color: var(--k-text-strong);
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-rt-chart-button:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: 1px;
+}
+
+/* In the live card the button rides the header's right edge — after the time, which
+   already holds `margin-left: auto`; with no time recorded it takes the push itself. */
+body[data-k-layout="rails"] .k-rt-card-header .k-rt-chart-button {
+    margin-left: auto;
+}
+
+body[data-k-layout="rails"] .k-rt-card-header .k-rt-meta-time + .k-rt-chart-button {
+    margin-left: 0;
+}
+
+body[data-k-layout="rails"] .k-rt-history-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* ── <k-receipt-chart> — the popup ─────────────────────────────────────────────
+   Lives inside core's DISPLAY popup (`wider`), a body-level dialog, so the rails scope
+   still applies. Text wears text tokens only; colour is carried by marks + swatches
+   (dataviz: "text never wears the series colour"). */
+
+body[data-k-layout="rails"] k-receipt-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+    padding: 2px 4px 8px;
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
+    text-align: left;
+}
+
+body[data-k-layout="rails"] .k-rc-head {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-rc-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+body[data-k-layout="rails"] .k-rc-title {
+    margin: 0;
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight, 500);
+    font-size: 20px;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-rc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-rc-hero {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+body[data-k-layout="rails"] .k-rc-hero-value {
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-rc-hero-unit {
+    font-size: 14px;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-rc-hero-sub {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rc-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-rc-heading {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rc-caption {
+    margin: -4px 0 0;
+    font-size: 11.5px;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rc-quiet {
+    margin: 0;
+    font-size: 12.5px;
+    font-style: italic;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rc-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-rc-strong {
+    color: var(--k-text-strong);
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] .k-rc-swatch {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    background-color: var(--k-rc-cat);
+}
+
+/* Emphasis: pointing at a source dims every OTHER mark and row. Opacity, not a grey
+   repaint, so the de-emphasised marks keep their identity. */
+body[data-k-layout="rails"] k-receipt-chart .is-dim {
+    opacity: 0.28;
+}
+
+body[data-k-layout="rails"] .k-rc-seg,
+body[data-k-layout="rails"] .k-rc-legend-row,
+body[data-k-layout="rails"] .k-rc-row {
+    transition: opacity var(--k-motion);
+}
+
+/* The stacked bar: one row, segments in fixed category order, 2px surface gaps, 4px
+   rounded ends on the whole bar. `min-width` keeps a real-but-tiny source visible —
+   its exact share is in the legend row directly underneath. */
+body[data-k-layout="rails"] .k-rc-stack {
+    display: flex;
+    gap: 2px;
+    height: 16px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+body[data-k-layout="rails"] .k-rc-seg {
+    flex: 1 1 0;
+    min-width: 3px;
+    background-color: var(--k-rc-cat);
+}
+
+body[data-k-layout="rails"] .k-rc-legend {
+    display: flex;
+    flex-direction: column;
+}
+
+body[data-k-layout="rails"] .k-rc-legend-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 5em 6.5em 4.5em;
+    align-items: center;
+    gap: 10px;
+    min-height: 28px;
+    padding: 0 8px;
+    border-radius: var(--k-radius-md);
+    font-size: 13px;
+    outline: none;
+}
+
+body[data-k-layout="rails"] .k-rc-legend-row:not(.k-rc-legend-head):hover,
+body[data-k-layout="rails"] .k-rc-legend-row:focus-visible {
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-rc-legend-head {
+    min-height: 22px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rc-legend-head .k-rc-num {
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rc-legend-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: var(--k-text-strong);
+}
+
+/* Entry bars, assembly order. Name | bar | tokens | share — the numbers are always
+   printed, so the bar is a reading aid, never the only carrier of the value. */
+body[data-k-layout="rails"] .k-rc-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+body[data-k-layout="rails"] .k-rc-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(120px, 34%) minmax(60px, 1fr) 5.5em 3.5em;
+    align-items: center;
+    gap: 10px;
+    min-height: 26px;
+    padding: 0 8px;
+    border-radius: var(--k-radius-md);
+    font-size: 12.5px;
+    outline: none;
+}
+
+body[data-k-layout="rails"] .k-rc-row:hover,
+body[data-k-layout="rails"] .k-rc-row:focus-visible {
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-rc-row-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-rc-row-label {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--k-text-strong);
+}
+
+/* Thin horizontal bar anchored at the left baseline: square at the start, 4px round
+   at the data end. The faint track is the scale (the largest entry fills it). */
+body[data-k-layout="rails"] .k-rc-track {
+    display: block;
+    height: 8px;
+    border-radius: 0 4px 4px 0;
+    background-color: color-mix(in srgb, var(--k-text) 6%, transparent);
+}
+
+/* `min-width` keeps a real 3-token prompt visible; a true zero renders NO fill at all
+   (k-receipt-chart.js), so the floor can never make nothing look like a little. */
+body[data-k-layout="rails"] .k-rc-fill {
+    display: block;
+    height: 100%;
+    min-width: 2px;
+    border-radius: 0 4px 4px 0;
+    background-color: var(--k-rc-cat);
+}
+
+body[data-k-layout="rails"] .k-rc-row-empty {
+    grid-column: 2 / -1;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--k-text-faint);
+}
+
+/* The fold for `emptyAnchor` rows — a quiet text button, not a chrome pill: it hides
+   rows, it doesn't do anything. */
+body[data-k-layout="rails"] .k-rc-empty-toggle {
+    align-self: flex-start;
+    margin: 0;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: var(--k-radius-md);
+    background: none;
+    font-family: var(--k-font-ui);
+    font-size: 12px;
+    font-style: italic;
+    color: var(--k-text-faint);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-rc-empty-toggle:hover {
+    color: var(--k-text-muted);
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-rc-empty-toggle:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: -1px;
+}
+
+/* Per-mark tooltip, CSS-only: the row is the hit target (bigger than the bar), shown
+   on hover AND keyboard focus. Above the row, right-aligned, so it never covers the
+   name being read. */
+body[data-k-layout="rails"] .k-rc-tip {
+    position: absolute;
+    right: 8px;
+    bottom: calc(100% + 4px);
+    z-index: 2;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 300px;
+    padding: 8px 10px;
+    border-radius: var(--k-radius-md);
+    background-color: var(--k-surface-2);
+    box-shadow: var(--k-elev-2), inset 0 0 0 1px var(--k-inset-border);
+    font-size: 12px;
+    color: var(--k-text-muted);
+    pointer-events: none;
+}
+
+body[data-k-layout="rails"] .k-rc-row:hover .k-rc-tip,
+body[data-k-layout="rails"] .k-rc-row:focus-visible .k-rc-tip {
+    display: flex;
+}
+
+body[data-k-layout="rails"] .k-rc-tip-title {
+    font-weight: 600;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-rc-tip-muted {
+    font-style: italic;
+    color: var(--k-text-faint);
+}
+
+/* ── History heading + Trend button ─────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-rt-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--k-tr-gap);
+}
+
+/* ── <k-receipt-trend> — the growth popup ──────────────────────────────────────
+   Reuses the chart's head/hero/section/legend vocabulary (.k-rc-*); only the plot and
+   the table are its own (.k-rtr-*). */
+
+body[data-k-layout="rails"] k-receipt-trend {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+    padding: 2px 4px 8px;
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
+    text-align: left;
+}
+
+body[data-k-layout="rails"] .k-rtr-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+body[data-k-layout="rails"] .k-rtr-toolbar .k-rc-empty-toggle {
+    align-self: center;
+}
+
+body[data-k-layout="rails"] .k-rtr-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+}
+
+body[data-k-layout="rails"] .k-rtr-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 3px 6px;
+    border-radius: var(--k-radius-md);
+    font-size: 12.5px;
+    color: var(--k-text-strong);
+    cursor: default;
+    outline: none;
+    transition: opacity var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rtr-legend-item:hover,
+body[data-k-layout="rails"] .k-rtr-legend-item:focus-visible {
+    background-color: var(--k-ghost-hover);
+}
+
+/* The plot: a y-label gutter + the area. The area holds three recessive gridlines and
+   the columns; the bottom gutter is room for the message labels. */
+body[data-k-layout="rails"] .k-rtr-plot {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 8px;
+    height: 260px;
+    padding-bottom: 22px;
+}
+
+body[data-k-layout="rails"] .k-rtr-yaxis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin: -7px 0;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rtr-area {
+    position: relative;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-rtr-grid {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: color-mix(in srgb, var(--k-text) 8%, transparent);
+}
+
+body[data-k-layout="rails"] .k-rtr-grid.is-top { top: 0; }
+body[data-k-layout="rails"] .k-rtr-grid.is-mid { top: 50%; }
+
+body[data-k-layout="rails"] .k-rtr-grid.is-base {
+    bottom: 0;
+    background-color: color-mix(in srgb, var(--k-text) 22%, transparent);
+}
+
+body[data-k-layout="rails"] .k-rtr-cols {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 3px;
+}
+
+body[data-k-layout="rails"] .k-rtr-cols.is-dense {
+    gap: 1px;
+}
+
+/* Each column is the full plot height (the hit target), its bar anchored at the base. */
+body[data-k-layout="rails"] .k-rtr-col {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    flex: 1 1 0;
+    min-width: 2px;
+    max-width: 36px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 4px 4px 0 0;
+    background: none;
+    cursor: pointer;
+    outline: none;
+}
+
+body[data-k-layout="rails"] .k-rtr-col:hover,
+body[data-k-layout="rails"] .k-rtr-col:focus-visible {
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-rtr-col:focus-visible {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k-accent) 55%, transparent);
+}
+
+/* Segments stack bottom → top in category order; 4px rounded data end on top only. A
+   1px surface seam between segments is drawn as an inset shadow, not a gap, so the
+   column's height stays EXACTLY its token total. */
+body[data-k-layout="rails"] .k-rtr-bar {
+    display: flex;
+    flex-direction: column-reverse;
+    min-height: 1px;
+    border-radius: 4px 4px 0 0;
+    overflow: hidden;
+}
+
+body[data-k-layout="rails"] .k-rtr-seg {
+    flex: 1 1 0;
+    min-height: 0;
+    background-color: var(--k-rc-cat);
+    transition: opacity var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rtr-seg + .k-rtr-seg {
+    box-shadow: inset 0 -1px 0 var(--k-surface);
+}
+
+body[data-k-layout="rails"] k-receipt-trend .is-dim {
+    opacity: 0.25;
+}
+
+body[data-k-layout="rails"] .k-rtr-xlabel {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--k-text-faint);
+}
+
+/* Column tooltip: top of the plot, opening AWAY from the nearer edge. */
+body[data-k-layout="rails"] .k-rtr-tip {
+    position: absolute;
+    top: 0;
+    z-index: 2;
+    display: none;
+    flex-direction: column;
+    gap: 3px;
+    width: max-content;
+    min-width: 190px;
+    max-width: 260px;
+    padding: 8px 10px;
+    border-radius: var(--k-radius-md);
+    background-color: var(--k-surface-2);
+    box-shadow: var(--k-elev-2), inset 0 0 0 1px var(--k-inset-border);
+    font-size: 12px;
+    text-align: left;
+    color: var(--k-text-muted);
+    pointer-events: none;
+}
+
+body[data-k-layout="rails"] .k-rtr-tip.is-right { left: calc(100% + 6px); }
+body[data-k-layout="rails"] .k-rtr-tip.is-left { right: calc(100% + 6px); }
+
+body[data-k-layout="rails"] .k-rtr-col:hover .k-rtr-tip,
+body[data-k-layout="rails"] .k-rtr-col:focus-visible .k-rtr-tip {
+    display: flex;
+}
+
+body[data-k-layout="rails"] .k-rtr-tip-row {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr) auto 3.2em;
+    align-items: center;
+    gap: 7px;
+}
+
+body[data-k-layout="rails"] .k-rtr-tip-label {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--k-text);
+}
+
+/* Table view — exact values, the chart's accessible twin. */
+body[data-k-layout="rails"] .k-rtr-table-wrap {
+    overflow-x: auto;
+}
+
+body[data-k-layout="rails"] .k-rtr-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+
+body[data-k-layout="rails"] .k-rtr-table th,
+body[data-k-layout="rails"] .k-rtr-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid color-mix(in srgb, var(--k-text) 8%, transparent);
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-rtr-table thead th {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-rtr-table thead th .k-rc-swatch {
+    display: inline-block;
+    margin-right: 5px;
+    vertical-align: -1px;
+}
+
+body[data-k-layout="rails"] .k-rtr-table tbody th {
+    text-align: left;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--k-text-strong);
+}
+
 @media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"] .k-rtr-seg,
+    body[data-k-layout="rails"] .k-rtr-legend-item,
     body[data-k-layout="rails"] .k-rt-bar-fill,
-    body[data-k-layout="rails"] .k-rt-history-row {
+    body[data-k-layout="rails"] .k-rt-history-row,
+    body[data-k-layout="rails"] .k-rt-chart-button,
+    body[data-k-layout="rails"] .k-rc-seg,
+    body[data-k-layout="rails"] .k-rc-legend-row,
+    body[data-k-layout="rails"] .k-rc-row {
         transition: none;
+    }
+}
+
+/* Forced colours: swatches + bars would vanish into system colours; the text labels
+   already carry everything, so give the marks a visible system ink instead. */
+@media (forced-colors: active) {
+    body[data-k-layout="rails"] .k-rc-seg,
+    body[data-k-layout="rails"] .k-rc-fill,
+    body[data-k-layout="rails"] .k-rtr-seg,
+    body[data-k-layout="rails"] .k-rc-swatch {
+        forced-color-adjust: none;
+        background-color: CanvasText;
     }
 }

@@ -168,6 +168,39 @@ export function buildAssistantPrefillContinuationPrompt(prefill) {
 }
 
 /**
+ * Keeps a preset's in-chat placement. Only the system messages BEFORE the conversation starts
+ * become the system prompt; a system message that appears later (post-history instructions, a
+ * prompt injected at a chat depth) is turned into user-turn text where it stands and merged into
+ * the neighbouring user message. This is what SillyTavern's own Claude converter does
+ * (`convertClaudeMessages`), and it is how a depth-0 instruction stays next to the last message
+ * instead of being hoisted to the top. Messages with no late system content come back unchanged.
+ * @param {NormalizedMessage[]} messages Normalized messages
+ * @returns {NormalizedMessage[]} Messages with late system content folded into user turns
+ */
+export function foldLateSystemMessages(messages) {
+    const firstTurn = messages.findIndex((message) => message.role !== 'system');
+    if (firstTurn === -1 || !messages.slice(firstTurn).some((message) => message.role === 'system')) {
+        return messages;
+    }
+    /** @type {Array<NormalizedMessage & {late?: boolean}>} */
+    const out = messages.slice(0, firstTurn);
+    for (const message of messages.slice(firstTurn)) {
+        const late = message.role === 'system';
+        if (late && !message.content.trim()) continue;
+        const next = late ? { role: 'user', content: message.content, late: true } : { ...message };
+        const prev = out.length > firstTurn ? out.at(-1) : null;
+        if (prev && prev.role === 'user' && next.role === 'user' && (prev.late || next.late)) {
+            prev.content = `${prev.content}\n\n${next.content}`;
+            if (next.images) prev.images = [...(prev.images ?? []), ...next.images];
+            prev.late = prev.late && next.late;
+            continue;
+        }
+        out.push(next);
+    }
+    return out.map(({ late, ...message }) => message);
+}
+
+/**
  * Splits normalized messages into replayable history plus the turn to send now.
  * @param {NormalizedMessage[]} messages Normalized messages
  * @returns {{history: NormalizedMessage[], current: NormalizedMessage, shape: string, assistantPrefillLength?: number}} Split
@@ -232,6 +265,22 @@ function buildUserContent(message) {
 }
 
 /**
+ * The session fields shared by every replayed transcript entry.
+ * @param {object} meta Session metadata
+ * @returns {object} Transcript metadata
+ */
+function transcriptMetadata(meta) {
+    return {
+        userType: 'external',
+        entrypoint: 'cli',
+        cwd: meta.cwd,
+        sessionId: meta.sessionId,
+        version: meta.version,
+        gitBranch: meta.gitBranch,
+    };
+}
+
+/**
  * Builds a transcript entry for a replayed user turn.
  * @param {{message: NormalizedMessage, parentUuid: string|null, meta: object}} params Entry inputs
  * @returns {object} Transcript entry
@@ -246,12 +295,7 @@ function buildUserEntry({ message, parentUuid, meta }) {
         uuid: randomUUID(),
         timestamp: new Date().toISOString(),
         permissionMode: meta.permissionMode,
-        userType: 'external',
-        entrypoint: 'cli',
-        cwd: meta.cwd,
-        sessionId: meta.sessionId,
-        version: meta.version,
-        gitBranch: meta.gitBranch,
+        ...transcriptMetadata(meta),
     };
 }
 
@@ -290,12 +334,7 @@ function buildAssistantEntry({ message, parentUuid, meta, model }) {
         type: 'assistant',
         uuid: randomUUID(),
         timestamp: new Date().toISOString(),
-        userType: 'external',
-        entrypoint: 'cli',
-        cwd: meta.cwd,
-        sessionId: meta.sessionId,
-        version: meta.version,
-        gitBranch: meta.gitBranch,
+        ...transcriptMetadata(meta),
     };
 }
 
@@ -403,7 +442,8 @@ function renderTranscript(messages) {
  * @param {{model: string, scratchDir: string, sdkVersion: string, useResume?: boolean}} options Selection inputs
  * @returns {object} The selected prompt, system prompt, resume session and shape
  */
-export function selectPromptPath(messages, { model, scratchDir, sdkVersion, useResume = true }) {
+export function selectPromptPath(rawMessages, { model, scratchDir, sdkVersion, useResume = true }) {
+    const messages = foldLateSystemMessages(rawMessages);
     if (!useResume) {
         const folded = renderTranscript(messages);
         return {

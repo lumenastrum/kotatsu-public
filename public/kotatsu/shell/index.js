@@ -23,11 +23,13 @@ import {
 } from '../branches/k-branch-map.js';
 import { branchStore, initBranchStore } from '../branches/store.js';
 import { initMetrics } from '../metrics/index.js';
+import { initMarketSettings } from '../market/settings.js';
 import {
     closeLibrary,
     installLandingPicker,
     libraryState,
     openLibrary,
+    showLibraryView,
 } from '../library/k-library.js';
 import { initKotatsuPromptList } from '../prompts/k-prompt-list.js';
 import { initReceiptTracker } from '../prompts/k-receipt-tracker.js';
@@ -48,6 +50,14 @@ import {
     setLayout,
 } from './persistence.js';
 import { getRailStates, setRail, toggleRail } from './rail-collapse.js';
+import { installBaggage } from '../settings/baggage.js';
+import { installBridgeLink } from '../connections/bridge.js';
+import { mountBridgeCard } from '../connections/k-bridge-card.js';
+import { mountProviderCards } from '../connections/k-provider-cards.js';
+import { mountConnectionMore } from '../connections/k-connection-more.js';
+import { installPresetBinding } from '../connections/preset-binding.js';
+import { installComposerReason } from '../connections/composer-reason.js';
+import { installOnboarding } from '../onboarding/k-onboarding.js';
 import { applyLayout, currentLayout, defineLayout, hasLayout } from './registry.js';
 
 export { setLayout } from './persistence.js';
@@ -132,6 +142,31 @@ export async function initKotatsuShell() {
     // panel wears .k-docked.
     initPresetDock();
 
+    // Baggage audit v0 (docs/baggage-audit-v0.md). Registration only: the Extras migration
+    // listens for EXTENSIONS_FIRST_LOAD (after saved extension settings merge, before any
+    // extension activates), the option pruning waits for APP_READY, and the connection
+    // attributes the baggage sheet keys on follow core's connection events.
+    installBaggage();
+
+    // Connections v0 slice C0 (docs/connections-v0.md): what the frontend knows about the built-in
+    // Claude Code bridge — the `data-k-bridge` attribute, the first-run connect, the doctor toast.
+    installBridgeLink();
+    // D3: presets shape the prompt, connections pick the model — unbind once per install.
+    installPresetBinding();
+    // Artboard 3's first-run half: the composer says why Claude Code isn't ready, and links the fix.
+    installComposerReason();
+    // C1–C3: the Claude Code card, "Your API keys", then saved connections + more ways, first in
+    // core's #rm_api_block (the Connection tab adopts it). The Connection Manager inserts its
+    // profile block at the top of that block when extensions activate — after this — so all three
+    // re-seat once the app is ready.
+    const seatConnectionCards = () => {
+        mountBridgeCard();
+        mountProviderCards();
+        mountConnectionMore();
+    };
+    seatConnectionCards();
+    eventSource.on(event_types.APP_READY, seatConnectionCards);
+
     // Receipt tracker v0 (docs/receipt-tracker-v0.md). Registration only, same as the store
     // above: this just guarantees <k-receipt-tracker> is defined. k-tab-rail.js's Trackers
     // page is what actually creates one, as an ordinary Lit child, when that tab renders.
@@ -150,6 +185,16 @@ export async function initKotatsuShell() {
     // reason the wardrobe picker is: the drawer markup exists from first paint, and the
     // control has to be a view of `power_user` before anything can change it.
     installLandingPicker();
+
+    // Character marketplace v0 slice E (docs/character-marketplace-v0.md §7): the two Browse
+    // Characters checkboxes. Binding only; `<k-market>` is still imported on the first switch
+    // to Browse and never before, so a gallery that never browses never loads it.
+    initMarketSettings();
+
+    // Onboarding v0 slice O1 (docs/onboarding-v0.md): Mikan-chan's welcome tour. Registration
+    // only — it opens at APP_READY when core's first-run gate (or a mid-tour reload) left
+    // `power_user.kotatsu_onboarding` asking for it, and answers Settings → System's replay door.
+    installOnboarding();
 
     const requested = readStoredLayout();
     const target = hasLayout(requested) ? requested : DEFAULT_LAYOUT;
@@ -214,6 +259,8 @@ export async function initKotatsuShell() {
     targetWindow.kotatsu.library = {
         open: openLibrary,
         close: closeLibrary,
+        // `show('browse')` = open on Browse Characters, the tour tile's door (marketplace §9).
+        show: showLibraryView,
         get state() {
             return libraryState();
         },

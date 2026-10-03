@@ -49,6 +49,7 @@ import { event_types, eventSource } from '../../scripts/events.js';
 import { power_user } from '../../scripts/power-user.js';
 import { PROSE_SCALE_EVENT } from '../theme/prose-scale.js';
 import { VARIANT_AXIS_EVENT } from '../../scripts/message-rows.js';
+import { EXT_DOCK_EVENT, getExtDockInsets } from './ext-dock.js';
 import {
     RAIL_SIDES,
     mirrorRails,
@@ -73,6 +74,20 @@ export const EXPAND_RAIL_EVENT = 'k-rail-expand';
 
 /** Class on both handles; `css/shell-frame.css` §5 styles them. */
 const HANDLE_CLASS = 'k-rail-handle';
+
+/**
+ * The phone regime (blue-hour-polish-v0 §8). At or under this width the tracks
+ * are zero (css/kotatsu-phone.css) and an open rail is an overlay sheet, so the
+ * module adds three phone-only affordances: a scrim that closes it, a glyph that
+ * says what the rail holds (a chevron in a header row reads as "back"), and a
+ * close after a chat is picked — the overlay was a trip to the chat list, not a
+ * place to stay. 600 rather than the 1000 core's mobile sheet uses: a 900-wide
+ * portrait monitor keeps docked rails exactly as before.
+ */
+const PHONE_QUERY = '(max-width: 600px)';
+
+/** Class on the phone scrim; css/kotatsu-phone.css shows it only under PHONE_QUERY. */
+const SCRIM_CLASS = 'k-rail-scrim';
 
 /** Which rail each side's handle drives, for `aria-controls`. */
 const RAIL_SLOT_ID = { left: 'k-rail-left', right: 'k-rail-right' };
@@ -188,6 +203,67 @@ function buildChevron() {
 }
 
 /**
+ * The phone glyph: what the rail HOLDS, since on a phone the handle sits in the
+ * chat header where a chevron reads as navigation. Left = the chat list (lines),
+ * right = the prompt dock (sliders). Hidden off-phone by the sheet.
+ * @param {'left' | 'right'} side
+ * @returns {SVGSVGElement}
+ */
+function buildPhoneGlyph(side) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('class', 'k-rail-handle__phone');
+    svg.setAttribute('viewBox', '0 0 20 20');
+    svg.setAttribute('width', '18');
+    svg.setAttribute('height', '18');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '1.6');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', side === 'left'
+        ? 'M4 5.5h12M4 10h12M4 14.5h8'
+        : 'M4 6h5m4 0h3M4 14h2m4 0h6M11 4v4M8 12v4');
+    svg.appendChild(path);
+    return svg;
+}
+
+/** @returns {boolean} Whether the phone regime is live. */
+function isPhone() {
+    return typeof window.matchMedia === 'function' && window.matchMedia(PHONE_QUERY).matches;
+}
+
+/**
+ * Closes whichever rails are open as phone overlays. Goes through toggleRail so a
+ * suppressed side writes its session override exactly as a handle tap would — no
+ * preference is touched.
+ * @returns {void}
+ */
+function closePhoneOverlays() {
+    if (!isPhone()) return;
+    for (const side of RAIL_SIDES) {
+        if (effectiveState(side) === 'open') toggleRail(side);
+    }
+}
+
+/** @type {HTMLElement|null} */
+let scrim = null;
+
+/** @type {(() => void) | null} */
+let onChatChanged = null;
+
+/** @type {((event: Event) => void) | null} */
+let onRailPick = null;
+
+/**
+ * Rows in the left rail that mean "take me there". CHAT_CHANGED covers a real switch; a tap on
+ * the chat that is already open fires nothing, and the sheet must still get out of the way.
+ */
+const PICK_SELECTOR = '.k-rl-row--chat, .k-rl-row--branch';
+
+/**
  * One slim handle.
  *
  * A real `<button>`: it takes focus in tab order and activates on Enter or Space
@@ -203,6 +279,7 @@ function buildHandle(side) {
     button.dataset.kRailSide = side;
     button.setAttribute('aria-controls', RAIL_SLOT_ID[side]);
     button.appendChild(buildChevron());
+    button.appendChild(buildPhoneGlyph(side));
     button.addEventListener('click', () => toggleRail(side));
     return button;
 }
@@ -284,7 +361,10 @@ function computeSuppression() {
     const leftWidth = preferred.left === 'open' ? readTokenPx(styles, '--k-rail-left-width') : 0;
     const rightWidth = preferred.right === 'open' ? readTokenPx(styles, '--k-rail-right-width') : 0;
     const next = { left: false, right: false };
-    let center = window.innerWidth - leftWidth - rightWidth;
+    // A docked extension panel owns its edge (ext-dock.js), so the frame — and the usable
+    // width — is the viewport minus the insets.
+    const dock = getExtDockInsets();
+    let center = window.innerWidth - dock.left - dock.right - leftWidth - rightWidth;
     if (center >= minCenter) return next;
     if (rightWidth > 0) {
         next.right = true;
@@ -555,6 +635,11 @@ export function installRailCollapse() {
             handles.set(side, handle);
             shell.appendChild(handle);
         }
+        scrim = document.createElement('div');
+        scrim.className = SCRIM_CLASS;
+        scrim.setAttribute('aria-hidden', 'true');
+        scrim.addEventListener('click', closePhoneOverlays);
+        shell.appendChild(scrim);
     } else {
         console.warn('[Kotatsu shell] #k-shell is missing; rail handles were not mounted. The keyboard toggles still work.');
     }
@@ -582,6 +667,16 @@ export function installRailCollapse() {
     // off #chat whenever an axis value changes, and only then.
     onVariantChange = () => updateSuppression();
     document.addEventListener(VARIANT_AXIS_EVENT, onVariantChange);
+    // A foreign panel docking or leaving an edge changes the usable width the same way.
+    document.addEventListener(EXT_DOCK_EVENT, onVariantChange);
+    onChatChanged = closePhoneOverlays;
+    eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+    onRailPick = (event) => {
+        if (event.target instanceof Element && event.target.closest(PICK_SELECTOR)) {
+            closePhoneOverlays();
+        }
+    };
+    document.getElementById(RAIL_SLOT_ID.left)?.addEventListener('click', onRailPick);
 }
 
 /**
@@ -617,8 +712,19 @@ export function uninstallRailCollapse() {
     }
     if (onVariantChange) {
         document.removeEventListener(VARIANT_AXIS_EVENT, onVariantChange);
+        document.removeEventListener(EXT_DOCK_EVENT, onVariantChange);
         onVariantChange = null;
     }
+    if (onChatChanged) {
+        eventSource.removeListener(event_types.CHAT_CHANGED, onChatChanged);
+        onChatChanged = null;
+    }
+    if (onRailPick) {
+        document.getElementById(RAIL_SLOT_ID.left)?.removeEventListener('click', onRailPick);
+        onRailPick = null;
+    }
+    scrim?.remove();
+    scrim = null;
     if (resizeFrame) {
         cancelAnimationFrame(resizeFrame);
         resizeFrame = 0;

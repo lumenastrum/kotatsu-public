@@ -123,6 +123,20 @@ const LEGACY_BANNER_PARTS = Object.freeze([
 const LEGACY_SUBHEADER_PATTERN = /^<\s*(.+?)\s*>$/;
 /** A cleaned banner label matching this marks its section exclusive (decision 6). */
 const PICK_ONE_PATTERN = /\bpick one\b/i;
+/**
+ * A row that says it is one of a set, in its own name: `[Core] User: Agency-Lite (Pick 1)`.
+ * Sola V2's convention — no header row, just the tag on each option.
+ */
+const PICK_ONE_TAG = /\(\s*pick\s*(?:1|one)\s*\)/i;
+/** Label for a tagged run whose names share nothing to call it by. */
+const PICK_ONE_FALLBACK_LABEL = 'Pick one';
+/**
+ * A banner may carry glyphs in front of its divider (`🧘=Pick Internal States👇 ====`). At most
+ * this many codepoints are looked through, and only non-ASCII, non-letter, non-digit ones.
+ */
+const MAX_BANNER_LEAD_POINTS = 8;
+/** …and only when the name also ENDS in a run of the divider this long: `🧘=foo` is a name. */
+const MIN_BANNER_CLOSING_RUN = 3;
 
 /** U+FE0E / U+FE0F — variation selectors, stripped before a badge glyph is measured. */
 const VARIATION_SELECTORS = new RegExp('[' + String.fromCodePoint(0xFE0E, 0xFE0F) + ']', 'g');
@@ -136,6 +150,8 @@ const MAX_SLUG_LENGTH = 64;
  * @property {string} identifier
  * @property {string} [name] Display label.
  * @property {boolean} [marker] Engine-supplied slot (data-contract §4.2).
+ * @property {boolean} [system_prompt] One of core's own prompts: the markers, plus Main,
+ *   Auxiliary, Post-History and Enhance Definitions.
  */
 
 /**
@@ -163,6 +179,8 @@ const MAX_SLUG_LENGTH = 64;
  * @property {string} [name] The raw `prompts[].name` (search reads this, not `label`).
  * @property {boolean} [enabled] SNAPSHOT of the order entry — see the note on `deriveSections`.
  * @property {boolean} [marker]
+ * @property {boolean} [builtin] One of core's built-in prompts that is not a marker (Main,
+ *   Auxiliary, Post-History, Enhance Definitions). Never swept into a radio group.
  * @property {string} [sigil]
  * @property {string} [closeIdentifier] Span only: the closing row's prompt.
  * @property {boolean} [exclusive] Group only.
@@ -223,6 +241,7 @@ const MAX_SLUG_LENGTH = 64;
  * @property {boolean} enabled
  * @property {string} name
  * @property {boolean} marker
+ * @property {boolean} builtin
  * @property {Classification} cls
  */
 
@@ -368,6 +387,68 @@ function buildLegacyBannerPattern(extraPatterns) {
 }
 
 /**
+ * Matches a legacy banner, with or without glyphs in front of its divider.
+ *
+ * `=Pick one POV 👇 ====` matches as it always did. `🧘=Pick Internal States👇 ====` matches too:
+ * the shortest run of leading glyphs is looked through, but only when the name also closes with
+ * a run of the same divider, so a badge in front of a single `=` stays an ordinary name.
+ * Freaky Frankenstein 5.4 named two of its banners this way and they were read as rows, which
+ * let the banner before them run on to the end of the list.
+ * @param {string} rawName Prompt name.
+ * @param {RegExp} pattern The banner alternation, anchored at the start.
+ * @returns {{lead: string, body: string, token: string}|null} `lead` is the glyphs in front,
+ *   `body` the name from the divider on, `token` the matched divider.
+ */
+function matchLegacyBanner(rawName, pattern) {
+    const name = String(rawName ?? '').trim();
+    const direct = pattern.exec(name);
+    if (direct) return { lead: '', body: name, token: direct[0] };
+
+    const points = Array.from(name);
+    let lead = '';
+    for (let i = 0; i < points.length && i < MAX_BANNER_LEAD_POINTS; i++) {
+        const point = points[i];
+        if ((point.codePointAt(0) ?? 0) < 0x80 || /[\p{L}\p{Nd}]/u.test(point)) return null;
+        lead += point;
+        const body = name.slice(lead.length).trimStart();
+        const match = pattern.exec(body);
+        if (!match) continue;
+        const divider = new Set(Array.from(match[0]));
+        let run = 0;
+        for (let at = body.length - 1; at >= 0 && divider.has(body[at]); at--) run++;
+        return run >= MIN_BANNER_CLOSING_RUN ? { lead, body, token: match[0] } : null;
+    }
+    return null;
+}
+
+/**
+ * Names a run of rows tagged "(Pick 1)" by what their names share: the leading words
+ * (`User: Agency-Lite` / `User: Embellishment` → `User`), else the trailing ones
+ * (`Anti-Slop` / `Lite Anti-Slop` → `Anti-Slop`). A leading `[Tag]` and the pick tag itself are
+ * not part of the name.
+ * @param {string[]} names Raw prompt names, two or more.
+ * @returns {string} The label; {@link PICK_ONE_FALLBACK_LABEL} when they share nothing.
+ */
+function labelTaggedRun(names) {
+    const words = names.map((name) => {
+        const tagAt = name.search(PICK_ONE_TAG);
+        return (tagAt === -1 ? name : name.slice(0, tagAt))
+            .replace(/^\s*\[[^\]]*\]\s*/, '')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+    });
+    const shortest = Math.min(...words.map(list => list.length));
+    let head = 0;
+    while (head < shortest && words.every(list => list[head] === words[0][head])) head++;
+    let tail = 0;
+    while (tail < shortest - head && words.every(list => list[list.length - 1 - tail] === words[0][words[0].length - 1 - tail])) tail++;
+    const shared = head > 0 ? words[0].slice(0, head) : words[0].slice(words[0].length - tail);
+    const label = shared.join(' ').replace(/[\s:–—-]+$/, '').trim();
+    return label || PICK_ONE_FALLBACK_LABEL;
+}
+
+/**
  * Legacy label cleaning: strip the matched leading token, then a trailing run built only from
  * that token's own characters (Nemo's algorithm — the run is symmetric in CLASS, not length,
  * as `=Pick one POV 👇 ================` shows). A `+` glued straight onto the divider run is
@@ -442,6 +523,7 @@ function makeRowNode(row, parentId, mint, depth) {
     };
     if (row.cls.sigil) node.sigil = row.cls.sigil;
     if (row.marker) node.marker = true;
+    if (row.builtin) node.builtin = true;
     return node;
 }
 
@@ -492,13 +574,61 @@ function buildSigilBody(rows, parentId, mint) {
 
 /**
  * Promotes plain leaves to options inside an exclusive container.
+ *
+ * An engine marker is never promoted. Chat History and Char Description are slots, not choices,
+ * and a preset that leaves them under a "pick one" banner (Freaky Frankenstein 5.4 does) must not
+ * have them switched off by somebody picking a colour.
+ *
+ * A derived container (`swept`) also leaves core's built-in prompts alone. Its membership is
+ * positional, everything up to the next header, and Post-History Instructions parked after the
+ * last real option is the same accident a marker is. An authored override names its members, so
+ * there a built-in is an option if the author listed it.
  * @param {SectionNode[]} children Direct children.
+ * @param {boolean} [swept] Whether membership came from position rather than an authored list.
  * @returns {void}
  */
-function promoteOptions(children) {
+function promoteOptions(children, swept = true) {
     for (const child of children) {
-        if (child.kind === 'leaf') child.kind = 'option';
+        if (child.kind !== 'leaf' || child.marker === true) continue;
+        if (swept && child.builtin === true) continue;
+        child.kind = 'option';
     }
+}
+
+/**
+ * Builds the leaves of one legacy or flat body, gathering each run of two or more adjacent rows
+ * tagged "(Pick 1)" into an exclusive group of its own. The group has no header row: nothing in
+ * the preset is one, so its key is its tree id and its label is what the names share.
+ *
+ * Not done inside a container that is already exclusive; one tagged row alone is just a row.
+ * @param {OrderRow[]} rows Rows of the body, in order.
+ * @param {string} parentId Owning container id.
+ * @param {(parentId: string, prefix: string, slug: string) => string} mint Id minter.
+ * @param {boolean} exclusiveParent Whether the owning container is itself a radio group.
+ * @returns {SectionNode[]}
+ */
+function buildLegacyBody(rows, parentId, mint, exclusiveParent) {
+    /** @type {SectionNode[]} */
+    const nodes = [];
+    for (let start = 0; start < rows.length;) {
+        let end = start;
+        if (!exclusiveParent) {
+            while (end < rows.length && !rows[end].marker && PICK_ONE_TAG.test(rows[end].name)) end++;
+        }
+        if (end - start < 2) {
+            nodes.push(makeLegacyLeaf(rows[start], parentId, mint, 0));
+            start++;
+            continue;
+        }
+        const run = rows.slice(start, end);
+        const label = labelTaggedRun(run.map(row => row.name));
+        const id = mint(parentId, 'g', slugify(label));
+        const children = run.map(row => makeLegacyLeaf(row, id, mint, 0));
+        promoteOptions(children);
+        nodes.push({ kind: 'group', id, label, depth: 0, exclusive: true, children });
+        start = end;
+    }
+    return nodes;
 }
 
 /**
@@ -602,29 +732,29 @@ function buildLegacySections(rows, bannerPattern) {
     const mint = makeIdMint();
     /** @type {Section[]} */
     const sections = [];
-    const isBanner = (/** @type {OrderRow} */ row) => bannerPattern.test(row.name.trim());
+    const isBanner = (/** @type {OrderRow} */ row) => matchLegacyBanner(row.name, bannerPattern) !== null;
     for (const run of splitOn(rows, isBanner)) {
         if (!run.header && run.rows.length === 0) continue;
         let label = '';
         if (run.header) {
-            const match = bannerPattern.exec(run.header.name.trim());
-            label = cleanLegacyLabel(run.header.name, match ? match[0] : '');
+            const match = matchLegacyBanner(run.header.name, bannerPattern);
+            // Glyphs in front of the divider stay in front of the label, glued the way an
+            // inside-the-divider badge already is (`=🚫Pick one NSFW Toggle` → `🚫Pick one …`).
+            label = match ? `${match.lead}${cleanLegacyLabel(match.body, match.token)}` : '';
         }
         const section = makeSection(run.header, mint, label);
         section.exclusive = Boolean(run.header) && PICK_ONE_PATTERN.test(label);
         for (const groupRun of splitOn(run.rows, row => LEGACY_SUBHEADER_PATTERN.test(row.name.trim()))) {
             if (!groupRun.header) {
-                for (const row of groupRun.rows) {
-                    section.children.push(makeLegacyLeaf(row, section.id, mint, 0));
-                }
+                section.children.push(...buildLegacyBody(groupRun.rows, section.id, mint, section.exclusive));
                 continue;
             }
             const header = groupRun.header;
             const match = LEGACY_SUBHEADER_PATTERN.exec(header.name.trim());
             const groupLabel = match ? match[1] : header.name.trim();
             const id = mint(section.id, 'g', slugify(groupLabel));
-            const children = groupRun.rows.map(row => makeLegacyLeaf(row, id, mint, 0));
             const exclusive = PICK_ONE_PATTERN.test(groupLabel);
+            const children = buildLegacyBody(groupRun.rows, id, mint, exclusive);
             if (exclusive) promoteOptions(children);
             section.children.push({
                 kind: 'group',
@@ -664,11 +794,13 @@ function makeLegacyLeaf(row, parentId, mint, depth) {
         enabled: row.enabled,
     };
     if (row.marker) node.marker = true;
+    if (row.builtin) node.builtin = true;
     return node;
 }
 
 /**
- * Flat tier: one honest section holding every row in order.
+ * Flat tier: one honest section holding every row in order (a tagged "(Pick 1)" run still
+ * becomes its group — the tag does not need a banner to mean what it says).
  * @param {OrderRow[]} rows Resolved order rows.
  * @returns {Section[]}
  */
@@ -676,7 +808,7 @@ function buildFlatSections(rows) {
     if (rows.length === 0) return [];
     const mint = makeIdMint();
     const section = makeSection(null, mint);
-    section.children = rows.map(row => makeLegacyLeaf(row, section.id, mint, 0));
+    section.children = buildLegacyBody(rows, section.id, mint, false);
     return [section];
 }
 
@@ -710,7 +842,7 @@ function buildOverrideSections(bag, rows) {
             claimed.add(identifier);
             children.push(makeRowNode(row, sectionId, mint, 0));
         }
-        if (spec.exclusive) promoteOptions(children);
+        if (spec.exclusive) promoteOptions(children, false);
         sections.push({
             id: sectionId,
             label: spec.label,
@@ -962,6 +1094,7 @@ export function deriveSections({ prompts, promptOrder, override = null, extraPat
             enabled: entry.enabled === true,
             name,
             marker: prompt.marker === true,
+            builtin: prompt.system_prompt === true && prompt.marker !== true,
             cls: classifySigil(name),
         });
     }
@@ -978,7 +1111,7 @@ export function deriveSections({ prompts, promptOrder, override = null, extraPat
     for (const row of rows) {
         const type = row.cls.type;
         if (type === 'banner' || type === 'subgroup' || type === 'span-open' || type === 'span-close') sigilSignals++;
-        if (bannerPattern.test(row.name.trim())) legacySignals++;
+        if (matchLegacyBanner(row.name, bannerPattern)) legacySignals++;
     }
 
     /** @type {'override'|'sigil'|'legacy'|'flat'} */

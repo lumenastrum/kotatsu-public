@@ -34,6 +34,11 @@
  * {@link exclusiveGroups}, which is the only authority on membership; this module adds the
  * per-container key (`identifier ?? id`, slice B's collapse-key rule, so a rename keeps the
  * state) and the member → group index.
+ *
+ * The default has one exception ({@link radioEnforcement}): a group that already has more than
+ * one member on is not a radio group right now, whatever its banner says, and is left `open`
+ * until the reader enforces it. Enforcing it by default turned one click into "switch off
+ * everything else under this banner" on a preset whose "pick one" banner ran on past its options.
  */
 
 import { exclusiveGroups } from './sections.js';
@@ -43,6 +48,12 @@ import { exclusiveGroups } from './sections.js';
  * container keys — the same one-write-per-toggle shape slice B's collapse state uses.
  */
 export const RELAX_KEY_PREFIX = 'kotatsu.promptList.relaxed.';
+
+/**
+ * `accountStorage` key prefix for groups the reader enforced by hand: the only way an `open`
+ * group becomes enforced. Same shape as {@link RELAX_KEY_PREFIX}.
+ */
+export const ENFORCE_KEY_PREFIX = 'kotatsu.promptList.enforced.';
 
 /** Preset name stand-in, identical to slice B's, so both keys land in the same bucket. */
 const UNNAMED_PRESET = '(unnamed)';
@@ -99,6 +110,43 @@ const UNNAMED_PRESET = '(unnamed)';
 export function relaxStorageKey(presetName) {
     const name = typeof presetName === 'string' && presetName.trim() ? presetName.trim() : UNNAMED_PRESET;
     return `${RELAX_KEY_PREFIX}${name}`;
+}
+
+/**
+ * The `accountStorage` key for one preset's hand-enforced group set.
+ * @param {string} presetName Preset name from `serviceSettings.preset_settings_openai`.
+ * @returns {string} Storage key.
+ */
+export function enforceStorageKey(presetName) {
+    const name = typeof presetName === 'string' && presetName.trim() ? presetName.trim() : UNNAMED_PRESET;
+    return `${ENFORCE_KEY_PREFIX}${name}`;
+}
+
+/**
+ * Whether one exclusive group is being enforced right now.
+ *
+ * - `relaxed`: the reader turned enforcement off for it. Their choice wins.
+ * - `enforced`: the reader turned it on by hand, or nothing says otherwise and the group is in a
+ *   state a radio group can be in (at most one member on).
+ * - `open`: nobody chose, and more than one member is already on. It is treated as plain toggles,
+ *   because enforcing it would make the next click switch the others off.
+ *
+ * Read live, never cached: a group drops back to `enforced` by itself once it is down to one.
+ * @param {RadioGroup} group The group.
+ * @param {(identifier: string) => boolean} isEnabled Live enabled state.
+ * @param {object} [choices] The reader's stored choices for this preset.
+ * @param {Set<string>} [choices.relaxed] Keys relaxed by hand.
+ * @param {Set<string>} [choices.enforced] Keys enforced by hand.
+ * @returns {'enforced'|'relaxed'|'open'} The state.
+ */
+export function radioEnforcement(group, isEnabled, { relaxed, enforced } = {}) {
+    if (relaxed?.has(group.key)) return 'relaxed';
+    if (enforced?.has(group.key)) return 'enforced';
+    let on = 0;
+    for (const member of Array.isArray(group.members) ? group.members : []) {
+        if (isEnabled(member) === true && ++on > 1) return 'open';
+    }
+    return 'enforced';
 }
 
 /**

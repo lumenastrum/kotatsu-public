@@ -1,8 +1,8 @@
 /**
  * Kotatsu reading size — reader-polish v0 finding 1.
  *
- * One user setting, `power_user.kotatsu_prose_scale` ('s' | 'm' | 'l' | 'xl'), written to the
- * document as `body[data-k-prose-scale]`. The sheets do the rest: css/kotatsu-chrome.css §2/§3
+ * One user setting, `power_user.kotatsu_prose_scale` ('auto' | 's' | 'm' | 'l' | 'xl'), written
+ * to the document as `body[data-k-prose-scale]`. The sheets do the rest: css/kotatsu-chrome.css §2/§3
  * turn the attribute into `--k-prose-scale` and multiply `.mes_text` / `.mes_reasoning`'s
  * font-size by it; css/shell-center.css multiplies the rails reading column by the same number.
  * So the type grows and the measure holds at ~75 characters per line. That is the whole point:
@@ -15,8 +15,11 @@
  * and no pack note. Core's `font_scale` stays what it is — the whole-UI knob.
  *
  * DOM + persistence in one small module, the shell/rail-collapse.js shape: reads `power_user`,
- * writes one body attribute, saves through core's debounce. `m` is the default and writes NO
- * attribute, so a settings blob that never heard of the key renders byte-identically. No
+ * writes one body attribute, saves through core's debounce. `auto` is the default and writes NO
+ * attribute: the sheet (kotatsu-chrome.css §3) reads Large on a monitor-wide viewport and Medium
+ * on a laptop, with no JS in the loop — rails re-resolve on the resize that crosses the line, as
+ * they already do (blue-hour-polish-v0 §B1, Andres's call 2026-10-01). Picking a size, Medium
+ * included, writes it and pins it. No
  * first-paint cache is needed: the attribute lands at the `firstLoadInit()` seam and again on
  * SETTINGS_LOADED, both long before `printMessages()` builds the first row.
  *
@@ -27,7 +30,7 @@ import { saveSettingsDebounced } from '../../script.js';
 import { event_types, eventSource } from '../../scripts/events.js';
 import { power_user } from '../../scripts/power-user.js';
 
-/** @typedef {'s' | 'm' | 'l' | 'xl'} ProseScale */
+/** @typedef {'auto' | 's' | 'm' | 'l' | 'xl'} ProseScale */
 
 /** The `power_user` key. */
 export const PROSE_SCALE_KEY = 'kotatsu_prose_scale';
@@ -40,17 +43,18 @@ export const PROSE_SCALE_SELECT_ID = 'kotatsu_prose_scale';
  */
 export const PROSE_SCALE_EVENT = 'k-prose-scale-change';
 /** @type {ProseScale} */
-export const PROSE_SCALE_DEFAULT = 'm';
+export const PROSE_SCALE_DEFAULT = 'auto';
 
 /**
  * The known sizes and their labels, in select order. The numbers themselves live in the sheet
- * (kotatsu-chrome.css §3: 0.933 / 1 / 1.2 / 1.333 over `--mainFontSize`) — this module never
- * writes a style.
+ * (kotatsu-chrome.css §3: 0.933 / 1 / 1.2 / 1.333 over `--mainFontSize`, and the `auto`
+ * breakpoint) — this module never writes a style.
  * @type {ReadonlyArray<readonly [ProseScale, string]>}
  */
 export const PROSE_SCALES = Object.freeze([
+    ['auto', 'Auto — Large on monitors, Medium on laptops'],
     ['s', 'Small'],
-    ['m', 'Medium (default)'],
+    ['m', 'Medium'],
     ['l', 'Large'],
     ['xl', 'Extra large'],
 ]);

@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { SecretManager, SECRET_KEYS } from '../../secrets.js';
 
 /**
- * The fixed secret id the bridge owns. It is fixed on purpose: the shipped "Claude"
+ * The fixed secret id the bridge owns. It is fixed on purpose: the shipped "Claude Code"
  * connection profile carries `secret-id: kotatsu-ccrp`, so the same id has to mean the
  * same token on a fresh install and on an install that already had one.
  */
@@ -41,11 +41,12 @@ function readCustomSecrets(directories) {
  * pull. Only a missing (or too-short, i.e. never really provisioned) entry is written.
  * @param {import('../../../users.js').UserDirectoryList} directories User directories
  * @param {string|null} [token] Token to store when one has to be written; a fresh one is minted when null
+ * @param {{id?: string, label?: string}} [secret] Which named secret (the ChatGPT bridge uses its own)
  * @returns {{value: string, adopted: boolean, active: boolean, label: string}} The token in force for this user
  */
-export function ensureBridgeSecret(directories, token = null) {
+export function ensureBridgeSecret(directories, token = null, { id = BRIDGE_SECRET_ID, label: defaultLabel = BRIDGE_SECRET_LABEL } = {}) {
     const entries = readCustomSecrets(directories);
-    const existing = entries.find(entry => entry?.id === BRIDGE_SECRET_ID);
+    const existing = entries.find(entry => entry?.id === id);
 
     if (existing && typeof existing.value === 'string' && existing.value.length >= MIN_TOKEN_LENGTH) {
         return {
@@ -57,9 +58,9 @@ export function ensureBridgeSecret(directories, token = null) {
     }
 
     const value = token ?? generateBridgeToken();
-    const label = existing?.label || BRIDGE_SECRET_LABEL;
+    const label = existing?.label || defaultLabel;
     const stored = new SecretManager(directories)
-        .upsertSecretById(BRIDGE_SECRET_KEY, BRIDGE_SECRET_ID, value, label);
+        .upsertSecretById(BRIDGE_SECRET_KEY, id, value, label);
 
     return {
         value: stored.value,
@@ -79,19 +80,20 @@ export function ensureBridgeSecret(directories, token = null) {
  * it (never rotate) and is warned about, rather than being quietly overwritten.
  * @param {import('../../../users.js').UserDirectoryList[]} directoriesList User directories
  * @param {object} [logger] Logger
+ * @param {{id?: string, label?: string, name?: string}} [secret] Which named secret, and the bridge's name for logs
  * @returns {{token: string, users: object[]}} The bearer token and a per-user summary
  */
-export function ensureBridgeToken(directoriesList, logger = console) {
+export function ensureBridgeToken(directoriesList, logger = console, { id = BRIDGE_SECRET_ID, label = BRIDGE_SECRET_LABEL, name = 'Claude' } = {}) {
     const users = [];
     let token = null;
 
     for (const directories of directoriesList) {
         try {
-            const result = ensureBridgeSecret(directories, token);
+            const result = ensureBridgeSecret(directories, token, { id, label });
             if (token === null) {
                 token = result.value;
             } else if (result.value !== token) {
-                logger.warn?.(`[Claude bridge] ${directories.root} already has a different ${BRIDGE_SECRET_ID} token; leaving it alone. That user's client will need the first user's token, or delete the secret to have it re-provisioned.`);
+                logger.warn?.(`[${name} bridge] ${directories.root} already has a different ${id} token; leaving it alone. That user's client will need the first user's token, or delete the secret to have it re-provisioned.`);
             }
             users.push({
                 root: directories.root,
@@ -100,13 +102,13 @@ export function ensureBridgeToken(directoriesList, logger = console) {
                 matchesBearer: result.value === token,
             });
         } catch (error) {
-            logger.warn?.(`[Claude bridge] Could not provision the ${BRIDGE_SECRET_ID} secret for ${directories?.root}:`, error);
+            logger.warn?.(`[${name} bridge] Could not provision the ${id} secret for ${directories?.root}:`, error);
             users.push({ root: directories?.root, error: error instanceof Error ? error.message : String(error) });
         }
     }
 
     if (token === null) {
-        throw new Error(`Could not read or write the ${BRIDGE_SECRET_ID} secret for any user directory`);
+        throw new Error(`Could not read or write the ${id} secret for any user directory`);
     }
 
     return { token, users };

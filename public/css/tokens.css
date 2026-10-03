@@ -103,6 +103,21 @@
     --k-danger-deep: color-mix(in srgb, var(--k-danger) 42%, var(--k-scrim));
     --k-success-deep: color-mix(in srgb, var(--k-success) 42%, var(--k-scrim));
 
+    /* ── Data viz (categorical) ──────────────────────────────────────────
+       Fixed-order chart slots, first consumer the receipt chart (css/receipt-tracker.css
+       binds category N → slot N). Dark-surface steps of the dataviz reference palette
+       (blue, orange, aqua, yellow, magenta), ORDER IS THE CVD-SAFETY MECHANISM — never
+       re-order or cycle. Validated (dataviz validate_palette.js, 10/2) on Blue Hour
+       #171b2c and Sparkle #23182e: all checks PASS, worst adjacent CVD ΔE 8.4, normal
+       19.3, every slot ≥ 3:1. A light pack overrides all six with the light steps
+       (Natsumikan does). `-other` is a neutral bucket, not a series. */
+    --k-viz-1: #3987e5;
+    --k-viz-2: #d95926;
+    --k-viz-3: #199e70;
+    --k-viz-4: #c98500;
+    --k-viz-5: #d55181;
+    --k-viz-other: #7d8190;
+
     /* ── Controls ────────────────────────────────────────────────────────
        Core computes the checkbox tick as the luminance inverse of the body
        TEXT color (style.css:94-97), so any theme with light body text gets a
@@ -215,6 +230,20 @@
     --k-motion: var(--k-motion-duration) ease;
     /* The lone 180ms outlier is the chat-avatar lift. */
     --k-avatar-motion: 180ms ease;
+    /* The motion vocabulary (blue-hour-polish-v0 §4 D0). Durations by job — press and
+       toggle, popover and tab, rail / modal / chat switch — and three curves: entrances land
+       soft (`out`), exits leave quick (`in`), things travelling between two resting places
+       glide (`glide`). Blue Hour is calm glide: no curve here overshoots (Andres, 2026-10-01).
+       A pack changes the temperament by value — a `linear()` spring for `--k-ease-out` — and
+       the choreography follows for free. Consumers never read these raw: kotatsu-chrome.css
+       §2 gates them through core's reduced-motion switch as `--k-t1..3`. */
+    --k-dur-1: 120ms;
+    --k-dur-2: 180ms;
+    --k-dur-3: 240ms;
+    --k-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --k-ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+    --k-ease-glide: cubic-bezier(0.65, 0, 0.35, 1);
+    --k-rise: 6px;
 
     /* ── Avatar geometry ─────────────────────────────────────────────── */
     /* `--avatar-base-border-radius` was overloaded: core consumes it as a border

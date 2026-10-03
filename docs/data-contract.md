@@ -376,7 +376,10 @@ Reserved identifiers: `main`, `nsfw`, `jailbreak`, `enhanceDefinitions`, plus th
 
 ### 4.5 Acceptance fixtures
 
-Two files in `OpenAI Settings/` are the regression gate for the prompt pipeline (per `CLAUDE.md`):
+Two presets are the regression gate for the prompt pipeline (per `CLAUDE.md`). The canonical
+copies are tracked in **`tests/fixtures/presets/`** (moved 2026-10-01 out of the gitignored
+`data/default-user/OpenAI Settings/`, where dev use had silently replaced one). Both carry empty
+`reverse_proxy` / `proxy_password`, and a test keeps it that way:
 
 - **`Clio's Sparkle Sauce v1.json`** — 94 prompts; `prompt_order` = `100000`/11 + `100001`/93.
 - **`Marinara's Spaghetti Recipe 10.json`** — 80 prompts; `prompt_order` = `100000`/11 + `100001`/79.

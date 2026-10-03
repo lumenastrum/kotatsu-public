@@ -3,13 +3,14 @@ import path from 'node:path';
 
 import express from 'express';
 
-import { color } from '../../../util.js';
+import { color, keyToEnv } from '../../../util.js';
 import { serverDirectory } from '../../../server-directory.js';
 import { readBridgeConfig, validateBridgeConfig, CONFIG_PREFIX } from './config.js';
 import { ensureBridgeToken, BRIDGE_SECRET_ID } from './secret.js';
 import { createClaudeRunner, detectSdkVersion } from './runtime.js';
 import { createOpenAIBridge } from './http.js';
 import { buildDoctorReport } from './doctor.js';
+import { EDITABLE, envLockedKeys, findFreePort, isPortFree, normalizeSettingsPatch, writeBridgeSettings } from './settings.js';
 
 const LOG_PREFIX = '[Claude bridge]';
 const LEGACY_PLUGIN_DIR = 'claude-code-rp';
@@ -24,6 +25,7 @@ const LEGACY_PLUGIN_DIR = 'claude-code-rp';
  * @property {Set<AbortController>} activeControllers In-flight SDK calls
  * @property {string|null} scratchDir Session scratch directory
  * @property {string|null} sdkVersion SDK version this process booted with
+ * @property {Record<string, any>} pending Saved to config.yaml, waiting on a restart (C4: the port)
  */
 
 /** @type {BridgeState} */
@@ -36,6 +38,7 @@ const state = {
     activeControllers: new Set(),
     scratchDir: null,
     sdkVersion: null,
+    pending: {},
 };
 
 /**
@@ -51,6 +54,7 @@ function resetState() {
     state.activeControllers = new Set();
     state.scratchDir = null;
     state.sdkVersion = null;
+    state.pending = {};
 }
 
 /**
@@ -97,6 +101,23 @@ export function getBridgeStatus() {
         inFlight: state.bridge?.inFlight ?? 0,
         sdkVersion: state.sdkVersion,
         standingDown: state.standingDown,
+        // Connections v0 C1: what the Claude Code card shows. Read-only here — the write path is
+        // slice C4. `supervised` = a launcher (Start.bat / start.sh) relaunches on exit code 75,
+        // so the card may offer "Restart Kotatsu"; a hand-started `node server.js` would just stop.
+        supervised: process.env.KOTATSU_SUPERVISED === '1',
+        settings: config ? {
+            reasoningEffort: config.reasoningEffort,
+            thinking: config.thinking,
+            exposeReasoning: Boolean(config.exposeReasoning),
+            resumeHistory: config.resumeHistory !== false,
+            fastMode: Boolean(config.fastMode),
+            allowApiBilling: Boolean(config.allowApiBilling),
+            port: config.port,
+            // C4: keys an environment variable overrides; the card shows them, never edits them.
+            locked: envLockedKeys(),
+        } : null,
+        // C4: saved to config.yaml but not running yet (the port binds at startup).
+        pendingRestart: Object.keys(state.pending).length ? { ...state.pending } : null,
     };
 }
 
@@ -200,11 +221,64 @@ router.get('/health', (_request, response) => {
     return response.json(getBridgeStatus());
 });
 
-router.get('/doctor', (_request, response) => {
+router.get('/doctor', async (_request, response) => {
     try {
-        return response.json(buildDoctorReport(getBridgeStatus()));
+        return response.json(await buildDoctorReport(getBridgeStatus()));
     } catch (error) {
         console.error(`${LOG_PREFIX} Doctor failed:`, error);
         return response.status(500).json({ ok: false, error: error instanceof Error ? error.message : String(error) });
     }
+});
+
+/*
+ * Connections v0 C4: the Claude Code card's write path. Validates a patch, refuses keys an
+ * environment variable overrides (the file would never be read for them), checks the merged
+ * result against the same rules the bridge boots with, writes config.yaml keeping its comments,
+ * then applies the live keys to the running bridge — the runner and the HTTP layer read them per
+ * request from the one shared config object. The port only takes effect on a restart; it is held
+ * in `pendingRestart` until then.
+ */
+router.post('/settings', async (request, response) => {
+    const { patch, errors } = normalizeSettingsPatch(request.body);
+    if (errors.length) return response.status(400).json({ ok: false, error: errors.join('; ') });
+    const locked = envLockedKeys().filter(key => key in patch);
+    if (locked.length) {
+        return response.status(409).json({ ok: false, error: `Set by an environment variable, so config.yaml can't change it: ${locked.map(key => keyToEnv(`${CONFIG_PREFIX}.${key}`)).join(', ')}` });
+    }
+    const current = state.config ?? readBridgeConfig();
+    const merged = { ...current, ...state.pending, ...patch };
+    try {
+        validateBridgeConfig(merged);
+    } catch (error) {
+        return response.status(400).json({ ok: false, error: error instanceof Error ? error.message : String(error) });
+    }
+    if ('port' in patch && patch.port !== current.port && !(await isPortFree(patch.port))) {
+        return response.status(409).json({ ok: false, error: `Something is already listening on port ${patch.port}` });
+    }
+    try {
+        writeBridgeSettings(patch);
+    } catch (error) {
+        console.error(`${LOG_PREFIX} Settings write failed:`, error);
+        return response.status(500).json({ ok: false, error: error instanceof Error ? error.message : String(error) });
+    }
+    /** @type {string[]} */
+    const applied = [];
+    for (const [key, value] of Object.entries(patch)) {
+        if (EDITABLE[key].live) {
+            if (state.config) /** @type {Record<string, any>} */ (state.config)[key] = value;
+            applied.push(key);
+        } else if (state.config && value === state.config[key]) {
+            delete state.pending[key];
+        } else {
+            state.pending[key] = value;
+        }
+    }
+    console.info(color.blue(`${LOG_PREFIX} Settings saved to config.yaml: ${Object.keys(patch).join(', ')}${Object.keys(state.pending).length ? ` (restart pending: ${Object.keys(state.pending).join(', ')})` : ''}`));
+    return response.json({ ok: true, applied, health: getBridgeStatus() });
+});
+
+// C4: "Use port N" — the first free loopback port after the configured one.
+router.get('/free-port', async (_request, response) => {
+    const from = state.config?.port ?? readBridgeConfig().port;
+    return response.json({ port: await findFreePort(Number(from) || 5107) });
 });

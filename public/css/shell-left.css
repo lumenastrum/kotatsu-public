@@ -264,11 +264,11 @@ body[data-k-layout="rails"] .k-rl-name {
     text-overflow: ellipsis;
 }
 
-/* Chat titles are file ids — mono, matching `.select_chat_block_filename`
-   (css/kotatsu-chrome.css:1301-1305) so the same string reads the same way in
-   both layouts. Overflow ellipsises at the end; the full id is on `title`. */
+/* Chat titles print as labels, not file ids (blue-hour-polish-v0 §C5:
+   `shell/chat-label.js` turns a stamped id into "Aug 25 · 1:40 PM"), so they
+   wear the UI face. Overflow ellipsises at the end; the full id is on `title`. */
 body[data-k-layout="rails"] .k-rl-row--chat .k-rl-name {
-    font-family: var(--k-font-mono);
+    font-family: var(--k-font-ui);
     font-size: var(--k-rl-chat-size);
 }
 
@@ -278,7 +278,7 @@ body[data-k-layout="rails"] .k-rl-meta {
     font-size: var(--k-rl-meta-size);
     font-variant-numeric: tabular-nums;
     font-weight: var(--k-rl-weight-rest);
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
     text-align: right;
     white-space: nowrap;
 }
@@ -422,7 +422,7 @@ body[data-k-layout="rails"] .k-rl-row.is-active .k-rl-chip--art {
 
 body[data-k-layout="rails"] .k-rl-row--more {
     grid-template-columns: minmax(0, 1fr);
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
     font-size: var(--k-rl-quiet-size);
 }
 
@@ -460,11 +460,11 @@ body[data-k-layout="rails"] .k-rl-ghost .k-rl-name {
     flex: 1 1 auto;
 }
 
-/* Chat ids again — same mono treatment the Chats section gives them, so one
-   string reads the same way wherever the rail prints it. */
+/* Chat labels again — the face the Chats section gives them, so one chat
+   reads the same way wherever the rail prints it. */
 body[data-k-layout="rails"] .k-rl-row--branch .k-rl-name,
 body[data-k-layout="rails"] .k-rl-ghost .k-rl-name {
-    font-family: var(--k-font-mono);
+    font-family: var(--k-font-ui);
     font-size: var(--k-rl-chat-size);
 }
 
@@ -503,7 +503,7 @@ body[data-k-layout="rails"] .k-rl-fork {
     font-family: var(--k-font-mono);
     font-size: var(--k-rl-badge-size);
     font-variant-numeric: tabular-nums;
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
     white-space: nowrap;
 }
 
@@ -540,7 +540,7 @@ body[data-k-layout="rails"] .k-rl-ghost {
     width: 100%;
     height: var(--k-rl-row-height);
     padding: 0 var(--k-rl-row-pad);
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
     cursor: default;
 }
 
@@ -557,7 +557,7 @@ body[data-k-layout="rails"] .k-rl-ghost .k-rl-meta {
    because it is the same kind of promise: the rest of it lives elsewhere. */
 
 body[data-k-layout="rails"] .k-rl-row--map {
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
     font-size: var(--k-rl-quiet-size);
 }
 
@@ -577,7 +577,7 @@ body[data-k-layout="rails"] .k-rl-quiet {
     box-sizing: border-box;
     min-height: var(--k-rl-row-height);
     padding: 0 var(--k-rl-row-pad);
-    color: var(--k-text-faint);
+    color: var(--k-text-muted);
     font-size: var(--k-rl-quiet-size);
 }
 

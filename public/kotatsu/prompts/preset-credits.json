@@ -1,0 +1,41 @@
+{
+    "version": 1,
+    "default": "Kotatsu Nabe",
+    "presets": {
+        "Kotatsu Nabe": {
+            "title": "Kotatsu Nabe",
+            "author": "Kotatsu",
+            "url": null,
+            "source": "tests/fixtures/presets/Kotatsu Nabe.json",
+            "blurb": "Kotatsu's own sauce: light, warm, and written to let you lead.",
+            "permission": { "status": "own" }
+        },
+        "Sola V2 Ember": {
+            "title": "Sola V2 · Ember",
+            "author": "Pyrxpia",
+            "url": "https://github.com/Pyrxpia/sola-hub",
+            "source": "default/presets-upstream/Sola V2 Ember.json",
+            "upstream": { "repo": "Pyrxpia/sola-hub", "path": "presets/Sola V2 Ember.json", "blob": "fb0fe446d7caccd3991bc224b64f11ff1560bee3" },
+            "blurb": "Lightweight roleplay: Sola's core, with the extras left off.",
+            "permission": { "status": "granted", "date": "2026-10-03", "note": "Ship both Flame and Ember, and the regex." }
+        },
+        "Sola V2 Flame": {
+            "title": "Sola V2 · Flame",
+            "author": "Pyrxpia",
+            "url": "https://github.com/Pyrxpia/sola-hub",
+            "source": "default/presets-upstream/Sola V2 Flame.json",
+            "upstream": { "repo": "Pyrxpia/sola-hub", "path": "presets/Sola V2 Flame.json", "blob": "cf06c6ff3caebae2d90ab0171ea7d84922151a84" },
+            "blurb": "The full engine: story review, trackers and colored dialogue, the way its author plays.",
+            "permission": { "status": "granted", "date": "2026-10-03", "note": "Ship both Flame and Ember, and the regex." }
+        },
+        "Nemo Vivarium v1.0 Beta": {
+            "title": "Nemo Vivarium",
+            "author": "NemoVonNirgend",
+            "url": "https://github.com/NemoVonNirgend/NemoEngine/tree/main/Vivarium",
+            "source": "default/presets-upstream/Nemo Vivarium v1.0 Beta.json",
+            "upstream": { "repo": "NemoVonNirgend/NemoEngine", "path": "Vivarium/Nemo Vivarium v1.0 Beta.json", "blob": "41e5b414b8e03790501d30010ea923e39bbf2a27" },
+            "blurb": "A living world in a handful of deep blocks, by the author of Nemo Engine.",
+            "permission": { "status": "granted", "date": "2026-10-03", "note": "New versions land in the Vivarium folder of NemoEngine." }
+        }
+    }
+}

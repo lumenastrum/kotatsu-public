@@ -485,7 +485,11 @@ body[data-k-layout="rails"] .k-lib-search-input::-webkit-search-cancel-button {
     appearance: none;
 }
 
-body[data-k-layout="rails"] .k-lib-tabs {
+/* The view switch above the tools (Your cast / Browse Characters) wears the same pill as the
+   filter tabs and is listed beside them here, but under its OWN class names: `.k-lib-tab`
+   means a filter tab, and anything that finds the tabs by class must not find the switch. */
+body[data-k-layout="rails"] .k-lib-tabs,
+body[data-k-layout="rails"] .k-lib-views {
     display: flex;
     align-items: center;
     gap: 2px;
@@ -496,7 +500,14 @@ body[data-k-layout="rails"] .k-lib-tabs {
     background: var(--k-lib-field-fill);
 }
 
-body[data-k-layout="rails"] .k-lib-tab {
+body[data-k-layout="rails"] .k-lib-views {
+    align-self: flex-start;
+    width: max-content;
+    max-width: 100%;
+}
+
+body[data-k-layout="rails"] .k-lib-tab,
+body[data-k-layout="rails"] .k-lib-view {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -514,11 +525,14 @@ body[data-k-layout="rails"] .k-lib-tab {
 }
 
 body[data-k-layout="rails"] .k-lib-tab:hover,
-body[data-k-layout="rails"] .k-lib-tab:focus-visible {
+body[data-k-layout="rails"] .k-lib-tab:focus-visible,
+body[data-k-layout="rails"] .k-lib-view:hover,
+body[data-k-layout="rails"] .k-lib-view:focus-visible {
     color: var(--k-text-strong);
 }
 
-body[data-k-layout="rails"] .k-lib-tab.is-active {
+body[data-k-layout="rails"] .k-lib-tab.is-active,
+body[data-k-layout="rails"] .k-lib-view.is-active {
     background: color-mix(in srgb, var(--k-accent) 20%, transparent);
     color: var(--k-text-strong);
 }
@@ -595,6 +609,36 @@ body[data-k-layout="rails"] .k-lib-card:focus-visible {
    CONTENT (stacked member faces, a member count instead of an epithet), not by its box. The
    class is emitted anyway as the hook a pack — or the rig probe's group-variant count — needs
    to reach group cards without parsing their innards. */
+
+/* While the sheet is scrolling, no card takes the pointer, so none starts the hover bloom as
+   it slides under a resting cursor. `k-library.js` sets the attribute on the first scroll
+   event and clears it 150 ms after the last. Measured 2026-10-02: the portrait's hover scale
+   repaints the image every time it changes, and wheeling through fresh cards stalled the
+   main thread ~140 ms of every second; without hover during the scroll, ~15. */
+body[data-k-layout="rails"] k-library[data-scrolling] .k-lib-card {
+    pointer-events: none;
+}
+
+/* Second measurement, 2026-10-02 (Andres: "only when the cursor is left on the cards"). The
+   rule above holds only while the wheel never pauses; a hand pauses between flicks, the 150 ms
+   settle expires, the card under the cursor blooms, the next flick un-blooms it, and each
+   change RE-RASTERS the portrait — every bloom/un-bloom repaints the image, animated or not.
+   Measured with a human wheel pattern in headed Chrome at 3440×1440: GPU compositing shrugs
+   (198 fps either way); software compositing — a blocklisted GPU, acceleration switched off —
+   reproduces his hand exactly: 60 fps, 32 frames over 33 ms a run, worst 110 ms. Giving the
+   portrait its own compositor layer makes the hover a composite instead of a repaint: 177 fps,
+   6 slow frames, worst 35 — better than no hover at all, because the rest-state saturate()
+   composites too. A layer per portrait costs memory, so cards off screen are not rendered at
+   all (`content-visibility: auto`): layers exist only for what is in view. Both neutral on GPU.
+   Harness: playwright-rig `kotatsu-market-wheel-ab.mjs --human --set layer`. */
+body[data-k-layout="rails"] .k-lib-card {
+    content-visibility: auto;
+    contain-intrinsic-size: auto var(--k-lib-card-min-h);
+}
+
+body[data-k-layout="rails"] .k-lib-card-portrait {
+    will-change: transform, filter;
+}
 
 /* ── portrait ─────────────────────────────────────────────────────────────── */
 
@@ -923,6 +967,68 @@ body[data-k-layout="rails"] .k-lib-icon {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   8b. THE WAY BACK — .k-lib-jump
+   ───────────────────────────────────────────────────────────────────────────
+   Last child of the page, stuck to the sheet's foot with zero height in flow: the buttons
+   hang upward out of it, so the grid never moves to make room. Same language as the chat's
+   <k-jump-latest> (shell-center.css §6). Hidden until the sheet is scrolled past the head
+   (`data-visible`, set by k-library.js); at rest it is transparent, inert and out of the
+   tab order.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] .k-lib-jump {
+    position: sticky;
+    bottom: 18px;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    height: 0;
+    margin-top: calc(var(--k-lib-block-gap) * -1);
+    overflow: visible;
+    pointer-events: none;
+}
+
+body[data-k-layout="rails"] .k-lib-jump-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 32px;
+    padding: 0 14px 0 12px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-cc-composer-fill, var(--k-surface-2));
+    color: var(--k-text);
+    font-family: inherit;
+    font-size: var(--k-lib-ui-size);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    box-shadow: var(--k-elev-2);
+    transform: translateY(calc(-100% - 2px)) translateY(6px);
+    opacity: 0;
+    cursor: pointer;
+    pointer-events: none;
+}
+
+body[data-k-layout="rails"] .k-lib-jump[data-visible] .k-lib-jump-btn {
+    transform: translateY(calc(-100% - 2px));
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body[data-k-layout="rails"] .k-lib-jump-btn:hover,
+body[data-k-layout="rails"] .k-lib-jump-btn:focus-visible {
+    color: var(--k-accent-bright);
+    border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
+    background-color: color-mix(in srgb, var(--k-accent) 10%, var(--k-cc-composer-fill, var(--k-surface-2)));
+}
+
+body[data-k-layout="rails"] .k-lib-jump-btn:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    9. MOTION — everything animated lives in here and nowhere else
    ───────────────────────────────────────────────────────────────────────────
    `prefers-reduced-motion: no-preference` is the OPT-IN form: a reader who has asked for less
@@ -959,10 +1065,20 @@ body[data-k-layout="rails"] .k-lib-icon {
         filter: saturate(var(--k-lib-portrait-bloom));
     }
 
+    body[data-k-layout="rails"] .k-lib-jump-btn {
+        transition:
+            opacity var(--k-motion),
+            transform var(--k-motion),
+            color var(--k-motion),
+            border-color var(--k-motion),
+            background-color var(--k-motion);
+    }
+
     body[data-k-layout="rails"] .k-lib-btn,
     body[data-k-layout="rails"] .k-lib-close,
     body[data-k-layout="rails"] .k-lib-recent,
     body[data-k-layout="rails"] .k-lib-tab,
+    body[data-k-layout="rails"] .k-lib-view,
     body[data-k-layout="rails"] .k-lib-sort,
     body[data-k-layout="rails"] .k-lib-search,
     body[data-k-layout="rails"] .k-lib-card-edit,

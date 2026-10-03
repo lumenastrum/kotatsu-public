@@ -1,0 +1,96 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Kotatsu shell — "Your settings changed on another device",
+   <k-sync-notice variant="banner"> (kotatsu/shell/sync-notice.js;
+   docs/phone-v0.md §5.4).
+   ───────────────────────────────────────────────────────────────────────────
+   The extension guard's shape: fixed under the top bar at stock's rung + 1
+   (3006), centred on the viewport. Informational, not an alarm — nothing was
+   lost — so it wears the accent, not the rose.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] k-sync-notice {
+    display: none;
+}
+
+body[data-k-layout="rails"] k-sync-notice[open] {
+    position: fixed;
+    top: calc(var(--topBarBlockSize, 44px) + 12px);
+    left: 50%;
+    z-index: 3006;
+    display: block;
+    width: min(560px, calc(100vw - 32px));
+    transform: translateX(-50%);
+}
+
+body[data-k-layout="rails"] .k-sn {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    padding: 12px 16px;
+    border: 1px solid color-mix(in srgb, var(--k-accent) 45%, transparent);
+    border-left: 3px solid var(--k-accent);
+    border-radius: var(--k-radius-md, 8px);
+    background: var(--k-surface-2, var(--k-ground));
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: var(--k-elev-2);
+}
+
+body[data-k-layout="rails"] .k-sn-line {
+    flex: 1 1 260px;
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-sn-why {
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-sn-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+    margin-left: auto;
+}
+
+body[data-k-layout="rails"] .k-sn-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    margin: 0;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-sn-btn:hover,
+body[data-k-layout="rails"] .k-sn-btn:focus-visible {
+    border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
+    color: var(--k-accent-bright);
+}
+
+body[data-k-layout="rails"] .k-sn-btn--primary {
+    border-color: color-mix(in srgb, var(--k-accent) 60%, transparent);
+    background: color-mix(in srgb, var(--k-accent) 18%, transparent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-sn-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+@media (pointer: coarse) {
+    body[data-k-layout="rails"] .k-sn-btn {
+        height: 44px;
+        padding: 0 18px;
+    }
+}

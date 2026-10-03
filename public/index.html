@@ -62,6 +62,12 @@
          Last of the shell sheets so it can restyle what they imply, and still before
          css/mobile-styles.css so the responsive layer keeps the final word. -->
     <link rel="stylesheet" type="text/css" href="css/shell-panels.css">
+    <!-- Extension dock yield: the frame gives up the edge a foreign side panel is docked to
+         (kotatsu/shell/ext-dock.js publishes the insets). After shell-frame.css so its
+         same-specificity overrides win; inert until the script has run. -->
+    <link rel="stylesheet" type="text/css" href="css/shell-ext-dock.css">
+    <link rel="stylesheet" type="text/css" href="css/shell-ext-guard.css">
+    <link rel="stylesheet" type="text/css" href="css/shell-sync-notice.css">
     <!-- Message-variant wardrobe (docs/variant-wardrobe-v0.md §1). AFTER the shell
          sheets on purpose: every rule is scoped to a `#chat[data-k-mes-*]` attribute
          and has to be able to reshape what css/shell-center.css paints. With no
@@ -101,12 +107,21 @@
          have to already be in the cascade for the sheet's sizing overrides to land on top of
          them. Rails-only and gated the same way. See the sheet's header. -->
     <link rel="stylesheet" type="text/css" href="css/studio.css">
+    <!-- Browse Characters (docs/character-marketplace-v0.md §9). After css/library.css for the
+         same reason as the studio: the view reuses the gallery's `.k-lib-*` rules and only
+         adds to them. Rails-only and gated the same way. See the sheet's header. -->
+    <link rel="stylesheet" type="text/css" href="css/market.css">
     <!-- Settings v0 slice B (docs/settings-v0.md §2). The one Kotatsu sheet that lives beside
          its module rather than in css/, because the settings surface is a module folder that
          also holds the control registry. Rails-only and gated the same way as the studio; it
          comes BEFORE the rechrome sheets so those keep field authority over the stock control
          primitives the modal borrows. See the sheet's header. -->
     <link rel="stylesheet" type="text/css" href="kotatsu/settings/settings-modal.css">
+    <link rel="stylesheet" type="text/css" href="css/phone-card.css">
+    <!-- Onboarding v0 (docs/onboarding-v0.md): Mikan-chan's welcome tour. Its own rung just
+         under settings and the studio; touches no stock control, so its place in the chain only
+         has to be before mobile-styles.css. Rails-gated like its neighbours. -->
+    <link rel="stylesheet" type="text/css" href="css/onboarding.css">
     <!-- Rechrome v0 (docs/rechrome-v0.md): stock control primitives in the house language.
          Four sheets, one per slice, in slice order — AFTER studio.css so the studio keeps
          field authority (slice B caps specificity with :where() against exactly this), and
@@ -116,11 +131,29 @@
     <link rel="stylesheet" type="text/css" href="css/rechrome-fields.css">
     <link rel="stylesheet" type="text/css" href="css/rechrome-popups.css">
     <link rel="stylesheet" type="text/css" href="css/rechrome-rack.css">
+    <!-- Blue Hour polish v0 (docs/blue-hour-polish-v0.md §4): the motion vocabulary applied —
+         popovers, tab-strip glide, page fades, the settings modal's entrance. After the
+         rechrome sheets so its transition lists restate theirs; rails-gated. -->
+    <link rel="stylesheet" type="text/css" href="css/kotatsu-motion.css">
+    <!-- Baggage audit v0 (docs/baggage-audit-v0.md): the inherited controls Kotatsu hides, one
+         rule per audit row; kotatsu/settings/baggage.js migrates saved values first. -->
+    <link rel="stylesheet" type="text/css" href="css/kotatsu-baggage.css">
+    <!-- Connections v0 (docs/connections-v0.md): the Claude Code card on the Connection tab. -->
+    <link rel="stylesheet" type="text/css" href="css/kotatsu-connections.css">
+    <!-- ChatGPT bridge v0 (docs/chatgpt-bridge-v0.md, C2): the ChatGPT card and the plan indicator. -->
+    <link rel="stylesheet" type="text/css" href="css/kotatsu-chatgpt.css">
     <link rel="stylesheet" type="text/css" href="css/mobile-styles.css">
+    <!-- Blue Hour polish v0 §8: rails on a phone (<= 600px) and touch sizing. LAST, so its
+         walk-backs of core's mobile sheet win ties on source order. -->
+    <link rel="stylesheet" type="text/css" href="css/kotatsu-phone.css">
     <link rel="stylesheet" type="text/css" href="css/macros.css">
     <link rel="stylesheet" type="text/css" href="css/user.css">
     <link rel="icon" type="image/svg+xml" href="kotatsu/brand/k-mark.svg">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <!-- Star-Eyes, the boot splash (docs/loader-v0.md): fetched now so she is decoded before the
+         splash appears instead of popping in mid-breath. -->
+    <link rel="preload" as="image" type="image/webp" href="kotatsu/brand/mascot/chibi.webp">
+    <link rel="preload" as="image" type="image/webp" href="kotatsu/brand/mascot/chibi-blink.webp">
     <!-- Scripts are loaded at the end of the body to improve page load speed -->
 </head>
 
@@ -276,7 +309,7 @@
                                                 <i class="fa-fw fa-solid fa-link toggleOn"></i>
                                                 <i class="fa-fw fa-solid fa-link-slash toggleOff"></i>
                                             </label>
-                                            <div id="import_oai_preset" class="margin0 menu_button menu_button_icon" title="Import preset" data-i18n="[title]Import preset">
+                                            <div id="import_oai_preset" class="margin0 menu_button menu_button_icon" title="Import preset. Select its regex pack with it to import both." data-i18n="[title]kotatsu_import_preset_with_pack">
                                                 <i class="fa-fw fa-solid fa-file-import"></i>
                                             </div>
                                             <div id="export_oai_preset" class="margin0 menu_button menu_button_icon" title="Export preset" data-i18n="[title]Export preset">
@@ -293,7 +326,7 @@
                                             <option value="gui" data-i18n="Default">Default</option>
                                         </select>
                                         <div class="flex-container marginLeft5 gap3px">
-                                            <input id="openai_preset_import_file" type="file" accept=".json,.settings" hidden />
+                                            <input id="openai_preset_import_file" type="file" accept=".json,.settings" multiple hidden />
                                             <div id="update_oai_preset" class="menu_button menu_button_icon" title="Update current preset" data-i18n="[title]Update current preset">
                                                 <i class="fa-fw fa-solid fa-save"></i>
                                             </div>
@@ -3405,6 +3438,7 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
                                     <optgroup label="Gemini 3.5">
+                                        <option value="gemini-3.8-flash">gemini-3.8-flash</option>
                                         <option value="gemini-3.7-flash">gemini-3.7-flash</option>
                                         <option value="gemini-3.6-flash">gemini-3.6-flash</option>
                                         <option value="gemini-3.5-flash">gemini-3.5-flash</option>
@@ -3590,6 +3624,7 @@
                                 <select id="model_vertexai_select">
                                     <!-- data-mode="full" is for models that require a service account -->
                                     <optgroup label="Gemini 3.5">
+                                        <option value="gemini-3.8-flash">gemini-3.8-flash</option>
                                         <option value="gemini-3.7-flash">gemini-3.7-flash</option>
                                         <option value="gemini-3.6-flash">gemini-3.6-flash</option>
                                         <option value="gemini-3.5-flash">gemini-3.5-flash</option>
@@ -5074,6 +5109,14 @@
                             <label id="kotatsu_metrics_row" class="checkbox_label" for="kotatsu_metrics" title="A context / cache / output readout under each response, from the provider's own usage figures. Stored per message, so old chats keep their bars." data-i18n="[title]A context / cache / output readout under each response, from the provider's own usage figures. Stored per message, so old chats keep their bars.">
                                 <input id="kotatsu_metrics" type="checkbox" />
                                 <span data-i18n="Message metrics">Message metrics</span>
+                            </label>
+                            <label id="kotatsu_market_nsfw_row" class="checkbox_label" for="kotatsu_market_nsfw" title="Browse Characters asks the card site for its NSFW cards too. Whether any come back depends on where you are: some sites do not serve them to some regions, and Kotatsu does not route around that." data-i18n="[title]Browse Characters asks the card site for its NSFW cards too. Whether any come back depends on where you are: some sites do not serve them to some regions, and Kotatsu does not route around that.">
+                                <input id="kotatsu_market_nsfw" type="checkbox" />
+                                <span data-i18n="Include NSFW cards when browsing">Include NSFW cards when browsing</span>
+                            </label>
+                            <label id="kotatsu_market_blur_row" class="checkbox_label" for="kotatsu_market_blur" title="In Browse Characters, a portrait the site flags as NSFW stays blurred until you hover or focus the card." data-i18n="[title]In Browse Characters, a portrait the site flags as NSFW stays blurred until you hover or focus the card.">
+                                <input id="kotatsu_market_blur" type="checkbox" checked />
+                                <span data-i18n="Blur NSFW portraits">Blur NSFW portraits</span>
                             </label>
                             <div id="kotatsu_landing_row" class="flex-container flexFlowColumn flexNoGap" title="What fills the centre column when no chat is open." data-i18n="[title]What fills the centre column when no chat is open.">
                                 <div class="flex-container alignItemsBaseline">
@@ -6571,15 +6614,22 @@
            #k-center     receives the relocated #sheld (slice A, restyled by D)
            #k-rail-right hosts the tab rail + docks  (slice C)
          Empty here on purpose — the registry populates them at mount time so that
-         classic ships zero shell markup it has to ignore. -->
+         classic ships zero shell markup it has to ignore.
+
+         #k-topbar is a SIBLING of #k-shell, not a child, on purpose: #k-shell is
+         `position: fixed; z-index: 30`, a stacking context, and nothing inside one
+         can outrank a body-level layer that an extension parks at z 1000-2000. The
+         bar has to sit in the ROOT stacking context to hold stock's top-bar rung
+         (3005). #k-shell keeps an empty first grid row where the bar used to be, so
+         #k-frame's geometry is unchanged. See css/shell-frame.css. -->
     <div id="k-shell">
-        <header id="k-topbar"></header>
         <div id="k-frame">
             <aside id="k-rail-left"></aside>
             <main id="k-center"></main>
             <aside id="k-rail-right"></aside>
         </div>
     </div>
+    <header id="k-topbar"></header>
     <!-- various fullscreen popups -->
     <!-- #k-offstage is the popup/template host named by the shell v0 slot contract
          (docs/shell-v0.md). Prep expected to RE-PARENT this block out of

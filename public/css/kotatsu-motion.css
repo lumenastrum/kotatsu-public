@@ -1,0 +1,205 @@
+/*
+ * kotatsu-motion.css — the motion vocabulary, applied (blue-hour-polish-v0 §4, slice D).
+ *
+ * Before this sheet, Kotatsu's motion was 150ms colour fades and one spinner: every popover,
+ * tab page, dock page and the settings modal simply appeared. Andres's brief (2026-10-01):
+ * small, meaningful motion when moving between sections and drawers, so it feels premium —
+ * and for Blue Hour, a calm glide with no bounce.
+ *
+ * The rules this sheet keeps, each checkable by reading it:
+ *   1. Space has meaning. Popovers grow from their trigger's side (the switcher and model menu
+ *      drop, the persona menu rises out of the rail footer). A tab strip's "you are here" pill
+ *      GLIDES to the new tab instead of jumping (kotatsu/shell/glide-indicator.js measures).
+ *   2. Compositor only: opacity and transform. Nothing here animates layout in the reading
+ *      column. The one exception is the settings sheet's `top` (§4), which moves one fixed box.
+ *   3. NO TRANSFORM on anything that hosts relocated core drawers — the right-rail dock pages,
+ *      the Sauce/Dials/Rack sections, the settings sheet and its panels. A transform makes its
+ *      element the containing block for `position: fixed` descendants, which is precisely the
+ *      ultrawide drawer-escape bug of 2026-08-25. Those surfaces fade; they never slide.
+ *   4. Short, and gated. Every duration is `--k-t1..3`: the theme's `--k-dur-1..3` capped by
+ *      core's `--animation-duration`. Core writes that inline on <html> — 125ms normally, 0ms
+ *      when `power_user.reduced_motion` is on, which core also forces on under the OS
+ *      `prefers-reduced-motion` (power-user.js:512). So `min(token, duration × 1000)` is the
+ *      token or zero: one switch, both sources, no JS. Keyframes with a 0ms duration finish on
+ *      the first frame.
+ *   5. Entrances only, this slice. Popovers and the modal are Lit-conditional (inserted on
+ *      open, removed on close), so an insertion keyframe is the whole entrance and a close is
+ *      instant. Exits need a deferred removal and are §5 slice E work.
+ *
+ * Gated on `body[data-k-layout="rails"]` like every Kotatsu sheet: classic is untouched.
+ * Tokens only (tokens.css §Motion); no new colours.
+ */
+
+/* ── 0. Gated durations ────────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] {
+    --k-motion-gate: calc(var(--animation-duration, 125ms) * 1000);
+    --k-t1: min(var(--k-dur-1), var(--k-motion-gate));
+    --k-t2: min(var(--k-dur-2), var(--k-motion-gate));
+    --k-t3: min(var(--k-dur-3), var(--k-motion-gate));
+}
+
+/* ── 1. Keyframes ───────────────────────────────────────────────────────────────────────
+   `from`-only: the `to` is the element's own resting style, so a keyframe can never pin a
+   value the sheets below it disagree with, and nothing is left behind once it ends. */
+
+@keyframes k-pop-down {
+    from {
+        opacity: 0;
+        transform: translateY(calc(var(--k-rise) * -1)) scale(0.98);
+    }
+}
+
+@keyframes k-pop-up {
+    from {
+        opacity: 0;
+        transform: translateY(var(--k-rise)) scale(0.98);
+    }
+}
+
+@keyframes k-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes k-sheet-rise {
+    from {
+        opacity: 0;
+        top: calc(var(--k-rise) * 2);
+    }
+}
+
+/* ── 2. Popovers — grow from the trigger ─────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-cs__pop {
+    transform-origin: top left;
+    animation: k-pop-down var(--k-t2) var(--k-ease-out);
+}
+
+body[data-k-layout="rails"] k-model-menu .k-mm__pop {
+    transform-origin: top right;
+    animation: k-pop-down var(--k-t2) var(--k-ease-out);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__pop {
+    transform-origin: bottom center;
+    animation: k-pop-up var(--k-t2) var(--k-ease-out);
+}
+
+/* ── 3. Tab strips — one pill that glides ──────────────────────────────────────────────
+   glide-indicator.js writes `--k-ind-x/-y/-w/-h` and `data-k-ind` on the strip. Until it has
+   (`data-k-ind` absent), every rule here is inert and the active button paints its own fill
+   exactly as before — no flash, no dependence on JS having run. `ready` paints the pill in
+   place; `live` (a frame later) lets it glide. The buttons ride above the pill. */
+
+body[data-k-layout="rails"] :is(.k-tr-strip, .k-set-tabs)[data-k-ind],
+#left-nav-panel.k-docked .k-pp-strip[data-k-ind] {
+    position: relative;
+    isolation: isolate;
+}
+
+body[data-k-layout="rails"] :is(.k-tr-strip, .k-set-tabs)[data-k-ind]::before,
+#left-nav-panel.k-docked .k-pp-strip[data-k-ind]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    box-sizing: border-box;
+    width: var(--k-ind-w);
+    height: var(--k-ind-h);
+    translate: var(--k-ind-x) var(--k-ind-y);
+    pointer-events: none;
+}
+
+body[data-k-layout="rails"] :is(.k-tr-strip, .k-set-tabs)[data-k-ind="live"]::before,
+#left-nav-panel.k-docked .k-pp-strip[data-k-ind="live"]::before {
+    transition:
+        translate var(--k-t3) var(--k-ease-glide),
+        width var(--k-t3) var(--k-ease-glide),
+        height var(--k-t3) var(--k-ease-glide);
+}
+
+/* Right rail: Prompt / Trackers. The pill wears what `.k-tr-tab.is-active` wore
+   (shell-right.css:147), and the button stops painting it. */
+body[data-k-layout="rails"] .k-tr-strip[data-k-ind]::before {
+    border-radius: var(--k-radius-md);
+    background: var(--k-inset-fill);
+    box-shadow: inset 0 0 0 1px var(--k-inset-border), var(--k-elev-1);
+}
+
+body[data-k-layout="rails"] .k-tr-strip[data-k-ind] .k-tr-tab.is-active {
+    background: transparent;
+    box-shadow: none;
+}
+
+/* Prompt dock: Sauce / Dials / Rack (preset-dock.css:58). */
+#left-nav-panel.k-docked .k-pp-strip[data-k-ind]::before {
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-surface);
+}
+
+#left-nav-panel.k-docked .k-pp-strip[data-k-ind] .k-pp-seg.is-active {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+/* Settings nav: the rose rail and fill slide down the column together (settings-modal.css:421). */
+body[data-k-layout="rails"] .k-set-tabs[data-k-ind]::before {
+    border-radius: 7px;
+    background: var(--k-set-active-fill);
+    box-shadow: inset 2px 0 0 var(--k-rose);
+}
+
+body[data-k-layout="rails"] .k-set-tabs[data-k-ind] .k-set-tab.is-active {
+    background: transparent;
+    box-shadow: none;
+}
+
+/* ── 4. Pages — the content settles in ───────────────────────────────────────────────────
+   Each of these is shown by flipping `hidden` / a class / an attribute filter, and a CSS
+   animation restarts whenever its element starts rendering again, so every switch replays
+   the fade with no JS. Opacity only — rule 3: these host relocated core drawers. */
+
+body[data-k-layout="rails"] .k-tr-page.is-active,
+body[data-k-layout="rails"] .k-set-panel:not([hidden]) {
+    animation: k-fade-in var(--k-t2) var(--k-ease-out);
+}
+
+#left-nav-panel.k-docked[data-k-dock-page='sauce'] [data-k-dock-sect='sauce'],
+#left-nav-panel.k-docked[data-k-dock-page='dials'] [data-k-dock-sect='dials'],
+#left-nav-panel.k-docked[data-k-dock-page='rack'] [data-k-dock-sect='rack'] {
+    animation: k-fade-in var(--k-t2) var(--k-ease-out);
+}
+
+/* The settings modal: the scrim breathes in, the sheet rises a few pixels into place. `top`,
+   not transform (rule 3 — the sheet is centred by `inset: 0; margin: auto` with no transform
+   anywhere, settings-modal.css:170, and must stay that way). */
+body[data-k-layout="rails"] .k-set-scrim {
+    animation: k-fade-in var(--k-t3) var(--k-ease-out);
+}
+
+body[data-k-layout="rails"] .k-set-sheet {
+    animation: k-sheet-rise var(--k-t3) var(--k-ease-out);
+}
+
+/* ── 5. Press — the tab buttons give under the finger ────────────────────────────────────
+   A 3% press on the strips this sheet already owns. The transition list restates the colour
+   fades those buttons had (shell-right.css, preset-dock.css:46, settings-modal.css) so adding
+   `scale` drops none of them. */
+
+body[data-k-layout="rails"] :is(.k-tr-tab, .k-set-tab),
+#left-nav-panel.k-docked .k-pp-seg {
+    transition:
+        color var(--k-motion),
+        background-color var(--k-motion),
+        box-shadow var(--k-motion),
+        scale var(--k-t1) var(--k-ease-out);
+}
+
+body[data-k-layout="rails"] :is(.k-tr-tab, .k-set-tab):active,
+#left-nav-panel.k-docked .k-pp-seg:active {
+    scale: 0.97;
+}

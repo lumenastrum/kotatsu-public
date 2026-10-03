@@ -17,7 +17,11 @@
  */
 
 import { installAnSheet, uninstallAnSheet } from '../an-sheet.js';
+import { installDocScrollPin, uninstallDocScrollPin } from '../doc-scroll-pin.js';
+import { installExtDock, uninstallExtDock } from '../ext-dock.js';
+import { installExtGuard, uninstallExtGuard } from '../ext-guard.js';
 import { installRailCollapse, uninstallRailCollapse } from '../rail-collapse.js';
+import { installSyncNotice, uninstallSyncNotice } from '../sync-notice.js';
 import { installViewState, uninstallViewState } from '../view-state.js';
 // Settings v0 slice B. A STATIC import, like the card studio's below and for the same two
 // reasons: the unmount path has to call `uninstallSettingsModal()` SYNCHRONOUSLY before
@@ -244,6 +248,8 @@ export const railsLayout = {
         // stored `collapsed` hides a real rail rather than an empty slot that is
         // about to be filled. The handles go on #k-shell, not into a slot, so
         // the replaceChildren() calls above cannot sweep them away.
+        // Before the collapse install: its first resolve reads the dock insets.
+        installExtDock();
         installRailCollapse();
 
         // View state (home vs chat) drives whether the rails are on screen at
@@ -251,6 +257,18 @@ export const railsLayout = {
         // the first sync can hide them: a boot landing on home should never
         // flash a handle it is about to take away.
         installViewState();
+
+        // The document never scrolls under rails (ext gauntlet finding 7). Order-free: it
+        // only ever puts the viewport back at 0.
+        installDocScrollPin();
+
+        // An extension that takes #sheld or covers the centre is named, with a way out
+        // (ext gauntlet finding 5). After everything above: it hit-tests the mounted frame.
+        installExtGuard();
+
+        // Settings sync (docs/phone-v0.md §5.4): "your settings changed on another device". Beside
+        // the guard and on the same rung; it only listens for core's DOM event until one arrives.
+        installSyncNotice();
     },
 
     unmount(ctx) {
@@ -266,8 +284,12 @@ export const railsLayout = {
         // Restoring the layout with the modal still up would hand classic a rack
         // with holes in it.
         uninstallSettingsModal();
+        uninstallExtGuard();
+        uninstallSyncNotice();
+        uninstallDocScrollPin();
         uninstallViewState();
         uninstallRailCollapse();
+        uninstallExtDock();
         uninstallAnSheet();
         // Before restoreAll(), like every other centre-column guest: the element's
         // disconnectedCallback is what unbinds its document listeners, so it has to run while

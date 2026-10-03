@@ -248,7 +248,9 @@ class EdgeTtsProvider {
             throw new Error(message);
         }
 
-        if (this.settings.provider === EDGE_TTS_PROVIDER.plugin && !this.isPluginAvailable()) {
+        // Kotatsu: `isPluginAvailable()` is async — un-awaited it was a Promise, always truthy, so
+        // this message could never fire and a missing plugin surfaced as a bare 404 instead.
+        if (this.settings.provider === EDGE_TTS_PROVIDER.plugin && !(await this.isPluginAvailable())) {
             const message = 'Edge TTS Server plugin not loaded. Install it from https://github.com/SillyTavern/SillyTavern-EdgeTTS-Plugin and restart the SillyTavern server.';
             // toastr.error(message)
             throw new Error(message);

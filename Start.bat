@@ -14,6 +14,9 @@ rem       the window open so the error is readable. A clean exit closes it.
 title Kotatsu
 pushd %~dp0
 set NODE_ENV=production
+rem  The in-app "Restart Kotatsu" (exit 75) only makes sense under this loop; the server
+rem  reports it on /api/kotatsu/claude-bridge/health as `supervised` (connections-v0 C1).
+set KOTATSU_SUPERVISED=1
 
 node -e "const c=require('crypto'),f=require('fs'),p=require('path');const l=p.resolve('package-lock.json');if(!f.existsSync(l))process.exit(0);const h=c.createHash('sha256').update(f.readFileSync(l)).digest('hex');let s=null;try{s=f.readFileSync(p.resolve('data','.kotatsu','install-stamp'),'utf8').trim()}catch{};process.exit(h===s?0:1)"
 if not errorlevel 1 goto deps_ok

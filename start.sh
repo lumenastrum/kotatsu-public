@@ -17,6 +17,9 @@ then
 fi
 
 export NODE_ENV=production
+# The in-app "Restart Kotatsu" (exit 75) only makes sense under this loop; the server reports
+# it on /api/kotatsu/claude-bridge/health as `supervised` (docs/connections-v0.md C1).
+export KOTATSU_SUPERVISED=1
 
 STAMP_DIR="data/.kotatsu"
 STAMP_FILE="$STAMP_DIR/install-stamp"

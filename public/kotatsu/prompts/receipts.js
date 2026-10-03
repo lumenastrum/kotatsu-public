@@ -648,6 +648,8 @@ function normalizeStoredFile(raw) {
     return Array.isArray(receipts) ? receipts.filter(isStoredReceipt) : [];
 }
 
+/** @typedef {{valid: boolean, users: number}} ReceiptLifetime */
+
 /**
  * The per-generation provenance store. One instance per page; see {@link receiptStore}.
  */
@@ -663,6 +665,15 @@ export class PromptReceiptStore {
 
     /** @type {Map<string, Promise<{version: number, receipts: PromptReceipt[]}>>} */
     #loads = new Map();
+
+    /** @type {Map<string, ReceiptLifetime>} Ownership of warm files and pending work. */
+    #lifetimes = new Map();
+
+    /** @type {Map<string, Promise<unknown>>} Per-chat storage writes, including deletions. */
+    #writes = new Map();
+
+    /** Disposal invalidates completion events from earlier deletions. */
+    #disposalEpoch = 0;
 
     /** @type {Set<ReceiptListener>} */
     #listeners = new Set();
@@ -737,6 +748,7 @@ export class PromptReceiptStore {
      * @returns {void}
      */
     dispose() {
+        this.#disposalEpoch++;
         for (const { type, handler } of this.#subscriptions) {
             eventSource.removeListener(type, handler);
         }
@@ -755,6 +767,8 @@ export class PromptReceiptStore {
         this.#pending = null;
         this.#activeGeneration = null;
         this.#latest.clear();
+        for (const lifetime of this.#lifetimes.values()) lifetime.valid = false;
+        this.#lifetimes.clear();
         this.#files.clear();
         this.#loads.clear();
         this.#listeners.clear();
@@ -836,8 +850,10 @@ export class PromptReceiptStore {
         if (!id || !Number.isInteger(index)) {
             return null;
         }
-        const file = await this.#file(id);
-        return file.receipts.find(receipt => receipt.mesId === index) ?? null;
+        return this.#withChat(id, async (lifetime) => {
+            const file = await this.#file(id, lifetime);
+            return lifetime.valid ? file.receipts.find(receipt => receipt.mesId === index) ?? null : null;
+        });
     }
 
     /**
@@ -850,8 +866,10 @@ export class PromptReceiptStore {
         if (!id) {
             return [];
         }
-        const file = await this.#file(id);
-        return file.receipts.slice();
+        return this.#withChat(id, async (lifetime) => {
+            const file = await this.#file(id, lifetime);
+            return lifetime.valid ? file.receipts.slice() : [];
+        });
     }
 
     /**
@@ -866,6 +884,10 @@ export class PromptReceiptStore {
         if (!id) {
             return;
         }
+        const epoch = this.#disposalEpoch;
+        const lifetime = this.#lifetimes.get(id);
+        if (lifetime) lifetime.valid = false;
+        this.#lifetimes.delete(id);
         this.#files.delete(id);
         this.#loads.delete(id);
         this.#latest.delete(id);
@@ -875,12 +897,13 @@ export class PromptReceiptStore {
         const storage = this.#storageInstance();
         if (storage) {
             try {
-                await storage.removeItem(id);
+                // An IndexedDB write that already started cannot be cancelled. Delete after it.
+                await this.#queueWrite(id, () => storage.removeItem(id));
             } catch (error) {
-                this.#report('forget:throw', 'receipt storage delete failed', error);
+                if (epoch === this.#disposalEpoch) this.#report('forget:throw', 'receipt storage delete failed', error);
             }
         }
-        this.#notify('forgotten', null, id, null);
+        if (epoch === this.#disposalEpoch) this.#notify('forgotten', null, id, null);
     }
 
     /**
@@ -1018,32 +1041,37 @@ export class PromptReceiptStore {
         }
         this.#pending = null;
         receipt.mesId = index;
-        this.#notify('landed', receipt);
-        await this.#persist(receipt);
+        await this.#withChat(receipt.chatId, async (lifetime) => {
+            this.#notify('landed', receipt);
+            await this.#persist(receipt, lifetime);
+        });
     }
 
     /**
      * Writes one landed receipt into its chat's file. Storage failure is memory-only
      * operation plus one error line — never a thrown promise on the generation path.
      * @param {PromptReceipt} receipt Landed record.
+     * @param {ReceiptLifetime} lifetime Generation's chat ownership.
      * @returns {Promise<void>}
      */
-    async #persist(receipt) {
+    async #persist(receipt, lifetime) {
         if (!receipt.chatId) {
             // No chat id means no key. The capture stays available through `latest()`.
             return;
         }
         try {
-            const file = await this.#file(receipt.chatId);
+            const file = await this.#file(receipt.chatId, lifetime);
+            if (!lifetime.valid) return;
             file.receipts = mergeReceipt(file.receipts, receipt, MAX_RECEIPTS_PER_CHAT);
             const storage = this.#storageInstance();
             if (!storage) {
                 return;
             }
-            await storage.setItem(receipt.chatId, { version: RECEIPT_VERSION, receipts: file.receipts });
-            this.#notify('saved', receipt);
+            const payload = { version: RECEIPT_VERSION, receipts: file.receipts };
+            await this.#queueWrite(receipt.chatId, () => lifetime.valid ? storage.setItem(receipt.chatId, payload) : undefined);
+            if (lifetime.valid) this.#notify('saved', receipt);
         } catch (error) {
-            this.#report('persist:throw', 'receipt storage write failed; receipts stay in memory for this session', error);
+            if (lifetime.valid) this.#report('persist:throw', 'receipt storage write failed; receipts stay in memory for this session', error);
         }
     }
 
@@ -1067,33 +1095,38 @@ export class PromptReceiptStore {
         if (!chatId) {
             return;
         }
-        try {
-            const file = await this.#file(chatId);
-            /** @type {PromptReceipt[]} */
-            let after;
-            if (event.type === 'deleted') {
-                after = reindexForDelete(file.receipts, event.index);
-            } else if (event.type === 'truncated') {
-                after = reindexForTruncate(file.receipts, event.newLength);
-            } else if (event.type === 'swapped') {
-                after = reindexForSwap(file.receipts, event.a, event.b);
-            } else {
-                return;
-            }
-            file.receipts = after;
-            this.#reindexLatest(chatId, event);
-            const storage = this.#storageInstance();
-            if (storage) {
-                try {
-                    await storage.setItem(chatId, { version: RECEIPT_VERSION, receipts: after });
-                } catch (error) {
-                    this.#report('reindex:persist', 'receipt reindex write failed; the warm copy stays correct for this session', error);
+        return this.#withChat(chatId, async (lifetime) => {
+            try {
+                const file = await this.#file(chatId, lifetime);
+                if (!lifetime.valid) return;
+                /** @type {PromptReceipt[]} */
+                let after;
+                if (event.type === 'deleted') {
+                    after = reindexForDelete(file.receipts, event.index);
+                } else if (event.type === 'truncated') {
+                    after = reindexForTruncate(file.receipts, event.newLength);
+                } else if (event.type === 'swapped') {
+                    after = reindexForSwap(file.receipts, event.a, event.b);
+                } else {
+                    return;
                 }
+                file.receipts = after;
+                this.#reindexLatest(chatId, event);
+                const storage = this.#storageInstance();
+                if (storage) {
+                    try {
+                        await this.#queueWrite(chatId, () => lifetime.valid
+                            ? storage.setItem(chatId, { version: RECEIPT_VERSION, receipts: after })
+                            : undefined);
+                    } catch (error) {
+                        if (lifetime.valid) this.#report('reindex:persist', 'receipt reindex write failed; the warm copy stays correct for this session', error);
+                    }
+                }
+                if (lifetime.valid) this.#notify('reindexed', null, chatId, null);
+            } catch (error) {
+                if (lifetime.valid) this.#report('reindex:throw', 'receipt reindex failed', error);
             }
-            this.#notify('reindexed', null, chatId, null);
-        } catch (error) {
-            this.#report('reindex:throw', 'receipt reindex failed', error);
-        }
+        });
     }
 
     /**
@@ -1144,9 +1177,11 @@ export class PromptReceiptStore {
     /**
      * The warm file for a chat, loading it once and sharing the in-flight promise.
      * @param {string} chatId Chat id.
+     * @param {ReceiptLifetime} lifetime Read's chat ownership.
      * @returns {Promise<{version: number, receipts: PromptReceipt[]}>} The file.
      */
-    #file(chatId) {
+    #file(chatId, lifetime) {
+        if (!lifetime.valid) return Promise.resolve({ version: RECEIPT_VERSION, receipts: [] });
         const cached = this.#files.get(chatId);
         if (cached) {
             return Promise.resolve(cached);
@@ -1155,16 +1190,24 @@ export class PromptReceiptStore {
         if (inflight) {
             return inflight;
         }
-        const promise = this.#loadFile(chatId);
+        const promise = this.#loadFile(chatId, lifetime);
         this.#loads.set(chatId, promise);
+        const cleanup = () => {
+            if (this.#loads.get(chatId) === promise) this.#loads.delete(chatId);
+        };
+        void promise.then(cleanup, cleanup);
         return promise;
     }
 
     /**
      * @param {string} chatId Chat id.
+     * @param {ReceiptLifetime} lifetime Read's chat ownership.
      * @returns {Promise<{version: number, receipts: PromptReceipt[]}>} The loaded file.
      */
-    async #loadFile(chatId) {
+    async #loadFile(chatId, lifetime) {
+        const write = this.#writes.get(chatId);
+        if (write) await write.catch(() => undefined);
+        if (!lifetime.valid) return { version: RECEIPT_VERSION, receipts: [] };
         /** @type {PromptReceipt[]} */
         let receipts = [];
         const storage = this.#storageInstance();
@@ -1172,14 +1215,58 @@ export class PromptReceiptStore {
             try {
                 receipts = normalizeStoredFile(await storage.getItem(chatId));
             } catch (error) {
-                this.#report('load:throw', 'receipt storage read failed; this chat starts empty', error);
+                if (lifetime.valid) this.#report('load:throw', 'receipt storage read failed; this chat starts empty', error);
             }
         }
+        if (!lifetime.valid) return { version: RECEIPT_VERSION, receipts: [] };
         const file = { version: RECEIPT_VERSION, receipts };
         this.#files.set(chatId, file);
-        this.#loads.delete(chatId);
         this.#evict(this.#files, WARM_CHAT_FILES);
         return file;
+    }
+
+    /**
+     * Keeps pending work tied to its chat lifetime. Forget/dispose invalidate it; a new read
+     * gets a fresh lifetime. Uncached, idle lifetimes are dropped to keep bookkeeping bounded.
+     * @template T
+     * @param {string} chatId Chat id.
+     * @param {(lifetime: ReceiptLifetime) => Promise<T>} action Chat operation.
+     * @returns {Promise<T>} The operation's result.
+     */
+    async #withChat(chatId, action) {
+        let lifetime = this.#lifetimes.get(chatId);
+        if (!lifetime) {
+            lifetime = { valid: true, users: 0 };
+            this.#lifetimes.set(chatId, lifetime);
+        }
+        lifetime.users += 1;
+        try {
+            return await action(lifetime);
+        } finally {
+            lifetime.users -= 1;
+            if (lifetime.users === 0 && !this.#files.has(chatId) && !this.#loads.has(chatId)
+                && this.#lifetimes.get(chatId) === lifetime) {
+                this.#lifetimes.delete(chatId);
+            }
+        }
+    }
+
+    /**
+     * Serializes writes/deletions for one chat; a failed write never blocks its deletion.
+     * @template T
+     * @param {string} chatId Chat id.
+     * @param {() => T | Promise<T>} action Storage operation.
+     * @returns {Promise<T>} Completion of this operation.
+     */
+    #queueWrite(chatId, action) {
+        const previous = this.#writes.get(chatId);
+        const pending = (previous ?? Promise.resolve()).catch(() => undefined).then(action);
+        this.#writes.set(chatId, pending);
+        const cleanup = () => {
+            if (this.#writes.get(chatId) === pending) this.#writes.delete(chatId);
+        };
+        void pending.then(cleanup, cleanup);
+        return pending;
     }
 
     /**
@@ -1290,6 +1377,9 @@ export class PromptReceiptStore {
                 return;
             }
             map.delete(oldest.value);
+            if (map === this.#files && this.#lifetimes.get(oldest.value)?.users === 0) {
+                this.#lifetimes.delete(oldest.value);
+            }
         }
     }
 

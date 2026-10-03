@@ -1,0 +1,926 @@
+/*
+ * kotatsu-connections.css — the Claude Code card (docs/connections-v0.md, slice C1).
+ *
+ * Paints `<k-bridge-card>` (kotatsu/connections/k-bridge-card.js), mounted as the first child of
+ * core's `#rm_api_block` and so shown wherever the settings modal's Connection tab puts that
+ * block. Rails only: classic keeps upstream's drawer exactly. Tokens only; the card follows the
+ * design canvas "Kotatsu Connections" (artboards 1-2) — a rose-edged hero card, status pills, a
+ * model grid, a segmented effort row, and problem cards whose border tone says how blocking they
+ * are.
+ */
+
+body:not([data-k-layout="rails"]) k-bridge-card {
+    display: none;
+}
+
+body[data-k-layout="rails"] k-bridge-card {
+    display: block;
+    margin: 0 0 18px;
+}
+
+body[data-k-layout="rails"] .k-bc {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px 20px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    border-radius: var(--k-radius-xl);
+    background: var(--k-surface);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+}
+
+body[data-k-layout="rails"] .k-bc[data-active="true"] {
+    border-color: color-mix(in srgb, var(--k-rose) 55%, transparent);
+}
+
+body[data-k-layout="rails"] .k-bc__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+body[data-k-layout="rails"] .k-bc__mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-ground-deep);
+    color: var(--k-rose);
+}
+
+body[data-k-layout="rails"] .k-bc__title {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-bc__name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+body[data-k-layout="rails"] .k-bc__name h2 {
+    margin: 0;
+    font-family: var(--k-font-display);
+    font-size: 21px;
+    font-weight: var(--k-display-weight);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-bc p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-bc__title > p,
+body[data-k-layout="rails"] .k-bc__hint {
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-bc__hint {
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-bc__pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+body[data-k-layout="rails"] .k-bc__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    padding: 0 10px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 50%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-surface-2);
+    font-size: 12px;
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-bc__pill[data-tone="success"] {
+    border-color: color-mix(in srgb, var(--k-success) 50%, transparent);
+}
+
+body[data-k-layout="rails"] .k-bc__pill[data-tone="danger"] {
+    border-color: color-mix(in srgb, var(--k-danger) 55%, transparent);
+}
+
+body[data-k-layout="rails"] .k-bc__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-bc__pill[data-tone="success"] .k-bc__dot {
+    background: var(--k-success);
+}
+
+body[data-k-layout="rails"] .k-bc__pill[data-tone="danger"] .k-bc__dot {
+    background: var(--k-danger);
+}
+
+body[data-k-layout="rails"] .k-bc__mono,
+body[data-k-layout="rails"] .k-bc code {
+    font-family: var(--k-font-mono);
+    font-size: 11.5px;
+}
+
+body[data-k-layout="rails"] .k-bc__headactions,
+body[data-k-layout="rails"] .k-bc__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-bc__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 34px;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-sunken);
+    color: var(--k-text);
+    font: 500 13px var(--k-font-ui);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--k-motion), border-color var(--k-motion), color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-bc__btn:hover,
+body[data-k-layout="rails"] .k-bc__btn:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-bc__btn--primary {
+    border-color: var(--k-rose);
+    background: var(--k-rose);
+    color: var(--k-ground-deep);
+}
+
+body[data-k-layout="rails"] .k-bc__btn--primary:hover,
+body[data-k-layout="rails"] .k-bc__btn--primary:focus-visible {
+    border-color: var(--k-rose-bright);
+    background: var(--k-rose-bright);
+    color: var(--k-ground-deep);
+}
+
+body[data-k-layout="rails"] .k-bc__btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+body[data-k-layout="rails"] .k-bc__btn--small {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+}
+
+/* A problem card: its border tone says how blocking it is (warning = can't send yet). */
+body[data-k-layout="rails"] .k-bc__problem {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 50%, transparent);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] .k-bc__problem[data-tone="warning"] {
+    border-color: color-mix(in srgb, var(--k-warning) 60%, transparent);
+}
+
+body[data-k-layout="rails"] .k-bc__problem[data-tone="danger"] {
+    border-color: color-mix(in srgb, var(--k-danger) 60%, transparent);
+}
+
+body[data-k-layout="rails"] .k-bc__problem[data-tone="info"] {
+    border-color: color-mix(in srgb, var(--k-accent) 55%, transparent);
+}
+
+body[data-k-layout="rails"] .k-bc__problem strong {
+    font-family: var(--k-font-display);
+    font-size: 17px;
+    font-weight: var(--k-display-weight);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-bc__command {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px 8px 12px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-ground-deep);
+}
+
+body[data-k-layout="rails"] .k-bc__command code {
+    /* Core styles every <code> as a chip; inside the command well it is plain text. */
+    padding: 0;
+    border: 0;
+    background: none;
+    flex: 1 1 auto;
+    font-size: 13px;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-bc__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+body[data-k-layout="rails"] .k-bc__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-bc__cap {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-bc__models {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-bc__model {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    min-height: 40px;
+    padding: 7px 11px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-2);
+    color: var(--k-text);
+    font: 500 13px var(--k-font-ui);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--k-motion), background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-bc__model small {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-bc__model:hover,
+body[data-k-layout="rails"] .k-bc__model:focus-visible {
+    border-color: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-bc__model[aria-pressed="true"] {
+    border-color: var(--k-rose);
+    background: color-mix(in srgb, var(--k-rose) 10%, var(--k-surface-2));
+}
+
+body[data-k-layout="rails"] .k-bc__model:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+body[data-k-layout="rails"] .k-bc__seg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-ground-deep);
+}
+
+body[data-k-layout="rails"] .k-bc__seg button {
+    flex: 1 1 auto;
+    min-height: 30px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--k-radius-md);
+    background: transparent;
+    color: var(--k-text-dim);
+    font: 500 12.5px var(--k-font-ui);
+    cursor: pointer;
+    transition: background-color var(--k-motion), color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-bc__seg button:hover,
+body[data-k-layout="rails"] .k-bc__seg button:focus-visible {
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-bc__seg button[aria-pressed="true"] {
+    background: var(--k-surface);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-bc__facts {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12.5px;
+}
+
+body[data-k-layout="rails"] .k-bc__facts li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-bc__facts b {
+    font-weight: 500;
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-bc__facts li[data-tone="warning"] b {
+    color: var(--k-warning);
+}
+
+/* ── Bridge settings (slice C4): live toggles, then "Bridge settings" for model list and port. */
+
+body[data-k-layout="rails"] .k-bc__toggles {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 4px;
+}
+
+body[data-k-layout="rails"] .k-bc__toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-bc__toggle input {
+    flex: 0 0 auto;
+    margin: 2px 0 0;
+    accent-color: var(--k-rose);
+}
+
+body[data-k-layout="rails"] .k-bc__toggle > span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+body[data-k-layout="rails"] .k-bc__toggle small,
+body[data-k-layout="rails"] .k-bc__locked {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-bc__toggle:has(input:disabled) {
+    cursor: default;
+}
+
+body[data-k-layout="rails"] .k-bc__advanced {
+    border-top: 1px solid color-mix(in srgb, var(--k-chrome-border) 30%, transparent);
+    padding-top: 12px;
+}
+
+body[data-k-layout="rails"] .k-bc__advanced > summary {
+    width: fit-content;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--k-text-dim);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-bc__advanced > summary:hover,
+body[data-k-layout="rails"] .k-bc__advanced > summary:focus-visible {
+    color: var(--k-text-strong);
+}
+
+/* The grid lives on a wrapper: Chrome lays a <details>'s content out through its own
+   ::details-content slot, so a grid on the <details> never reaches the forms (caught in QA). */
+body[data-k-layout="rails"] .k-bc__advgrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 20px;
+    padding-top: 12px;
+}
+
+body[data-k-layout="rails"] .k-bc__form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-bc__label {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    font-size: 12px;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-bc__form :is(select, textarea, input) {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 34px;
+    padding: 6px 10px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-ground-deep);
+    color: var(--k-text-strong);
+    font: 13px var(--k-font-ui);
+}
+
+body[data-k-layout="rails"] .k-bc__form textarea {
+    resize: vertical;
+    font-family: var(--k-font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-bc__form :is(select, textarea, input):focus-visible {
+    outline: 1px solid var(--k-accent);
+    outline-offset: 1px;
+}
+
+body[data-k-layout="rails"] .k-bc__inline {
+    display: flex;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-bc__inline input {
+    flex: 0 1 120px;
+    font-family: var(--k-font-mono);
+}
+
+body[data-k-layout="rails"] .k-bc__status {
+    font-size: 12.5px;
+    color: var(--k-success);
+}
+
+body[data-k-layout="rails"] .k-bc__status[data-tone="danger"] {
+    color: var(--k-danger);
+}
+
+@media (max-width: 780px) {
+    body[data-k-layout="rails"] .k-bc__head {
+        flex-wrap: wrap;
+    }
+
+    body[data-k-layout="rails"] .k-bc__grid,
+    body[data-k-layout="rails"] .k-bc__advgrid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ── "Your API keys" (slice C2) ─────────────────────────────────────────────────────────────
+   `<k-provider-cards>` sits under the Claude Code card and borrows its buttons and labels
+   (`.k-bc__btn`, `.k-bc__cap`, `.k-bc__hint`), so the two read as one system. A card's tone is
+   its state: in use (rose edge), key saved, no key yet, or a failed connect (danger edge). */
+
+body:not([data-k-layout="rails"]) k-provider-cards {
+    display: none;
+}
+
+body[data-k-layout="rails"] k-provider-cards {
+    display: block;
+    margin: 0 0 18px;
+}
+
+body[data-k-layout="rails"] .k-pc {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-pc__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 12px;
+}
+
+body[data-k-layout="rails"] .k-pc__head h3 {
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-pc__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* An open key form makes its card taller; its row-mates keep their own height. */
+    align-items: start;
+    gap: 10px;
+}
+
+body[data-k-layout="rails"] .k-pc__card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-surface-sunken);
+}
+
+body[data-k-layout="rails"] .k-pc__card[data-tone="active"] {
+    border-color: color-mix(in srgb, var(--k-rose) 60%, transparent);
+}
+
+body[data-k-layout="rails"] .k-pc__card[data-tone="danger"] {
+    border-color: color-mix(in srgb, var(--k-danger) 60%, transparent);
+}
+
+body[data-k-layout="rails"] .k-pc__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+body[data-k-layout="rails"] .k-pc__copy {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-pc__name {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-pc__status {
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-pc__card[data-tone="active"] .k-pc__status,
+body[data-k-layout="rails"] .k-pc__card[data-tone="saved"] .k-pc__status {
+    color: var(--k-success);
+}
+
+body[data-k-layout="rails"] .k-pc__card[data-tone="danger"] .k-pc__status {
+    white-space: normal;
+    color: var(--k-danger);
+}
+
+body[data-k-layout="rails"] .k-pc__form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-pc__label {
+    font-size: 12px;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-pc__form input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-ground-deep);
+    color: var(--k-text-strong);
+    font: 13px var(--k-font-mono);
+}
+
+body[data-k-layout="rails"] .k-pc__form input:focus-visible {
+    outline: 1px solid var(--k-accent);
+    outline-offset: 1px;
+}
+
+@media (max-width: 1100px) {
+    body[data-k-layout="rails"] .k-pc__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    body[data-k-layout="rails"] .k-pc__grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ── Saved connections + More ways to connect (slice C3) ──────────────────────────────────────
+   `<k-connection-more>` sits under "Your API keys": two columns on a wide tab (artboard 1), one
+   on a narrow one. Rows borrow the card system's buttons and labels. A saved row's dot says its
+   state: in use (success), selected but changed since saved (warning), otherwise quiet. */
+
+body:not([data-k-layout="rails"]) k-connection-more {
+    display: none;
+}
+
+body[data-k-layout="rails"] k-connection-more {
+    display: block;
+    margin: 0 0 18px;
+}
+
+/* The stock panel, behind its disclosure (D1). Hidden, never moved: this rule lands on the
+   block's DIRECT children only — the Connection Manager's profile row, the API title, the drawer
+   body — and writes nothing inside them, so core's per-API display writers keep sole authority.
+   `!important` because core writes inline display on some of these (the preset-dock lesson).
+   A settings search stands it open (`data-searching` on the modal), so a hit on "proxy" or
+   "auto-connect" lands on a field that is actually on screen. */
+body[data-k-layout="rails"] k-settings-modal:not([data-searching]) #rm_api_block:not([data-k-stock="open"]) > :not(k-bridge-card, k-chatgpt-card, k-provider-cards, k-connection-more) {
+    display: none !important;
+}
+
+body[data-k-layout="rails"] .k-cm {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 20px;
+    font-family: var(--k-font-ui);
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-cm__saved,
+body[data-k-layout="rails"] .k-cm__more {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-cm h3 {
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-cm__list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
+    border-radius: var(--k-radius-lg);
+    list-style: none;
+}
+
+body[data-k-layout="rails"] .k-cm__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    min-height: 48px;
+    padding: 8px 12px 8px 14px;
+    box-sizing: border-box;
+    background: var(--k-surface-sunken);
+}
+
+body[data-k-layout="rails"] .k-cm__row + .k-cm__row {
+    border-top: 1px solid color-mix(in srgb, var(--k-chrome-border) 25%, transparent);
+}
+
+body[data-k-layout="rails"] .k-cm__dot {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--k-chrome-border) 80%, transparent);
+}
+
+body[data-k-layout="rails"] .k-cm__row[data-tone="active"] .k-cm__dot {
+    background: var(--k-success);
+}
+
+body[data-k-layout="rails"] .k-cm__row[data-tone="changed"] .k-cm__dot {
+    background: var(--k-warning);
+}
+
+body[data-k-layout="rails"] .k-cm__copy {
+    display: flex;
+    flex: 1 1 140px;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    text-align: left;
+}
+
+body[data-k-layout="rails"] .k-cm__name {
+    overflow: hidden;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-cm__detail {
+    overflow: hidden;
+    font-family: var(--k-font-mono);
+    font-size: 11.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-cm__state {
+    font-size: 12px;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-cm__row[data-tone="active"] .k-cm__state {
+    color: var(--k-success);
+}
+
+body[data-k-layout="rails"] .k-cm__row[data-tone="changed"] .k-cm__state {
+    color: var(--k-warning);
+}
+
+/* The selected row's own actions take a line of their own under its name. */
+body[data-k-layout="rails"] .k-cm__manage {
+    display: flex;
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-left: 18px;
+}
+
+body[data-k-layout="rails"] .k-cm__way {
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 35%, transparent);
+    border-radius: var(--k-radius-lg);
+    transition: border-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-cm__way[data-open="true"] {
+    border-color: color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
+}
+
+body[data-k-layout="rails"] .k-cm__wayhead {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 52px;
+    padding: 9px 14px;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    color: var(--k-text);
+    font: inherit;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-cm__wayhead:hover .k-cm__name,
+body[data-k-layout="rails"] .k-cm__wayhead:focus-visible .k-cm__name {
+    color: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-cm__wayhead:focus-visible {
+    outline: 1px solid var(--k-accent);
+    outline-offset: -1px;
+}
+
+body[data-k-layout="rails"] .k-cm__wayhead .k-bc__hint {
+    white-space: normal;
+}
+
+body[data-k-layout="rails"] .k-cm__chevron {
+    display: flex;
+    flex: 0 0 auto;
+    color: var(--k-text-muted);
+    transition: transform var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-cm__way[data-open="true"] .k-cm__chevron {
+    transform: rotate(90deg);
+}
+
+body[data-k-layout="rails"] .k-cm__choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 2px 14px 14px;
+}
+
+body[data-k-layout="rails"] .k-cm__choice {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    min-height: 32px;
+    padding: 5px 11px;
+    box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-surface-2);
+    color: var(--k-text);
+    font: 500 12.5px var(--k-font-ui);
+    cursor: pointer;
+    transition: border-color var(--k-motion), color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-cm__choice small {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-cm__choice:hover,
+body[data-k-layout="rails"] .k-cm__choice:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-cm__choice[aria-pressed="true"] {
+    border-color: var(--k-rose);
+    background: color-mix(in srgb, var(--k-rose) 10%, var(--k-surface-2));
+}
+
+@media (max-width: 1100px) {
+    body[data-k-layout="rails"] .k-cm {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ── The composer says why (artboard 3) ───────────────────────────────────────────────────────
+   A slim strip right above `#send_form` while the Claude Code bridge can't answer: the reason,
+   then "How to fix" (the Connection tab). Rails only; classic keeps upstream's composer. */
+
+body:not([data-k-layout="rails"]) .k-composer-reason {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-composer-reason {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px 12px;
+    margin: 0 0 8px;
+    padding: 8px 14px;
+    border: 1px solid color-mix(in srgb, var(--k-warning) 45%, transparent);
+    border-radius: var(--k-radius-lg);
+    background: color-mix(in srgb, var(--k-warning) 9%, var(--k-surface));
+    color: var(--k-text);
+    font: 13px var(--k-font-ui);
+}
+
+body[data-k-layout="rails"] .k-composer-reason[hidden] {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-composer-reason[data-kind="port"],
+body[data-k-layout="rails"] .k-composer-reason[data-kind="standing-down"],
+body[data-k-layout="rails"] .k-composer-reason[data-kind="disabled"] {
+    border-color: color-mix(in srgb, var(--k-danger) 50%, transparent);
+    background: color-mix(in srgb, var(--k-danger) 8%, var(--k-surface));
+}
+
+body[data-k-layout="rails"] .k-composer-reason__fix {
+    min-height: 28px;
+    padding: 0 12px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-sunken);
+    color: var(--k-text-strong);
+    font: 500 12px var(--k-font-ui);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-composer-reason__fix:hover,
+body[data-k-layout="rails"] .k-composer-reason__fix:focus-visible {
+    border-color: var(--k-accent);
+}

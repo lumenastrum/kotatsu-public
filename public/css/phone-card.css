@@ -1,0 +1,533 @@
+/*
+ * phone-card.css — `<k-phone-card>` (kotatsu/phone/k-phone-card.js, docs/phone-v0.md §4.2).
+ *
+ * Lives inside the settings modal's System tab. Own `k-ph__*` classes and no bare select, input,
+ * `.menu_button` or <small>: the modal's control rules (settings-modal.css §5) reach into light
+ * DOM under `.k-set-control` and would restyle them. Tokens only, so Blue Hour, Sparkle and the
+ * light packs (Natsumikan) all read; the one exception is the QR, which is black on white on
+ * purpose (phone cameras want contrast, whatever the pack).
+ */
+
+body[data-k-layout="rails"] .k-set-control:has(> k-phone-card) {
+    flex: 1 1 100%;
+    width: 100%;
+}
+
+body[data-k-layout="rails"] .k-set-row:has(k-phone-card) {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+body:not([data-k-layout="rails"]) k-phone-card {
+    display: none;
+}
+
+body[data-k-layout="rails"] k-phone-card {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-ph {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    border-radius: var(--k-radius-xl);
+    background: var(--k-surface);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-ph p {
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-ph__lead {
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-ph__hint {
+    color: var(--k-text-dim);
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-ph__muted {
+    color: var(--k-text-dim);
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-ph__error {
+    color: var(--k-danger);
+    font-size: 12.5px;
+}
+
+body[data-k-layout="rails"] .k-ph__subhead {
+    margin: 0 0 6px;
+    color: var(--k-text-strong);
+    font: 600 12px var(--k-font-ui);
+    letter-spacing: 0.02em;
+}
+
+/* ── The switch ─────────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-ph__switchrow {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-ph__switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    align-self: flex-start;
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--k-text-strong);
+    font: 500 13px var(--k-font-ui);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-ph__switch:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+body[data-k-layout="rails"] .k-ph__track {
+    position: relative;
+    flex: 0 0 auto;
+    width: 36px;
+    height: 20px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 70%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-ground-deep);
+    transition: background-color var(--k-motion), border-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-ph__thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--k-text-dim);
+    transition: transform var(--k-motion), background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-ph__switch[aria-checked="true"] .k-ph__track {
+    border-color: var(--k-rose);
+    background: color-mix(in srgb, var(--k-rose) 28%, var(--k-ground-deep));
+}
+
+body[data-k-layout="rails"] .k-ph__switch[aria-checked="true"] .k-ph__thumb {
+    background: var(--k-rose);
+    transform: translateX(16px);
+}
+
+body[data-k-layout="rails"] .k-ph__switch:focus-visible {
+    outline: 2px solid var(--k-accent);
+    outline-offset: 3px;
+    border-radius: var(--k-radius-md);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-ph__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-ph__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 34px;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-sunken);
+    color: var(--k-text);
+    font: 500 13px var(--k-font-ui);
+    cursor: pointer;
+    transition: background-color var(--k-motion), border-color var(--k-motion), color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-ph__btn:hover,
+body[data-k-layout="rails"] .k-ph__btn:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-ph__btn--primary {
+    border-color: var(--k-rose);
+    background: var(--k-rose);
+    color: var(--k-ground-deep);
+}
+
+body[data-k-layout="rails"] .k-ph__btn--primary:hover,
+body[data-k-layout="rails"] .k-ph__btn--primary:focus-visible {
+    border-color: var(--k-rose-bright);
+    background: var(--k-rose-bright);
+    color: var(--k-ground-deep);
+}
+
+body[data-k-layout="rails"] .k-ph__btn--small {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-ph__btn--danger {
+    color: var(--k-danger);
+    border-color: color-mix(in srgb, var(--k-danger) 40%, transparent);
+}
+
+body[data-k-layout="rails"] .k-ph__btn--danger:hover,
+body[data-k-layout="rails"] .k-ph__btn--danger:focus-visible {
+    border-color: var(--k-danger);
+    color: var(--k-danger);
+}
+
+body[data-k-layout="rails"] .k-ph__btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+/* ── Notices ────────────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-ph__notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
+    border-left-width: 3px;
+    border-radius: var(--k-radius-lg);
+    background: var(--k-surface-sunken);
+}
+
+body[data-k-layout="rails"] .k-ph__notice[data-tone="warning"] {
+    border-left-color: var(--k-warning);
+}
+
+body[data-k-layout="rails"] .k-ph__notice[data-tone="info"] {
+    border-left-color: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-ph__noticeicon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-ph__notice[data-tone="warning"] .k-ph__noticeicon {
+    color: var(--k-warning);
+}
+
+body[data-k-layout="rails"] .k-ph__noticebody {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* ── Pairing panel ──────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-ph__pair {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+body[data-k-layout="rails"] .k-ph__tabs {
+    display: flex;
+    gap: 2px;
+    align-self: flex-start;
+    padding: 3px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-ground-deep);
+}
+
+body[data-k-layout="rails"] .k-ph__tab {
+    min-height: 30px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--k-radius-md);
+    background: transparent;
+    color: var(--k-text-dim);
+    font: 500 12.5px var(--k-font-ui);
+    cursor: pointer;
+    transition: background-color var(--k-motion), color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-ph__tab:hover,
+body[data-k-layout="rails"] .k-ph__tab:focus-visible {
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-ph__tab[aria-selected="true"] {
+    background: var(--k-surface);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-ph__picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-ph__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+    padding: 0 10px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 50%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-surface-2);
+    color: var(--k-text);
+    font: 500 12px var(--k-font-mono);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-ph__chip[aria-checked="true"] {
+    border-color: var(--k-rose);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-ph__chipnote {
+    color: var(--k-text-dim);
+    font: 400 11px var(--k-font-ui);
+}
+
+body[data-k-layout="rails"] .k-ph__qrwrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+/* Black on white, always: not a token. Cameras read contrast, not a theme. */
+body[data-k-layout="rails"] .k-ph__qrbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    width: 184px;
+    height: 184px;
+    padding: 0;
+    border-radius: var(--k-radius-md);
+    background: #fff;
+    overflow: hidden;
+}
+
+body[data-k-layout="rails"] .k-ph__qrbox--empty {
+    border: 1px dashed color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
+    background: var(--k-surface-sunken);
+    color: var(--k-text-dim);
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-ph__qr {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+body[data-k-layout="rails"] .k-ph__qrside {
+    display: flex;
+    flex: 1 1 220px;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-ph__url {
+    margin: 0;
+    font: 500 12px var(--k-font-mono);
+    color: var(--k-text-strong);
+    overflow-wrap: anywhere;
+    user-select: text;
+}
+
+/* ── Success ────────────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-ph__success {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--k-success) 45%, transparent);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-surface-sunken);
+    /* Clips her to the panel's own rounded corners. */
+    overflow: hidden;
+    position: relative;
+    min-height: 132px;
+    --k-ph-mascot-w: 132px;
+}
+
+/* She fills the panel's whole left side, top to bottom. The bust is a square crop whose arms
+   run off its edges, so three of its cuts land on the panel's frame (top, left, bottom) and
+   only the right one — mid-panel, beside the text — fades. */
+body[data-k-layout="rails"] .k-ph__success:has(.k-ph__mascot) {
+    padding-left: calc(var(--k-ph-mascot-w) + 6px);
+}
+
+body[data-k-layout="rails"] .k-ph__mascot {
+    display: var(--k-mascot-display, block);
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--k-ph-mascot-w);
+}
+
+body[data-k-layout="rails"] .k-ph__mascot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 100%;
+    user-select: none;
+    mask-image: linear-gradient(to right, #000 72%, transparent);
+}
+
+@media (max-width: 480px) {
+    body[data-k-layout="rails"] .k-ph__success {
+        --k-ph-mascot-w: 104px;
+    }
+}
+
+body[data-k-layout="rails"] .k-ph__successbody {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    padding-bottom: 2px;
+}
+
+body[data-k-layout="rails"] .k-ph__ok {
+    display: inline-flex;
+    margin-right: 6px;
+    vertical-align: -4px;
+    color: var(--k-success);
+}
+
+body[data-k-layout="rails"] .k-ph__say {
+    color: var(--k-text-dim);
+    font-style: italic;
+}
+
+/* ── Devices ────────────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-ph__list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+body[data-k-layout="rails"] .k-ph__device {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-top: 1px solid color-mix(in srgb, var(--k-chrome-border) 30%, transparent);
+}
+
+body[data-k-layout="rails"] .k-ph__device:first-child {
+    border-top: 0;
+}
+
+body[data-k-layout="rails"] .k-ph__deviceicon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-ph__devicebody {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-ph__devicename {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    color: var(--k-text-strong);
+    font-weight: 500;
+}
+
+body[data-k-layout="rails"] .k-ph__badge {
+    padding: 1px 8px;
+    border: 1px solid color-mix(in srgb, var(--k-rose) 55%, transparent);
+    border-radius: var(--k-radius-pill);
+    color: var(--k-text);
+    font-size: 11px;
+    font-weight: 400;
+}
+
+body[data-k-layout="rails"] .k-ph__devicemeta {
+    color: var(--k-text-dim);
+    font-size: 12px;
+}
+
+/* ── Touch and narrow ───────────────────────────────────────────────────────────── */
+
+@media (pointer: coarse) {
+    body[data-k-layout="rails"] .k-ph__btn,
+    body[data-k-layout="rails"] .k-ph__btn--small,
+    body[data-k-layout="rails"] .k-ph__tab,
+    body[data-k-layout="rails"] .k-ph__chip,
+    body[data-k-layout="rails"] .k-ph__switch {
+        min-height: 44px;
+    }
+}
+
+@media (max-width: 780px) {
+    body[data-k-layout="rails"] .k-ph {
+        padding: 12px;
+    }
+
+    body[data-k-layout="rails"] .k-ph__qrwrap {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    body[data-k-layout="rails"] .k-ph__qrbox {
+        align-self: center;
+    }
+
+    body[data-k-layout="rails"] .k-ph__qrside {
+        flex-basis: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"] .k-ph__track,
+    body[data-k-layout="rails"] .k-ph__thumb {
+        transition: none;
+    }
+}

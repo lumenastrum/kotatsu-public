@@ -139,3 +139,33 @@ k-preset-pages {
        this sheet carries the hammer, and still the only kind. */
     gap: 1px !important;
 }
+
+/* The credit line: who made the active preset, when it is a bundled third-party one
+   (k-preset-pages.js, docs/preset-bundle-v0.md §5). Quiet on purpose. */
+#left-nav-panel.k-docked .k-pp-credit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin: 6px 0 0;
+    font-size: 11px;
+    line-height: 1.3;
+    color: var(--k-text-faint);
+}
+
+#left-nav-panel.k-docked .k-pp-credit-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--k-text-muted);
+    text-decoration: none;
+}
+
+#left-nav-panel.k-docked .k-pp-credit-link:hover {
+    color: var(--k-accent-bright);
+}
+
+#left-nav-panel.k-docked .k-pp-credit-link:focus-visible {
+    outline: 1px solid var(--k-accent);
+    outline-offset: 2px;
+    border-radius: var(--k-radius-sm);
+}

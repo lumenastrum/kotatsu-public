@@ -18,6 +18,9 @@
  *   page — the stock unpaged panel, by design.
  * - **Anchors, not order.** Blocks resolve from stable control ids via
  *   `closest()`, never from child position — core reorders its panel freely.
+ * - **A credit line** under the strip names the author of a bundled third-party preset while it is
+ *   the active Chat Completion preset (credits manifest, docs/preset-bundle-v0.md §5). Kotatsu's
+ *   own preset, and any preset not in the manifest, show nothing.
  * - **SPEC §13** — `variant="pills"` is the only v0 variant; the attribute is
  *   present so a pack can address a second one later.
  * - **Light DOM** so `css/preset-dock.css` reaches the strip and the panel
@@ -25,6 +28,11 @@
  */
 
 import { html, LitElement } from '../lit.js';
+import { glideIndicator } from '../glide-indicator.js';
+import { main_api } from '../../../script.js';
+import { event_types, eventSource } from '../../../scripts/events.js';
+import { getPresetManager } from '../../../scripts/preset-manager.js';
+import { loadPresetCredits, presetCredit } from '../../onboarding/preset-credits.js';
 
 /** The pages, in strip order. Slugs are pinned in docs/preset-dock-v0.md. */
 const PAGES = [
@@ -120,6 +128,7 @@ export class KPresetPages extends LitElement {
         /** SPEC §13 — present even though `pills` is the only v0 variant. */
         variant: { type: String, reflect: true },
         _active: { state: true },
+        _credit: { state: true },
     };
 
     constructor() {
@@ -128,7 +137,18 @@ export class KPresetPages extends LitElement {
         this.variant = 'pills';
         /** @type {string} */
         this._active = readStoredPage();
+        /** @type {{text: string, author: string, url: string|null}|null} */
+        this._credit = null;
+        /** @type {any} The credits manifest, once fetched. */
+        this._manifest = null;
     }
+
+    /** Re-reads which preset is active and whether it is owed a credit line. */
+    #refreshCredit = () => {
+        const name = main_api === 'openai' ? String(getPresetManager('openai')?.getSelectedPresetName?.() ?? '') : '';
+        const credit = this._manifest && name ? presetCredit(this._manifest, name) : null;
+        if (credit?.text !== this._credit?.text || credit?.url !== this._credit?.url) this._credit = credit;
+    };
 
     /** Light DOM: `css/preset-dock.css` owns every rule. See the file header. */
     createRenderRoot() {
@@ -142,6 +162,22 @@ export class KPresetPages extends LitElement {
         }
         this.#classify();
         this.#apply(this._active);
+        eventSource.on(event_types.OAI_PRESET_CHANGED_AFTER, this.#refreshCredit);
+        eventSource.on(event_types.MAIN_API_CHANGED, this.#refreshCredit);
+        eventSource.on(event_types.APP_READY, this.#refreshCredit);
+        eventSource.on(event_types.SETTINGS_UPDATED, this.#refreshCredit);
+        void loadPresetCredits().then((manifest) => {
+            this._manifest = manifest;
+            this.#refreshCredit();
+        });
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        eventSource.removeListener(event_types.OAI_PRESET_CHANGED_AFTER, this.#refreshCredit);
+        eventSource.removeListener(event_types.MAIN_API_CHANGED, this.#refreshCredit);
+        eventSource.removeListener(event_types.APP_READY, this.#refreshCredit);
+        eventSource.removeListener(event_types.SETTINGS_UPDATED, this.#refreshCredit);
     }
 
     /**
@@ -196,6 +232,11 @@ export class KPresetPages extends LitElement {
         storePage(id);
     }
 
+    /** The strip's pill follows the active tab (blue-hour-polish-v0 §4 M2). */
+    updated() {
+        glideIndicator(this.querySelector('.k-pp-strip'), '.k-pp-seg.is-active');
+    }
+
     /** @returns {unknown} The strip. */
     render() {
         return html`
@@ -207,7 +248,16 @@ export class KPresetPages extends LitElement {
                         aria-pressed=${page.id === this._active ? 'true' : 'false'}
                         @click=${() => this.#select(page.id)}
                     >${page.label}</button>`)}
-            </div>`;
+            </div>
+            ${this._credit ? html`
+                <p class="k-pp-credit" data-credit>
+                    <span class="k-pp-credit-text">${this._credit.text}</span>
+                    ${this._credit.url ? html`<a class="k-pp-credit-link" href=${this._credit.url} target="_blank" rel="noopener noreferrer"
+                        aria-label=${`${this._credit.text}: open ${this._credit.author}'s page in a new tab`}
+                        title=${`Open ${this._credit.author}'s page`}>
+                        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3H3.5A1.5 1.5 0 0 0 2 4.5v8A1.5 1.5 0 0 0 3.5 14h8a1.5 1.5 0 0 0 1.5-1.5V10"/><path d="M9.5 2H14v4.5"/><path d="M14 2 7.5 8.5"/></svg>
+                    </a>` : ''}
+                </p>` : ''}`;
     }
 }
 

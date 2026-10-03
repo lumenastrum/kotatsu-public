@@ -315,6 +315,7 @@ import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
 import { compressRequest, setRequestCompressionConfig } from './scripts/request-compression.js';
+import { createSerialQueue, diffSettings, normalizeSettings } from './scripts/settings-diff.js';
 import { canJumpToSwipeForMessage, canOpenSwipePickerForMessage, initSwipePicker } from './scripts/swipe-picker.js';
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -8264,6 +8265,19 @@ function reloadLoop() {
     }
 }
 
+// Kotatsu settings sync (docs/phone-v0.md §5.2). `settings.json` is one blob that every open tab
+// saves, so a save sends only what changed since the last state the server acknowledged and the
+// server merges it into whatever is on disk now: a stale device no longer erases another
+// device's changes.
+/** @type {any} The normalized copy of the last server-acknowledged settings; `null` before load. */
+let settingsSyncBase = null;
+/** @type {string|null} The server's hash of that version (`/get`'s `settingsHash`, then each patch's `hash`). */
+let settingsSyncBaseHash = null;
+/** Saves run one at a time, each diffing against the base the previous one left. */
+const enqueueSettingsSave = createSerialQueue();
+/** DOM event for "this patch landed on a version written elsewhere"; the rails shell's notice listens. */
+const SETTINGS_FOREIGN_EVENT = 'kotatsu:settings-foreign';
+
 //MARK: getSettings()
 ///////////////////////////////////////////
 export async function getSettings(initLoaderHandle = null) {
@@ -8283,6 +8297,10 @@ export async function getSettings(initLoaderHandle = null) {
     const data = await response.json();
     if (data.result != 'file not find' && data.settings) {
         settings = JSON.parse(data.settings);
+        // Kotatsu settings sync (docs/phone-v0.md §5.2): what the server holds, before any load
+        // path mutates `settings`, is what the next save diffs against.
+        settingsSyncBase = normalizeSettings(settings);
+        settingsSyncBaseHash = typeof data.settingsHash === 'string' ? data.settingsHash : null;
         if (settings.username !== undefined && settings.username !== '') {
             name1 = settings.username;
             $('#your_name').text(name1);
@@ -8393,8 +8411,24 @@ export async function getSettings(initLoaderHandle = null) {
         firstRun = !!settings.firstRun;
 
         if (firstRun) {
-            await initLoaderHandle?.hide();
-            await doOnboarding(user_avatar);
+            // Kotatsu: the seeded preset is named but never applied on a fresh install (core
+            // applies prompts only on a select CHANGE); preset-binding.js applies it once at
+            // APP_READY when it sees this marker. Both layouts.
+            power_user.kotatsu_seed_preset = 'pending';
+            // Kotatsu onboarding v0 (docs/onboarding-v0.md §3): under rails, Mikan-chan's tour
+            // replaces the name popup. This popup holds APP_READY, and the tour is a Lit sheet
+            // that opens AT APP_READY, so the gate only leaves a flag for it — a data-driven early
+            // return on the layout attribute index.html's first-paint script set (rails is that
+            // script's default, so a virgin profile reads it), the welcome-screen.js precedent,
+            // no core → kotatsu import. Classic keeps the stock popup. The debounced save
+            // reschedules itself until `settingsReady`, persisting `firstRun: false` with the flag.
+            saveSettingsDebounced();
+            if (document.body.dataset.kLayout === 'rails') {
+                power_user.kotatsu_onboarding = 'pending';
+            } else {
+                await initLoaderHandle?.hide();
+                await doOnboarding(user_avatar);
+            }
             firstRun = false;
         }
     }
@@ -8404,11 +8438,34 @@ export async function getSettings(initLoaderHandle = null) {
 }
 
 //MARK: saveSettings()
+/**
+ * Saves settings. Kotatsu settings sync (docs/phone-v0.md §5.2): saves are serialized through
+ * one promise chain, and each sends only the leaves that changed since the last
+ * server-acknowledged state (`/api/settings/patch`), so the server can merge it into what another
+ * device wrote meanwhile. Resolves once this save (and every save queued before it) settled.
+ * @param {number} [loopCounter=0] Retry count for the response-length override.
+ * @returns {Promise<void>}
+ */
 export async function saveSettings(loopCounter = 0) {
+    const saved = await enqueueSettingsSave(() => saveSettingsQueued(loopCounter));
+    // Emitted after this save left the queue, so a listener that itself awaits saveSettings()
+    // queues behind it instead of waiting on itself. Fires for an empty diff too: waiters such as
+    // promptManager.saveServiceSettings() (openai.js) resolve on it.
+    if (saved) {
+        await eventSource.emit(event_types.SETTINGS_UPDATED);
+    }
+}
+
+/**
+ * One queued save: the stock payload, diffed against the base.
+ * @param {number} loopCounter Retry count for the response-length override.
+ * @returns {Promise<boolean>} True when the save succeeded (or had nothing to send).
+ */
+async function saveSettingsQueued(loopCounter) {
     if (!settingsReady) {
         console.warn('Settings not ready, scheduling another save');
         saveSettingsDebounced();
-        return;
+        return false;
     }
 
     const MAX_RETRIES = 3;
@@ -8416,7 +8473,7 @@ export async function saveSettings(loopCounter = 0) {
         if (loopCounter < MAX_RETRIES) {
             console.warn('Response length is currently being overridden, scheduling another save');
             saveSettingsDebounced(++loopCounter);
-            return;
+            return false;
         }
         console.error('Response length is currently being overridden, but the save loop has reached the maximum number of retries');
         TempResponseLength.restore(null);
@@ -8450,23 +8507,40 @@ export async function saveSettings(loopCounter = 0) {
     };
 
     try {
-        const saveSettingsRequest = await compressRequest({
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify(payload),
-            cache: 'no-cache',
-        });
-        const result = await fetch('/api/settings/save', saveSettingsRequest);
+        // The wire shape of this payload, diffed against what the server last acknowledged.
+        // Nothing changed ⇒ no request (an idle tab never rewrites the file).
+        const normalized = normalizeSettings(payload);
+        const ops = diffSettings(settingsSyncBase, normalized);
 
-        if (!result.ok) {
-            throw new Error(`Failed to save settings: ${result.statusText}`);
+        if (ops.length > 0) {
+            const saveSettingsRequest = await compressRequest({
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ base: settingsSyncBaseHash, ops }),
+                cache: 'no-cache',
+            });
+            const result = await fetch('/api/settings/patch', saveSettingsRequest);
+
+            if (!result.ok) {
+                throw new Error(`Failed to save settings: ${result.statusText}`);
+            }
+
+            const reply = await result.json();
+            settingsSyncBase = normalized;
+            settingsSyncBaseHash = typeof reply?.hash === 'string' ? reply.hash : null;
+            // The file had changed since this tab last saw it: the merge kept both sides, but this
+            // tab does not show the other device's changes until it reloads.
+            if (reply?.foreign) {
+                document.dispatchEvent(new CustomEvent(SETTINGS_FOREIGN_EVENT));
+            }
         }
 
         settings = payload;
-        await eventSource.emit(event_types.SETTINGS_UPDATED);
+        return true;
     } catch (error) {
         console.error('Error saving settings:', error);
         toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Settings could not be saved`);
+        return false;
     }
 }
 

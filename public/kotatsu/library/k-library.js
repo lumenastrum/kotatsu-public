@@ -34,6 +34,7 @@
  * layout attribute), never an import.
  */
 
+import { toRelative } from '../shell/relative-time.js';
 import { LitElement, html, nothing } from '../shell/lit.js';
 import {
     characters,
@@ -71,14 +72,40 @@ import {
 // `<k-card-studio>` imports `renderCard()` from this file, so importing the element back here
 // would make the two a cycle. `studio/manifest.js` imports nothing at all.
 import { OPEN_STUDIO_EVENT } from '../studio/manifest.js';
+import { chatLabelText } from '../shell/chat-label.js';
 
 /** @typedef {import('./view-model.js').LibraryRow} LibraryRow */
 
 /** The open request. Bubbling + composed, like `k-open-settings` and `k-open-branch-map`. */
 export const OPEN_LIBRARY_EVENT = 'k-open-library';
 
+/**
+ * Set on `<body>` while the gallery is open in Browse Characters. The welcome tour steps aside
+ * for it the way it does for the card studio and the settings modal (`k-studio-open`), so its
+ * "Browse Characters" tile can hand the reader to the view and come back when they leave it.
+ */
+export const BROWSE_OPEN_CLASS = 'k-library-browse-open';
+
+/**
+ * Bubbling request, from anything inside the gallery, to show one of its views:
+ * `detail.view` is `'cast'` or `'browse'`, `detail.top` asks for the top of the sheet too.
+ * `<k-market>` raises it for the preview sheet's "Back to your cast".
+ */
+export const SHOW_VIEW_EVENT = 'k-library-show-view';
+
+/**
+ * How far down the sheet the reader is before the way back is offered (the "Top" pill, and
+ * "Your cast" beside it in Browse). Past the hero and the tools, roughly: once the switch at
+ * the head of the page is off screen. Andres, 2026-10-02: deep in the scroll, the only way
+ * back to the installed cards was a scroll all the way up.
+ */
+const JUMP_THRESHOLD_PX = 480;
+
 /** Recent chats the continue strip will show. Five is the doc's number (§1.2 item 3). */
 export const RECENT_MAX = 5;
+
+/** How long after the last scroll event the cards take the pointer again. */
+const SCROLL_SETTLE_MS = 150;
 
 /** Coalescing window for bursty core events, matching `k-rail-left.js`. */
 const REFRESH_DEBOUNCE_MS = 80;
@@ -184,6 +211,27 @@ const icons = {
              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" focusable="false">
             <path d="M8 3.25v9.5" /><path d="M3.25 8h9.5" />
         </svg>`,
+    /** The way back up. */
+    up: html`
+        <svg class="k-lib-icon" viewBox="0 0 16 16" width="12" height="12" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <path d="M8 12.5v-9" /><path d="M4.25 7.25 8 3.5l3.75 3.75" />
+        </svg>`,
+    /** Your cast — two heads, the people already here. */
+    cast: html`
+        <svg class="k-lib-icon" viewBox="0 0 16 16" width="12" height="12" fill="none"
+             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <circle cx="6" cy="5.5" r="2.4" /><path d="M1.75 13a4.25 4.25 0 0 1 8.5 0" /><path d="M10.5 3.4a2.4 2.4 0 0 1 0 4.2" /><path d="M11.4 9.1a4.25 4.25 0 0 1 2.85 3.9" />
+        </svg>`,
+    /** Browse Characters — a compass: somebody out there, not yet here. */
+    browse: html`
+        <svg class="k-lib-icon" viewBox="0 0 16 16" width="14" height="14" fill="none"
+             stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <circle cx="8" cy="8" r="5.75" /><path d="m10.4 5.6-1.5 3.3-3.3 1.5 1.5-3.3z" />
+        </svg>`,
     /**
      * Edit card. A PENCIL, not the design doc's `⋯`.
      *
@@ -259,28 +307,7 @@ function brandLockup() {
         </svg>`;
 }
 
-/**
- * Compact relative time, the same vocabulary `k-rail-left.js` uses so the shell speaks one
- * dialect. Returns '' for a missing timestamp so the caller can drop the label rather than
- * print a placeholder.
- * @param {number} ms Epoch milliseconds.
- * @returns {string} Compact label, or ''.
- */
-export function toRelative(ms) {
-    if (!Number.isFinite(ms) || ms <= 0) {
-        return '';
-    }
-    const delta = Date.now() - ms;
-    if (delta < 60_000) return 'now';
-    const minutes = Math.floor(delta / 60_000);
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d`;
-    if (days < 365) return `${Math.floor(days / 7)}w`;
-    return `${Math.floor(days / 365)}y`;
-}
+export { toRelative } from '../shell/relative-time.js';
 
 /**
  * @typedef {object} CardHandlers
@@ -432,6 +459,8 @@ export class KLibrary extends LitElement {
         _tab: { state: true },
         _recents: { state: true },
         _hasChat: { state: true },
+        _view: { state: true },
+        _deep: { state: true },
     };
 
     /** @type {Array<{ type: string, handler: () => void }>} */
@@ -454,6 +483,15 @@ export class KLibrary extends LitElement {
 
     /** @type {((event: Event) => void)|null} */
     #onLandingChanged = null;
+
+    /** @type {((event: Event) => void)|null} */
+    #onScroll = null;
+
+    /** @type {((event: Event) => void)|null} */
+    #onShowView = null;
+
+    /** @type {number} `setTimeout` handle that ends the scrolling state, 0 = idle. */
+    #scrollTimer = 0;
 
     /**
      * The card renderer's hooks, built once.
@@ -495,6 +533,15 @@ export class KLibrary extends LitElement {
          * @type {boolean}
          */
         this._hasChat = false;
+        /**
+         * Which of the gallery's two sources is showing: the library, or a card site
+         * (`docs/character-marketplace-v0.md` §9). Not persisted: the gallery opens on the
+         * cast every time.
+         * @type {'cast'|'browse'}
+         */
+        this._view = 'cast';
+        /** @type {boolean} The sheet is scrolled past {@link JUMP_THRESHOLD_PX}: the way back is offered. */
+        this._deep = false;
     }
 
     /** Light DOM: `public/css/library.css` owns every rule. */
@@ -555,12 +602,43 @@ export class KLibrary extends LitElement {
         };
         document.addEventListener(LANDING_CHANGED_EVENT, this.#onLandingChanged);
 
+        // While the sheet scrolls, cards do not take the pointer. Measured 2026-10-02
+        // (playwright-rig `kotatsu-market-firstview-perf.mjs`): with the pointer resting over
+        // the grid, every card that slides under it starts the hover bloom, and the portrait's
+        // scale change costs a repaint of the image each time, animated or not. Wheeling
+        // through fresh cards stalled the main thread ~140 ms of every second; with hover off
+        // during the scroll it was ~15. Scroll events do not bubble, so this listens in the
+        // capture phase on the element and catches the sheet's. Hover returns 150 ms after
+        // the last scroll event, where the hand has stopped.
+        this.#onScroll = (event) => {
+            if (this.#scrollTimer === 0) this.setAttribute('data-scrolling', '');
+            else clearTimeout(this.#scrollTimer);
+            this.#scrollTimer = window.setTimeout(() => {
+                this.#scrollTimer = 0;
+                this.removeAttribute('data-scrolling');
+            }, SCROLL_SETTLE_MS);
+            // The way back: one boolean, written only on change, so a scroll never re-renders.
+            const sheet = event.target;
+            if (sheet instanceof Element && sheet.classList.contains('k-lib-sheet')) {
+                const deep = sheet.scrollTop > JUMP_THRESHOLD_PX;
+                if (deep !== this._deep) this._deep = deep;
+            }
+        };
+        this.addEventListener('scroll', this.#onScroll, { capture: true, passive: true });
+        this.#onShowView = (event) => {
+            const detail = /** @type {CustomEvent<{ view?: string, top?: boolean }>} */ (event).detail ?? {};
+            const view = detail.view === 'browse' ? 'browse' : 'cast';
+            void this.showView(view).then(() => { if (detail.top) this.scrollToTop(); });
+        };
+        this.addEventListener(SHOW_VIEW_EVENT, this.#onShowView);
+
         this.#syncVisibility();
         this.#scheduleRefresh();
         void this.#loadRecents();
     }
 
     disconnectedCallback() {
+        document.body.classList.remove(BROWSE_OPEN_CLASS);
         for (const { type, handler } of this.#subscriptions) {
             eventSource.removeListener(type, handler);
         }
@@ -581,6 +659,19 @@ export class KLibrary extends LitElement {
         if (this.#onLandingChanged) {
             document.removeEventListener(LANDING_CHANGED_EVENT, this.#onLandingChanged);
             this.#onLandingChanged = null;
+        }
+        if (this.#onScroll) {
+            this.removeEventListener('scroll', this.#onScroll, { capture: true });
+            this.#onScroll = null;
+        }
+        if (this.#onShowView) {
+            this.removeEventListener(SHOW_VIEW_EVENT, this.#onShowView);
+            this.#onShowView = null;
+        }
+        if (this.#scrollTimer !== 0) {
+            clearTimeout(this.#scrollTimer);
+            this.#scrollTimer = 0;
+            this.removeAttribute('data-scrolling');
         }
         super.disconnectedCallback();
     }
@@ -624,7 +715,7 @@ export class KLibrary extends LitElement {
         this.open = false;
     }
 
-    /** @returns {{ open: boolean, ready: boolean, rows: number, favorites: number, tab: string, search: string, recents: number, landing: string }} */
+    /** @returns {{ open: boolean, ready: boolean, rows: number, favorites: number, tab: string, search: string, recents: number, landing: string, view: string }} */
     get state() {
         const counts = countRows(this._rows);
         return {
@@ -636,7 +727,56 @@ export class KLibrary extends LitElement {
             search: this._search,
             recents: this._recents.length,
             landing: readLanding(),
+            view: this._view,
         };
+    }
+
+    /**
+     * Switches between the cast and Browse Characters.
+     *
+     * The marketplace module is imported here, on the first switch, and nowhere else: a
+     * gallery that never browses never loads it, and a card site that is down cannot touch
+     * the cast (doc §10). If the import itself fails the view stays where it was.
+     * @param {'cast'|'browse'} view The view to show.
+     * @returns {Promise<void>}
+     */
+    async showView(view) {
+        if (view === 'browse') {
+            try {
+                await import('../market/k-market.js');
+            } catch (error) {
+                console.error('[k-library] Browse Characters could not be loaded.', error);
+                return;
+            }
+        }
+        this._view = view;
+        // The other view renders a fresh sheet at its head, and a fresh sheet fires no scroll
+        // event; the depth is reset here so the pill does not linger over the new view's top.
+        this._deep = false;
+    }
+
+    /**
+     * Scrolls the sheet back to its head. Smooth unless the reader asked for less motion.
+     * @returns {void}
+     */
+    scrollToTop() {
+        const sheet = this.querySelector('.k-lib-sheet');
+        if (!(sheet instanceof HTMLElement)) return;
+        const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        sheet.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+    }
+
+    /**
+     * @param {Map<string, unknown>} changed Changed properties.
+     * @returns {void}
+     */
+    updated(changed) {
+        // The body class is a plain mirror of "open, in Browse": set on the first paint that
+        // is, dropped on the first that is not, for whatever reason — the switch, the close
+        // affordance, a chat opening underneath. Nothing else writes it.
+        if (changed.has('open') || changed.has('_view')) {
+            document.body.classList.toggle(BROWSE_OPEN_CLASS, this.open && this._view === 'browse');
+        }
     }
 
     /* ── state ──────────────────────────────────────────────────────────── */
@@ -1012,16 +1152,71 @@ export class KLibrary extends LitElement {
             return nothing;
         }
         const counts = countRows(this._rows);
+        // Browse Characters replaces the cast's three blocks and nothing above them. `_rows`
+        // rides along as the revision: whenever the library changes, the view re-reads which
+        // of its cards are already installed.
+        if (this._view === 'browse') {
+            return html`
+                <div class="k-lib-sheet" role="region" aria-label="Library">
+                    <div class="k-lib-page">
+                        ${this.#renderBrandRow()}
+                        ${this.#renderHero()}
+                        ${this.#renderViews()}
+                        <k-market variant="browse" .revision=${this._rows}></k-market>
+                        ${this.#renderJump()}
+                    </div>
+                </div>`;
+        }
         const visible = filterRows(this._rows, { search: this._search, tab: this._tab });
         return html`
             <div class="k-lib-sheet" role="region" aria-label="Library">
                 <div class="k-lib-page">
                     ${this.#renderBrandRow()}
                     ${this.#renderHero()}
+                    ${this.#renderViews()}
                     ${this.#renderContinue()}
                     ${this.#renderTools(counts)}
                     ${this.#renderBody(visible, counts)}
+                    ${this.#renderJump()}
                 </div>
+            </div>`;
+    }
+
+    /**
+     * The way back, once the head of the page is off screen: a pill stuck to the sheet's
+     * foot (`position: sticky; bottom`, zero height in flow, so nothing moves to make room).
+     * "Top" in both views; in Browse, "Your cast" beside it, because that is where the reader
+     * actually wants to go. Always rendered, shown by `data-visible`, so the fade works.
+     * @returns {unknown} The pill.
+     */
+    #renderJump() {
+        const browsing = this._view === 'browse';
+        return html`
+            <div class="k-lib-jump" ?data-visible=${this._deep} aria-hidden=${this._deep ? 'false' : 'true'}>
+                ${browsing ? html`
+                    <button type="button" class="k-lib-jump-btn k-lib-jump-cast" tabindex=${this._deep ? '0' : '-1'}
+                        @click=${() => { void this.showView('cast').then(() => this.scrollToTop()); }}>${icons.cast}<span>Your cast</span></button>` : nothing}
+                <button type="button" class="k-lib-jump-btn k-lib-jump-top" tabindex=${this._deep ? '0' : '-1'}
+                    @click=${() => this.scrollToTop()}>${icons.up}<span>Top</span></button>
+            </div>`;
+    }
+
+    /** @returns {unknown} The switch between the two sources of the same gallery. */
+    #renderViews() {
+        return html`
+            <div class="k-lib-views" role="tablist" aria-label="Source">
+                <button
+                    type="button" role="tab" class="k-lib-view${this._view === 'cast' ? ' is-active' : ''}"
+                    data-view="cast"
+                    aria-selected=${this._view === 'cast' ? 'true' : 'false'}
+                    @click=${() => { void this.showView('cast'); }}
+                >Your cast</button>
+                <button
+                    type="button" role="tab" class="k-lib-view${this._view === 'browse' ? ' is-active' : ''}"
+                    data-view="browse"
+                    aria-selected=${this._view === 'browse' ? 'true' : 'false'}
+                    @click=${() => { void this.showView('browse'); }}
+                >Browse Characters</button>
             </div>`;
     }
 
@@ -1045,12 +1240,15 @@ export class KLibrary extends LitElement {
 
     /** @returns {unknown} Hero: eyebrow, serif question, sub-line, and the actions. */
     #renderHero() {
+        // The question is the same in both views. The eyebrow and the line under it say which
+        // room the answer comes from.
+        const browsing = this._view === 'browse';
         return html`
             <section class="k-lib-hero">
                 <div class="k-lib-hero-copy">
-                    <span class="k-lib-eyebrow">✦ The cast</span>
+                    <span class="k-lib-eyebrow">${browsing ? '✦ Browse Characters' : '✦ The cast'}</span>
                     <h1 class="k-lib-title">Who are we meeting tonight?</h1>
-                    <p class="k-lib-sub">Your cast, their worlds, every thread of them.</p>
+                    <p class="k-lib-sub">${browsing ? 'Somebody new. Read the card before you bring them home.' : 'Your cast, their worlds, every thread of them.'}</p>
                 </div>
                 <div class="k-lib-hero-actions">
                     <button
@@ -1091,7 +1289,7 @@ export class KLibrary extends LitElement {
                             <img class="k-lib-recent-face" src=${recent.char_thumbnail} alt="" loading="lazy" decoding="async" />
                             <span class="k-lib-recent-copy">
                                 <span class="k-lib-recent-name">${recent.char_name}</span>
-                                <span class="k-lib-recent-chat">${recent.chat_name}</span>
+                                <span class="k-lib-recent-chat">${chatLabelText(recent.chat_name, recent.char_name)}</span>
                             </span>
                             ${recent.relative ? html`<span class="k-lib-recent-when">${recent.relative}</span>` : nothing}
                         </button>`)}
@@ -1200,6 +1398,12 @@ export class KLibrary extends LitElement {
             ? nothing
             : html`<button type="button" class="k-lib-btn k-lib-btn--ghost"
                     @click=${() => this.#clickStock('external_import_button')}>${icons.link}<span>Import from URL</span></button>`;
+        // The third door (character-marketplace v0 §9): the same switch as the tools row, for
+        // the reader who has nobody yet and nothing to import.
+        const browseButton = searching
+            ? nothing
+            : html`<button type="button" class="k-lib-btn k-lib-btn--ghost k-lib-empty-browse"
+                    @click=${() => { void this.showView('browse'); }}>${icons.browse}<span>Browse Characters</span></button>`;
         return html`
             <div class="k-lib-empty">
                 <p class="k-lib-empty-title">${title}</p>
@@ -1207,6 +1411,7 @@ export class KLibrary extends LitElement {
                 <div class="k-lib-empty-actions">
                     ${importButton}
                     ${urlImportButton}
+                    ${browseButton}
                     <button type="button" class="k-lib-btn k-lib-btn--primary"
                         @click=${() => this.#onCreateCharacter()}
                     >${icons.plus}<span>Create character</span></button>
@@ -1269,6 +1474,23 @@ export function openLibrary() {
 /** @returns {void} */
 export function closeLibrary() {
     currentLibrary()?.closeLibrary();
+}
+
+/**
+ * Opens the gallery on one of its views. The welcome tour's "Browse Characters" tile is the
+ * caller that needs both at once.
+ * @param {'cast'|'browse'} view The view to show.
+ * @returns {Promise<boolean>} False when the gallery is not mounted (classic layout).
+ */
+export async function showLibraryView(view) {
+    const library = currentLibrary();
+    if (!library) {
+        console.warn('[k-library] the gallery is not mounted (classic layout?).');
+        return false;
+    }
+    if (!library.open) library.openLibrary();
+    await library.showView(view);
+    return library.state.view === view;
 }
 
 /** @returns {object|null} The console door's `.state`. */

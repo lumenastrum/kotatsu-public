@@ -41,14 +41,24 @@ import { html, LitElement, nothing } from '../shell/lit.js';
 import { getCurrentChatId } from '../../script.js';
 import { event_types, eventSource } from '../../scripts/events.js';
 import { oai_settings, promptManager } from '../../scripts/openai.js';
-import { RECEIPT_CAVEATS, receiptStore } from './receipts.js';
+import { receiptStore } from './receipts.js';
 import { indexPrompts } from './view-model.js';
+import { renderCaveats } from './receipt-caveats.js';
+import { openReceiptChart } from './k-receipt-chart.js';
+import { openReceiptTrend } from './k-receipt-trend.js';
 import {
+    entryCategory,
     holesSummaryLine,
     receiptStateBadge,
     resolveEntryLabel,
     tokenShare,
 } from './receipt-tracker-view.js';
+
+/** Stroke bar-chart glyph for the "open chart" buttons (no emoji icons — CLAUDE.md). */
+const CHART_ICON = html`<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 13.5h11"/><path d="M4.5 11V7.5"/><path d="M8 11V3.5"/><path d="M11.5 11V6"/></svg>`;
+
+/** Stroke rising-line glyph for the history "Trend" button. */
+const TREND_ICON = html`<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 13.5h11"/><path d="M3 10.5l3.5-3 2.5 2 4-4.5"/><path d="M10.5 5h2.5v2.5"/></svg>`;
 
 /**
  * Store-change reasons that mean "the active chat's landed history may have moved" —
@@ -62,27 +72,6 @@ const HISTORY_RELOAD_REASONS = new Set(['saved', 'forgotten', 'reindexed']);
 
 /** Reasons that only ever touch the live capture, never the persisted history. */
 const LIVE_ONLY_REASONS = new Set(['captured', 'resolved', 'dry-run', 'landed']);
-
-/**
- * Short chip label + honest full explanation for each of `receipts.js`'s three structural
- * caveats (`receipts.js:170-190`), reproduced here rather than re-derived so the text a
- * reader hovers is drawn from the same source that decided whether the caveat fires.
- * @type {Readonly<Record<string, {label: string, title: string}>>}
- */
-const CAVEAT_COPY = Object.freeze({
-    [RECEIPT_CAVEATS.EXTENSION_INJECTION_INTO_MAIN]: {
-        label: 'Extension injected into main',
-        title: 'An extension (summarize, author\'s note, vectors, or smart context) inserted extra messages into the "main" collection. Their tokens are counted under main and cannot be separated back out.',
-    },
-    [RECEIPT_CAVEATS.IN_CHAT_INJECTIONS_UNDER_CHATHISTORY]: {
-        label: 'In-chat injections folded into history',
-        title: 'chatHistory may include prompts injected in-chat. The assembler renames every member of that collection chatHistory-<n>, so which messages were injected — and by which prompt — is not recoverable from this record.',
-    },
-    [RECEIPT_CAVEATS.TOKENS_ARE_PRE_SQUASH]: {
-        label: 'Tokens pre-squash',
-        title: 'squash_system_messages was on for this generation. The assembler later merged adjacent system messages and re-tokenized the result, so these per-entry token counts are what the assembler budgeted, not necessarily what the tokenizer finally saw.',
-    },
-});
 
 /**
  * The live surface: a card for the active chat's latest capture, and its landed history.
@@ -253,31 +242,26 @@ export class KReceiptTracker extends LitElement {
     }
 
     /**
-     * One caveat chip. Silently renders nothing for a value outside {@link CAVEAT_COPY} —
-     * `RECEIPT_CAVEATS`' own three are the only ones this file has honest copy for, and a
-     * value this store never emits is not this view's business to invent text for.
-     * @param {string} caveat One entry of a receipt's `caveats[]`.
-     * @returns {unknown} The chip, or nothing.
+     * Opens one receipt as the colour-coded chart popup (`<k-receipt-chart>`). The popup
+     * renders a snapshot: a live receipt that keeps assembling after it opens is re-read by
+     * opening it again, never mutated under the reader.
+     * @param {import('./receipts.js').PromptReceipt} receipt The receipt to chart.
+     * @returns {void}
      */
-    #renderCaveat(caveat) {
-        const copy = CAVEAT_COPY[caveat];
-        return copy
-            ? html`<span class="k-rt-caveat" title=${copy.title}>${copy.label}</span>`
-            : nothing;
+    #openChart(receipt) {
+        void openReceiptChart(receipt, indexPrompts(this.#settings?.prompts));
     }
 
     /**
-     * @param {string[]|null|undefined} caveats A receipt's `caveats[]`.
-     * @returns {unknown} The chip row, or nothing for a clean receipt.
+     * @param {import('./receipts.js').PromptReceipt} receipt The receipt the button opens.
+     * @returns {unknown} The "open chart" button.
      */
-    #renderCaveats(caveats) {
-        if (!Array.isArray(caveats) || caveats.length === 0) {
-            return nothing;
-        }
+    #renderChartButton(receipt) {
         return html`
-            <div class="k-rt-caveats">
-                ${caveats.map((caveat) => this.#renderCaveat(caveat))}
-            </div>`;
+            <button type="button" class="k-rt-chart-button" title="Open as a chart"
+                @click=${() => this.#openChart(receipt)}>
+                ${CHART_ICON}<span>Chart</span>
+            </button>`;
     }
 
     /**
@@ -313,7 +297,7 @@ export class KReceiptTracker extends LitElement {
         const resolved = resolveEntryLabel(entry, presetPrompts);
         const share = tokenShare(entry.tokens, totalTokens);
         return html`
-            <div class="k-rt-entry">
+            <div class="k-rt-entry" data-k-cat=${entryCategory(entry, presetPrompts)}>
                 <div class="k-rt-entry-label">
                     <span class="k-rt-entry-name">${resolved.label}</span>
                     ${resolved.hint ? html`<span class="k-rt-entry-hint">${resolved.hint}</span>` : nothing}
@@ -363,11 +347,12 @@ export class KReceiptTracker extends LitElement {
                     <span class="k-rt-meta-item">${receipt.presetName || 'no preset recorded'}</span>
                     <span class="k-rt-meta-item">${receipt.generationType || 'unknown type'}</span>
                     ${capturedAt ? html`<span class="k-rt-meta-item k-rt-meta-time">${capturedAt}</span>` : nothing}
+                    ${this.#renderChartButton(receipt)}
                 </div>
                 <div class="k-rt-totals">
                     ${totals.tokens} tokens · ${totals.collections} collections · ${totals.messages} messages
                 </div>
-                ${this.#renderCaveats(receipt.caveats)}
+                ${renderCaveats(receipt.caveats)}
                 ${this.#renderEntries(receipt)}
             </div>`;
     }
@@ -398,7 +383,8 @@ export class KReceiptTracker extends LitElement {
                 </button>
                 ${expanded ? html`
                     <div class="k-rt-history-detail">
-                        ${this.#renderCaveats(receipt.caveats)}
+                        <div class="k-rt-history-actions">${this.#renderChartButton(receipt)}</div>
+                        ${renderCaveats(receipt.caveats)}
                         ${this.#renderEntries(receipt)}
                     </div>` : nothing}
             </div>`;
@@ -457,7 +443,14 @@ export class KReceiptTracker extends LitElement {
                 ${this.#renderLiveSection(live)}
             </section>
             <section class="k-rt-section k-rt-history">
-                <h3 class="k-rt-heading">History</h3>
+                <div class="k-rt-heading-row">
+                    <h3 class="k-rt-heading">History</h3>
+                    ${this._history.length >= 2 ? html`
+                        <button type="button" class="k-rt-chart-button k-rt-trend-button" title="How this chat's prompt grew"
+                            @click=${() => void openReceiptTrend(this._history, indexPrompts(this.#settings?.prompts))}>
+                            ${TREND_ICON}<span>Trend</span>
+                        </button>` : nothing}
+                </div>
                 ${this.#renderHistorySection()}
             </section>`;
     }

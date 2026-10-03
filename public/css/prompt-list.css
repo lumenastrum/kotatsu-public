@@ -4,7 +4,9 @@
  * Owns the inside of `<k-prompt-list variant="list">`, which mounts into core's
  * `#completion_prompt_manager` (index.html:2300). The host is a core-owned block
  * inside the Chat Completion drawer, so this sheet styles only the custom
- * element and its own descendants — it never reaches out at the drawer.
+ * element and its own descendants. It reaches out at the drawer exactly once:
+ * the host rule right under the geometry block, which binds the host's width to
+ * its panel (issue #3).
  *
  * Discipline (docs/prompt-manager-v0.md, docs/shell-v0.md §"The slot contract"):
  * - Colours, radii and motion come from `--k-*` only, never a literal. Packs
@@ -43,15 +45,34 @@ k-prompt-list[variant="list"] {
     --k-pl-switch-w: 26px;
     --k-pl-switch-h: 14px;
     --k-pl-knob: 10px;
-    --k-pl-token-w: 46px;
 
     --k-pl-hairline: 1px;
     --k-pl-dim-opacity: 0.32;
     --k-pl-off-opacity: 0.5;
+    --k-pl-name-leading: 1.28;
 
     display: block;
     font-family: var(--k-font-ui);
     color: var(--k-text);
+
+    /* The list answers to the width it is given, not to the window: the same element sits in a
+       ~300px dock and in wider homes, and what a row can afford differs (see "Narrow"). Being a
+       size container also means it no longer asks for the width of its longest row. */
+    container: k-pl / inline-size;
+}
+
+/*
+ * The one rule in this sheet that reaches outside the element (issue #3).
+ *
+ * The host is the only child of a core `.range-block`, which is a flex row. A flex item will not
+ * shrink below its content, so the host took the width of its longest row (419px for Sparkle,
+ * 668px for Sola V2) inside a ~300px panel that clips: row actions and pick-one chips were drawn
+ * where nobody could see them. This binds the host to the panel. `:has()` keeps it off core's own
+ * list, which mounts in the same host under the classic layout.
+ */
+#completion_prompt_manager:has(> k-prompt-list[variant="list"]) {
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 /* ── Header: search, counts, tier ───────────────────────────────────────── */
@@ -127,6 +148,38 @@ k-prompt-list[variant="list"] .k-pl-stat--tier {
     letter-spacing: 0.05em;
 }
 
+/* The regex chip (issue #6): the same pill as the tier chip, but a button — it is the way back
+   to a preset's embedded regex scripts after their one-time allow prompt was declined. Quiet
+   when the scripts are allowed; when they are off it takes the rose the app uses for "this
+   needs you", because a preset whose scripts are off is not doing what its author built. */
+k-prompt-list[variant="list"] .k-pl-stat--regex {
+    appearance: none;
+    margin: 0;
+    padding: 1px 5px;
+    border-radius: var(--k-radius-pill);
+    border: var(--k-pl-hairline) solid var(--k-inset-border);
+    background: transparent;
+    color: var(--k-text-faint);
+    font-size: var(--k-pl-chip-size);
+    line-height: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: border-color var(--k-motion-duration) var(--k-motion), color var(--k-motion-duration) var(--k-motion);
+}
+
+k-prompt-list[variant="list"] .k-pl-stat--regex.is-off {
+    color: var(--k-rose);
+    border-color: color-mix(in srgb, var(--k-rose) 55%, transparent);
+}
+
+k-prompt-list[variant="list"] .k-pl-stat--regex:hover,
+k-prompt-list[variant="list"] .k-pl-stat--regex:focus-visible {
+    color: var(--k-text);
+    border-color: var(--k-accent);
+    outline: 0;
+}
+
 /* ── Sections and containers ────────────────────────────────────────────── */
 
 k-prompt-list[variant="list"] .k-pl-list {
@@ -144,6 +197,7 @@ k-prompt-list[variant="list"] .k-pl-shelf {
 }
 
 k-prompt-list[variant="list"] .k-pl-head-row {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--k-pl-gap);
@@ -157,15 +211,22 @@ k-prompt-list[variant="list"] .k-pl-head-row--section {
     border-block-end: var(--k-pl-hairline) solid var(--k-inset-border);
 }
 
+/* The label takes only the room its words need, so the chips that describe it sit beside it
+   whatever the list's width; the spring after them takes what is left. A label too long for
+   one line wraps. It is never cut: the name is the one thing a row does not give up. */
 k-prompt-list[variant="list"] .k-pl-head-label {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-width: 0;
     font-size: var(--k-pl-head-size);
     font-weight: var(--k-display-weight);
+    line-height: var(--k-pl-name-leading);
     color: var(--k-text-strong);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+}
+
+k-prompt-list[variant="list"] .k-pl-spring {
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 k-prompt-list[variant="list"] .k-pl-head-row--group .k-pl-head-label,
@@ -250,6 +311,7 @@ k-prompt-list[variant="list"] .k-pl-progress > i {
 /* ── Rows ───────────────────────────────────────────────────────────────── */
 
 k-prompt-list[variant="list"] .k-pl-row {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--k-pl-gap);
@@ -289,14 +351,17 @@ k-prompt-list[variant="list"] .k-pl-row.is-missing .k-pl-name {
     color: var(--k-danger);
 }
 
+/* The name is the one thing a row does not give up (Andres, issue #3). It gets every pixel the
+   row's fixed parts leave, and when that is still not enough it wraps onto a second line. It is
+   never ellipsized: a list of "[Module] Th…" tells nobody what a toggle does. */
 k-prompt-list[variant="list"] .k-pl-name {
     flex: 1 1 auto;
     min-width: 0;
+    padding-block: 3px;
     font-size: var(--k-pl-name-size);
+    line-height: var(--k-pl-name-leading);
     color: var(--k-text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 k-prompt-list[variant="list"] .k-pl-note {
@@ -387,6 +452,13 @@ k-prompt-list[variant="list"] .k-pl-chip--source {
     max-width: 16ch;
 }
 
+/* A `[Tag]` peeled off the front of a name. Dimmer than the chips that state a fact about the
+   prompt: it is the author's filing label, and the first thing to step aside. */
+k-prompt-list[variant="list"] .k-pl-chip--tag {
+    color: var(--k-text-faint);
+    background: transparent;
+}
+
 /* ── The switch ─────────────────────────────────────────────────────────── */
 
 k-prompt-list[variant="list"] .k-pl-switch {
@@ -443,22 +515,18 @@ k-prompt-list[variant="list"] .k-pl-switch--fixed {
 
 /* ── Tokens ─────────────────────────────────────────────────────────────── */
 
+/* The badge is the last thing in a row's flow, so it sits flush right and numbers line up on
+   their own. It holds no width when there is no number: a row with nothing to count has no
+   badge (k-prompt-list.js `#renderTokens`). */
 k-prompt-list[variant="list"] .k-pl-tokens {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: flex-end;
     gap: 2px;
-    min-width: var(--k-pl-token-w);
     font-family: var(--k-font-mono);
     font-size: var(--k-pl-meta-size);
     color: var(--k-text-muted);
-}
-
-/* Absence is a statement, not a zero: the slot holds the column, nothing more. */
-k-prompt-list[variant="list"] .k-pl-tokens--none {
-    color: var(--k-text-faint);
-    opacity: 0.5;
 }
 
 k-prompt-list[variant="list"] .k-pl-tokens.is-warning {
@@ -471,11 +539,51 @@ k-prompt-list[variant="list"] .k-pl-tokens.is-danger {
 
 /* ── Row actions ────────────────────────────────────────────────────────── */
 
+/* Inspect, edit and remove are for the row under the pointer or the one with focus. They float
+   over the row's right end instead of holding a 56px column on all ninety rows, and that column
+   goes to the name. What they cover while they show is the token badge and chips first. An open
+   receipt keeps its row's actions up, so the lit inspect button stays where it was pressed. */
 k-prompt-list[variant="list"] .k-pl-actions {
-    flex: 0 0 auto;
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 3px;
+    transform: translateY(-50%);
+    z-index: 1;
     display: inline-flex;
     align-items: center;
     gap: 1px;
+    padding: 1px 2px;
+    border: var(--k-pl-hairline) solid var(--k-inset-border);
+    border-radius: var(--k-radius-sm);
+    background: var(--k-surface-sunken);
+    box-shadow: -6px 0 8px -2px var(--k-surface-sunken);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--k-motion-duration) var(--k-motion);
+}
+
+k-prompt-list[variant="list"] .k-pl-row:hover > .k-pl-actions,
+k-prompt-list[variant="list"] .k-pl-row:focus-within > .k-pl-actions,
+k-prompt-list[variant="list"] .k-pl-head-row:hover > .k-pl-actions,
+k-prompt-list[variant="list"] .k-pl-head-row:focus-within > .k-pl-actions,
+k-prompt-list[variant="list"] .k-pl-actions:has(.k-pl-act.is-on) {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* No hover to bring them up: on a touch screen the actions keep their place in the row. */
+@media (hover: none) {
+    k-prompt-list[variant="list"] .k-pl-actions {
+        position: static;
+        transform: none;
+        flex: 0 0 auto;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        opacity: 1;
+        pointer-events: auto;
+    }
 }
 
 k-prompt-list[variant="list"] .k-pl-act {
@@ -829,4 +937,35 @@ k-prompt-list[variant="list"] .k-pl-search-clear:focus-visible {
     background: var(--k-ghost-hover);
     color: var(--k-text);
     outline: none;
+}
+
+/* ── Narrow ─────────────────────────────────────────────────────────────────
+ * Under 400px (the preset dock is about 300) a row cannot afford everything, and the order in
+ * which things step aside is fixed: the name stays, the rest goes.
+ *
+ * - "pick one" and "enforced" become one chip. An enforced button is drawn as "pick one"; a
+ *   relaxed one still reads "relaxed". The tooltip says which, and what a click does. The word
+ *   is drawn here rather than swapped in the DOM so the button's text stays its state.
+ * - A `[Tag]` chip and a slot's source chip are dropped. Both are still in the row's tooltip,
+ *   and the slot's kind icon already marks it as engine-filled.
+ */
+@container k-pl (max-width: 400px) {
+    k-prompt-list[variant="list"] .k-pl-chip--exclusive,
+    k-prompt-list[variant="list"] .k-pl-chip--tag,
+    k-prompt-list[variant="list"] .k-pl-chip--source,
+    k-prompt-list[variant="list"] .k-pl-chip--relax.is-on .k-pl-relax-word {
+        display: none;
+    }
+
+    k-prompt-list[variant="list"] .k-pl-chip--relax.is-on::before {
+        content: 'pick one';
+    }
+
+    /* The header in the same dock: the filter is the control, the chips are annotations. With
+       the regex chip present the filter was squeezed to 94px (measured, 296px dock, chip off),
+       so the tier chip — how the sections were derived, the least actionable of the three —
+       yields its place. It returns on a wider list. */
+    k-prompt-list[variant="list"] .k-pl-head-stats:has(.k-pl-stat--regex) .k-pl-stat--tier {
+        display: none;
+    }
 }

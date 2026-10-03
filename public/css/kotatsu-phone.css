@@ -1,0 +1,385 @@
+/*
+ * kotatsu-phone.css — rails on a phone (blue-hour-polish-v0 §8, slice B2).
+ *
+ * shell-v0 called mobile rails an explicit non-goal; Andres opened it on 2026-10-01 ("start on
+ * the phone layout"). The audit at 390×844 and 430×932 (touch-emulated) found: the page
+ * scrolled sideways (the topbar's right cluster ran to x=639), opening a rail squeezed the chat
+ * to a ~110px strip, the 72px avatar column left the prose 244px (~30 characters a line), the
+ * rail handles sat on top of the bubble, and every touch target was under 44px.
+ *
+ * The one idea: on a phone the CHAT owns the screen. Both rail tracks are zero, always, and an
+ * open rail is an overlay sheet with a scrim — the same open/collapsed state rail-collapse.js
+ * already keeps (it suppresses both rails at this width and a handle tap writes the session
+ * override), drawn differently. Everything else follows from giving the reader the width.
+ *
+ * 600px is the line, not core's 1000: Andres's 900-wide portrait monitor keeps docked rails
+ * exactly as before. Touch sizing rides `(pointer: coarse)`, not width.
+ *
+ * Linked LAST (after core's mobile-styles.css) so its walk-backs win ties on source order.
+ * Rails-gated; classic untouched. Motion uses the gated `--k-t*` from kotatsu-motion.css, and
+ * the overlay rails slide on `left` / `right`, never a transform — the right rail hosts docked
+ * core drawers (kotatsu-motion.css rule 3).
+ */
+
+/* Off-phone, the phone-only pieces do not exist. */
+body .k-rail-scrim,
+body .k-rail-handle .k-rail-handle__phone {
+    display: none;
+}
+
+@keyframes k-phone-rail-left {
+    from {
+        left: calc(var(--k-phone-rail-w) * -1);
+    }
+}
+
+/* The right sheet WIPES in rather than sliding: core transforms <html> (style.css), which makes
+   it the containing block for fixed elements, so anything parked or animated past the RIGHT
+   edge becomes scrollable overflow and the page scrolls sideways (measured: 730px at 390).
+   Past the left edge is never scrollable, so the left sheet can slide. */
+@keyframes k-phone-rail-right {
+    from {
+        clip-path: inset(0 0 0 100%);
+        opacity: 0.6;
+    }
+}
+
+@media (max-width: 600px) {
+
+    /* ── 1. Frame: zero tracks, rails become sheets ───────────────────────────────────── */
+
+    /* On <body>, deliberately: rail-collapse.js reads the OPEN widths off :root, so the
+       resolver still sees 280/340 against a 390 window and keeps both rails suppressed on
+       load whatever the stored preference says. */
+    body[data-k-layout="rails"] {
+        --k-rail-left-width: 0px;
+        --k-rail-right-width: 0px;
+        --k-phone-rail-w: min(340px, 88vw);
+        --k-phone-bar: var(--k-topbar-pill-height, 44px);
+        --k-phone-avatar: 36px;
+    }
+
+    body[data-k-layout="rails"] #k-frame {
+        grid-template-columns: 0 minmax(0, 1fr) 0;
+    }
+
+    /* The rails leave the flow below, so the centre must claim its track explicitly or
+       auto-placement drops it into the zero-width first column. */
+    body[data-k-layout="rails"] #k-center {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    body[data-k-layout="rails"] #k-rail-left,
+    body[data-k-layout="rails"] #k-rail-right {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        z-index: 70;
+        width: var(--k-phone-rail-w);
+        box-shadow: var(--k-elev-4);
+    }
+
+    body[data-k-layout="rails"] #k-rail-left {
+        left: 0;
+    }
+
+    body[data-k-layout="rails"] #k-rail-right {
+        right: 0;
+    }
+
+    body[data-k-layout="rails"][data-k-rail-left="open"]:not([data-k-view="home"]) #k-rail-left {
+        animation: k-phone-rail-left var(--k-t3) var(--k-ease-out);
+    }
+
+    body[data-k-layout="rails"][data-k-rail-right="open"]:not([data-k-view="home"]) #k-rail-right {
+        animation: k-phone-rail-right var(--k-t3) var(--k-ease-out);
+    }
+
+    /* Closed (or on home, where the gallery is the list) the sheet stays IN BOUNDS and hidden
+       — parked past the right edge it would widen the page (see the right keyframe). Its
+       children already hide by the collapse rule in shell-frame.css §5. */
+    body[data-k-layout="rails"][data-k-rail-left="collapsed"] #k-rail-left,
+    body[data-k-layout="rails"][data-k-view="home"] #k-rail-left,
+    body[data-k-layout="rails"][data-k-rail-right="collapsed"] #k-rail-right,
+    body[data-k-layout="rails"][data-k-view="home"] #k-rail-right {
+        visibility: hidden;
+    }
+
+    body[data-k-layout="rails"][data-k-view="home"] #k-rail-left > *,
+    body[data-k-layout="rails"][data-k-view="home"] #k-rail-right > * {
+        visibility: hidden;
+    }
+
+    body[data-k-layout="rails"]:is([data-k-rail-left="open"], [data-k-rail-right="open"]):not([data-k-view="home"]) .k-rail-scrim {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 65;
+        background: color-mix(in srgb, var(--k-scrim) 62%, transparent);
+        animation: k-fade-in var(--k-t3) var(--k-ease-out);
+    }
+
+    /* ── 2. Handles move into the chat header as 44px buttons ─────────────────────────────
+       A mid-height edge tab sat on top of the bubble. In the header row they are where a
+       phone looks for "menu" and "tools", and the glyph says what each rail holds. */
+    body[data-k-layout="rails"] .k-rail-handle {
+        top: var(--k-phone-bar);
+        width: 44px;
+        height: 44px;
+        transform: none;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: var(--k-text-dim);
+        opacity: 1;
+    }
+
+    /* The side rules in shell-frame.css carry the mid-height `translateY(-50%)` at side
+       specificity, so `transform` is undone here, at the same weight. */
+    body[data-k-layout="rails"] .k-rail-handle[data-k-rail-side="left"] {
+        left: 0;
+        transform: none;
+    }
+
+    body[data-k-layout="rails"] .k-rail-handle[data-k-rail-side="right"] {
+        right: 0;
+        transform: none;
+    }
+
+    body[data-k-layout="rails"] .k-rail-handle .k-rail-handle__icon {
+        display: none;
+    }
+
+    body[data-k-layout="rails"] .k-rail-handle .k-rail-handle__phone {
+        display: block;
+    }
+
+    body[data-k-layout="rails"][data-k-view="home"] .k-rail-handle {
+        display: none;
+    }
+
+    body[data-k-layout="rails"] k-chat-header[variant="strip"] {
+        padding-inline: 44px;
+    }
+
+    /* "1 msg" is the first thing to go when the title needs the room. */
+    body[data-k-layout="rails"] .k-ch__count {
+        display: none;
+    }
+
+    /* ── 3. Topbar: brand, model, gear — nothing past the edge ────────────────────────── */
+
+    body[data-k-layout="rails"] k-topbar {
+        padding-inline: 4px 0;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-topbar__zone--left {
+        flex: 0 0 auto;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-topbar__zone--right {
+        flex: 1 1 auto;
+        min-inline-size: 0;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-pill--ctx,
+    body[data-k-layout="rails"] k-topbar .k-topbar__gear[aria-label="Open branch map"] {
+        display: none;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-pill--model {
+        flex: 0 1 auto;
+        min-inline-size: 0;
+        overflow: hidden;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-pill__model {
+        min-inline-size: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-topbar__gear {
+        inline-size: 44px;
+        block-size: 44px;
+    }
+
+    /* Popovers leave their trigger's box and take the screen's width, under the bar. */
+    body[data-k-layout="rails"] k-model-menu .k-mm__pop,
+    body[data-k-layout="rails"] .k-cs__pop {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        top: calc(var(--k-phone-bar) + 4px);
+        inline-size: auto;
+        max-inline-size: none;
+        transform-origin: top center;
+    }
+
+    body[data-k-layout="rails"] .k-cs__pop {
+        top: calc(var(--k-phone-bar) * 2 + 4px);
+    }
+
+    /* ── 4. The message row: the bubble takes the width ───────────────────────────────────
+       Card, flat, script, broadcast and the portraits paint `.mes_text` (or nothing), so the
+       row becomes a two-line grid: a 36px avatar beside the nameplate, then the text across
+       the whole row. `.mes_block` steps out of the way with `display: contents` — it paints
+       nothing in these looks — which lets its children join the row's grid. Bubble and
+       bubble-split PAINT `.mes_block`, so they keep the side column and only shrink it. */
+    body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) {
+        --k-cc-avatar: var(--k-phone-avatar);
+        --k-cc-avatar-col: var(--k-phone-avatar);
+        --avatar-base-width: var(--k-phone-avatar);
+        --avatar-base-height: var(--k-phone-avatar);
+        gap: 8px;
+        max-width: 100%;
+        padding: 10px 12px 0;
+    }
+
+    body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .avatar,
+    body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .avatar img {
+        width: var(--k-phone-avatar);
+        height: var(--k-phone-avatar);
+        object-fit: cover;
+    }
+
+    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        column-gap: 10px;
+        row-gap: 6px;
+    }
+
+    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mes_block {
+        display: contents;
+    }
+
+    /* One line, not a column: the readouts (`#0`, timer, tokens — user-toggled, so moved,
+       never hidden) sit beside the avatar, and core's last-row swipe reservation under the
+       avatar goes — the swipe pill lives on the bubble now. */
+    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mesAvatarWrapper {
+        grid-column: 1;
+        grid-row: 1;
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+        height: auto;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+    }
+
+    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mes_block > .ch_name {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+    }
+
+    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mes_block > :not(.ch_name) {
+        grid-column: 1 / -1;
+        min-width: 0;
+    }
+
+    /* The user row mirrors: avatar on the right, name beside it, text right-aligned. */
+    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper {
+        flex-direction: row-reverse;
+    }
+
+    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper {
+        grid-column: 2;
+    }
+
+    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mes_block > .ch_name {
+        grid-column: 1;
+    }
+
+    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mes_block > :not(.ch_name) {
+        justify-self: end;
+        max-width: 92%;
+    }
+
+    /* ── 5. Composer ───────────────────────────────────────────────────────────────────── */
+
+    body[data-k-layout="rails"] #form_sheld {
+        padding-inline: 8px;
+    }
+
+    /* Keyboard advice on a phone keyboard is noise. */
+    body[data-k-layout="rails"] #form_sheld::after {
+        display: none;
+    }
+
+    /* ── 6. Settings: the whole screen ─────────────────────────────────────────────────── */
+
+    body[data-k-layout="rails"] k-settings-modal {
+        --k-set-width: 100vw;
+        --k-set-height: 100dvh;
+    }
+
+    body[data-k-layout="rails"] .k-set-sheet {
+        border: 0;
+        border-radius: 0;
+    }
+
+    /* The eyebrow gives its width to search, which was squeezed to "Search sett". */
+    body[data-k-layout="rails"] .k-set-title .k-set-header-eyebrow {
+        display: none;
+    }
+
+    /* One scrolling row of sections instead of a wrapped block; the glide pill follows. */
+    body[data-k-layout="rails"] .k-set-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+    }
+
+    body[data-k-layout="rails"] .k-set-tab {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    /* ── 7. Home ───────────────────────────────────────────────────────────────────────── */
+
+    /* `flex: 0 0 auto` made the row's basis its 429px max-content, so it never wrapped and
+       "Create character" ran off the edge. On a phone it takes the hero's full line. */
+    body[data-k-layout="rails"] .k-lib-hero-actions {
+        flex: 1 1 100%;
+        flex-wrap: wrap;
+        min-width: 0;
+    }
+}
+
+/* ── 8. Fingers, not cursors ──────────────────────────────────────────────────────────────
+   On a touch screen the hit box grows; the glyph does not (rechrome contract 7). */
+@media (pointer: coarse) {
+    body[data-k-layout="rails"] #chat {
+        --k-swipe-h: 34px;
+        --k-swipe-arrow: 38px;
+    }
+
+    body[data-k-layout="rails"] #chat .mes .mes_buttons .mes_button,
+    body[data-k-layout="rails"] #chat .mes .mes_buttons .extraMesButtonsHint {
+        /* Sizes only — never `display`: core shows and hides these buttons by display. */
+        min-width: 36px;
+        min-height: 36px;
+    }
+
+    body[data-k-layout="rails"] #send_form #options_button,
+    body[data-k-layout="rails"] #send_form #extensionsMenuButton,
+    body[data-k-layout="rails"] #send_form #send_but {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    body[data-k-layout="rails"] .k-rl-row {
+        min-height: 40px;
+    }
+}

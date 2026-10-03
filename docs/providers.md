@@ -195,6 +195,9 @@ Full field notes on the 5.3 dialect: **§2.1**.
 
 Both match `gemini-3.6-flash` and `gemini-3.7-flash` without modification. **Re-run that assertion mentally before adding any future Gemini** — see §3.3.
 
+#### C4 — gemini-3.8-flash dropdown option (2026-09-23)
+Same shape as C1/C2: one `<option>` above `gemini-3.7-flash` in BOTH selects (`model_google_select` + `model_vertexai_select`), still under the "Gemini 3.5" optgroup label on purpose. ID confirmed stable on ai.google.dev/gemini-api/docs/models (not `-preview`). Zero JS/backend edits: the §3.3 assertion was re-run in node against the live regexes — 1M context, `isThinkingConfigModel`, flash thinking-level, `gemini-3` image-size/media-resolution/vision prefixes and the C3 guard all match `gemini-3.8-flash`.
+
 #### C3 — Gemini ≥3.6 continuation-turn guard
 **File:** `src/prompt-converters.js:618-623`, at the end of `convertGooglePrompt` (`:432`), immediately before its `return`.
 
@@ -306,6 +309,7 @@ Its behavior is precisely specified and was asserted by the retired script on ev
 |---|---|---|
 | `gemini-3.6-flash` | ✅ | prefill removed |
 | `gemini-3.7-flash` | ✅ | prefill removed |
+| `gemini-3.8-flash` | ✅ | assumed same as 3.6/3.7 — NOT live-verified (no Google key in dev); guard is regex-covered |
 | `gemini-3.5-flash` | ❌ | still prefills — **must be spared** |
 | `gemini-3.1-pro-preview` | ❌ | still prefills — **must be spared** |
 

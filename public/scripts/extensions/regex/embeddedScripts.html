@@ -1,5 +1,30 @@
-<div>
+<div class="regex_allow_prompt">
     <h3 data-i18n="This character has embedded regex script(s).">This character has embedded regex script(s).</h3>
+    <div class="regex_allow_meta">
+        <b>{{name}}</b> · {{enabled}} <span data-i18n="regex_allow_would_run">would run</span>{{#if disabled}} · {{disabled}} <span data-i18n="regex_allow_switched_off">switched off inside it, and staying off</span>{{/if}}
+    </div>
+    {{#if enabled}}
+    <div class="regex_allow_groups">
+        {{#if prompt}}
+        <div class="regex_allow_group">
+            <b data-i18n="regex_allow_group_prompt">Change what is sent to the model</b> <span>({{prompt.length}})</span>
+            <ul>{{#each prompt}}<li>{{this}}</li>{{/each}}</ul>
+        </div>
+        {{/if}}
+        {{#if message}}
+        <div class="regex_allow_group">
+            <b data-i18n="regex_allow_group_message">Rewrite the message text saved to the chat</b> <span>({{message.length}})</span>
+            <ul>{{#each message}}<li>{{this}}</li>{{/each}}</ul>
+        </div>
+        {{/if}}
+        {{#if display}}
+        <div class="regex_allow_group">
+            <b data-i18n="regex_allow_group_display">Change how messages look</b> <span>({{display.length}})</span>
+            <ul>{{#each display}}<li>{{this}}</li>{{/each}}</ul>
+        </div>
+        {{/if}}
+    </div>
+    {{/if}}
     <h3 data-i18n="Would you like to allow using them?">Would you like to allow using them?</h3>
-    <div class="m-b-1" data-i18n="If you want to do it later, select 'Regex' from the extensions menu.">If you want to do it later, select "Regex" from the extensions menu.</div>
+    <div class="m-b-1" data-i18n="regex_allow_later_scoped">They stay off until you allow them. You can change this any time in the Regex settings, under Scoped Scripts.</div>
 </div>

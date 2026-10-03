@@ -574,6 +574,8 @@ export function readSidecar(chatFolder) {
             return null;
         }
 
+        // Chat names are user data: reserved Object keys must stay ordinary file entries.
+        parsed.files = Object.assign(Object.create(null), parsed.files);
         return /** @type {BranchTree} */ (parsed);
     } catch {
         return null;
@@ -786,7 +788,7 @@ async function maintainTreeUnlocked(chatFolder) {
     const cached = readSidecar(chatFolder);
 
     /** @type {Record<string, ChatFileEntry>} */
-    const files = {};
+    const files = Object.create(null);
     /** @type {Set<string>} */
     const refreshed = new Set();
     let scannedFiles = 0;

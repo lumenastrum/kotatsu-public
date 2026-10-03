@@ -1,0 +1,7 @@
+{
+    "_readme": "Reference presets for the Nabe overlap gate (docs/house-preset-v0.md §6). Only repo-relative paths belong here. The third-party preset files are NOT in the repo (no license); the gate runs where they exist and skips missing paths (reporting them). Machine-specific absolute paths go in scripts/preset-references.local.json (untracked), or the KOTATSU_PRESET_REFS env var.",
+    "paths": [
+        "tests/fixtures/presets/Marinara's Spaghetti Recipe 10.json",
+        "tests/fixtures/presets/Clio's Sparkle Sauce v1.json"
+    ]
+}

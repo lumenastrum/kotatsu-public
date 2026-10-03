@@ -12,6 +12,7 @@ import { allowPresetScripts, allowScopedScripts, disallowPresetScripts, disallow
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
 import { getPresetManager } from '../../preset-manager.js';
+import { planImport, summarizeScripts } from './script-summary.js';
 
 // Re-exports for legacy extensions
 export { getRegexScripts };
@@ -1492,71 +1493,203 @@ async function toggleRegexCallback(args, scriptName) {
 }
 
 /**
- * Performs the import of the regex object.
- * @param {RegexScript} regexScript Input object
- * @param {SCRIPT_TYPES} scriptType The type of script to import as
+ * The label a person sees for a script home.
+ * @param {SCRIPT_TYPES} scriptType
+ * @returns {string}
  */
-async function onRegexImportObjectChange(regexScript, scriptType) {
-    try {
-        if (!regexScript.scriptName) {
-            throw new Error('No script name provided.');
-        }
-
-        // Assign a new UUID
-        regexScript.id = uuidv4();
-
-        const array = getScriptsByType(scriptType);
-        array.push(regexScript);
-
-        switch (scriptType) {
-            case SCRIPT_TYPES.GLOBAL:
-                // will be handled by saveSettingsDebounced
-                break;
-            case SCRIPT_TYPES.SCOPED:
-                await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
-                break;
-            case SCRIPT_TYPES.PRESET:
-                await saveScriptsByType(array, SCRIPT_TYPES.PRESET);
-                break;
-            default:
-                break;
-        }
-
-        saveSettingsDebounced();
-        await loadRegexScripts();
-        toastr.success(t`Regex script "${regexScript.scriptName}" imported.`);
-    } catch (error) {
-        console.log(error);
-        toastr.error(t`Invalid regex object.`);
-        return;
+function scriptTypeLabel(scriptType) {
+    switch (scriptType) {
+        case SCRIPT_TYPES.PRESET: return t`Preset Scripts`;
+        case SCRIPT_TYPES.SCOPED: return t`Scoped Scripts`;
+        default: return t`Global Scripts`;
     }
 }
 
 /**
- * Performs the import of the regex file.
- * @param {File} file Input file
- * @param {SCRIPT_TYPES} scriptType The type of script to import as
+ * Imports a pack of regex scripts as ONE operation: one plan, one save, one toast.
+ *
+ * It used to be a loop of single imports, each with its own save, reload and toast, with no
+ * check for what was already installed. Measured on Freaky Frankenstein's 12-script pack: twelve
+ * preset saves, twelve toasts, and — imported next to a preset that already embeds the same
+ * twelve — two active copies of every script. A script that is already installed in ANY home is
+ * now skipped and reported, see script-summary.js `planImport`.
+ *
+ * Scripts landing in (or already living in) Preset or Scoped Scripts are inert until that
+ * preset or character is allowed, so the allow prompt follows the import when it is needed.
+ * Nothing is switched on without the answer.
+ *
+ * @param {RegexScript[]} incoming Parsed scripts from the chosen file(s)
+ * @param {SCRIPT_TYPES} scriptType The home to import into
  */
-async function onRegexImportFileChange(file, scriptType) {
-    if (!file) {
-        toastr.error('No file provided.');
+async function importRegexScripts(incoming, scriptType) {
+    const hasCharacter = this_chid !== undefined && !selected_group;
+    const presetLabel = scriptTypeLabel(SCRIPT_TYPES.PRESET);
+    const scopedLabel = scriptTypeLabel(SCRIPT_TYPES.SCOPED);
+    const plan = planImport(incoming, {
+        [scriptTypeLabel(SCRIPT_TYPES.GLOBAL)]: getScriptsByType(SCRIPT_TYPES.GLOBAL),
+        [presetLabel]: getScriptsByType(SCRIPT_TYPES.PRESET),
+        [scopedLabel]: hasCharacter ? getScriptsByType(SCRIPT_TYPES.SCOPED) : [],
+    });
+
+    const imported = plan.toImport.length;
+    const skipped = plan.duplicates.length;
+
+    if (imported > 0) {
+        const array = getScriptsByType(scriptType);
+        for (const regexScript of plan.toImport) {
+            // Assign a new UUID
+            regexScript.id = uuidv4();
+            array.push(regexScript);
+        }
+        await saveScriptsByType(array, scriptType);
+        saveSettingsDebounced();
+        await loadRegexScripts();
+    }
+
+    const parts = [];
+    if (imported === 1) {
+        parts.push(t`Regex script "${plan.toImport[0].scriptName}" imported.`);
+    } else if (imported > 1) {
+        parts.push(t`Imported ${imported} regex scripts to ${scriptTypeLabel(scriptType)}.`);
+    }
+    if (skipped > 0) {
+        const homes = [...new Set(plan.duplicates.map(duplicate => duplicate.where))].join(', ');
+        parts.push(imported > 0
+            ? t`${skipped} already present (${homes}), skipped.`
+            : t`Nothing imported: all ${skipped} are already present (${homes}).`);
+    }
+    if (plan.invalid > 0) {
+        parts.push(t`${plan.invalid} invalid entries ignored.`);
+    }
+    if (parts.length === 0) {
+        toastr.error(t`Invalid regex object.`);
+        return;
+    }
+    (imported > 0 ? toastr.success : toastr.info)(parts.join(' '));
+
+    const touched = (/** @type {SCRIPT_TYPES} */ type, /** @type {string} */ label) =>
+        (scriptType === type && imported > 0) || plan.duplicates.some(duplicate => duplicate.where === label);
+
+    if (touched(SCRIPT_TYPES.PRESET, presetLabel)) {
+        const apiId = getCurrentPresetAPI();
+        const name = getCurrentPresetName();
+        if (!isPresetScriptsAllowed(apiId, name)) {
+            await promptAllowPresetScripts(apiId, name, getScriptsByType(SCRIPT_TYPES.PRESET));
+            await loadRegexScripts();
+        }
+    }
+    if (hasCharacter && touched(SCRIPT_TYPES.SCOPED, scopedLabel)) {
+        const character = characters[this_chid];
+        if (!isScopedScriptsAllowed(character)) {
+            await promptAllowScopedScripts(character, getScriptsByType(SCRIPT_TYPES.SCOPED));
+            await loadRegexScripts();
+        }
+    }
+}
+
+/**
+ * Asks where a pack of already-parsed scripts should live, then imports it. The Regex settings'
+ * own Import ends here, and so does a pack that arrives alone through the preset import
+ * (openai.js `onPresetImportFileChange`).
+ * @param {RegexScript[]} incoming Parsed scripts
+ * @returns {Promise<void>}
+ */
+export async function importRegexScriptsWithTarget(incoming) {
+    if (!Array.isArray(incoming) || incoming.length === 0) {
         return;
     }
 
-    try {
-        const regexScripts = JSON.parse(await getFileText(file));
-        if (Array.isArray(regexScripts)) {
-            for (const regexScript of regexScripts) {
-                await onRegexImportObjectChange(regexScript, scriptType);
-            }
-        } else {
-            await onRegexImportObjectChange(regexScripts, scriptType);
-        }
-    } catch (error) {
-        console.log(error);
-        toastr.error('Invalid JSON file.');
+    // A pack usually belongs to the preset it shipped with, and Preset Scripts is the home
+    // with the smallest reach, so it leads. Global used to be preselected, which put a
+    // preset's prompt-side strippers on every preset and every character.
+    const presetName = getCurrentPresetName();
+    const hasPreset = Boolean(getCurrentPresetAPI() && presetName && getPresetManager());
+    const hasCharacter = this_chid !== undefined && !selected_group;
+    let target = hasPreset ? SCRIPT_TYPES.PRESET : SCRIPT_TYPES.GLOBAL;
+
+    const template = $(await renderExtensionTemplateAsync('regex', 'importTarget', {
+        count: incoming.length,
+        hasPreset,
+        presetDefault: hasPreset,
+        presetName,
+        hasCharacter,
+        characterName: hasCharacter ? characters[this_chid]?.name : '',
+    }));
+    template.find('#regex_import_target_global').on('input', () => (target = SCRIPT_TYPES.GLOBAL));
+    template.find('#regex_import_target_scoped').on('input', () => (target = SCRIPT_TYPES.SCOPED));
+    template.find('#regex_import_target_preset').on('input', () => (target = SCRIPT_TYPES.PRESET));
+
+    // A CONFIRM, not a TEXT popup: closing the old dialog with Escape or its corner button
+    // still imported, to whichever target happened to be selected.
+    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: t`Import`, cancelButton: t`Cancel` });
+    if (!result) {
         return;
     }
+
+    await importRegexScripts(incoming, target);
+}
+
+/**
+ * Asks whether a preset's embedded scripts may run, saying what they are first, and allows them
+ * on a yes. The stock prompt named no count, no script and no effect, and pointed at "the
+ * extensions menu"; see script-summary.js `summarizeScripts` for the grouping it shows now.
+ * @param {string} apiId API the preset belongs to
+ * @param {string} name Preset name
+ * @param {RegexScript[]} scripts The preset's embedded scripts
+ * @returns {Promise<boolean>} Whether the scripts are allowed now
+ */
+async function promptAllowPresetScripts(apiId, name, scripts) {
+    const template = await renderExtensionTemplateAsync('regex', 'presetEmbeddedScripts', { name, ...summarizeScripts(scripts) });
+    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: t`Allow`, cancelButton: t`Not now`, allowVerticalScrolling: true });
+    if (!result) {
+        return false;
+    }
+
+    allowPresetScripts(apiId, name);
+    if (getCurrentChatId()) {
+        await reloadCurrentChat();
+    }
+    return true;
+}
+
+/**
+ * Lets another surface put the allow question for the SELECTED preset: the prompt list's regex
+ * chip is the way back after "Not now", which core's own one-time check never offers again.
+ * Does nothing when the preset carries no scripts or they are already allowed.
+ * @returns {Promise<boolean>} Whether the preset's scripts are allowed now
+ */
+export async function reviewPresetRegexScripts() {
+    const apiId = getCurrentPresetAPI();
+    const name = getCurrentPresetName();
+    const scripts = getScriptsByType(SCRIPT_TYPES.PRESET);
+    if (!Array.isArray(scripts) || scripts.length === 0) {
+        return false;
+    }
+    if (isPresetScriptsAllowed(apiId, name)) {
+        return true;
+    }
+
+    const allowed = await promptAllowPresetScripts(apiId, name, scripts);
+    await loadRegexScripts();
+    return allowed;
+}
+
+/**
+ * The same question for a character card's embedded scripts.
+ * @param {Character} character The character the scripts belong to
+ * @param {RegexScript[]} scripts The card's embedded scripts
+ * @returns {Promise<boolean>} Whether the scripts are allowed now
+ */
+async function promptAllowScopedScripts(character, scripts) {
+    const template = await renderExtensionTemplateAsync('regex', 'embeddedScripts', { name: character?.name ?? '', ...summarizeScripts(scripts) });
+    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: t`Allow`, cancelButton: t`Not now`, allowVerticalScrolling: true });
+    if (!result) {
+        return false;
+    }
+
+    allowScopedScripts(character);
+    await reloadCurrentChat();
+    return true;
 }
 
 /**
@@ -1615,13 +1748,7 @@ async function checkCharEmbeddedRegexScripts() {
                 const checkKey = `AlertRegex_${character.avatar}`;
                 if (!accountStorage.getItem(checkKey)) {
                     accountStorage.setItem(checkKey, 'true');
-                    const template = await renderExtensionTemplateAsync('regex', 'embeddedScripts', {});
-                    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '');
-
-                    if (result) {
-                        allowScopedScripts(character);
-                        await reloadCurrentChat();
-                    }
+                    await promptAllowScopedScripts(character, scripts);
                 }
             }
         }
@@ -1658,15 +1785,7 @@ async function checkPresetEmbeddedRegexScripts() {
 
             if (!accountStorage.getItem(checkKey)) {
                 accountStorage.setItem(checkKey, 'true');
-                const template = await renderExtensionTemplateAsync('regex', 'presetEmbeddedScripts', {});
-                const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '');
-
-                if (result) {
-                    allowPresetScripts(apiId, name);
-                    if (getCurrentChatId()) {
-                        await reloadCurrentChat();
-                    }
-                }
+                await promptAllowPresetScripts(apiId, name, scripts);
             }
         } else if (getCurrentChatId() && scripts.filter(script => !script.disabled).length > 0) {
             notifyReloadCurrentChat(name);
@@ -1748,19 +1867,30 @@ export async function init() {
         onRegexEditorOpenClick(false, SCRIPT_TYPES.PRESET);
     });
     $('#import_regex_file').on('change', async function () {
-        let target = SCRIPT_TYPES.GLOBAL;
-        const template = $(await renderExtensionTemplateAsync('regex', 'importTarget'));
-        template.find('#regex_import_target_global').on('input', () => (target = SCRIPT_TYPES.GLOBAL));
-        template.find('#regex_import_target_scoped').on('input', () => (target = SCRIPT_TYPES.SCOPED));
-        template.find('#regex_import_target_preset').on('input', () => (target = SCRIPT_TYPES.PRESET));
-
-        await callGenericPopup(template, POPUP_TYPE.TEXT);
-
         const inputElement = this instanceof HTMLInputElement && this;
-        for (const file of inputElement.files) {
-            await onRegexImportFileChange(file, target);
+        if (!inputElement) {
+            return;
         }
+        // Read first, ask second: the dialog can then say how many scripts it is about to place.
+        const files = [...inputElement.files];
         inputElement.value = '';
+
+        /** @type {RegexScript[]} */
+        const incoming = [];
+        for (const file of files) {
+            try {
+                const parsed = JSON.parse(await getFileText(file));
+                incoming.push(...(Array.isArray(parsed) ? parsed : [parsed]));
+            } catch (error) {
+                console.log(error);
+                toastr.error(t`Invalid JSON file.`);
+            }
+        }
+        if (incoming.length === 0) {
+            return;
+        }
+
+        await importRegexScriptsWithTarget(incoming);
     });
     $('#import_regex').on('click', function () {
         $('#import_regex_file').trigger('click');

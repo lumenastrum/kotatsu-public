@@ -1,81 +1,39 @@
 /**
- * `<k-prompt-list variant="list">` — the Lit rebuild of the prompt-manager list
- * (prompt manager v0, slices B + C: `docs/prompt-manager-v0.md`).
+ * `<k-prompt-list variant="list">` — the prompt manager's Lit view.
+ * `promptManager` owns live preset state; this component derives the tree/model and owns
+ * search, collapse, toggles, receipts, and pointer interactions. See docs/prompt-manager-v0.md.
+ * The core render patch and explicit recount lifecycle live in ./render-seam.js.
  *
- * Replaces core's string pipeline inside `#completion_prompt_manager`. `promptManager` stays
- * the state owner (decision 1); only the DOM layer changes. Decisions this file implements
- * literally, and must not quietly drift from:
+ * Behavioral constraints:
+ * - Rendering never starts a dry generation. Real assemblies refresh counts through
+ *   CHAT_COMPLETION_PROMPT_READY; the button and /kotatsu-recount request an explicit pass.
+ * - Collapse and radio-group relaxation are stored per preset in accountStorage, using
+ *   prompt identifiers as keys where possible so renaming a prompt keeps its state.
+ * - Raw serviceSettings.prompts records supply row identity: `new Prompt(...)` drops marker.
+ * - A span holds its opening prompt, children, and closing prompt. Both boundaries remain
+ *   individually toggleable; reordering moves the whole block as a permutation of live entries.
+ * - Radio enforcement batches sibling writes; a master toggle makes one write over the exact
+ *   identifiers its counter describes. Disabling an option never enables another.
+ * - Search requires every fragment across name + content, dims misses by class, and expands
+ *   matching containers. Pointer events stay delegated on the host so Lit owns its child DOM.
  *
- * - **Decision 1 — strangler at the seam.** {@link initKotatsuPromptList} patches
- *   `render` and `renderDebounced` ON THE INSTANCE. `PromptManager.js` and `openai.js` are
- *   never edited. The original is kept as `promptManager.renderStock` for emergencies.
- *   `renderDebounced` MUST be patched too: it is built in the constructor as
- *   `debounce(this.render.bind(this), …)` (`PromptManager.js:419`), so it captured the
- *   PROTOTYPE method before `init()` ever ran — patching `render` alone would leave core's 11
- *   event subscriptions (`:758-835`) still firing dry runs and `innerHTML = ''` rebuilds.
- * - **Decision 2 — no dry run from render, ever.** Core's `render()` fires
- *   `Generate('normal', {}, true)` by default (`:862-879`); the patched one re-derives and
- *   patches instead. Token counts refresh from the real assembly: `openai.js:1601` populates
- *   `tokenHandler.counts` and `:1608` calls `render(false)` on non-dry generations, and this
- *   module additionally listens to the frozen `CHAT_COMPLETION_PROMPT_READY` (`:1614`) so a DRY
- *   run's counts land too. The on-demand pass is {@link recountTokens} — slice C gives it a
- *   button with a busy state.
- * - **Decision 4 — collapse state is per-preset, per-section, in `accountStorage`.** One key
- *   per preset holding a JSON array of section keys, so a toggle is ONE storage write. The key
- *   for a container is `identifier ?? id` (slice A's handoff note): a prompt identifier where
- *   one exists, so a rename keeps the state; the derived tree id otherwise.
- * - **Decision 5 — spans render as spans.** A tag pair is one collapsible container holding its
- *   children, with the closing prompt rendered as the container's own boundary row. Both are
- *   real prompts and both stay individually toggleable; nothing about the preset changes.
- * - **Decision 7 — search must actually work.** Fragment AND over name + content, matches lit
- *   with `<mark>`, non-matches dimmed BY CLASS (never an inline style racing an `!important`,
- *   which is the bug Nemo shipped for versions), matching containers force-expanded.
- * - **Decision 11 — marker rows render from raw records.** Every row is read off
- *   `serviceSettings.prompts`, never through `new Prompt(...)`, which drops `marker`
- *   (`PromptManager.js:182`).
- *
- * Slice C added, against those extension points:
- *
- * - **Decision 6 — radio enforcement, MANDATORY by default.** Enabling an option disables its
- *   siblings in ONE order write ({@link KPromptList.setEnabled}'s sibling, `#writeBatch`), and a
- *   per-group relax chip turns enforcement off for that one group, persisted per preset in
- *   `accountStorage` exactly like collapse state. Disabling never cascades; a group with nothing
- *   on is legal.
- * - **Master toggles.** Every container header carries one: Nemo semantics (anything off → all
- *   on, else all off) as a single batch, over exactly the identifiers its `(n/m)` counter
- *   describes. An enforced radio group's master is a CLEAR only — "all on" is not a state a
- *   radio group has.
- * - **Decision 8 — one drag surface.** Pointer events, delegated on the host, never jQuery-UI
- *   sortable: sortable reparents the dragged node, which is a foreign mutation inside a Lit
- *   `ChildPart`'s range, and one instance cannot span the nested section bodies this tree
- *   renders. The write is a splice ({@link moveOrderBlock}) — a permutation of the live array,
- *   never a DOM-id-to-entry map, which is the bug in core's own `update` handler
- *   (`PromptManager.js:1923-1931`).
- * - **Decision 2 — the recount is explicit.** The header button and the additive
- *   `/kotatsu-recount` slash command are the only doors to a dry run, and both are guarded by
- *   one busy flag.
- *
-
- * Light DOM (`createRenderRoot()` returns `this`) for the same reasons every Kotatsu component
- * gives: `public/css/prompt-list.css` reaches the internals, a theme pack's `sheet.css` reaches
- * them too, and `initDynamicStyles()` can see the hover / focus-visible pairs it audits.
- *
- * One-way imports: kotatsu → core. Nothing in core imports this file; it is reached from
- * `initKotatsuShell()`.
+ * Light DOM lets public/css/prompt-list.css and theme packs reach the internals. Imports flow
+ * Kotatsu → core; the shell initializes this module through firstLoadInit().
  */
 
 import { LitElement, html, nothing } from '../shell/lit.js';
 import { main_api } from '../../script.js';
 import { eventSource, event_types } from '../../scripts/events.js';
-import { promptManager } from '../../scripts/openai.js';
-import { SlashCommand } from '../../scripts/slash-commands/SlashCommand.js';
-import { SlashCommandParser } from '../../scripts/slash-commands/SlashCommandParser.js';
 import { accountStorage } from '../../scripts/util/AccountStorage.js';
+import { createPromptListSeam } from './render-seam.js';
+export { PROMPT_LIST_MOUNTED_EVENT, RECOUNT_COMMAND } from './render-seam.js';
 import {
+    enforceStorageKey,
     indexTree,
     moveOrderBlock,
     planMasterToggle,
     planRadioEnable,
+    radioEnforcement,
     relaxStorageKey,
     resolveBatch,
 } from './order-ops.js';
@@ -88,8 +46,11 @@ import {
     highlightSegments,
     indexOrder,
     indexPrompts,
+    regexChip,
     searchModel,
 } from './view-model.js';
+import { SCRIPT_TYPES, getCurrentPresetAPI, getCurrentPresetName, getScriptsByType, isPresetScriptsAllowed } from '../../scripts/extensions/regex/engine.js';
+import { summarizeScripts } from '../../scripts/extensions/regex/script-summary.js';
 
 /**
  * Additive events (CONTRACT §0 — additions are free). Both are plain DOM CustomEvents on
@@ -103,13 +64,8 @@ export const PROMPT_LIST_RENDERED_EVENT = 'kotatsu_prompt_list_rendered';
  * (the primary row of the interaction). One event per interaction, never one per entry.
  */
 export const PROMPT_LIST_TOGGLED_EVENT = 'kotatsu_prompt_toggled';
-/** Fired when the seam mounts or re-mounts the component. */
-export const PROMPT_LIST_MOUNTED_EVENT = 'kotatsu_prompt_list_mounted';
 /** Fired after a drag has permuted the order and handed the blob to the saver. */
 export const PROMPT_LIST_REORDERED_EVENT = 'kotatsu_prompt_list_reordered';
-
-/** The additive slash command — decision 2's sanctioned replacement for `/pm-render refresh=true`. */
-export const RECOUNT_COMMAND = 'kotatsu-recount';
 
 /** `accountStorage` key prefix. One key per preset; the value is a JSON array of collapse keys. */
 const COLLAPSE_KEY_PREFIX = 'kotatsu.promptList.collapsed.';
@@ -119,13 +75,6 @@ const DRAG_THRESHOLD_PX = 4;
 
 /** Preset name stand-in when the settings carry none, so collapse state still has a home. */
 const UNNAMED_PRESET = '(unnamed)';
-
-/**
- * Debounce for the patched `renderDebounced`. Core uses `debounce_timeout.relaxed` (1000 ms,
- * `constants.js:14`) because its render is a full dry run plus a teardown; ours is one O(n)
- * model rebuild and a Lit patch, so it can afford to feel immediate.
- */
-const REDRAW_DEBOUNCE_MS = 250;
 
 /** Stroke-only icon set — no Font Awesome, no emoji (repo CLAUDE.md). */
 const icons = {
@@ -299,32 +248,6 @@ function save(manager) {
 }
 
 /**
- * A trailing-edge debounce. Local rather than core's `debounce()` so the seam owns its own
- * timer and can clear it on uninstall — a stale timer firing into a torn-down patch is exactly
- * the leak class the branch-map audit rules out.
- * @param {() => void} fn Function to debounce.
- * @param {number} ms Delay.
- * @returns {{call: () => void, cancel: () => void}} Handle.
- */
-function makeDebounce(fn, ms) {
-    /** @type {ReturnType<typeof setTimeout>|null} */
-    let timer = null;
-    return {
-        call: () => {
-            if (timer !== null) clearTimeout(timer);
-            timer = setTimeout(() => {
-                timer = null;
-                fn();
-            }, ms);
-        },
-        cancel: () => {
-            if (timer !== null) clearTimeout(timer);
-            timer = null;
-        },
-    };
-}
-
-/**
  * The prompt list.
  */
 export class KPromptList extends LitElement {
@@ -338,6 +261,7 @@ export class KPromptList extends LitElement {
         _error: { state: true },
         _busy: { state: true },
         _dragging: { state: true },
+        _regex: { state: true },
     };
 
     /**
@@ -373,7 +297,10 @@ export class KPromptList extends LitElement {
     /** @type {Set<string>} Container keys whose radio enforcement the reader relaxed. */
     #relaxed = new Set();
 
-    /** @type {string} Preset the collapse and relax sets belong to, so a switch reloads both. */
+    /** @type {Set<string>} Container keys the reader enforced by hand (how an `open` group gets enforced). */
+    #enforcedByHand = new Set();
+
+    /** @type {string} Preset the collapse, relax and enforce sets belong to, so a switch reloads them. */
     #collapsePreset = '';
 
     /**
@@ -386,6 +313,9 @@ export class KPromptList extends LitElement {
 
     /** @type {((data: any) => void)|null} `CHAT_COMPLETION_PROMPT_READY` subscription. */
     #onPromptReady = null;
+
+    /** @type {(() => void)|null} `PRESET_CHANGED` / `SETTINGS_UPDATED` subscription for the regex chip. */
+    #onRegexState = null;
 
     /**
      * The live drag, or null. ONE of these exists at a time — decision 8's "one sortable surface"
@@ -419,6 +349,8 @@ export class KPromptList extends LitElement {
         this._status = 'no-manager';
         /** @type {number} Bumped to publish a change made to the non-reactive model. */
         this._revision = 0;
+        /** @type {import('./view-model.js').RegexChip|null} The preset's regex chip, or null for none. */
+        this._regex = null;
         /** @type {string} Identifier whose receipt drawer is open, or ''. */
         this._inspecting = '';
         /** @type {string} The last assembly error, captured off the manager. */
@@ -442,6 +374,12 @@ export class KPromptList extends LitElement {
         // honest either way. Counts only — the tree cannot have changed under a generation.
         this.#onPromptReady = () => this.refresh(false);
         eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, this.#onPromptReady);
+        // The regex chip reads two things core changes without telling this list: which preset is
+        // selected, and whether its scripts are allowed (a settings write). Neither rebuilds the
+        // tree, so they only re-read the chip, and only re-render when it actually differs.
+        this.#onRegexState = () => this.#syncRegex();
+        eventSource.on(event_types.PRESET_CHANGED, this.#onRegexState);
+        eventSource.on(event_types.SETTINGS_UPDATED, this.#onRegexState);
         // The whole drag surface: three listeners on the host, delegated. Pointer capture is
         // taken on the HOST (not on the grip), so a Lit patch mid-drag can never move the
         // element the events are bound to, and mouse / touch / pen are one code path — which
@@ -449,7 +387,8 @@ export class KPromptList extends LitElement {
         // on a phone at all (it rides `lib/jquery.ui.touch-punch.min.js`, index.html:8276).
         this.#onPointerDown = (event) => this.#dragStart(event);
         this.#onPointerMove = (event) => this.#dragMove(event);
-        this.#onPointerUp = (event) => this.#dragEnd(event, true);
+        // Browser cancellation releases the drag without saving its last drop position.
+        this.#onPointerUp = (event) => this.#dragEnd(event, event.type === 'pointerup');
         this.addEventListener('pointerdown', this.#onPointerDown);
         this.addEventListener('pointermove', this.#onPointerMove);
         this.addEventListener('pointerup', this.#onPointerUp);
@@ -461,6 +400,11 @@ export class KPromptList extends LitElement {
         if (this.#onPromptReady) {
             eventSource.removeListener(event_types.CHAT_COMPLETION_PROMPT_READY, this.#onPromptReady);
             this.#onPromptReady = null;
+        }
+        if (this.#onRegexState) {
+            eventSource.removeListener(event_types.PRESET_CHANGED, this.#onRegexState);
+            eventSource.removeListener(event_types.SETTINGS_UPDATED, this.#onRegexState);
+            this.#onRegexState = null;
         }
         if (this.#onPointerDown) this.removeEventListener('pointerdown', this.#onPointerDown);
         if (this.#onPointerMove) this.removeEventListener('pointermove', this.#onPointerMove);
@@ -480,6 +424,7 @@ export class KPromptList extends LitElement {
         this.#caps.clear();
         this.#collapsed.clear();
         this.#relaxed.clear();
+        this.#enforcedByHand.clear();
         this.#collapsePreset = '';
         super.disconnectedCallback();
     }
@@ -518,6 +463,7 @@ export class KPromptList extends LitElement {
      * @returns {void}
      */
     refresh(rederive = true) {
+        this.#syncRegex();
         const manager = this.manager;
         if (!manager || !this.#settings) {
             this.#model = null;
@@ -550,6 +496,7 @@ export class KPromptList extends LitElement {
             this.#collapsePreset = preset;
             this.#collapsed = readStoredSet(collapseStorageKey(preset));
             this.#relaxed = readStoredSet(relaxStorageKey(preset));
+            this.#enforcedByHand = readStoredSet(enforceStorageKey(preset));
             this._error = '';
             this._inspecting = '';
             this.#cancelDrag();
@@ -720,10 +667,40 @@ export class KPromptList extends LitElement {
      * @returns {void}
      */
     #toggleRelax(key) {
-        if (this.#relaxed.has(key)) this.#relaxed.delete(key);
-        else this.#relaxed.add(key);
+        // Off the state the chip is SHOWING, so the click always flips it: an enforced group is
+        // relaxed, and a relaxed or open one is enforced by hand.
+        if (this.#radioStateOf(key) === 'enforced') {
+            this.#relaxed.add(key);
+            this.#enforcedByHand.delete(key);
+        } else {
+            this.#relaxed.delete(key);
+            this.#enforcedByHand.add(key);
+        }
         writeStoredSet(relaxStorageKey(this.#collapsePreset), this.#relaxed);
+        writeStoredSet(enforceStorageKey(this.#collapsePreset), this.#enforcedByHand);
         this._revision++;
+    }
+
+    /**
+     * Whether one group is enforced, relaxed by the reader, or left open because it already has
+     * several members on ({@link radioEnforcement}). Read live, off this refresh's model.
+     * @param {import('./order-ops.js').RadioGroup} group The group.
+     * @returns {'enforced'|'relaxed'|'open'} The state.
+     */
+    #radioState(group) {
+        return radioEnforcement(group, identifier => this.#isEnabled(identifier), {
+            relaxed: this.#relaxed,
+            enforced: this.#enforcedByHand,
+        });
+    }
+
+    /**
+     * @param {string} key Container key.
+     * @returns {'enforced'|'relaxed'|'open'|null} The state, or null when the key is no radio group.
+     */
+    #radioStateOf(key) {
+        const group = this.#index.groups.find(candidate => candidate.key === key);
+        return group ? this.#radioState(group) : null;
     }
 
     /**
@@ -736,14 +713,14 @@ export class KPromptList extends LitElement {
     }
 
     /**
-     * The enforced group one identifier belongs to, or null. A relaxed group answers null, which
-     * is precisely what "relaxed" means: its members behave as plain toggles.
+     * The enforced group one identifier belongs to, or null. A relaxed or open group answers
+     * null, which is precisely what those mean: its members behave as plain toggles.
      * @param {string} identifier Prompt identifier.
      * @returns {import('./order-ops.js').RadioGroup|null} The group.
      */
     #enforcedGroupOf(identifier) {
         const group = this.#index.groupOfMember.get(identifier);
-        if (!group || this.#relaxed.has(group.key)) return null;
+        if (!group || this.#radioState(group) !== 'enforced') return null;
         return group;
     }
 
@@ -810,6 +787,44 @@ export class KPromptList extends LitElement {
     }
 
     /**
+     * The preset's radio groups as read-only data, for surfaces outside the list — the welcome
+     * tour's "how do you like to play?" (onboarding v0 O3). Built off this refresh's model, so
+     * it is exactly what the rows show.
+     *
+     * An `open` group is left out: with several members already on it is not a choice between
+     * them, and {@link pickRadio} would have to switch the rest off to make it one.
+     * @returns {Array<{key: string, label: string, options: Array<{identifier: string, label: string, enabled: boolean}>}>}
+     */
+    radioGroups() {
+        return this.#index.groups.filter(group => this.#radioState(group) !== 'open').map(group => ({
+            key: group.key,
+            label: group.label,
+            options: group.members.map((identifier) => {
+                const row = this.#model?.rowsByIdentifier.get(identifier);
+                return { identifier, label: row?.label ?? identifier, enabled: row?.enabled === true };
+            }),
+        }));
+    }
+
+    /**
+     * Turns one radio option on and its siblings off: the same plan and the same single write a
+     * click on the row makes (see {@link #toggleRow}), so the list, the save and the
+     * `kotatsu_prompt_toggled` event behave identically. Enforced even when the reader relaxed
+     * the group in the list — a caller asking to "pick" one means exactly one. An `open` group
+     * is refused: {@link radioGroups} never offered it.
+     * @param {string} identifier The option to turn on.
+     * @returns {number} How many entries were written (0 if it is in no group, or in an open one).
+     */
+    pickRadio(identifier) {
+        const group = this.#index.groupOfMember.get(identifier);
+        if (!group || this.#radioState(group) === 'open') return 0;
+        return this.#writeBatch(
+            planRadioEnable(group.members, identifier, id => this.#isEnabled(id)),
+            { reason: 'radio', identifier, group: group.key },
+        );
+    }
+
+    /**
      * The single-row toggle — decision 2, and the whole point of slice B; decision 6 rides on
      * top of it here.
      *
@@ -845,12 +860,12 @@ export class KPromptList extends LitElement {
      * @returns {void}
      */
     #masterToggle(key, mode) {
-        const identifiers = this.#toggleableMembers(key);
+        const identifiers = this.#masterScope(key, mode);
         if (identifiers.length === 0) return;
         const changes = planMasterToggle({
             identifiers,
             isEnabled: identifier => this.#isEnabled(identifier),
-            groups: this.#index.groups.filter(group => !this.#relaxed.has(group.key)),
+            groups: this.#index.groups.filter(group => this.#radioState(group) === 'enforced'),
             mode,
         });
         this.#writeBatch(changes, { reason: 'master', identifier: key, group: key });
@@ -866,6 +881,19 @@ export class KPromptList extends LitElement {
     }
 
     /**
+     * What a container's master control reaches. `clear` empties a radio group of its OPTIONS,
+     * so an engine marker sitting under the same banner is left alone, as it is by a row click.
+     * @param {string} key Container key.
+     * @param {'auto'|'clear'} mode Master semantics.
+     * @returns {string[]} The identifiers in scope.
+     */
+    #masterScope(key, mode) {
+        const identifiers = this.#toggleableMembers(key);
+        if (mode !== 'clear') return identifiers;
+        return identifiers.filter(identifier => this.#model?.rowsByIdentifier.get(identifier)?.marker !== true);
+    }
+
+    /**
      * The master control's state for one container.
      * @param {string} key Container key.
      * @param {boolean} exclusive Whether the container is an exclusive group.
@@ -873,10 +901,10 @@ export class KPromptList extends LitElement {
      *   Null when nothing inside can be toggled and the control should not render at all.
      */
     #masterState(key, exclusive) {
-        const identifiers = this.#toggleableMembers(key);
+        const enforced = exclusive && this.#radioStateOf(key) === 'enforced';
+        const identifiers = this.#masterScope(key, enforced ? 'clear' : 'auto');
         if (identifiers.length === 0) return null;
         const enabled = identifiers.filter(identifier => this.#isEnabled(identifier)).length;
-        const enforced = exclusive && !this.#relaxed.has(key);
         return {
             mode: enforced ? 'clear' : 'auto',
             target: enforced ? false : enabled < identifiers.length,
@@ -1181,9 +1209,93 @@ export class KPromptList extends LitElement {
                     ${countStat}
                     ${tokenStat}
                     ${model ? html`<span class="k-pl-stat k-pl-stat--tier" title="How this preset's sections were derived">${model.tier}</span>` : nothing}
+                    ${this._regex ? html`
+                        <button type="button" class="k-pl-stat k-pl-stat--regex is-${this._regex.state}"
+                            title=${this._regex.title}
+                            aria-label=${this._regex.title}
+                            @click=${() => this.#onRegexChip()}>${this._regex.label}</button>` : nothing}
                     ${this.#renderRecount()}
                 </span>
             </header>`;
+    }
+
+    /**
+     * Re-reads the regex chip off core's live state and publishes it only when it differs, so
+     * the `SETTINGS_UPDATED` it listens to (every settings save) costs a comparison, not a render.
+     * @returns {void}
+     */
+    #syncRegex() {
+        /** @type {import('./view-model.js').RegexChip|null} */
+        let next = null;
+        try {
+            if (main_api === 'openai') {
+                const summary = summarizeScripts(getScriptsByType(SCRIPT_TYPES.PRESET));
+                next = regexChip(
+                    { total: summary.total, prompt: summary.prompt.length },
+                    isPresetScriptsAllowed(getCurrentPresetAPI(), getCurrentPresetName()),
+                );
+            }
+        } catch {
+            // No preset manager yet (boot) or no regex engine: no chip, never an error in a header.
+            next = null;
+        }
+        const prev = this._regex;
+        if (prev?.label === next?.label && prev?.state === next?.state && prev?.title === next?.title) return;
+        this._regex = next;
+    }
+
+    /**
+     * Off: asks core's allow question for this preset, which now lists what would run. On: opens
+     * the Regex settings at Preset Scripts. Both are dynamic imports on purpose — the regex
+     * extension is loaded by core's extension loader, and a static import from here would
+     * evaluate it ahead of the order `extensions.js` gives it.
+     * @returns {Promise<void>}
+     */
+    async #onRegexChip() {
+        const chip = this._regex;
+        if (!chip) return;
+        if (chip.state === 'off') {
+            const { reviewPresetRegexScripts } = await import('../../scripts/extensions/regex/index.js');
+            await reviewPresetRegexScripts();
+        } else {
+            const { openSettings } = await import('../settings/k-settings-modal.js');
+            openSettings({ tab: 'extensions' });
+            const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+            // The tab adopts the extension columns after its own render, so the block arrives
+            // a few frames after the sheet does.
+            /** @type {HTMLElement|null} */
+            let block = null;
+            for (let i = 0; i < 60 && !block; i++) {
+                await frame();
+                const found = document.getElementById('preset_scripts_block');
+                if (found?.closest('k-settings-modal')) block = found;
+            }
+            if (block) {
+                const drawer = block.closest('.inline-drawer');
+                const content = drawer?.querySelector('.inline-drawer-content');
+                if (content instanceof HTMLElement && content.offsetParent === null) {
+                    /** @type {HTMLElement|null} */ (drawer?.querySelector('.inline-drawer-toggle'))?.click();
+                }
+                // The drawer SLIDES open, and the global list above this block grows with it.
+                // Scrolling on the next frame lands on where the block was (the first cut did,
+                // and only passed by hand because the drawer was already open). Wait until its
+                // position holds for a few frames.
+                let last = Number.NaN;
+                let still = 0;
+                for (let i = 0; i < 90 && still < 4; i++) {
+                    await frame();
+                    const top = block.getBoundingClientRect().top;
+                    still = block.offsetParent !== null && Math.abs(top - last) < 0.5 ? still + 1 : 0;
+                    last = top;
+                }
+                // Into the sheet's own scroller, never `scrollIntoView`: that can scroll the
+                // document out from under the shell.
+                let scroller = block.parentElement;
+                while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+                if (scroller) scroller.scrollTop += block.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 12;
+            }
+        }
+        this.#syncRegex();
     }
 
     /**
@@ -1296,8 +1408,9 @@ export class KPromptList extends LitElement {
                 <div class="k-pl-head-row k-pl-head-row--section${this.#headState(section.key, section.row)}${this.#dragClasses(identifier)}"
                     data-identifier=${identifier}>
                     ${this.#renderTwist(section.key, open, section.label || 'section')}
-                    <span class="k-pl-head-label">${this.#renderLabel(section.label || '(unnamed section)')}</span>
+                    <span class="k-pl-head-label" title=${section.label || ''}>${this.#renderLabel(section.label || '(unnamed section)')}</span>
                     ${section.exclusive ? this.#renderExclusiveChip(section.key, section.label) : nothing}
+                    <span class="k-pl-spring" aria-hidden="true"></span>
                     ${this.#renderCounter(section.counter)}
                     ${this.#renderMaster(section.key, section.label || 'this section', section.exclusive)}
                     ${section.row ? this.#renderRowChrome(section.row) : nothing}
@@ -1338,8 +1451,9 @@ export class KPromptList extends LitElement {
                     data-identifier=${identifier}>
                     ${this.#renderTwist(node.key, open, label)}
                     ${this.#renderGrip(identifier, label)}
-                    <span class="k-pl-head-label">${this.#renderLabel(label)}</span>
+                    <span class="k-pl-head-label" title=${label}>${this.#renderLabel(label)}</span>
                     ${node.exclusive ? this.#renderExclusiveChip(node.key, label) : nothing}
+                    <span class="k-pl-spring" aria-hidden="true"></span>
                     ${this.#renderCounter(node.counter)}
                     ${this.#renderMaster(node.key, label, node.exclusive)}
                     ${node.row ? this.#renderRowChrome(node.row) : nothing}
@@ -1390,23 +1504,31 @@ export class KPromptList extends LitElement {
      * Enforcement is the default and the reason Andres asked for it ("makes it foolproof"); the
      * relax button exists for the rare deliberate double, is per group, and is remembered per
      * preset in `accountStorage` (never in the preset file — a fixture must never gain a key).
+     *
+     * The one exception to the default: a group that already has several on reads "relaxed"
+     * without anyone having relaxed it, and says why. Foolproof has to include not switching a
+     * dozen rows off because a preset's "pick one" banner ran on past its options.
      * @param {string} key Container key.
      * @param {string} label Container label, for the accessible name.
      * @returns {unknown} The chip pair.
      */
     #renderExclusiveChip(key, label) {
-        const enforced = !this.#relaxed.has(key);
+        const state = this.#radioStateOf(key) ?? 'enforced';
+        const enforced = state === 'enforced';
         const name = label || 'this group';
-        const title = enforced
-            ? `Enforced: turning one on turns the others off. Click to relax it for ${name}.`
-            : `Relaxed: these behave as ordinary toggles. Click to enforce "pick one" again for ${name}.`;
+        let title = `Relaxed: these behave as ordinary toggles. Click to enforce "pick one" again for ${name}.`;
+        if (enforced) title = `Enforced: turning one on turns the others off. Click to relax it for ${name}.`;
+        else if (state === 'open') title = `Not enforced: several of these are already on, so they behave as ordinary toggles. Click to enforce "pick one" for ${name}.`;
+        // In a narrow dock the two chips are one (css/prompt-list.css, "Narrow"): the static chip
+        // steps aside and an enforced button is drawn as "pick one". The word in the DOM stays
+        // the state, which is what probes and assistive tech read.
         return html`
             <span class="k-pl-chip k-pl-chip--exclusive" title="Only one of these is meant to be on">pick one</span>
             <button type="button" class="k-pl-chip k-pl-chip--relax${enforced ? ' is-on' : ''}"
                 aria-pressed=${String(enforced)}
                 title=${title}
                 aria-label=${enforced ? `Relax pick-one for ${name}` : `Enforce pick-one for ${name}`}
-                @click=${() => this.#toggleRelax(key)}>${enforced ? 'enforced' : 'relaxed'}</button>`;
+                @click=${() => this.#toggleRelax(key)}><span class="k-pl-relax-word">${enforced ? 'enforced' : 'relaxed'}</span></button>`;
     }
 
     /**
@@ -1511,8 +1633,12 @@ export class KPromptList extends LitElement {
      * @returns {unknown} The chip strip.
      */
     #renderRowChips(row) {
+        // No strip at all when there is nothing to put in it: an empty one still costs the row a
+        // gap, and in a narrow dock that gap is the name's.
+        if (!row.tag && !row.roleChip && !row.inChat && !row.overridden && !row.source && row.present) return nothing;
         return html`
             <span class="k-pl-chips">
+                ${row.tag ? html`<span class="k-pl-chip k-pl-chip--tag" title="The tag in front of this prompt's name">${row.tag}</span>` : nothing}
                 ${row.roleChip ? html`<span class="k-pl-chip k-pl-chip--role" title="Sent with the ${row.roleChip} role">${row.roleChip}</span>` : nothing}
                 ${row.inChat ? html`<span class="k-pl-chip k-pl-chip--depth" title="Injected into the chat at depth ${row.depth}">@${row.depth}</span>` : nothing}
                 ${row.overridden ? html`<span class="k-pl-chip k-pl-chip--override" title="Pulled from the character card this generation">card</span>` : nothing}
@@ -1552,17 +1678,14 @@ export class KPromptList extends LitElement {
 
     /**
      * The token badge. Absence is a statement: see `tokenBadge()`'s three rules. A row with no
-     * honest number gets an empty, non-interactive slot so the column still lines up.
+     * honest number gets no badge at all. The badge is the last thing in the row and sits flush
+     * right, so numbers line up without an empty slot holding 46px on every other row; that slot
+     * was every row's, before the first generation, and it came out of the name.
      * @param {import('./view-model.js').RowView} row Row view.
      * @returns {unknown} The badge.
      */
     #renderTokens(row) {
-        if (row.tokens === null) {
-            const why = row.inChat
-                ? 'In-chat injections are counted under chat history, never separately'
-                : 'No count — this prompt did not contribute to the last assembly';
-            return html`<span class="k-pl-tokens k-pl-tokens--none" title=${why} aria-hidden="true">·</span>`;
-        }
+        if (row.tokens === null) return nothing;
         const warn = row.warn;
         /** @type {Record<string, string>} Core's two warning strings, plus the plain reading. */
         const titles = {
@@ -1732,230 +1855,5 @@ if (typeof customElements !== 'undefined' && !customElements.get('k-prompt-list'
     customElements.define('k-prompt-list', KPromptList);
 }
 
-/* ── The render seam ──────────────────────────────────────────────────────── */
-
-/** @type {boolean} */
-let installed = false;
-
-/** @type {any} The manager whose methods this module patched. */
-let patched = null;
-
-/** @type {((afterTryGenerate?: boolean) => void)|null} The original prototype render, bound. */
-let stockRender = null;
-
-/** @type {(() => void)|null} The original debounced render. */
-let stockRenderDebounced = null;
-
-/** @type {{call: () => void, cancel: () => void}|null} Our own debounce, cleared on uninstall. */
-let redraw = null;
-
-/** @type {(() => void)|null} Retry hook while `promptManager` has not been constructed yet. */
-let onSettingsLoaded = null;
-
-/** @returns {KPromptList|null} The mounted component, or null. */
-function currentList() {
-    const element = document.querySelector('k-prompt-list');
-    return element instanceof KPromptList ? element : null;
-}
-
-/**
- * Mounts (or re-mounts) the component inside `#completion_prompt_manager`.
- *
- * Re-mount is not paranoia: any core path that still reaches `renderPromptManager()` does
- * `containerElement.innerHTML = ''` (`PromptManager.js:1604`), which would take the element
- * with it. Checking on every update makes that recoverable instead of fatal.
- * @param {any} manager The prompt manager.
- * @returns {KPromptList|null} The mounted component.
- */
-function mount(manager) {
-    const container = manager.containerElement
-        ?? document.getElementById(manager.configuration?.containerIdentifier ?? 'completion_prompt_manager');
-    if (!(container instanceof HTMLElement)) return null;
-    const existing = currentList();
-    if (existing && container.contains(existing)) {
-        existing.manager = manager;
-        return existing;
-    }
-    container.innerHTML = '';
-    const element = /** @type {KPromptList} */ (document.createElement('k-prompt-list'));
-    element.setAttribute('variant', 'list');
-    element.manager = manager;
-    container.appendChild(element);
-    document.dispatchEvent(new CustomEvent(PROMPT_LIST_MOUNTED_EVENT, { detail: { remount: Boolean(existing) } }));
-    return element;
-}
-
-/**
- * The patched render's whole body: make sure the component is mounted, then ask it to rebuild.
- * Never a dry run, never a teardown (decision 2).
- * @param {boolean} [rederive] Whether the section tree may have changed.
- * @returns {void}
- */
-function update(rederive = true) {
-    if (!patched) return;
-    const element = mount(patched);
-    if (!element) return;
-    element.refresh(rederive);
-}
-
-/** @type {boolean} One dry run at a time, whichever door it came through. */
-let recounting = false;
-
-/** @returns {boolean} Whether a recount is in flight. */
-export function isRecounting() {
-    return recounting;
-}
-
-/**
- * Runs core's dry run ON DEMAND and refreshes the badges from the result — decision 2's
- * "explicit recount". No teardown: `tryGenerate()` alone repopulates `tokenHandler.counts`
- * through `setChatCompletion` (`openai.js:1601`).
- *
- * Two doors reach it — the header button and `/kotatsu-recount` — and both share this one
- * guard, so a second request while a generation is in flight is refused rather than queued.
- * The busy flag is pushed onto the mounted component so the button can show it.
- * @returns {Promise<boolean>} Whether a dry run actually ran.
- */
-export async function recountTokens() {
-    if (!patched || recounting) return false;
-    recounting = true;
-    currentList()?.setBusy(true);
-    try {
-        await patched.tryGenerate();
-    } catch (error) {
-        console.error('[k-prompt-list] recount dry run failed', error);
-    } finally {
-        recounting = false;
-        currentList()?.setBusy(false);
-        update(false);
-    }
-    return true;
-}
-
-/**
- * Installs the strangler seam.
- *
- * Idempotent, and safe to call before settings exist: `promptManager` is created inside
- * `loadOpenAISettings` (`openai.js:670-716`), which runs at `script.js:7937` — long after
- * `firstLoadInit()`. When the manager is not there yet the seam waits on the frozen
- * `SETTINGS_LOADED` event (`script.js:8023`) and attaches then.
- *
- * Wire it with ONE line in `initKotatsuShell()`:
- * `import { initKotatsuPromptList } from '../prompts/k-prompt-list.js'; initKotatsuPromptList();`
- * @returns {boolean} Whether the seam is attached yet.
- */
-export function initKotatsuPromptList() {
-    if (installed) return true;
-    installed = true;
-    registerRecountCommand();
-    if (attach()) return true;
-    onSettingsLoaded = () => {
-        if (attach() && onSettingsLoaded) {
-            eventSource.removeListener(event_types.SETTINGS_LOADED, onSettingsLoaded);
-            onSettingsLoaded = null;
-        }
-    };
-    eventSource.on(event_types.SETTINGS_LOADED, onSettingsLoaded);
-    return false;
-}
-
-/** @type {boolean} */
-let commandRegistered = false;
-
-/**
- * Registers `/kotatsu-recount` — the sanctioned replacement for the side effect STscript users
- * lost when `/pm-render refresh=true` stopped running a dry run (decision 2: the always-on dry
- * run is the single worst interaction in the stock panel, so `render()` no longer honours the
- * flag). `/pm-render` itself keeps working and still redraws; only the hidden recount moved to
- * a command that says what it does.
- *
- * Additive under CONTRACT §0, and idempotent: registering twice would only earn a
- * `console.trace` from `addCommandObjectUnsafe` (`SlashCommandParser.js:79-81`), but a duplicate
- * command is a duplicate autocomplete entry, so it is checked. There is no deregistration API in
- * core, so `uninstallKotatsuPromptList()` leaves the command in place — with the seam gone
- * `recountTokens()` returns false and does nothing, which is the honest behaviour anyway.
- * @returns {void}
- */
-function registerRecountCommand() {
-    if (commandRegistered) return;
-    commandRegistered = true;
-    try {
-        const existing = SlashCommandParser.commands;
-        if (existing && Object.hasOwn(existing, RECOUNT_COMMAND)) return;
-        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-            name: RECOUNT_COMMAND,
-            callback: async () => {
-                await recountTokens();
-                return '';
-            },
-            helpString: 'Recounts the prompt manager\'s token badges by running one dry generation, '
-                + 'and refreshes the list. This is the explicit form of the pass the stock panel used to '
-                + 'run on every render; /pm-render only redraws.',
-        }));
-    } catch (error) {
-        console.error('[k-prompt-list] /kotatsu-recount could not be registered', error);
-    }
-}
-
-/**
- * Patches the instance and mounts the component. Both `render` and `renderDebounced` are
- * replaced; the originals are kept, and `renderStock` is published on the manager so a wedged
- * session can put core's own UI back by hand.
- * @returns {boolean} Whether the patch took.
- */
-function attach() {
-    const manager = promptManager;
-    if (!manager || typeof manager.render !== 'function') return false;
-    if (patched === manager) return true;
-
-    stockRender = manager.render.bind(manager);
-    stockRenderDebounced = manager.renderDebounced;
-    patched = manager;
-    manager.renderStock = stockRender;
-
-    redraw = makeDebounce(() => update(true), REDRAW_DEBOUNCE_MS);
-
-    // Own properties shadow the prototype method and the constructor-built debounce. The
-    // `afterTryGenerate` argument is accepted and deliberately ignored: `/pm-render refresh=true`
-    // and every core caller default to `true`, and honouring it would put the dry run back on
-    // the hot path. `recountTokens()` is the on-demand door.
-    manager.render = (/** @type {boolean} */ afterTryGenerate = true) => {
-        void afterTryGenerate;
-        update(true);
-    };
-    manager.renderDebounced = () => redraw?.call();
-
-    if (!mount(manager)) {
-        // The panel's container is not in the document yet. The patch stays in place; the next
-        // `render()` call re-tries the mount, so nothing is lost.
-        console.debug('[k-prompt-list] container not present yet; patch armed, mount deferred');
-        return true;
-    }
-    update(true);
-    return true;
-}
-
-/**
- * Removes the patch, the component and every listener this module added. Symmetry for
- * {@link initKotatsuPromptList}; used by teardown paths and tests.
- * @returns {void}
- */
-export function uninstallKotatsuPromptList() {
-    if (!installed) return;
-    installed = false;
-    if (onSettingsLoaded) {
-        eventSource.removeListener(event_types.SETTINGS_LOADED, onSettingsLoaded);
-        onSettingsLoaded = null;
-    }
-    redraw?.cancel();
-    redraw = null;
-    currentList()?.remove();
-    if (patched) {
-        delete patched.render;
-        delete patched.renderStock;
-        if (stockRenderDebounced) patched.renderDebounced = stockRenderDebounced;
-        patched = null;
-    }
-    stockRender = null;
-    stockRenderDebounced = null;
-}
+const { initKotatsuPromptList, uninstallKotatsuPromptList, recountTokens, isRecounting } = createPromptListSeam(KPromptList);
+export { initKotatsuPromptList, uninstallKotatsuPromptList, recountTokens, isRecounting };

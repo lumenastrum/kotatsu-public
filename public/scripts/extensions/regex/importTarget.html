@@ -1,25 +1,29 @@
-<div>
+<div class="regex_import_target">
     <h3 data-i18n="ext_regex_import_target">
         Import To:
     </h3>
+    <div class="regex_allow_meta">{{count}} <span data-i18n="regex_import_scripts_in_file">in this file</span></div>
     <div class="flex-container flexFlowColumn wide100p padding10 justifyLeft">
+        <label for="regex_import_target_preset">
+            <input type="radio" name="regex_import_target" id="regex_import_target_preset" value="preset" {{#if presetDefault}}checked{{/if}} {{#unless hasPreset}}disabled{{/unless}} />
+            <span data-i18n="ext_regex_preset_scripts">
+                Preset Scripts
+            </span>{{#if presetName}} <small>· {{presetName}}</small>{{/if}}
+            <small class="regex_import_hint" data-i18n="regex_import_hint_preset">Only while this preset is selected. Travels inside the preset file.</small>
+        </label>
         <label for="regex_import_target_global">
-            <input type="radio" name="regex_import_target" id="regex_import_target_global" value="global" checked />
+            <input type="radio" name="regex_import_target" id="regex_import_target_global" value="global" {{#unless presetDefault}}checked{{/unless}} />
             <span data-i18n="ext_regex_global_scripts">
                 Global Scripts
             </span>
-        </label>
-        <label for="regex_import_target_preset">
-            <input type="radio" name="regex_import_target" id="regex_import_target_preset" value="preset" />
-            <span data-i18n="ext_regex_preset_scripts">
-                Preset Scripts
-            </span>
+            <small class="regex_import_hint" data-i18n="regex_import_hint_global">Every preset and every character.</small>
         </label>
         <label for="regex_import_target_scoped">
-            <input type="radio" name="regex_import_target" id="regex_import_target_scoped" value="scoped" />
+            <input type="radio" name="regex_import_target" id="regex_import_target_scoped" value="scoped" {{#unless hasCharacter}}disabled{{/unless}} />
             <span data-i18n="ext_regex_scoped_scripts">
                 Scoped Scripts
-            </span>
+            </span>{{#if characterName}} <small>· {{characterName}}</small>{{/if}}
+            <small class="regex_import_hint" data-i18n="regex_import_hint_scoped">Only for this character. Travels inside the card.</small>
         </label>
     </div>
 </div>

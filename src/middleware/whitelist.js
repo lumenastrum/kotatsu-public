@@ -15,6 +15,22 @@ let whitelist = getConfigValue('whitelist', []);
 whitelist = filterValidIpPatterns(whitelist, (entry, message) => `${color.red('Warning')}: Ignoring invalid whitelist entry ${color.yellow(entry)} - ${message}`);
 
 /**
+ * Extra allow checks registered at boot, consulted live on every request after the static list.
+ * Kotatsu's paired phones register here (docs/phone-v0.md §3.2); core never imports Kotatsu.
+ * @type {Array<(ip: string) => boolean>}
+ */
+const extraAllowChecks = [];
+
+/**
+ * Registers a live allow check. It is asked only about IPs the static whitelist refused.
+ * @param {(ip: string) => boolean} check
+ * @returns {void}
+ */
+export function registerWhitelistAllow(check) {
+    extraAllowChecks.push(check);
+}
+
+/**
  * Resolves the IP addresses of Docker hostnames and adds them to the whitelist.
  * @returns {Promise<void>} Promise that resolves when the Docker hostnames are resolved
  */
@@ -63,7 +79,8 @@ export default async function getWhitelistMiddleware() {
          * @returns {boolean} True if the IP matches any whitelist entry
          */
         function isIPInWhitelist(whitelist, ip) {
-            return whitelist.some(x => ipMatching.matches(ip, ipMatching.getMatch(x)));
+            return whitelist.some(x => ipMatching.matches(ip, ipMatching.getMatch(x)))
+                || extraAllowChecks.some(check => check(ip));
         }
 
         //clientIp = req.connection.remoteAddress.split(':').pop();

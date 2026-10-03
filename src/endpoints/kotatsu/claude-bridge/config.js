@@ -33,7 +33,7 @@ export function readBridgeConfig() {
         enabled: getConfigValue(`${CONFIG_PREFIX}.enabled`, false, 'boolean'),
         host: getConfigValue(`${CONFIG_PREFIX}.host`, LOOPBACK_HOST),
         port: getConfigValue(`${CONFIG_PREFIX}.port`, 5107, 'number'),
-        defaultModel: getConfigValue(`${CONFIG_PREFIX}.defaultModel`, 'claude-sonnet-4-6'),
+        defaultModel: getConfigValue(`${CONFIG_PREFIX}.defaultModel`, 'claude-sonnet-5-5'),
         models: getConfigValue(`${CONFIG_PREFIX}.models`, []),
         resumeHistory: getConfigValue(`${CONFIG_PREFIX}.resumeHistory`, true, 'boolean'),
         thinking: getConfigValue(`${CONFIG_PREFIX}.thinking`, 'adaptive'),
