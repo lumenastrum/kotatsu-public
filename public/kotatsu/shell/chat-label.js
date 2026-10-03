@@ -5,7 +5,7 @@
  * RossAscends-mods.js:177): `Aelirenn - 2026-08-25@13h40m11s263ms`. Older installs wrote
  * `Seraphina - 2023-5-12 @21h 32m 29s 224ms`, and a core branch appends ` - Branch #N`. The
  * rails printed that id verbatim, in mono, everywhere a chat is named — the rail, the branch
- * lineage, the switcher. Andres's call (2026-10-01): show the date, keep the filename as the
+ * lineage, the switcher. Decision (2026-10-01): show the date, keep the filename as the
  * hover tooltip.
  *
  * DISPLAY ONLY. The id stays the identity in every handler, filter, `title` and aria hook;

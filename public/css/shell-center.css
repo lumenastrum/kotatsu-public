@@ -683,7 +683,7 @@ body[data-k-layout="rails"] #chat {
    the composer row begins (§4 puts `#form_sheld` in flow below it), and that row painted
    nothing — so the scroller's bottom edge drew a hard horizontal seam across the whole
    track: tinted-and-blurred glow above, raw `--k-app-backdrop` below. Invisible where the
-   backdrop is flat, a measured +7/+6/+5 one-pixel step at x=120 in his screenshot where the
+   backdrop is flat, a measured +7/+6/+5 one-pixel step at x=120 in a screenshot where the
    rose glow (`4% 112%`, bottom left) runs under it; both packs, both engines.
 
    One layer behind the scroller AND the composer row has no edge between them. `#sheld` goes
@@ -861,7 +861,7 @@ body[data-k-layout="rails"].swipeAllMessages #chat .mes[is_user="false"]:not(.sm
 }
 
 /* ── The swipe cluster (blue-hour-polish-v0 §C1) ──────────────────────────────────────────
-   Andres, 2026-10-01: swipe controls match the reader style. Under a BUBBLE look the arrows
+   Requirement (2026-10-01): swipe controls match the reader style. Under a BUBBLE look the arrows
    leave the row's flanks — where they floated ~90px from the text at the bubble's vertical
    middle — and become one pill pinned on the bubble's bottom edge, `‹ 2/5 ›`, where the eye
    lands when a reply ends. Under a non-bubble look (flat, script, broadcast) there is no edge

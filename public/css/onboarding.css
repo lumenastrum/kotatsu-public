@@ -953,7 +953,7 @@ body[data-k-layout="rails"] .k-onb-regex[data-state="off"] .k-onb-hint {
     color: var(--k-text-dim);
 }
 
-/* ── Dressed in her colours (v0.2.0 facelift, Andres 2026-10-03) ──────────────────────
+/* ── Dressed in her colours (v0.2.0 facelift, 2026-10-03) ──────────────────────
  * The tour is the first impression, and the controls were plain Blue Hour pills beside a girl in
  * rose polka dots. Theme packs never tint Mikan-chan (docs/brand.md § Mascot), so her own palette
  * lives here as slice parameters, and the tour's controls wear it in every pack. Values are her

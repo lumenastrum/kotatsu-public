@@ -6,7 +6,7 @@
  *
  * - **Is the active connection the bridge?** `isBridgeUrl()` matches `oai_settings.custom_url`
  *   against the listener `/api/kotatsu/claude-bridge/health` reports — never a hardcoded port
- *   (Andres's home install runs on 5109). The answer is written as `body[data-k-bridge]` (the
+ *   (an existing install may run on 5109). The answer is written as `body[data-k-bridge]` (the
  *   baggage sheet hides what the bridge ignores) and announced as `k-bridge-change` on
  *   `document` (the model pill relabels itself "Claude Code").
  * - **First run connects by itself.** Measured 2026-10-01 on a pristine install: bridge healthy,

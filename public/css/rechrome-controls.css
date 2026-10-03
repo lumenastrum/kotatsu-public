@@ -1,7 +1,7 @@
 /*
  * rechrome-controls.css — stock buttons and selects, in the house language.
- * Rechrome v0 slice A, docs/rechrome-v0.md. Andres's brief: "No more chonky
- * drop-down bars and buttons."
+ * Rechrome v0 slice A, docs/rechrome-v0.md. Requirement: no more chonky
+ * drop-down bars and buttons.
  *
  * Owns exactly two primitive families, wherever they ride:
  *   - `.menu_button` and its variants — icon squares, icon+label, disabled,

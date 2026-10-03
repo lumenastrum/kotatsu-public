@@ -230,7 +230,7 @@ export function saveRails(states) {
  * @typedef {'library'|'hearth'} LandingId
  */
 
-/** The shipped default. Andres asked for the gallery as the landing; hearth is one toggle away. */
+/** The shipped default. The gallery is the landing by decision; hearth is one toggle away. */
 export const DEFAULT_LANDING = 'library';
 
 /** @type {ReadonlyArray<LandingId>} */

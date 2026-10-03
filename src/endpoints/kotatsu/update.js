@@ -31,7 +31,7 @@ import { getConfigValue } from '../../util.js';
  *   2. an absolute filesystem path equal to origin's, resolved — that is how the
  *      update drill stands a local bare repo in for the mirror, and how anyone
  *      testing a release without pushing to GitHub does the same.
- * On this repo `origin` is the PRIVATE source (`lumenastrum/kotatsu`), so the dev
+ * On this repo `origin` is the PRIVATE source repo, so the dev
  * tree answers `{enabled: false, reason: 'origin is not the release mirror (…)'}`
  * and never touches the network. That is the intended dev-clone behaviour, not a bug.
  *

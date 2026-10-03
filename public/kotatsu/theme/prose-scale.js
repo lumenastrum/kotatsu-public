@@ -18,7 +18,7 @@
  * writes one body attribute, saves through core's debounce. `auto` is the default and writes NO
  * attribute: the sheet (kotatsu-chrome.css §3) reads Large on a monitor-wide viewport and Medium
  * on a laptop, with no JS in the loop — rails re-resolve on the resize that crosses the line, as
- * they already do (blue-hour-polish-v0 §B1, Andres's call 2026-10-01). Picking a size, Medium
+ * they already do (blue-hour-polish-v0 §B1, decision 2026-10-01). Picking a size, Medium
  * included, writes it and pins it. No
  * first-paint cache is needed: the attribute lands at the `firstLoadInit()` seam and again on
  * SETTINGS_LOADED, both long before `printMessages()` builds the first row.

@@ -1108,7 +1108,7 @@ async function sendDeepSeekRequest(request, response) {
             'temperature': request.body.temperature,
             'max_tokens': request.body.max_tokens,
             'stream': request.body.stream,
-            // CLIO-PATCH (metrics native v0): same one-key passthrough as the generic builder.
+            // KOTATSU-PATCH (metrics native v0): same one-key passthrough as the generic builder.
             // DeepSeek is the source whose `prompt_cache_hit_tokens` / `prompt_cache_miss_tokens`
             // spelling the normalizer explicitly supports, so its cache chip depends on this.
             'stream_options': request.body.stream_options,
@@ -2481,7 +2481,7 @@ router.post('/generate', async function (request, response) {
                     type: request.body.include_reasoning ? 'enabled' : 'disabled',
                 },
             };
-            // CLIO-PATCH: glm-5.3 reasoning dialect (2026-08-14). glm-5.3+ cannot disable
+            // KOTATSU-PATCH: glm-5.3 reasoning dialect (2026-08-14). glm-5.3+ cannot disable
             // thinking (400/1210) and takes top-level reasoning_effort: low|high|max
             // ('medium' rejected). Reasoning toggled off in ST -> cheapest level.
             if (/^glm-5\.[3-9]/.test(request.body.model)) {
@@ -2602,7 +2602,7 @@ router.post('/generate', async function (request, response) {
             'max_tokens': request.body.max_tokens,
             'max_completion_tokens': request.body.max_completion_tokens,
             'stream': request.body.stream,
-            // CLIO-PATCH (metrics native v0, docs/metrics-native-v0.md §2.1): forward the
+            // KOTATSU-PATCH (metrics native v0, docs/metrics-native-v0.md §2.1): forward the
             // client's `stream_options` so `include_usage` actually reaches the provider.
             // Stock never copied this key, which is why the retired message-metrics extension's
             // include_usage injection was a placebo for every OpenAI-compatible source — it

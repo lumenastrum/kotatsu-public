@@ -233,7 +233,7 @@
     /* The motion vocabulary (blue-hour-polish-v0 §4 D0). Durations by job — press and
        toggle, popover and tab, rail / modal / chat switch — and three curves: entrances land
        soft (`out`), exits leave quick (`in`), things travelling between two resting places
-       glide (`glide`). Blue Hour is calm glide: no curve here overshoots (Andres, 2026-10-01).
+       glide (`glide`). Blue Hour is calm glide: no curve here overshoots (decision 2026-10-01).
        A pack changes the temperament by value — a `linear()` spring for `--k-ease-out` — and
        the choreography follows for free. Consumers never read these raw: kotatsu-chrome.css
        §2 gates them through core's reduced-motion switch as `--k-t1..3`. */

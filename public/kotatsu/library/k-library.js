@@ -96,7 +96,7 @@ export const SHOW_VIEW_EVENT = 'k-library-show-view';
 /**
  * How far down the sheet the reader is before the way back is offered (the "Top" pill, and
  * "Your cast" beside it in Browse). Past the hero and the tools, roughly: once the switch at
- * the head of the page is off screen. Andres, 2026-10-02: deep in the scroll, the only way
+ * the head of the page is off screen. Reported 2026-10-02: deep in the scroll, the only way
  * back to the installed cards was a scroll all the way up.
  */
 const JUMP_THRESHOLD_PX = 480;

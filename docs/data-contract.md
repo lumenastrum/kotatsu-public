@@ -60,7 +60,7 @@ Baseline: SillyTavern 1.18.0, staging `1ca70787f`. Every `file:line` below was r
 
 **Case hazard.** Six names carry spaces or non-lowercase characters: `User Avatars`, `group chats`, `NovelAI Settings`, `KoboldAI Settings`, `OpenAI Settings`, `TextGen Settings`, plus `QuickReplies`. A rename is invisible on Windows/macOS and catastrophic the moment the profile is copied to Linux or into a Docker image. Treat the template as frozen data, not as code.
 
-**`.gitignore`d dev data.** Kotatsu's own `data/` in this clone is dev-only. Andres's live profile is never the dev target (`CLAUDE.md`, hard rules).
+**`.gitignore`d dev data.** Kotatsu's own `data/` in this clone is dev-only. A live user profile is never the dev target (`CLAUDE.md`, hard rules).
 
 ---
 

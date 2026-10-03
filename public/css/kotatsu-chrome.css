@@ -51,7 +51,7 @@
    the same binary. 10 files, ~604 KB total.
 
    The Blue Hour blob used Fraunces as a display face for character names,
-   section headers and popup titles. Andres chose Newsreader 500 instead on
+   section headers and popup titles. Newsreader 500 was chosen instead on
    2026-08-23: one serif voice, with no fourth webfont to ship.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -272,8 +272,8 @@
    tuned at; S is a hair under it for dense readers; L and XL are the ultrawide sizes — 18px
    and 20px at the default `font_scale`. The user's `font_scale` still multiplies underneath.
 
-   No attribute = AUTO, the default (blue-hour-polish-v0 §B1, Andres 2026-10-01: "18px on
-   monitors, 15px on laptops"). 1800px is the line: every MacBook's default viewport (Air
+   No attribute = AUTO, the default (blue-hour-polish-v0 §B1, requirement 2026-10-01: 18px on
+   monitors, 15px on laptops). 1800px is the line: every MacBook's default viewport (Air
    1280–1710, Pro 14 1512, Pro 16 1728) sits under it, 1920 / 2560 / 3440 monitors over it.
    A monitor under Windows 125% scaling reports 1536 and reads as a laptop — an explicit
    Large is the answer there. An explicit M writes `="m"` and matches nothing below, so it
@@ -372,7 +372,7 @@ body[data-k-prose-scale="xl"] {
 /* Newsreader's variable face has a real 500 cut for the display voice.
    Trimmed 2026-08-25: drawer headers, drawer h3/h4 and toast titles left this
    list — they are MENU furniture, not editorial moments, and serif at their
-   sizes read "cursive-ish" (Andres's ick, upheld). They keep the UI baseline
+   sizes read "cursive-ish" (decision upheld). They keep the UI baseline
    from the rule above. The display voice stays where a NAME is being said:
    nameplates and popup titles. */
 .name_text,
@@ -1300,7 +1300,7 @@ body.big-avatars #chat .mes .avatar img {
    through core's explicit declarations" held for controls and leaked for
    everything without one — a census found 68 <small> hints, bare label spans,
    links and section headers in the settings rack all inheriting the serif
-   ("cursive-ish" at 11px, Andres's words, and he's right). The document
+   ("cursive-ish" at 11px). The document
    defaults to the FUNCTIONAL face now; the reading voice is opt-in where §3
    assigns it explicitly (.mes_text/.mes_reasoning, the compose textareas). */
 body {

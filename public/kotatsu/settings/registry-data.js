@@ -357,7 +357,7 @@ export const ENTRIES = Object.freeze([
         affects: ['theme-tokens', 'chrome', 'message-row'],
         keywords: ['theme', 'ui theme', 'preset', 'skin', 'look', 'palette', 'colors', 'colours', 'pack', 'blue hour', 'sparkle'],
         // The single highest-value control in the whole surface: applying a theme writes 38
-        // keys in one act (simple-tier §2.1 — 38/38 of his file matched `Blue Hour.json`).
+        // keys in one act (simple-tier §2.1 — 38/38 of a real profile matched `Blue Hour.json`).
         // Kotatsu also stores `pack:<id>` values here (`theme/loader.js:550`).
         tier: 'simple',
         store: 'power_user',

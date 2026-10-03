@@ -1501,7 +1501,7 @@ export class KPromptList extends LitElement {
      * The radio-group affordance (decision 6). Two parts, on purpose: a static chip that says
      * what the group IS, and a button that says — and changes — whether that is being enforced.
      *
-     * Enforcement is the default and the reason Andres asked for it ("makes it foolproof"); the
+     * Enforcement is the default and the reason it was requested (it makes the group foolproof); the
      * relax button exists for the rare deliberate double, is per group, and is remembered per
      * preset in `accountStorage` (never in the preset file — a fixture must never gain a key).
      *

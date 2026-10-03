@@ -1,7 +1,7 @@
 /*
  * rechrome-rack.css — rechrome v0 slice D (docs/rechrome-v0.md).
  *
- * Andres's brief for the batch was "no more chonky drop-down bars and buttons".
+ * The requirement for the batch was no more chonky drop-down bars and buttons.
  * This sheet takes the SETTINGS RACK INTERIOR: the nine parked drawers, whose
  * controls <k-settings-modal> borrows a tab at a time, and the same anatomy as
  * it appears in the right rail, where shell-right.css

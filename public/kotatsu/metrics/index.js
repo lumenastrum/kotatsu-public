@@ -51,7 +51,7 @@ export function metricsEnabled() {
  *
  * Kept on purpose (`docs/metrics-native-v0.md` §1). Core's own budgeting uses
  * `getMaxPromptTokens()` — the window minus the reserved response — so this percentage reads a
- * few points lower than core's internal one. Changing the number Andres has calibrated his eyes
+ * few points lower than core's internal one. Changing a number users have calibrated their eyes
  * to over months of use would be a regression dressed as a correction; the tooltip says which
  * number it is instead.
  */

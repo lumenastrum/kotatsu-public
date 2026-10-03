@@ -1,6 +1,6 @@
 /**
  * `<k-receipt-trend variant="popup">` — how one chat's prompt grew, message by message
- * (receipt trend v0, Andres 10/2: "a history trend chart would be amazing").
+ * (receipt trend v0, 10/2: a history trend chart was requested).
  *
  * One stacked column per LANDED receipt, ascending by message (`trendSeries()`), segments in
  * the fixed {@link RECEIPT_CATEGORIES} order bottom → top — Chat history first, so the

@@ -31,7 +31,7 @@ export const MARKET_IMPORTED_EVENT = 'k-market-imported';
 /**
  * Raised on the element when the reader, with a card just landed, asks for the cast instead
  * of the chat: the sheet closes and `<k-market>` hands the gallery back to its cast view at
- * the top. Andres, 2026-10-02: deep in the scroll, the way back to the installed cards was a
+ * the top. Reported 2026-10-02: deep in the scroll, the way back to the installed cards was a
  * scroll all the way up.
  */
 export const MARKET_HOME_EVENT = 'k-market-home';

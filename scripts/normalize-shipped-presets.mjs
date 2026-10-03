@@ -48,7 +48,7 @@ const CONNECTION_OVERRIDES = {
     // Presets often carry stream_openai: false, and it is not a connection key, so selecting the
     // preset would flip streaming off under the seeded settings. A fresh install streams.
     stream_openai: true,
-    // Andres, 2026-10-01: "1M everywhere and let users lower it." Core clamps to each model's real
+    // Decision 2026-10-01: default context is 1M; users lower it if they want. Core clamps to each model's real
     // ceiling on its own (openai.js), so smaller models stay honest.
     openai_max_context: 1000000,
 };

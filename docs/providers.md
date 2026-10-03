@@ -30,12 +30,12 @@ Sixteen hunks in four files. Grouped by family, then by provider.
 
 ### 1.0 Marker discipline — read this before grepping
 
-Only **8 of the 16 hunks carry an in-code marker.** `grep -rn "CLIO-PATCH\|VOIDLIT-PATCH" src/ public/` returns exactly:
+Only **8 of the 16 hunks carry an in-code marker.** `grep -rn "KOTATSU-PATCH\|VOIDLIT-PATCH" src/ public/` returns exactly:
 
 | File | Markers |
 |---|---|
 | `public/scripts/openai.js` | 5 |
-| `src/endpoints/backends/chat-completions.js` | 2 (1× `VOIDLIT-PATCH`, 1× `CLIO-PATCH`) |
+| `src/endpoints/backends/chat-completions.js` | 2 (1× `VOIDLIT-PATCH`, 1× `KOTATSU-PATCH`) |
 | `src/prompt-converters.js` | 1 |
 | **total** | **8** |
 
@@ -138,7 +138,7 @@ Inside the `CHAT_COMPLETION_SOURCES.CUSTOM` block, immediately before `excludeKe
 
 ---
 
-### 1.B CLIO family — Z.AI / GLM
+### 1.B KOTATSU family — Z.AI / GLM
 
 Provenance: `clio-patches/add-models-2026-08-14.mjs` and `clio-patches/fix-gemini36-glm53-2026-08-14.mjs` (both idempotent, both retired here).
 
@@ -149,8 +149,8 @@ Provenance: `clio-patches/add-models-2026-08-14.mjs` and `clio-patches/fix-gemin
 **File:** `public/scripts/openai.js:5164-5165`, in `getZaiMaxContext` (`:5158`).
 
 ```js
-'glm-5.3': max_1mil, // CLIO-PATCH 2026-08-14: 1M ctx per Z.AI docs (same base as 5.2)
-'glm-5.2': max_1mil, // CLIO-PATCH 2026-08-14: 1M ctx per Z.AI model doc
+'glm-5.3': max_1mil, // KOTATSU-PATCH 2026-08-14: 1M ctx per Z.AI docs (same base as 5.2)
+'glm-5.2': max_1mil, // KOTATSU-PATCH 2026-08-14: 1M ctx per Z.AI model doc
 'glm-5.1': max_200k,
 ```
 
@@ -160,7 +160,7 @@ Provenance: `clio-patches/add-models-2026-08-14.mjs` and `clio-patches/fix-gemin
 **File:** `src/endpoints/backends/chat-completions.js:2477-2488`, in the `CHAT_COMPLETION_SOURCES.ZAI` branch of the `/generate` ladder (branch opens `:2465`).
 
 ```js
-// CLIO-PATCH: glm-5.3 reasoning dialect (2026-08-14). glm-5.3+ cannot disable
+// KOTATSU-PATCH: glm-5.3 reasoning dialect (2026-08-14). glm-5.3+ cannot disable
 // thinking (400/1210) and takes top-level reasoning_effort: low|high|max
 // ('medium' rejected). Reasoning toggled off in ST -> cheapest level.
 if (/^glm-5\.[3-9]/.test(request.body.model)) {
@@ -182,7 +182,7 @@ Full field notes on the 5.3 dialect: **§2.1**.
 
 ---
 
-### 1.C CLIO family — Gemini
+### 1.C KOTATSU family — Gemini
 
 #### C1 / C2 — gemini-3.7-flash / gemini-3.6-flash dropdown options
 **Files:** `public/index.html:3315-3316` (`<select id="model_google_select">`, `:3313` — AI Studio / makersuite) and `:3500-3501` (`<select id="model_vertexai_select">`, `:3497`). Both selects, always. Inserted above `gemini-3.5-flash`.
@@ -202,7 +202,7 @@ Same shape as C1/C2: one `<option>` above `gemini-3.7-flash` in BOTH selects (`m
 **File:** `src/prompt-converters.js:618-623`, at the end of `convertGooglePrompt` (`:432`), immediately before its `return`.
 
 ```js
-// CLIO-PATCH: gemini-3.6+ model-turn guard (2026-08-14). Gemini >=3.6 rejects requests
+// KOTATSU-PATCH: gemini-3.6+ model-turn guard (2026-08-14). Gemini >=3.6 rejects requests
 // ending with a model turn — model-turn prefill was removed from the API. Convert the
 // dangling prefill/continue tail into an explicit continuation instruction.
 if (/^gemini-(?:3\.[6-9]|[4-9])/.test(model) && contents.length && contents[contents.length - 1].role === 'model') {
@@ -214,7 +214,7 @@ Full field notes: **§2.2**.
 
 ---
 
-### 1.D CLIO family — Claude (opus-5 + 5-family vision)
+### 1.D KOTATSU family — Claude (opus-5 + 5-family vision)
 
 Provenance: `clio-patches/add-opus5-2026-08-16.mjs`. This script *extended* the hand-applied VOIDLIT 5-family work (A2) rather than duplicating it — its guard asserted it found exactly six occurrences of the pre-existing tail `|sonnet-5|fable-5)` before rewriting them to `|sonnet-5|opus-5|fable-5)`.
 
@@ -224,7 +224,7 @@ Provenance: `clio-patches/add-opus5-2026-08-16.mjs`. This script *extended* the 
 - `:3186` — `claude-sonnet-5`, above `claude-sonnet-4-6`.
 
 #### D2 — opus-5 in the six backend capability regexes
-Folded into A2 above — the six regexes at `chat-completions.js:236-242` carry `opus-4-8|sonnet-5|opus-5|fable-5` as one combined tail. VOIDLIT contributed `opus-4-8|sonnet-5|fable-5`; CLIO added `opus-5`. In the committed diff they are indistinguishable, which is fine — they are one mechanism now.
+Folded into A2 above — the six regexes at `chat-completions.js:236-242` carry `opus-4-8|sonnet-5|opus-5|fable-5` as one combined tail. VOIDLIT contributed `opus-4-8|sonnet-5|fable-5`; KOTATSU-PATCH added `opus-5`. In the committed diff they are indistinguishable, which is fine — they are one mechanism now.
 
 #### D3 — 5-family 1M max context (frontend)
 **File:** `public/scripts/openai.js:5633`, in `onModelChange`.
@@ -241,9 +241,9 @@ Note the **asymmetry with the backend list**: this frontend regex includes `sonn
 
 ```js
 'claude-haiku-4',
-'claude-fable', // CLIO-PATCH 2026-08-16: 5-family vision (matches upstream #5757)
-'claude-sonnet-5', // CLIO-PATCH 2026-08-16
-'claude-opus-5', // CLIO-PATCH 2026-08-16
+'claude-fable', // KOTATSU-PATCH 2026-08-16: 5-family vision (matches upstream #5757)
+'claude-sonnet-5', // KOTATSU-PATCH 2026-08-16
+'claude-opus-5', // KOTATSU-PATCH 2026-08-16
 ```
 
 **This was a bug fix, not a feature.** The VOIDLIT 5-family patch (A2) added the six *backend* capability regexes and the dropdown entries but never touched the vision list, so **image inlining was silently unavailable across the entire Claude 5 family** — no error, images just never attached. Upstream's own #5757 added `'claude-fable'` to this list; our patch matches that entry exactly and adds the two siblings.
@@ -453,7 +453,7 @@ This file is **the highest-risk merge point in the repo** — it carries both pa
 **Before merging**, snapshot the patch surface:
 
 ```
-grep -rn "CLIO-PATCH\|VOIDLIT-PATCH" src/ public/          # expect 8 total
+grep -rn "KOTATSU-PATCH\|VOIDLIT-PATCH" src/ public/          # expect 8 total
 grep -c "|sonnet-5|opus-5|fable-5)" src/endpoints/backends/chat-completions.js public/scripts/openai.js
                                                             # expect 6 and 1
 grep -n "grok-4\.5" src/endpoints/backends/chat-completions.js public/scripts/openai.js
@@ -475,14 +475,14 @@ grep -n "grok-4\.5" src/endpoints/backends/chat-completions.js public/scripts/op
 
 ## 5. Retired mechanisms
 
-Two mechanisms previously maintained these patches. **Neither is part of this repo.** Both still exist in Andres's live install and are still correct *there* — that install remains an update-and-re-apply workflow.
+Two mechanisms previously maintained these patches. **Neither is part of this repo.** Both may still exist in an older live install and are still correct *there* — such an install remains an update-and-re-apply workflow.
 
 | Retired | Lived at (live install) | Superseded here by |
 |---|---|---|
 | `VOIDLIT-PATCHES.md` (277 B) + `data/default-user/extensions/voidlit-echoes/PATCHES.md` | repo root + extension dir | §1.A, §2 |
 | `clio-patches/*.mjs` (idempotent re-apply scripts) + its `README.md` ledger | `clio-patches/` (untracked, survived `git pull`) | §1.B–D, §3 |
 
-> ⚠️ **The live install at `Documents\llama\SillyTavern-Launcher\SillyTavern` is Andres's daily driver. Never develop in it; never point Kotatsu at its `data/`.** Its copies of these files are read-only reference material for this document.
+> ⚠️ **An older live install (a separate stock SillyTavern checkout) may be in daily use. Never develop in it; never point Kotatsu at its `data/`.** Its copies of these files are read-only reference material for this document.
 
 **Why they were retired.** Both existed to solve one problem: *ST updates overwrite untracked edits to tracked files.* Kotatsu solves that structurally — the patches are **real commits on a real fork with a real `upstream` remote**, so an update is a rebase, not a re-application. Idempotent repair scripts become unnecessary the moment the edits are version-controlled.
 
@@ -494,7 +494,7 @@ Two mechanisms previously maintained these patches. **Neither is part of this re
 
 1. **`VOIDLIT-PATCHES.md` documented only one of its three patch groups.** Both VOIDLIT docs cover *only* the `usage` preservation patch (A1). The **Claude 5-family capability regexes (A2)** and **all four Grok 4.5 hunks (A3–A6)** — attributed to the VOIDLIT family by `a4c64666c`'s own commit message — appear in **no** retired document, carry **no** in-code marker, and had **no** re-apply script. They were hand-applied and undocumented. An ST update would have wiped them with nothing to detect the loss. **This document is their first written provenance.**
 2. **The `clio-patches/README.md` ledger omitted `add-opus5-2026-08-16.mjs` entirely** — no table row — and its "after every SillyTavern update, re-apply everything" instruction listed only **two** of the four scripts (`add-models` and `apply-claude-code-rp`), silently omitting `fix-gemini36-glm53` and `add-opus5`. Following the documented procedure would have restored roughly half the patches.
-3. **The `grep -rn "CLIO-PATCH" public/scripts/openai.js` liveness check was structurally incomplete** — it covers 5 of 16 hunks. §1.0 replaces it with an honest inventory plus counted assertions.
+3. **The `grep -rn "KOTATSU-PATCH" public/scripts/openai.js` liveness check was structurally incomplete** — it covers 5 of 16 hunks. §1.0 replaces it with an honest inventory plus counted assertions.
 
 Together these are the argument for this document existing: the retired mechanisms tracked *scripts*, and anything applied by hand fell through. A commit tracks everything, and the inventory in §1 is auditable against `git show`.
 
@@ -533,4 +533,4 @@ Together these are the argument for this document existing: the retired mechanis
 | Gemini `thinkingConfig` | `/^gemini-3[.\d]*-(flash\|pro)/` | `chat-completions.js:498` |
 | Claude `isLimitedSampling` | `/^claude-(opus-4-1\|sonnet-4-5\|haiku-4-5\|opus-4-5\|opus-4-6\|sonnet-4-6)/` | `chat-completions.js:238` |
 
-**Remotes:** `upstream` = `github.com/SillyTavern/SillyTavern` · `origin` = `github.com/lumenastrum/kotatsu` (private) · `local-st` = the live install (historical; never push).
+**Remotes:** `upstream` = `github.com/SillyTavern/SillyTavern` · `origin` = the private development remote · `local-st` = the live install (historical; never push).

@@ -215,7 +215,7 @@ export function paintMetricsBar(row, message, maxContext) {
     if (!bar.isConnected || bar.parentElement !== block) {
         // CONTRACT §1.7 names `.mes_block`'s CHILD LIST an imperative region and the metrics
         // bar as its example consumer. `.ch_name` carries the nameplate and `.mes_buttons`;
-        // sitting directly under it is where the extension era put it and where Andres's eye
+        // sitting directly under it is where the extension era put it and where the eye
         // already looks.
         const nameRow = block.querySelector(':scope > .ch_name');
         if (nameRow) nameRow.insertAdjacentElement('afterend', bar);

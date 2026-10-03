@@ -6,7 +6,7 @@
  * (`css/shell-topbar.css` §4) — same height, same radius, same hairline, so the pill
  * reads as a member of the right zone rather than a banner parked in it.
  *
- * The whole state machine, in the order a household user meets it:
+ * The whole state machine, in the order a user meets it:
  *   hidden      the common case. No newer commit, or the origin guard stood the
  *               feature down (every dev clone). Nothing is rendered at all.
  *   available   "Update ready" — click to pull.

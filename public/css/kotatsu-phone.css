@@ -1,8 +1,8 @@
 /*
  * kotatsu-phone.css — rails on a phone (blue-hour-polish-v0 §8, slice B2).
  *
- * shell-v0 called mobile rails an explicit non-goal; Andres opened it on 2026-10-01 ("start on
- * the phone layout"). The audit at 390×844 and 430×932 (touch-emulated) found: the page
+ * shell-v0 called mobile rails an explicit non-goal; it was opened on 2026-10-01 (start on
+ * the phone layout). The audit at 390×844 and 430×932 (touch-emulated) found: the page
  * scrolled sideways (the topbar's right cluster ran to x=639), opening a rail squeezed the chat
  * to a ~110px strip, the 72px avatar column left the prose 244px (~30 characters a line), the
  * rail handles sat on top of the bubble, and every touch target was under 44px.
@@ -12,7 +12,7 @@
  * already keeps (it suppresses both rails at this width and a handle tap writes the session
  * override), drawn differently. Everything else follows from giving the reader the width.
  *
- * 600px is the line, not core's 1000: Andres's 900-wide portrait monitor keeps docked rails
+ * 600px is the line, not core's 1000: a 900px-wide portrait monitor keeps docked rails
  * exactly as before. Touch sizing rides `(pointer: coarse)`, not width.
  *
  * Linked LAST (after core's mobile-styles.css) so its walk-backs win ties on source order.

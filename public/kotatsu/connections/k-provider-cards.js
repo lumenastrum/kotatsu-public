@@ -2,7 +2,7 @@
  * `<k-provider-cards variant="grid">` — "Your API keys" (docs/connections-v0.md, slice C2).
  *
  * First-party providers, one card each, under the Claude Code card: Anthropic API, OpenAI,
- * Google AI Studio, DeepSeek, xAI, OpenRouter. One aggregator earned a card (Andres, 2026-10-03:
+ * Google AI Studio, DeepSeek, xAI, OpenRouter. One aggregator earned a card (decision 2026-10-03:
  * OpenRouter is what roleplayers paste a key for); the rest live under "More ways to connect"
  * (slice C3), with Mistral.
  *

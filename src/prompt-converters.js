@@ -534,7 +534,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
         }
     });
 
-    // CLIO-PATCH: gemini-3.6+ model-turn guard (2026-08-14). Gemini >=3.6 rejects requests
+    // KOTATSU-PATCH: gemini-3.6+ model-turn guard (2026-08-14). Gemini >=3.6 rejects requests
     // ending with a model turn — model-turn prefill was removed from the API. Convert the
     // dangling prefill/continue tail into an explicit continuation instruction.
     if (/^gemini-(?:3\.[6-9]|[4-9])/.test(model) && contents.length && contents[contents.length - 1].role === 'model') {

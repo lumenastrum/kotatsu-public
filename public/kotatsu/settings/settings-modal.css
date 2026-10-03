@@ -503,7 +503,7 @@ body[data-k-layout="rails"] .k-set-blurb {
    adopted stock regions unmodified") — and multicol FRAGMENTS them: Personas rendered as an
    empty column hole beside a squished avatar grid, Extensions' accordion tail clipped clean
    off, World Info's expandable activation drawer painted over its neighbours instead of
-   pushing them (Andres's eyeball, 2026-08-26 — probes can't feel fragmentation). A panel that
+   pushing them (eyeball check, 2026-08-26 — probes can't feel fragmentation). A panel that
    contains any `.k-set-block` therefore keeps the single full-width stacked flow and spends
    the sheet's whole height the way stock expects. */
 body[data-k-layout="rails"] .k-set-rows:not(:has(.k-set-block)) {

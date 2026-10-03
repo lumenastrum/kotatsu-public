@@ -35,8 +35,8 @@ function readCustomSecrets(directories) {
 /**
  * Ensures one user has a usable bridge token under {@link BRIDGE_SECRET_ID}.
  *
- * An existing entry with a long enough value is ADOPTED, never rotated — his home
- * install already carries this id with a live token wired into a selected connection
+ * An existing entry with a long enough value is ADOPTED, never rotated — an existing
+ * install may already carry this id with a live token wired into a selected connection
  * profile, and rotating it would silently break the profile on the first boot after a
  * pull. Only a missing (or too-short, i.e. never really provisioned) entry is written.
  * @param {import('../../../users.js').UserDirectoryList} directories User directories

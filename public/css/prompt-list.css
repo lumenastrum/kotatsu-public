@@ -351,7 +351,7 @@ k-prompt-list[variant="list"] .k-pl-row.is-missing .k-pl-name {
     color: var(--k-danger);
 }
 
-/* The name is the one thing a row does not give up (Andres, issue #3). It gets every pixel the
+/* The name is the one thing a row does not give up (issue #3). It gets every pixel the
    row's fixed parts leave, and when that is still not enough it wraps onto a second line. It is
    never ellipsized: a list of "[Module] Th…" tells nobody what a toggle does. */
 k-prompt-list[variant="list"] .k-pl-name {

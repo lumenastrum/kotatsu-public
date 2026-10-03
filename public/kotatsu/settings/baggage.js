@@ -6,9 +6,9 @@
  * 1. **Retire the Extras API (B2).** The separate SillyTavern-Extras server is discontinued, yet
  *    a fresh install pointed Summarize, Caption and Image Generation at it (Summarize then failed
  *    silently). `migrateExtrasSettings()` rewrites every saved Extras value to a working one —
- *    Andres's calls on 2026-10-01: caption → multimodal through the CURRENT connection, image
+ *    Decisions of 2026-10-01: caption → multimodal through the CURRENT connection, image
  *    generation → no source (honest "not available" toast), the rest to their own live
- *    defaults; Summarize lands on the main API PAUSED (Andres, 2026-10-03: pointed at the dead
+ *    defaults; Summarize lands on the main API PAUSED (decision 2026-10-03: pointed at the dead
  *    server it never ran, so a live auto-summarize every ten messages would be new behaviour,
  *    paid for on the user's own plan) — and clears the Extras key, which `doExtrasFetch` would otherwise keep sending as
  *    a Bearer token to Silero / XTTS / AllTalk servers. It runs on `EXTENSIONS_FIRST_LOAD`:
@@ -74,7 +74,7 @@ export function migrateExtrasSettings(es) {
     }
     // Pointed at Extras, Summarize never ran. Moving it to the main API alone would switch on an
     // extra generation every ten messages on the user's own connection (it did, 2026-10-01 →
-    // 10-03, on Andres's ChatGPT plan), so it moves paused: off, as it effectively was.
+    // 10-03, on a ChatGPT plan), so it moves paused: off, as it effectively was.
     if (es.memory?.source === 'extras') {
         es.memory.source = 'main';
         es.memory.memoryFrozen = true;

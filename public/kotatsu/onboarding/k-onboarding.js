@@ -457,7 +457,7 @@ export class KOnboarding extends LitElement {
 
     /**
      * Next / Skip this. Leaving Connect without a connection gets one warm warning first; the
-     * second press goes (skippable everywhere, Andres 2026-10-01). Next on Persona writes the
+     * second press goes (skippable everywhere, decision 2026-10-01). Next on Persona writes the
      * form first and stays put if that fails; Skip never writes.
      * @param {{skip?: boolean}} [options] `skip` leaves the step without writing what it holds.
      * @returns {Promise<void>}
@@ -1170,7 +1170,7 @@ export class KOnboarding extends LitElement {
 
     /**
      * Opens or closes "What are these?" on the Sauce step: Mikan-chan at her chalkboard, saying
-     * what a preset is in four plain lines (Andres, 2026-10-03). Focus goes to its one button and
+     * what a preset is in four plain lines (decision 2026-10-03). Focus goes to its one button and
      * comes back to the link.
      * @param {boolean} open
      * @returns {Promise<void>}

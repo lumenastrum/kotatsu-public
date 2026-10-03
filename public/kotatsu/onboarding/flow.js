@@ -15,7 +15,7 @@
  * tour it cannot leave.
  */
 
-/** The steps, in order. Every one is skippable (Andres, 2026-10-01). */
+/** The steps, in order. Every one is skippable (decision 2026-10-01). */
 export const STEPS = Object.freeze(['welcome', 'connect', 'sauce', 'persona', 'card', 'ready']);
 
 /** @typedef {typeof STEPS[number]} Step */

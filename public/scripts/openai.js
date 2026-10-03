@@ -5247,9 +5247,9 @@ function getZaiMaxContext(model, isUnlocked) {
     }
 
     const contextMap = {
-        'glm-5.3': max_1mil, // CLIO-PATCH 2026-08-14: 1M ctx per Z.AI docs (same base as 5.2)
-        'glm-5.3-flash': max_1mil, // CLIO-PATCH 2026-08-26: launch-day add (ex-stealth "Ox Alpha"), 1M ctx per Z.AI launch; id live-verified against api.z.ai
-        'glm-5.2': max_1mil, // CLIO-PATCH 2026-08-14: 1M ctx per Z.AI model doc
+        'glm-5.3': max_1mil, // KOTATSU-PATCH 2026-08-14: 1M ctx per Z.AI docs (same base as 5.2)
+        'glm-5.3-flash': max_1mil, // KOTATSU-PATCH 2026-08-26: launch-day add (ex-stealth "Ox Alpha"), 1M ctx per Z.AI launch; id live-verified against api.z.ai
+        'glm-5.2': max_1mil, // KOTATSU-PATCH 2026-08-14: 1M ctx per Z.AI model doc
         'glm-5.1': max_200k,
         'glm-5-turbo': max_200k,
         'glm-5v-turbo': max_200k,
@@ -6220,9 +6220,9 @@ export function isImageInliningSupported() {
         'claude-opus-4',
         'claude-sonnet-4',
         'claude-haiku-4',
-        'claude-fable', // CLIO-PATCH 2026-08-16: 5-family vision (matches upstream #5757)
-        'claude-sonnet-5', // CLIO-PATCH 2026-08-16
-        'claude-opus-5', // CLIO-PATCH 2026-08-16
+        'claude-fable', // KOTATSU-PATCH 2026-08-16: 5-family vision (matches upstream #5757)
+        'claude-sonnet-5', // KOTATSU-PATCH 2026-08-16
+        'claude-opus-5', // KOTATSU-PATCH 2026-08-16
         // Cohere
         'c4ai-aya-vision',
         'command-a-vision',

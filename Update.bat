@@ -5,7 +5,7 @@ rem  One double-click: fast-forward onto the release mirror, then hand over to
 rem  Start.bat, which owns the dependency stamp, the bundle build and the restart
 rem  loop. Nothing is installed here on purpose — one install path, one stamp.
 rem
-rem  --ff-only, not ST's --rebase --autostash: a household install has no local
+rem  --ff-only, not ST's --rebase --autostash: a plain install has no local
 rem  commits to rebase, and silently stashing someone's edits is how a "why is my
 rem  theme gone" bug is born. If the pull cannot fast-forward, say so and stop.
 title Kotatsu Update

@@ -3,7 +3,7 @@
 **Status:** frozen surface, v1
 **Baseline:** SillyTavern `staging` @ `1ca70787f` (upstream 1.18.0), cloned into Kotatsu.
 **Verified against:** this repo's working tree, and (read-only) the installed extension set at
-`C:\Users\pined\Documents\llama\SillyTavern-Launcher\SillyTavern` — 8 global third-party
+a stock SillyTavern install — 8 global third-party
 extensions + 4 local (per-user) extensions, 125 `.js` files scanned.
 
 **Frozen totals:** 26 DOM IDs · 146 `getContext()` keys · 104 event keys (103 distinct values) ·
@@ -21,7 +21,7 @@ shared with another installed extension stays frozen on that other extension's a
 ## 0. What this document is
 
 This is the list of things Kotatsu **promises not to break**. Everything enumerated below is
-load-bearing for at least one extension Andres actually runs. The fork may rewrite, restyle,
+load-bearing for at least one extension in active use. The fork may rewrite, restyle,
 re-architect, or replace anything *not* on this list, but each item here is a public API of the
 shell: it keeps its **name**, its **shape**, and its **reachability** for as long as the contract
 is at v1.
@@ -76,7 +76,7 @@ opaque to `document.getElementById` — that is a break, not a relocation).
 
 Attribution is per-extension over the surviving set. `Moonlit` = SillyTavern-MoonlitEchoesTheme,
 `GG` = GuidedGenerations-Extension, `TopBar` = Extension-TopInfoBar, `Timelines` =
-SillyTavern-Timelines; `message-metrics` and `neon-kissa` are the local-tier, Clio-authored pair.
+SillyTavern-Timelines; `message-metrics` and `neon-kissa` are the local-tier pair (written for this fork).
 
 ### 1.1 Chat & send form (8)
 
@@ -744,7 +744,7 @@ still called by something.
 
 ## Appendix A — Watched, not frozen (NemoPresetExt — dropped 2026-08-23)
 
-NemoPresetExt was dropped by decision on **2026-08-23** (Andres: unused lately; recorded in
+NemoPresetExt was dropped by decision on **2026-08-23** (unused lately; recorded in
 `../st-fork/SPEC.md` §5). It will not be installed in Kotatsu. Everything in this appendix was
 load-bearing **for Nemo and nothing else**, so the fork does not promise it — but it is recorded
 here with its attribution intact rather than deleted, for three reasons:

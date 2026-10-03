@@ -619,13 +619,13 @@ body[data-k-layout="rails"] k-library[data-scrolling] .k-lib-card {
     pointer-events: none;
 }
 
-/* Second measurement, 2026-10-02 (Andres: "only when the cursor is left on the cards"). The
+/* Second measurement, 2026-10-02 (reported: only when the cursor is left on the cards). The
    rule above holds only while the wheel never pauses; a hand pauses between flicks, the 150 ms
    settle expires, the card under the cursor blooms, the next flick un-blooms it, and each
    change RE-RASTERS the portrait — every bloom/un-bloom repaints the image, animated or not.
    Measured with a human wheel pattern in headed Chrome at 3440×1440: GPU compositing shrugs
    (198 fps either way); software compositing — a blocklisted GPU, acceleration switched off —
-   reproduces his hand exactly: 60 fps, 32 frames over 33 ms a run, worst 110 ms. Giving the
+   reproduces the report exactly: 60 fps, 32 frames over 33 ms a run, worst 110 ms. Giving the
    portrait its own compositor layer makes the hover a composite instead of a repaint: 177 fps,
    6 slow frames, worst 35 — better than no hover at all, because the rest-state saturate()
    composites too. A layer per portrait costs memory, so cards off screen are not rendered at

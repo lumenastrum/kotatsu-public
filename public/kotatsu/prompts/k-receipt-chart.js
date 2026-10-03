@@ -1,6 +1,6 @@
 /**
  * `<k-receipt-chart variant="popup">` — one prompt receipt as a colour-coded chart (receipt
- * chart v0, Andres 10/2: "the data is great, but it's a little awkward to read").
+ * chart v0, 10/2: the data was good but awkward to read).
  *
  * Opened from `<k-receipt-tracker>`'s live card or an expanded history row through
  * {@link openReceiptChart}, inside core's own `Popup` (DISPLAY, `wider`) — so Escape, focus
