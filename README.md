@@ -159,14 +159,14 @@ Phone access uses plain http on your own network, so a few browser features that
 
 You don't need a Claude subscription to install or use Kotatsu. An API key, a ChatGPT plan or a local model works just as well.
 
-1. Download [`Install Kotatsu.bat`](https://raw.githubusercontent.com/lumenastrum/kotatsu-public/main/Install%20Kotatsu.bat) and double-click it.
+1. Download [`Install-Kotatsu.bat`](https://github.com/lumenastrum/kotatsu-public/releases/latest/download/Install-Kotatsu.bat) and double-click it. (It's also on every [release page](https://github.com/lumenastrum/kotatsu-public/releases/latest).)
 2. It checks for Node.js 20+ and git, and installs whichever is missing. No admin rights.
 3. It asks whether you want to use a Claude Pro or Max plan. **This step is optional.** Answer Y and it sets up [Claude Code](https://claude.ai/code) and signs it in, with no API key. Answer N and it skips Claude Code entirely. Either way the install finishes, and you can add Claude Code later.
 4. Kotatsu lands in `Documents\Kotatsu`, a shortcut lands on your Desktop, and your browser opens on the first start, with Mikan-chan waiting.
 
 Your chats, characters and settings live in `Documents\Kotatsu\data`. Updates never touch them.
 
-For an unattended install, answer the question up front: `"Install Kotatsu.bat" [folder] [/nolaunch] [/claude or /noclaude]`.
+For an unattended install, answer the question up front: `"Install-Kotatsu.bat" [folder] [/nolaunch] [/claude or /noclaude]`.
 
 **macOS and Linux are untested.** Kotatsu is Node.js, so running it from source (below) may work, but we haven't tried it on either, and there's no installer for them.
 

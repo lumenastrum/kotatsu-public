@@ -122,7 +122,7 @@
     },
     "version": "1.18.0",
     "kotatsu": {
-        "version": "0.2.5"
+        "version": "0.2.6"
     },
     "scripts": {
         "init": "node src/server-init.js",

@@ -31,6 +31,13 @@ const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const MIRROR_DEFAULT = 'https://github.com/lumenastrum/kotatsu-public.git';
 const MIRROR_BRANCH = 'main';
 const INSTALLER = 'Install Kotatsu.bat';
+/**
+ * The installer also rides every GitHub Release as a downloadable file, and the README links
+ * `releases/latest/download/<this>`. raw.githubusercontent serves the .bat as text/plain, so a
+ * browser shows the script instead of saving it (a Reddit user hit exactly that on 2026-10-04).
+ * No space in the name: GitHub would rewrite it to a dot.
+ */
+const INSTALLER_ASSET = 'Install-Kotatsu.bat';
 const COMMIT_EMAIL = '43384618+lumenastrum@users.noreply.github.com';
 const COMMIT_NAME = 'lumenastrum';
 /**
@@ -88,10 +95,18 @@ function git(cwd, args, { allowFail = false } = {}) {
     }
 }
 
-/** Node 24 rejects spawnSync('npm.cmd'); run npm's JS entry with this exact node. */
+/**
+ * Node 24 rejects spawnSync('npm.cmd'); run npm's JS entry with this exact node. Windows keeps
+ * npm next to node.exe; macOS/Linux keep it under <prefix>/lib.
+ */
 function npm(cwd, args) {
-    const npmCli = path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
-    if (!fs.existsSync(npmCli)) throw new Error(`npm-cli.js not found next to node: ${npmCli}`);
+    const nodeDir = path.dirname(process.execPath);
+    const candidates = [
+        path.join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+        path.join(nodeDir, '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    ];
+    const npmCli = candidates.find((file) => fs.existsSync(file));
+    if (!npmCli) throw new Error(`npm-cli.js not found for this node:\n${candidates.join('\n')}`);
     execFileSync(process.execPath, [npmCli, ...args], { cwd, stdio: 'inherit' });
 }
 
@@ -278,12 +293,16 @@ function main() {
     git(work, ['push', 'origin', MIRROR_BRANCH]);
     git(work, ['push', ...(args.force ? ['-f'] : []), 'origin', `refs/tags/${tag}`]);
     console.log(`Pushed. ${args.mirror.replace(/\.git$/, '')}/releases/tag/${tag}`);
-    createGithubRelease(args.mirror, tag, shortSha, branch);
+    createGithubRelease(args.mirror, tag, shortSha, branch, path.join(work, INSTALLER));
     fs.rmSync(exportDir, { recursive: true, force: true });
 }
 
-/** Best effort: a GitHub Release object so the tag has a page. Needs `gh` logged in; skipped otherwise. */
-function createGithubRelease(mirror, tag, shortSha, branch) {
+/**
+ * Best effort: a GitHub Release object so the tag has a page, with the installer attached.
+ * Needs `gh` logged in; skipped otherwise.
+ * @param {string} installerPath The mirror worktree's installer (CRLF, already asserted)
+ */
+function createGithubRelease(mirror, tag, shortSha, branch, installerPath) {
     const match = mirror.match(/github\.com[/:]([^/]+\/[^/.]+)/);
     if (!match) return;
     const repo = match[1];
@@ -294,24 +313,40 @@ function createGithubRelease(mirror, tag, shortSha, branch) {
         console.log('gh not found; create the GitHub Release by hand if you want a release page.');
         return;
     }
+    let exists = false;
     try {
         run(['release', 'view', tag, '-R', repo]);
+        exists = true;
         console.log(`GitHub Release ${tag} already exists.`);
-        return;
     } catch {
         // not there yet — create it
     }
-    const notes = [
-        `Built from the private source repo at \`${shortSha}\` (${branch}).`,
-        '',
-        '**Install (Windows):** download `Install Kotatsu.bat` from the repo root and double-click it.',
-        '**Update an existing install:** click the pill in the header, or run `Update.bat`.',
-    ].join('\n');
+    if (!exists) {
+        const notes = [
+            `Built from the private source repo at \`${shortSha}\` (${branch}).`,
+            '',
+            `**Install (Windows):** download \`${INSTALLER_ASSET}\` below and double-click it.`,
+            '**Update an existing install:** click the pill in the header, or run `Update.bat`.',
+        ].join('\n');
+        try {
+            run(['release', 'create', tag, '-R', repo, '--title', `Kotatsu ${tag}`, '--notes', notes, '--latest']);
+            console.log(`GitHub Release created: https://github.com/${repo}/releases/tag/${tag}`);
+        } catch (error) {
+            console.log(`GitHub Release not created (${error.stderr?.trim() || error.message}); the tag is pushed regardless.`);
+            return;
+        }
+    }
+    // Attach under the asset name via a temp copy; --clobber so a re-cut (--force) replaces it.
+    const assetDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kotatsu-asset-'));
+    const assetPath = path.join(assetDir, INSTALLER_ASSET);
+    fs.copyFileSync(installerPath, assetPath);
     try {
-        run(['release', 'create', tag, '-R', repo, '--title', `Kotatsu ${tag}`, '--notes', notes, '--latest']);
-        console.log(`GitHub Release created: https://github.com/${repo}/releases/tag/${tag}`);
+        run(['release', 'upload', tag, assetPath, '--clobber', '-R', repo]);
+        console.log(`Installer attached: https://github.com/${repo}/releases/download/${tag}/${INSTALLER_ASSET}`);
     } catch (error) {
-        console.log(`GitHub Release not created (${error.stderr?.trim() || error.message}); the tag is pushed regardless.`);
+        console.log(`Installer NOT attached (${error.stderr?.trim() || error.message}). The README links releases/latest/download/${INSTALLER_ASSET}, so attach it by hand: gh release upload ${tag} "${INSTALLER_ASSET}" -R ${repo}`);
+    } finally {
+        fs.rmSync(assetDir, { recursive: true, force: true });
     }
 }
 
