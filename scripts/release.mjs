@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIRROR_DEFAULT = 'https://github.com/lumenastrum/kotatsu-public.git';
 const MIRROR_BRANCH = 'main';
+const INSTALLER = 'Install Kotatsu.bat';
 const COMMIT_EMAIL = '43384618+lumenastrum@users.noreply.github.com';
 const COMMIT_NAME = 'lumenastrum';
 /**
@@ -115,6 +116,21 @@ function emptyExceptGit(dir) {
     }
 }
 
+/**
+ * The installer is the one file people download raw, so what the index holds is what they run.
+ * It uses labels, and cmd cannot reliably find a label in an LF-only batch file (v0.2.3: the
+ * LF blob failed with "cannot find the batch label specified" on the skip path). `.gitattributes`
+ * marks it `-text`; this refuses to cut if the staged blob is anything but CRLF.
+ * @param {string} dir Repository to check
+ * @param {string} which Name for the error message
+ */
+function assertInstallerCrlf(dir, which) {
+    const eol = git(dir, ['ls-files', '--eol', '--', INSTALLER]);
+    if (!/^i\/crlf\s/.test(eol)) {
+        throw new Error(`${INSTALLER} is not stored with CRLF line endings in the ${which} index (${eol || 'not tracked'}). Check .gitattributes, then: git add --renormalize "${INSTALLER}"`);
+    }
+}
+
 function main() {
     const args = parseArgs(process.argv.slice(2));
     const pkg = JSON.parse(fs.readFileSync(path.join(repoDir, 'package.json'), 'utf8'));
@@ -140,6 +156,7 @@ function main() {
     } catch (error) {
         throw new Error(`Bundled presets are not releasable (run node scripts/normalize-shipped-presets.mjs --check):\n${error.stderr || error.stdout || error.message}`);
     }
+    assertInstallerCrlf(repoDir, 'source');
     const branch = git(repoDir, ['rev-parse', '--abbrev-ref', 'HEAD']);
     const sha = git(repoDir, ['rev-parse', 'HEAD']);
     const shortSha = sha.slice(0, 9);
@@ -239,6 +256,7 @@ function main() {
     // needs, but the tree should match the source). Force them in, when present.
     const forced = [...DIST_FILES, ...PLACEHOLDERS].filter((rel) => fs.existsSync(path.join(work, rel)));
     git(work, ['add', '-f', ...forced]);
+    assertInstallerCrlf(work, 'mirror');
     const staged = git(work, ['status', '--porcelain']);
     if (!staged) {
         console.log('Mirror already matches this export; nothing to commit.');

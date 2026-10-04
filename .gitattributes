@@ -1,3 +1,7 @@
+# The installer is downloaded RAW from the mirror, so the blob itself has to carry CRLF: cmd
+# cannot reliably find labels in an LF-only batch file (docs/ship-v0.md, v0.2.3).
+# scripts/release.mjs refuses to cut when either index holds it as LF.
+Install[[:space:]]Kotatsu.bat -text
 # Byte-identity fixtures: never normalize line endings or anything else (CLAUDE.md, "Verify before done").
 tests/fixtures/** -text
 # Authors' presets kept byte-exact (docs/preset-bundle-v0.md); the shipped copies are proven byte-for-byte.

@@ -44,7 +44,7 @@ Kotatsu isn't trying to be a game engine. It has no dice, no inventory screens a
 
 On first launch, Mikan-chan walks you through five steps. Every one can be skipped, and so can the whole tour (*"I know my way around"*). You can replay it later from Settings.
 
-1. **Connect.** Kotatsu finds Claude Code on its own, and the tour checks live that it is really talking. Pick whichever of these fits you:
+1. **Connect.** If Claude Code is on your computer, Kotatsu finds it on its own, and the tour checks live that it is really talking. If it isn't, pick another way in. Whichever of these fits you:
    - **Your subscription**: Claude Code with your Claude plan, or your ChatGPT Plus or Pro plan (see [The ChatGPT bridge](#the-chatgpt-bridge)). No API key to manage.
    - **An API key**: Anthropic, OpenAI, Google AI Studio, DeepSeek, xAI or OpenRouter. Keys stay on your computer.
    - **Something else**: NanoGPT, Mistral, a local model, a custom endpoint or a saved connection, set up in the Connection tab.
@@ -65,7 +65,7 @@ On first launch, Mikan-chan walks you through five steps. Every one can be skipp
 - **Seraphina**, SillyTavern's classic first companion, with her lorebook.
 - **Kotatsu Nabe** as the active preset: Kotatsu's own house preset, light and warm, written to let you lead.
 - **Three more presets**, bundled with their authors' permission and credited below, plus SillyTavern's plain default.
-- A **Claude** connection already selected, talking to Sonnet 5.5 through the built-in bridge. Switch models from the menu in the top bar.
+- A **Claude** connection already selected, talking to Sonnet 5.5 through the built-in bridge, for when you set up Claude Code. Switch models from the menu in the top bar, or pick a different connection in the tour.
 - **Blue Hour** as the default look, with **Sparkle** one click away.
 
 ### Bundled presets and credits
@@ -157,11 +157,16 @@ Phone access uses plain http on your own network, so a few browser features that
 
 **Windows** (the supported install):
 
+You don't need a Claude subscription to install or use Kotatsu. An API key, a ChatGPT plan or a local model works just as well.
+
 1. Download [`Install Kotatsu.bat`](https://raw.githubusercontent.com/lumenastrum/kotatsu-public/main/Install%20Kotatsu.bat) and double-click it.
-2. It checks for Node.js 20+, git, and [Claude Code](https://claude.ai/code), installs whatever is missing, and makes sure Claude Code is signed in to your Claude subscription (Pro or Max). No API key, no admin rights.
-3. Kotatsu lands in `Documents\Kotatsu`, a shortcut lands on your Desktop, and your browser opens on the first start, with Mikan-chan waiting.
+2. It checks for Node.js 20+ and git, and installs whichever is missing. No admin rights.
+3. It asks whether you want to use a Claude Pro or Max plan. **This step is optional.** Answer Y and it sets up [Claude Code](https://claude.ai/code) and signs it in, with no API key. Answer N and it skips Claude Code entirely. Either way the install finishes, and you can add Claude Code later.
+4. Kotatsu lands in `Documents\Kotatsu`, a shortcut lands on your Desktop, and your browser opens on the first start, with Mikan-chan waiting.
 
 Your chats, characters and settings live in `Documents\Kotatsu\data`. Updates never touch them.
+
+For an unattended install, answer the question up front: `"Install Kotatsu.bat" [folder] [/nolaunch] [/claude or /noclaude]`.
 
 **macOS and Linux are untested.** Kotatsu is Node.js, so running it from source (below) may work, but we haven't tried it on either, and there's no installer for them.
 
