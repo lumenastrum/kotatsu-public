@@ -184,6 +184,16 @@ export function doctorProblems(report) {
 }
 
 /**
+ * True once the doctor has looked and Claude Code is not on this computer. False while nobody
+ * has asked yet. Pure.
+ * @param {any} doctor `/api/kotatsu/claude-bridge/doctor` JSON, or null
+ * @returns {boolean}
+ */
+export function claudeCodeAbsent(doctor) {
+    return doctorProblems(doctor).some(problem => problem.kind === 'not-installed');
+}
+
+/**
  * The pill beside the card's title: is Claude Code the connection Kotatsu will send through?
  * "In use" (green) promises an answer, so it is only said when Claude Code is on this computer.
  * Without it the connection is still the selected one, and the pill says only that. Pure.

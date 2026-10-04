@@ -52,6 +52,7 @@ import {
     BRIDGE_STATUS_EVENT,
     EFFORTS,
     bridgeProviderLabel,
+    claudeCodeAbsent,
     getBridgeEffort,
     getBridgeModel,
     getDoctor,
@@ -67,6 +68,8 @@ import { savedConnections } from '../../connections/saved.js';
 
 /** Sentinel `setOnlineStatus()` (script.js:7126) writes when nothing is connected. */
 const NO_CONNECTION = 'no_connection';
+/** What the pill shows in place of a model when Claude Code is selected but not on this computer. */
+const NOT_SET_UP = 'not set up';
 
 /** Placeholder for anything core has not told us yet. */
 const EM_DASH = '—';
@@ -286,6 +289,8 @@ export class KModelMenu extends LitElement {
         this.variant = 'popover';
         /** @type {string} Last known `online_status`. */
         this._status = NO_CONNECTION;
+        /** @type {boolean} On Claude Code while Claude Code is not on this computer. */
+        this._absent = false;
         /** @type {string} Human provider label. */
         this._provider = '';
         /** @type {string} Model id as core reports it. */
@@ -391,6 +396,11 @@ export class KModelMenu extends LitElement {
             const effort = effortWord(getBridgeEffort(), getHealth()?.settings?.reasoningEffort);
             this._model = `${modelLabel(this._model)}${effort ? ` · ${effort}` : ''}`;
         }
+        // Core's status check passes on the bridge's model list, which needs no Claude Code behind
+        // it. Without Claude Code nothing would answer, so the pill does not say "Connected" or
+        // name a model and effort (the composer strip and the tour say the same thing).
+        this._absent = isOnBridge() && claudeCodeAbsent(getDoctor().doctor);
+        if (this._absent) this._model = NOT_SET_UP;
         // Lists are rebuilt from their mirrors on every render; a state write is
         // all a core event needs to reach them.
         this.requestUpdate();
@@ -400,7 +410,7 @@ export class KModelMenu extends LitElement {
      * @returns {boolean} True when core reports any connection at all.
      */
     get _connected() {
-        return Boolean(this._status) && this._status !== NO_CONNECTION;
+        return Boolean(this._status) && this._status !== NO_CONNECTION && !this._absent;
     }
 
     /**
