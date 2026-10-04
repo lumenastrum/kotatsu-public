@@ -24,6 +24,8 @@ It's built around three promises:
 2. **Everything SillyTavern let you shape.** Presets, extensions, cards, themes and your data folder all carry over.
 3. **Fast, and nothing in the way.** Long chats open quickly, streaming stays smooth, and the interface keeps out of the way of the prose.
 
+**And it comes with you.** One scan of a QR code pairs your phone, at home on your Wi-Fi or anywhere on your tailnet with Tailscale. Your chats, characters and connections are the same ones you left on the computer. [On your phone](#on-your-phone) has the switch and the scan.
+
 ### What Kotatsu isn't
 
 Kotatsu isn't trying to be a game engine. It has no dice, no inventory screens and no visual-novel stage. Those are great, and other front-ends do them well. Kotatsu spends every pixel and millisecond on the page you're writing and the preset shaping it.
