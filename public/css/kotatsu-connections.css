@@ -909,6 +909,12 @@ body[data-k-layout="rails"] .k-composer-reason[data-kind="disabled"] {
     background: color-mix(in srgb, var(--k-danger) 8%, var(--k-surface));
 }
 
+/* No Claude Code is not a fault (it is optional): the strip invites, in the accent, not the warning. */
+body[data-k-layout="rails"] .k-composer-reason[data-kind="not-installed"] {
+    border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
+    background: color-mix(in srgb, var(--k-accent) 7%, var(--k-surface));
+}
+
 body[data-k-layout="rails"] .k-composer-reason__fix {
     min-height: 28px;
     padding: 0 12px;

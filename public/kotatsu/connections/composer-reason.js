@@ -43,10 +43,21 @@ export function composerReason({ onBridge, health, doctor, online }) {
             : { kind: 'standing-down', text: 'The Claude Code bridge isn’t running.' };
     }
     const problem = doctorProblems(doctor).find(p => p.kind === 'not-installed' || p.kind === 'not-signed-in');
-    if (problem?.kind === 'not-installed') return { kind: 'not-installed', text: 'Claude Code isn’t installed on this computer.' };
+    // Claude Code is optional (v0.2.3), so its absence is an invitation, not a fault to fix.
+    if (problem?.kind === 'not-installed') return { kind: 'not-installed', text: 'Connect a model to start writing. Claude Code isn’t on this computer.' };
     if (problem?.kind === 'not-signed-in') return { kind: 'not-signed-in', text: 'Claude Code isn’t signed in.' };
     if (online === 'no_connection') return { kind: 'connecting', text: 'Connecting to Claude Code…' };
     return null;
+}
+
+/**
+ * What the strip's button says. Both open the Connection tab; with no Claude Code there is
+ * nothing to fix, only a connection to pick. Pure.
+ * @param {string} kind A {@link composerReason} kind
+ * @returns {string}
+ */
+export function fixLabel(kind) {
+    return kind === 'not-installed' ? 'Connect a model' : 'How to fix';
 }
 
 let installed = false;
@@ -98,6 +109,8 @@ function update() {
     if (!node) return;
     node.hidden = !show;
     node.dataset.kind = show?.kind ?? '';
+    const fix = node.querySelector('.k-composer-reason__fix');
+    if (fix && show) fix.textContent = fixLabel(show.kind);
     const text = node.querySelector('.k-composer-reason__text');
     if (text && show && current !== show.text) text.textContent = show.text;
     current = show?.text ?? '';

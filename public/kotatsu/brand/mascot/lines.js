@@ -26,6 +26,11 @@ export const LINES = Object.freeze({
         'Hm. That didn\'t take. It says: {reason}. Fix that and poke me again; I\'ll wait right here.',
         'Oops, no spark. The reason it gave me: {reason}. Not your fault. Probably.',
     ]),
+    // Claude Code is optional (v0.2.3): not finding it is a fork in the road, never a failure.
+    connectNoClaude: Object.freeze([
+        'No Claude Code on this computer, and that\'s fine. It\'s one door of several. An API key, a ChatGPT plan, a local model: pick yours and I\'ll check it\'s talking.',
+        'I peeked: no Claude Code here. No trouble at all! Bring an API key or a ChatGPT plan instead, and I\'ll make sure someone smart answers.',
+    ]),
     connected: Object.freeze([
         'There it is! {what} is listening. Next stop: the sauce.',
         'Connected to {what}. Ooh, it\'s warm in here now. Shall we keep going?',

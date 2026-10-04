@@ -34,6 +34,7 @@ import {
     BRIDGE_STATUS_EVENT,
     EFFORTS,
     doctorProblems,
+    selectionPill,
     getBridgeEffort,
     getBridgeModel,
     getDoctor,
@@ -278,9 +279,9 @@ export class KBridgeCard extends LitElement {
                     </div>`;
             case 'not-installed':
                 return html`
-                    <div class="k-bc__problem" data-tone="warning">
-                        <strong>Claude Code isn’t installed</strong>
-                        <p>Install Claude Code on this computer, sign in with <code>${SIGN_IN_COMMAND}</code>, then check again.</p>
+                    <div class="k-bc__problem" data-tone="info">
+                        <strong>Claude Code isn’t on this computer</strong>
+                        <p>That’s fine if you connect another way. To use your Claude plan here, install Claude Code, sign in with <code>${SIGN_IN_COMMAND}</code>, then check again.</p>
                         <div class="k-bc__actions">
                             <a class="k-bc__btn" href="https://code.claude.com/docs/en/setup" target="_blank" rel="noopener">How to install Claude Code</a>
                             <button type="button" class="k-bc__btn k-bc__btn--primary" ?disabled=${Boolean(this._busy)} @click=${() => this._run('check', () => loadDoctor(true))}>${this._busy === 'check' ? 'Checking…' : 'Check again'}</button>
@@ -328,6 +329,7 @@ export class KBridgeCard extends LitElement {
         const problems = health.enabled === false
             ? [{ kind: 'standing-down', detail: 'The Claude Code bridge is turned off (kotatsu.claudeBridge.enabled: false).' }]
             : doctorProblems(doctor ?? { standingDown: health.standingDown });
+        const pill = selectionPill(onBridge, problems);
         const auth = doctor?.claudeAuth;
         const signedIn = auth && auth.available !== false && auth.loggedIn === true;
         const models = Array.isArray(health.models) ? health.models : [];
@@ -343,7 +345,7 @@ export class KBridgeCard extends LitElement {
                     <div class="k-bc__title">
                         <div class="k-bc__name">
                             <h2>Claude Code</h2>
-                            ${onBridge ? html`<span class="k-bc__pill" data-tone="success"><span class="k-bc__dot"></span>In use</span>` : nothing}
+                            ${pill ? html`<span class="k-bc__pill" data-tone=${pill.tone}>${pill.tone ? html`<span class="k-bc__dot"></span>` : nothing}${pill.label}</span>` : nothing}
                         </div>
                         <p>Your Claude subscription, through the bridge built into Kotatsu. No API key, nothing billed per message.</p>
                         <div class="k-bc__pills">

@@ -184,6 +184,21 @@ export function doctorProblems(report) {
 }
 
 /**
+ * The pill beside the card's title: is Claude Code the connection Kotatsu will send through?
+ * "In use" (green) promises an answer, so it is only said when Claude Code is on this computer.
+ * Without it the connection is still the selected one, and the pill says only that. Pure.
+ * @param {boolean} onBridge Whether the Claude Code connection is the selected one
+ * @param {ReadonlyArray<{ kind: string }>} problems {@link doctorProblems}' answer
+ * @returns {{ label: string, tone: 'success'|'' } | null}
+ */
+export function selectionPill(onBridge, problems) {
+    if (!onBridge) return null;
+    return problems.some(problem => problem.kind === 'not-installed')
+        ? { label: 'Selected', tone: '' }
+        : { label: 'In use', tone: 'success' };
+}
+
+/**
  * A model id as a person reads it: `claude-opus-5-5` → "Opus 5.5". Pure.
  * @param {string} id Model id
  * @returns {string}

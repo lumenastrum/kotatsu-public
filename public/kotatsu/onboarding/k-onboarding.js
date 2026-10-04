@@ -429,7 +429,7 @@ export class KOnboarding extends LitElement {
         return 'your connection';
     }
 
-    /** @returns {{ state: 'idle'|'connected'|'problem', text: string }} The Connect step's reading. */
+    /** @returns {{ state: 'idle'|'absent'|'connected'|'problem', text: string }} The Connect step's reading. */
     #connectReading() {
         return connectState({
             online: String(online_status ?? ''),
@@ -446,7 +446,8 @@ export class KOnboarding extends LitElement {
         // connection, and the status line below still shows the problem itself.
         const key = reading.state === 'connected' ? 'connected'
             : this._warned ? 'connectSkipped'
-                : reading.state === 'problem' ? 'connectFailed' : 'connect';
+                : reading.state === 'problem' ? 'connectFailed'
+                    : reading.state === 'absent' ? 'connectNoClaude' : 'connect';
         const signature = `${key}:${reading.text}`;
         if (signature === this.#lineSig) return;
         this.#lineSig = signature;
@@ -1420,7 +1421,7 @@ export class KOnboarding extends LitElement {
                     <p class="k-onb-note">NanoGPT, Mistral, a local model, a custom endpoint, a saved connection: everything else lives in the Connection tab. I'll wait here and check when you come back.</p>
                     <button type="button" class="k-onb-button" data-kind="ghost" @click=${() => this.#openConnectionTab()}>Open the Connection tab</button>`}
             </div>
-            <p class="k-onb-status" role="status" data-state=${reading.state}>
+            <p class="k-onb-status" role="status" data-state=${reading.state === 'absent' ? 'idle' : reading.state}>
                 <span class="k-onb-status-dot"></span>${reading.state === 'connected' ? `Connected: ${reading.text}`
         : reading.state === 'problem' ? reading.text : 'Not connected yet'}
             </p>`;
