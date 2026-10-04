@@ -6,6 +6,15 @@
 
 <p align="center"><strong>Kotatsu is SillyTavern for writing.</strong> It has the same characters, presets, extensions and data folder, behind a calm, fast interface, with a guide who sets it up alongside you.</p>
 
+<p align="center"><a href="https://youtu.be/9l3QbwZjmks"><strong>Watch the 60-second trailer</strong></a></p>
+
+| | |
+|:---:|:---:|
+| <img src=".github/screenshots/welcome.webp" alt="Mikan-chan's welcome tour: four steps from connecting a model to meeting your first character, every one skippable"> | <img src=".github/screenshots/connect.webp" alt="The Connect step: Claude Code in use through your Claude subscription, no API key, with ChatGPT one click away"> |
+| Mikan-chan walks you through setup | Use the subscription you already have |
+| <img src=".github/screenshots/library.webp" alt="The cast library: character posters under the heading Who are we meeting tonight?"> | <img src=".github/screenshots/reader.webp" alt="The reader: a chat with Wren Aldermoor, characters and chats on the left, the preset's sections on the right"> |
+| Your cast, on one shelf | A reader made for long stories |
+
 ---
 
 <img align="right" width="128" src="public/kotatsu/brand/mascot/welcome-bust.webp" alt="Mikan-chan, a girl with orange hair in an indigo polka-dot jacket, waving">
