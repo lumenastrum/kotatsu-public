@@ -18,6 +18,7 @@ export const PROVIDERS = Object.freeze([
     { source: 'makersuite', name: 'Google AI Studio', secret: 'api_key_makersuite', keyField: 'api_key_makersuite', modelKey: 'google_model', hint: 'aistudio.google.com' },
     { source: 'deepseek', name: 'DeepSeek', secret: 'api_key_deepseek', keyField: 'api_key_deepseek', modelKey: 'deepseek_model', hint: 'platform.deepseek.com' },
     { source: 'xai', name: 'xAI', secret: 'api_key_xai', keyField: 'api_key_xai', modelKey: 'xai_model', hint: 'console.x.ai' },
+    { source: 'xiaomi', name: 'Xiaomi MiMo', secret: 'api_key_xiaomi', keyField: 'api_key_xiaomi', modelKey: 'xiaomi_model', hint: 'platform.xiaomimimo.com' },
     // The one aggregator up here (decision 2026-10-03): it's what the roleplay world actually pastes a key for.
     { source: 'openrouter', name: 'OpenRouter', secret: 'api_key_openrouter', keyField: 'api_key_openrouter', modelKey: 'openrouter_model', hint: 'openrouter.ai', placeholderModel: 'OR_Website' },
 ]);

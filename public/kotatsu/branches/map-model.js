@@ -31,6 +31,8 @@ const CONNECTOR_GAP = 4;
  * @property {ForestNode[]} children Sorted by subtree recency.
  * @property {number} depth 0 for roots.
  * @property {number|null} forkIndex First-divergence index on the parent edge.
+ * @property {{ parent: string, child: string }|null} forkPreview What each side said at the
+ *   fork, when the server has computed it (absent on sidecars it has not refreshed yet).
  * @property {'header'|'adopted'|null} via How the parent link was established.
  * @property {string|null} orphanName Ghost parent name, when the link dangles.
  * @property {number} lastMs This chat's own last activity, epoch ms, 0 = unknown.
@@ -224,6 +226,7 @@ export function buildForest(tree) {
             children: [],
             depth: 0,
             forkIndex: null,
+            forkPreview: null,
             via: null,
             orphanName: null,
             lastMs,
@@ -244,6 +247,14 @@ export function buildForest(tree) {
             child.parent = parent;
             child.via = edge.via === 'adopted' ? 'adopted' : 'header';
             child.forkIndex = Number.isInteger(edge.forkIndex) ? Number(edge.forkIndex) : null;
+            const preview = edge.forkPreview;
+            if (preview && typeof preview.parent === 'string' && typeof preview.child === 'string') {
+                child.forkPreview = { parent: preview.parent, child: preview.child };
+                // The line where the story split is the most searchable thing a branch has.
+                if (preview.child) {
+                    child.haystack += ` ${preview.child.toLowerCase()}`;
+                }
+            }
             child.orphanName = null;
             continue;
         }

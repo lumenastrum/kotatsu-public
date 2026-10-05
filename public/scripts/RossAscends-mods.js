@@ -411,6 +411,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.XAI] && oai_settings.chat_completion_source == chat_completion_sources.XAI)
                     || (secret_state[SECRET_KEYS.AIMLAPI] && oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI)
                     || (secret_state[SECRET_KEYS.MOONSHOT] && oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT)
+                    || (secret_state[SECRET_KEYS.XIAOMI] && oai_settings.chat_completion_source == chat_completion_sources.XIAOMI)
                     || (secret_state[SECRET_KEYS.FIREWORKS] && oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS)
                     || (secret_state[SECRET_KEYS.ZAI] && oai_settings.chat_completion_source == chat_completion_sources.ZAI)
                     || ((secret_state[SECRET_KEYS.POLLINATIONS] || oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS) && oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)

@@ -38,6 +38,7 @@ import {
     newAssistantChat,
     online_status,
     reloadCurrentChat,
+    refreshSwipeButtons,
     removeMacros,
     renameCharacter,
     renameChat,
@@ -57,11 +58,11 @@ import {
     swipe,
     stopGeneration,
     substituteParams,
-    syncMesToSwipe,
     system_avatar,
     system_message_types,
     this_chid,
     updateMessageElement,
+    updateSwipeCounter,
 } from '../script.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from './slash-commands/SlashCommandParserError.js';
@@ -4616,6 +4617,7 @@ async function echoCallback(args, value) {
  * @param {string} value - The swipe text to add (unnamed argument)
  */
 async function addSwipeCallback(args, value) {
+    const lastMessageId = chat.length - 1;
     const lastMessage = chat[chat.length - 1];
 
     if (!lastMessage) {
@@ -4663,15 +4665,13 @@ async function addSwipeCallback(args, value) {
     const newSwipeId = lastMessage.swipes.length - 1;
 
     if (isTrueBoolean(args.switch)) {
-        // Make sure ad-hoc changes to extras are saved before swiping away
-        syncMesToSwipe();
-        lastMessage.swipe_id = newSwipeId;
-        lastMessage.mes = lastMessage.swipes[newSwipeId];
-        lastMessage.extra = structuredClone(lastMessage.swipe_info?.[newSwipeId]?.extra ?? lastMessage.extra ?? {});
+        await swipe(null, SWIPE_DIRECTION.RIGHT, { source: SWIPE_SOURCE.SLASH_COMMAND, repeated: false, forceMesId: lastMessageId, forceSwipeId: newSwipeId });
+    } else {
+        await updateSwipeCounter(lastMessageId, { message: lastMessage });
+        refreshSwipeButtons();
     }
 
     await saveChatConditional();
-    await reloadCurrentChat();
 
     return String(newSwipeId);
 }
@@ -6271,6 +6271,7 @@ function getModelOptions(quiet) {
         { id: 'model_xai_select', api: 'openai', type: chat_completion_sources.XAI },
         { id: 'model_pollinations_select', api: 'openai', type: chat_completion_sources.POLLINATIONS },
         { id: 'model_moonshot_select', api: 'openai', type: chat_completion_sources.MOONSHOT },
+        { id: 'model_xiaomi_select', api: 'openai', type: chat_completion_sources.XIAOMI },
         { id: 'model_fireworks_select', api: 'openai', type: chat_completion_sources.FIREWORKS },
         { id: 'model_zai_select', api: 'openai', type: chat_completion_sources.ZAI },
         { id: 'model_workers_ai_select', api: 'openai', type: chat_completion_sources.WORKERS_AI },

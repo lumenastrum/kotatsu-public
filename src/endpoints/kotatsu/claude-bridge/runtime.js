@@ -121,16 +121,17 @@ export function isClaudeAdaptiveModel(model) {
 }
 
 /**
- * Tests whether a model refuses to run with thinking off. Opus 5.5 and the Fable/Mythos 5
- * line return a 400 for `thinking: {type: 'disabled'}` at every effort level; the only
- * dial they have is effort, so a "disabled" request is honoured as adaptive + low effort.
+ * Tests whether a model refuses to run with thinking off. Opus 5.5, Sonnet 5.5 and the
+ * Fable/Mythos 5 line return a 400 for `thinking: {type: 'disabled'}`; effort is the dial
+ * they have, so a "disabled" request is honoured as adaptive + low effort. (Sonnet 5.5's own
+ * off switch, `{type: 'between_tools'}`, is an API shape the SDK option isn't known to carry.)
  * @param {string} model Model id
  * @returns {boolean} True when thinking cannot be disabled on this model
  */
 export function isThinkingAlwaysOnModel(model) {
     const normalized = model.toLowerCase();
     return (
-        /claude-opus-5-(?:[5-9]|\d{2,})(?:$|[-.])/.test(normalized)
+        /claude-(?:opus|sonnet)-5-(?:[5-9]|\d{2,})(?:$|[-.])/.test(normalized)
         || normalized.includes('claude-fable-5')
         || normalized.includes('claude-mythos-5')
     );

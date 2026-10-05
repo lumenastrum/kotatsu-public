@@ -114,7 +114,7 @@ Still open: two extensions that dock panels into the same right margin can overl
 **Coming from SillyTavern?** Copy your `data/` folder in. Characters, chats, personas, presets and lorebooks carry over unchanged. Everything Kotatsu adds lives in dot-folders and can be rebuilt from your chat files, so the way back stays open too. The formats are pinned in [`docs/data-contract.md`](docs/data-contract.md).
 
 1. Close Kotatsu.
-2. Copy the contents of your SillyTavern `data/` folder into Kotatsu's `data/` folder (`Documents\Kotatsu\data` on a Windows install).
+2. Copy the contents of your SillyTavern `data/` folder into Kotatsu's `data/` folder (`Documents\Kotatsu\data` on a Windows install, or `data/` inside your clone when you run from source on macOS or Linux).
 3. Start Kotatsu. Branches you made in SillyTavern are found and adopted on first open.
 
 Copy your user data, and leave SillyTavern's code and `config.yaml` where they are. Kotatsu has its own.
@@ -177,7 +177,7 @@ Your chats, characters and settings live in `Documents\Kotatsu\data`. Updates ne
 
 For an unattended install, answer the question up front: `"Install-Kotatsu.bat" [folder] [/nolaunch] [/claude or /noclaude]`.
 
-**macOS and Linux are untested.** Kotatsu is Node.js, so running it from source (below) may work, but we haven't tried it on either, and there's no installer for them.
+**macOS and Linux run from source** (below). There's no installer for them yet, but readers have it working on both: macOS against a local OpenAI-compatible server, and Linux out of the box. Your data lives in `data/` inside the clone.
 
 ### Updating
 
@@ -185,7 +185,7 @@ A pill appears in the top bar when a new release is out. Click it, wait, then cl
 
 ### Running from source
 
-Node 20 or newer. Untested outside Windows.
+Node 20 or newer. This is the way in on macOS and Linux; the one-click installer is Windows-only. Your data lives in `data/` inside the clone.
 
 ```
 npm install

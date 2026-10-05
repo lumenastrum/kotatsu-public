@@ -309,7 +309,7 @@ export function convertCohereMessages(messages, names) {
     }
 
     messages.forEach((msg, index) => {
-        // Tool calls require an assistent primer
+        // Tool calls require an assistant primer
         if (Array.isArray(msg.tool_calls)) {
             if (index > 0 && messages[index - 1].role === 'assistant') {
                 msg.content = messages[index - 1].content;
@@ -372,13 +372,17 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     const system_instruction = { parts: sysPrompt.map(text => ({ text })) };
     const toolNameMap = {};
 
+    // https://ai.google.dev/gemini-api/docs/latest-model#prefilled-model-turn-validation
+    const noPrefillModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite/.test(model);
+
     const contents = [];
     messages.forEach((message, index) => {
         // fix the roles
         if (message.role === 'system' || message.role === 'tool') {
             message.role = 'user';
         } else if (message.role === 'assistant') {
-            message.role = 'model';
+            // A trailing model turn is a prefill, which is rejected by the newest models
+            message.role = noPrefillModel && index === messages.length - 1 ? 'user' : 'model';
         }
 
         // Convert the content to an array of parts
@@ -537,6 +541,9 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     // KOTATSU-PATCH: gemini-3.6+ model-turn guard (2026-08-14). Gemini >=3.6 rejects requests
     // ending with a model turn — model-turn prefill was removed from the API. Convert the
     // dangling prefill/continue tail into an explicit continuation instruction.
+    // Since upstream #5883/#6070 (swept 2026-10-04) upstream's own `noPrefillModel` above flips
+    // the tail to 'user' for the ids it names, so this never fires for them; it stays as the
+    // fallback for the ids upstream's list doesn't name yet (3.8 Pro, 3.9, 4.x).
     if (/^gemini-(?:3\.[6-9]|[4-9])/.test(model) && contents.length && contents[contents.length - 1].role === 'model') {
         contents.push({ role: 'user', parts: [{ text: '[Continue seamlessly from the end of your previous turn without repeating any of it.]' }] });
     }
@@ -1185,11 +1192,13 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
     }
 
     function getGemini3FlashBudget() {
+        // https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash
+        const noMinimalThinking = /gemini-3\.[78]-flash/.test(model);
         switch (reasoningEffort) {
             case REASONING_EFFORT.auto:
                 return null;
             case REASONING_EFFORT.min:
-                return 'minimal';
+                return noMinimalThinking ? 'low' : 'minimal';
             case REASONING_EFFORT.low:
                 return 'low';
             case REASONING_EFFORT.medium:

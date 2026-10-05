@@ -10,6 +10,33 @@ All line numbers below are **this clone, post-`a4c64666c`**, verified by grep. T
 
 ---
 
+## State after the 2026-10-04 upstream sweep (read this first)
+
+**This section supersedes the counts in §1.0 and the "carried" status of A2, C1/C2/C4 and D1–D4 below.** Those entries stay as history.
+
+**Swept to.** Every upstream `staging` commit through `ad29cbda6` (2026-10-03) is in, cherry-picked one by one with `-x` (each commit names its upstream sha). Branch `sweep/upstream-2026-10-04`. Skipped on purpose: `8172dcd0e` (duplicate of `bba96c6fb`), `30eaf26a4` + `9758a6cd5` (upstream's readme, which Kotatsu deleted), `06bde939f` (npm publish workflow), `ad29cbda6` (CONTRIBUTING / PR template), `61139aa9b` (version bump; `package.json` is Kotatsu's identity). `2463e8396` came up empty: Kotatsu never had the whitespace it removes.
+
+**Retired into upstream** (the merge lane paying out, §4.2 rule 2):
+- **A2 / D2 / D3** — upstream's `isFableModel` + unanchored `isClaude5Model = /claude-(opus-5|sonnet-5)/` replaced our regex tails; the Claude block in `chat-completions.js` is now byte-identical to upstream. The `|sonnet-5|opus-5|fable-5)` probe in §1.0 returns **0/0** by design now.
+- **D1 / D4** — upstream ships every Claude 5 option and vision entry; our duplicates were dropped.
+- **C1 / C2 / C4** — upstream has Gemini 3.8 / 3.7 / 3.6 in their own optgroups; our entries under "Gemini 3.5" were dropped.
+- **B1** — upstream ships `glm-5.2` (option + context map); our `glm-5.2` lines were dropped, `glm-5.3` / `glm-5.3-flash` stay ours.
+- **getChatInfo crash fix** (`63eb5f1c2`) — replaced by upstream #5871's version (`chatVanished()` sentinel, no async executor). Our caller guards remain as harmless belts.
+
+**Still carried:** A1 (usage passthrough), A3–A6 (Grok 4.5), B2/B3 (glm-5.3), **C3** (now documented in code as the fallback for Gemini ids upstream's own `noPrefillModel` list doesn't name), the Claude Code bridge hunks, plus the new §1.E / §1.F below.
+
+**Markers now:** `grep -rc "KOTATSU-PATCH\|VOIDLIT-PATCH" src/ public/` → `chat-completions.js` 7, `openai.js` 9, `constants.js` 1, `endpoints/secrets.js` 1, `scripts/secrets.js` 1, `index.html` 1, `prompt-converters.js` 1.
+
+### Sweep runbook (what this one taught)
+- Worktree off `kotatsu`, real `npm ci` (never junction `node_modules`), and `npm run build:lib` before booting.
+- Resolve **per hunk**, never `git checkout --theirs <file>` (that takes upstream's whole file and silently drops every Kotatsu change in it).
+- **cometapi traps:** upstream lines still name the dead CometAPI provider; take upstream's line, then strip `cometapi`.
+- After the model commits, run a duplicate-`<option>`-per-`<select>` scan; a clean cherry-pick can still double an id we had added early.
+- Upstream tests assume jest runs from `tests/`; Kotatsu runs from the root. `chdir` relative to the test file, not `cwd`.
+- Upstream moves stock `Default.json` model defaults; Kotatsu Nabe inherits them, so `node scripts/build-kotatsu-nabe.mjs` then `normalize-shipped-presets.mjs` (check first).
+
+---
+
 ## 0. Why these patches exist at all
 
 Upstream has no provider abstraction. `src/endpoints/backends/chat-completions.js` is a 2,929-line monolith serving 26 chat-completion sources (`src/constants.js:187 CHAT_COMPLETION_SOURCES`): twelve near-duplicate `sendXRequest` functions, a ~360-line `else if` ladder that mutates shared `apiUrl`/`apiKey`/`headers`/`bodyParams` locals, a 340-line `/status` switch, a `/multimodal-models` sub-router, and `/process`.
@@ -252,6 +279,28 @@ The list is a **substring-prefix array**, not regexes — `'claude-fable'` (no `
 
 **Standing lesson:** the vision list is the capability surface most easily forgotten, because its failure mode is silent. §3.1 puts it on the checklist.
 
+### 1.E KOTATSU family — Xiaomi MiMo, a whole provider (2026-10-04)
+
+Upstream has no Xiaomi source, so this is a permanent provider in the merge lane, written in Moonshot's idiom (live `/models` list) so conflicts stay on list lines. Source id `xiaomi`, secret `api_key_xiaomi`, model key `xiaomi_model` (default `mimo-v2.6-pro`), base `https://api.xiaomimimo.com/v1`. Every hunk is marked `KOTATSU-PATCH 2026-10-04` except the plain list entries.
+
+| Where | What |
+|---|---|
+| `src/constants.js`, `src/endpoints/secrets.js`, `public/scripts/secrets.js` | source + secret id (+ friendly name, input map) |
+| `chat-completions.js` `/status` | `apiUrl`/`apiKey` → generic `${apiUrl}/models` fetch (validates the key on Connect) |
+| `chat-completions.js` `/generate` ladder | `thinking.type` from `include_reasoning`; tools + `json_schema` ride the generic tail |
+| `openai.js` | source, `settingsToUpdate`/`default_settings`, model getter, model-list filler (drops `-tts`/`-asr` ids), `streamUsageSources`, streamed-reasoning source list, 1M context, **temperature clamp to 1.5** (+ `xiaomi_max_temp` slider cap), model-change handler, Connect map, form toggle, vision rule, change binding |
+| `reasoning.js`, `tool-calling.js`, `RossAscends-mods.js`, `slash-commands.js` | non-stream `reasoning_content`, function-calling support, autoconnect, `/model` picker |
+| `public/index.html` | source option, `#xiaomi_form` (static fallback list, replaced on Connect), `data-source` on temperature / top P / both penalties / function calling / inline media / image quality / reasoning toggle (+ its "except" note) |
+| `public/img/xiaomi.svg` | a copy of `generic.svg` (chat messages load `/img/<source>.svg`); swap for a real mark if one is ever drawn |
+| `public/kotatsu/connections/providers.js` | first-party card between xAI and OpenRouter |
+| tests | `provider-cards` roster; `preset-byte-identity` gains `FORK_ADDED_SCHEMA_KEYS` (a saved older preset *adds* `xiaomi_model` at its default — additive, asserted byte-exact) |
+
+**Not opted in, on evidence:** multi-swipe (`n` → 400 "n is not supported"), reverse proxy (unverified), `reasoning_effort` (accepted, changes nothing).
+
+### 1.F Claude Sonnet 5.5 (2026-10-04)
+
+Upstream shipped Opus 5.5 (#6070) but not Sonnet 5.5. Same three places #6070 used: `model_claude_select` + caption list option, and `useNativeJsonOutput` (Sonnet 5.5 400s on forced `tool_choice`, so JSON-schema requests use `output_config.format`). Everything else reaches it through upstream's unanchored `isClaude5Model` / `^claude-(…sonnet-5…)` / `includes('claude-sonnet-5')`. **Bridge:** `isThinkingAlwaysOnModel` now covers `sonnet-5-5+` — its thinking-off branch had been sending `{type: 'disabled'}`, which Sonnet 5.5 rejects; it now gets adaptive + low effort like Opus 5.5. When upstream ships Sonnet 5.5, take theirs and drop ours (§4.2 rule 2).
+
 ---
 
 ## 2. Provider field notes
@@ -365,6 +414,21 @@ Typedefs: `SecretValue {id, value, label, active}`; `SecretKeys = {[key: string]
 Backend reads go through `readSecret(request.user.directories, SECRET_KEYS.X, request.body.secret_id)` — the `secret_id` argument is what selects a rotation entry.
 
 > 🔴 **Never quote a real secret value into this repo, a commit message, a log, or a chat.** Schema only. Also be aware that credentials leak into three places beyond `secrets.json`: `settings.json → proxies[]` stores **plaintext proxy passwords**; chat-completion **presets serialize `reverse_proxy` and `proxy_password` in plaintext** — `getChatCompletionPreset` (`openai.js:4501-4507`) copies every key in `settingsToUpdate`, which includes both (`:369`, `:378`), so sharing a preset shares the proxy password; and `*.before-*.bak` files in the data root hold live credential material in the same shape. Kotatsu's dev `data/` is gitignored — keep it that way.
+
+### 2.5 Xiaomi MiMo API dialect (live-probed 2026-10-04)
+
+OpenAI-compatible at `https://api.xiaomimimo.com/v1`, Bearer key. Measured against the live API, not docs:
+
+- **`/models`** returns chat ids *and* `-tts` / `-asr` / `-tts-voiceclone` / `-tts-voicedesign` ids, with no context sizes. On 2026-10-04: `mimo-v2.6-pro`, `mimo-v2.6-pro-ultraspeed`, `mimo-v2.6-flash`, `mimo-v2.5-pro`, `mimo-v2.5` (+ 4 audio ids).
+- **Context:** 1M / 128K output for v2.6 Pro, v2.6 Flash, v2.5 Pro, v2.5 (Xiaomi's model pages, `mimo.mi.com/models/en-US/<id>`).
+- **Reasoning:** `reasoning_content` on the message and on stream deltas; `usage.completion_tokens_details.reasoning_tokens`. `thinking: {type: 'disabled'}` → 0 reasoning tokens. `reasoning_effort` is accepted and ignored.
+- **Samplers:** `temperature` must be within **[0, 1.5]** (1.8 and 2.0 → 400 `Param Incorrect`). `top_p`, `top_k`, both penalties, `seed`, `logit_bias`, `stop` accepted. **`n` → 400 "n is not supported".**
+- **Tools:** OpenAI `tools` / `tool_choice: 'auto'` → proper `tool_calls`. **JSON:** `response_format: {type: 'json_schema', ...}` honoured.
+- **Images:** `image_url` data URIs work on every v2.6 id (incl. pro-ultraspeed); `mimo-v2.5-pro` → 404 "No endpoints found that support image input".
+- **Usage:** standard shape, `prompt_tokens_details.cached_tokens`; `stream_options.include_usage` emits a final usage chunk.
+- Consecutive same-role turns and a trailing assistant turn are accepted (no prefill semantics).
+
+A new MiMo model needs **nothing** for the picker (it comes from `/models`); check only whether it reads images (the vision rule in `isImageInliningSupported`) and its context (the 1M rule in `onModelChange`).
 
 ---
 

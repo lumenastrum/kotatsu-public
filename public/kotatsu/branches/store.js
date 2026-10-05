@@ -112,6 +112,7 @@ const CACHE_MAX_CHARACTERS = 8;
  * @property {string|null} parent Resolved parent `file_id`, or null when unresolved.
  * @property {string|null} [orphanName] Set when `mainChat` names a missing file.
  * @property {number|null} [forkIndex] First-divergence index, or null when uncomputed.
+ * @property {{ parent: string, child: string }|null} [forkPreview] Each side's line at the fork.
  * @property {'header'|'adopted'} [via] `header` = `main_chat`; `adopted` = prefix re-link.
  */
 

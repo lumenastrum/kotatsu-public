@@ -69,6 +69,7 @@ export const SECRET_KEYS = {
     VOLCENGINE_APP_ID: 'volcengine_app_id',
     VOLCENGINE_ACCESS_KEY: 'volcengine_access_key',
     WORKERS_AI: 'api_key_workers_ai',
+    XIAOMI: 'api_key_xiaomi', // KOTATSU-PATCH 2026-10-04: Xiaomi MiMo
 };
 
 /**

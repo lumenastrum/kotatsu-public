@@ -14,6 +14,7 @@ import {
     extension_prompt_roles,
     extension_prompt_types,
     Generate,
+    getCurrentChatId,
     getExtensionPrompt,
     getExtensionPromptMaxDepth,
     getMediaDisplay,
@@ -135,10 +136,12 @@ const max_200k = 200 * 1000;
 const max_256k = 256 * 1000;
 const max_400k = 400 * 1000;
 const max_1mil = 1000 * 1000;
+const max_1050k = 1050 * 1000;
 const max_2mil = 2000 * 1000;
 const unlocked_max = max_2mil;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0;
+const xiaomi_max_temp = 1.5; // KOTATSU-PATCH 2026-10-04: Xiaomi MiMo's API range is [0, 1.5]
 const mistral_max_temp = 1.5;
 const openrouter_website_model = 'OR_Website';
 const openai_max_stop_strings = 4;
@@ -200,6 +203,7 @@ export const chat_completion_sources = {
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
     MINIMAX: 'minimax',
+    XIAOMI: 'xiaomi', // KOTATSU-PATCH 2026-10-04: Xiaomi MiMo (docs/providers.md)
 };
 
 const character_names_behavior = {
@@ -343,6 +347,7 @@ export const settingsToUpdate = {
     pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
     pollinations_endpoint: ['#pollinations_endpoint', 'pollinations_endpoint', false, true],
     moonshot_model: ['#model_moonshot_select', 'moonshot_model', false, true],
+    xiaomi_model: ['#model_xiaomi_select', 'xiaomi_model', false, true],
     fireworks_model: ['#model_fireworks_select', 'fireworks_model', false, true],
     custom_model: ['#custom_model_id', 'custom_model', false, true],
     custom_url: ['#custom_api_url_text', 'custom_url', false, true],
@@ -375,7 +380,7 @@ export const settingsToUpdate = {
     prompts: ['', 'prompts', false, false],
     prompt_order: ['', 'prompt_order', false, false],
     show_external_models: ['#openai_show_external_models', 'show_external_models', true, true],
-    proxy_password: ['#openai_proxy_password', 'proxy_password', false, true],
+    proxy_password: ['#openai_proxy_access_key', 'proxy_password', false, true],
     assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false, false],
     assistant_impersonation: ['#claude_assistant_impersonation', 'assistant_impersonation', false, false],
     use_sysprompt: ['#use_sysprompt', 'use_sysprompt', true, false],
@@ -435,10 +440,10 @@ const default_settings = {
     personality_format: default_personality_format,
     sort_models: 'alphabetically',
     group_models: false,
-    openai_model: 'gpt-4-turbo',
-    claude_model: 'claude-sonnet-4-5',
-    google_model: 'gemini-2.5-pro',
-    vertexai_model: 'gemini-2.5-pro',
+    openai_model: 'gpt-6-sol',
+    claude_model: 'claude-sonnet-5',
+    google_model: 'gemini-3.8-flash',
+    vertexai_model: 'gemini-3.8-flash',
     ai21_model: 'jamba-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
@@ -459,6 +464,7 @@ const default_settings = {
     pollinations_model: 'openai',
     pollinations_endpoint: POLLINATIONS_ENDPOINT.AUTHENTICATED,
     moonshot_model: 'kimi-latest',
+    xiaomi_model: 'mimo-v2.6-pro',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
     zai_model: 'glm-4.6',
     zai_endpoint: ZAI_ENDPOINT.COMMON,
@@ -1621,6 +1627,21 @@ export async function prepareOpenAIMessages({
 }
 
 /**
+ * Extracts a human-readable message from a Chat Completion error response.
+ * Providers can return an error object without a message field, or the error as
+ * a plain string. statusText is only used for non-2xx responses, since for an
+ * HTTP 200 carrying an error payload it is just "OK" (#5647).
+ * @param {object} data Parsed response body
+ * @param {Response} response Fetch response
+ * @returns {string} Error message to display and throw
+ */
+function getChatCompletionErrorMessage(data, response) {
+    const error = data?.error ?? data?.detail?.error;
+    const message = typeof error === 'string' ? error : (error?.message || error?.code || error?.type);
+    return String(message || (!response.ok && response.statusText) || t`Unknown error`);
+}
+
+/**
  * Handles errors during streaming requests.
  * @param {Response} response
  * @param {string} decoded - response text or decoded stream data
@@ -1642,7 +1663,7 @@ export function tryParseStreamingError(response, decoded, { quiet = false } = {}
         // if trying to fix "[object Object]" displayed to users, start here
 
         if (data.error) {
-            !quiet && toastr.error(data.error.message || response.statusText, 'Chat Completion API');
+            !quiet && toastr.error(getChatCompletionErrorMessage(data, response), 'Chat Completion API');
             throw new Error(data);
         }
 
@@ -1652,7 +1673,7 @@ export function tryParseStreamingError(response, decoded, { quiet = false } = {}
         }
 
         if (data.detail) {
-            !quiet && toastr.error(data.detail?.error?.message || response.statusText, 'Chat Completion API');
+            !quiet && toastr.error(getChatCompletionErrorMessage(data, response), 'Chat Completion API');
             throw new Error(data);
         }
     } catch {
@@ -1747,6 +1768,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.pollinations_model;
         case chat_completion_sources.MOONSHOT:
             return settings.moonshot_model;
+        case chat_completion_sources.XIAOMI:
+            return settings.xiaomi_model;
         case chat_completion_sources.FIREWORKS:
             return settings.fireworks_model;
         case chat_completion_sources.AZURE_OPENAI:
@@ -2285,14 +2308,12 @@ function saveModelList(data) {
 
     if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
         $('#model_fireworks_select').empty();
+        model_list.sort((a, b) => (a?.name || a?.id || '').localeCompare(b?.name || b?.id || ''));
         model_list.forEach((model) => {
-            if (!model?.supports_chat) {
-                return;
-            }
             $('#model_fireworks_select').append(
                 $('<option>', {
                     value: model.id,
-                    text: model.id,
+                    text: model.name || model.id,
                 }));
         });
 
@@ -2362,6 +2383,23 @@ function saveModelList(data) {
         }
 
         $('#model_moonshot_select').val(oai_settings.moonshot_model).trigger('change');
+    }
+
+    // KOTATSU-PATCH 2026-10-04: Xiaomi's /models mixes chat ids with TTS/ASR ones (mimo-v2.5-tts,
+    // mimo-v2.5-asr, ...); only the chat models belong in a chat picker.
+    if (oai_settings.chat_completion_source == chat_completion_sources.XIAOMI) {
+        const chatModels = model_list.filter(model => !/-(?:tts|asr)(?:-|$)/.test(model.id));
+        $('#model_xiaomi_select').empty();
+        chatModels.forEach((model) => {
+            $('#model_xiaomi_select').append(new Option(model.id, model.id));
+        });
+
+        const selectedModel = chatModels.find(model => model.id === oai_settings.xiaomi_model);
+        if (chatModels.length > 0 && (!selectedModel || !oai_settings.xiaomi_model)) {
+            oai_settings.xiaomi_model = chatModels.find(model => model.id === default_settings.xiaomi_model)?.id ?? chatModels[0].id;
+        }
+
+        $('#model_xiaomi_select').val(oai_settings.xiaomi_model).trigger('change');
     }
 }
 
@@ -2518,6 +2556,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
         chat_completion_sources.DEEPSEEK,
+        chat_completion_sources.FIREWORKS,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -2529,6 +2568,9 @@ function getReasoningEffort(settings = null, model = null) {
             switch (settings.reasoning_effort) {
                 case reasoning_effort_types.auto:
                     return undefined;
+                case reasoning_effort_types.min:
+                case reasoning_effort_types.low:
+                    return reasoning_effort_types.low;
                 case reasoning_effort_types.max:
                     return reasoning_effort_types.max;
                 default:
@@ -2547,6 +2589,17 @@ function getReasoningEffort(settings = null, model = null) {
                     return undefined;
                 case reasoning_effort_types.min:
                     return 'low';
+                default:
+                    return settings.reasoning_effort;
+            }
+        }
+
+        if (settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
+            switch (settings.reasoning_effort) {
+                case reasoning_effort_types.auto:
+                    return undefined;
+                case reasoning_effort_types.min:
+                    return reasoning_effort_types.low;
                 default:
                     return settings.reasoning_effort;
             }
@@ -2580,7 +2633,7 @@ function getReasoningEffort(settings = null, model = null) {
                 }
 
                 if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)) {
-                    if (/^gpt-5\.(4|5)/.test(model)) {
+                    if (/^(?:gpt-5\.(?:4|5|6)|gpt-6-(?:sol|luna))/.test(model)) {
                         return 'none';
                     }
                     if (/^gpt-5/.test(model)) {
@@ -2590,6 +2643,15 @@ function getReasoningEffort(settings = null, model = null) {
 
                 return reasoning_effort_types.low;
             case reasoning_effort_types.max:
+                if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)
+                    && /^gpt-6-/.test(model)) {
+                    return reasoning_effort_types.max;
+                }
+                if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)
+                    && /^gpt-5\.6/.test(model)) {
+                    // GPT-5.6 reserves "max" effort for the Responses API.
+                    return 'xhigh';
+                }
                 return reasoning_effort_types.high;
             default:
                 return settings.reasoning_effort;
@@ -2645,6 +2707,20 @@ export async function createGenerationParameters(settings, model, type, messages
     }
     messages = messages.filter(msg => msg && typeof msg === 'object');
 
+    // DeepSeek only accepts image blocks in user messages. Media can also be
+    // attached to system and assistant messages by the shared inlining path.
+    const isDeepSeekVisionModel = typeof model === 'string' && model.toLowerCase().includes('deepseek-v4-flash-vision-exp');
+    if (isDeepSeekVisionModel) {
+        messages = messages.flatMap((message) => {
+            if (!['system', 'assistant'].includes(message.role) || !Array.isArray(message.content)) {
+                return [message];
+            }
+
+            const content = message.content.filter(block => block?.type !== 'image_url');
+            return content.length > 0 ? [{ ...message, content }] : [];
+        });
+    }
+
     // "OpenAI-like" sources
     const gptSources = [
         chat_completion_sources.OPENAI,
@@ -2688,6 +2764,7 @@ export async function createGenerationParameters(settings, model, type, messages
     const logprobsSupportedSources = [
         chat_completion_sources.OPENAI,
         chat_completion_sources.AZURE_OPENAI,
+        chat_completion_sources.OPENROUTER,
         chat_completion_sources.CUSTOM,
         chat_completion_sources.DEEPSEEK,
         chat_completion_sources.XAI,
@@ -2721,6 +2798,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.NANOGPT,
         chat_completion_sources.FIREWORKS,
         chat_completion_sources.DEEPSEEK,
+        chat_completion_sources.XIAOMI, // KOTATSU-PATCH 2026-10-04: include_usage live-verified
     ];
 
     // Sources that support "n" parameter for multi-swipe
@@ -2859,6 +2937,10 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.nanogpt_payg_override = settings.nanogpt_payg_override;
     }
 
+    if (settings.chat_completion_source === chat_completion_sources.FIREWORKS && type !== 'quiet') {
+        generate_data.chat_id = getCurrentChatId();
+    }
+
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(settings.chat_completion_source)) {
         const stopStringsLimit = 5;
         generate_data.top_k = Number(settings.top_k_openai);
@@ -2980,6 +3062,12 @@ export async function createGenerationParameters(settings, model, type, messages
         }
     }
 
+    // KOTATSU-PATCH 2026-10-04: Xiaomi MiMo 400s "temperature must be within [0, 1.5]" (live-probed),
+    // and ST presets reach 2.0.
+    if (settings.chat_completion_source === chat_completion_sources.XIAOMI && Number.isFinite(generate_data.temperature)) {
+        generate_data.temperature = clamp(generate_data.temperature, 0, xiaomi_max_temp);
+    }
+
     if (settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
         generate_data.workers_ai_account_id = settings.workers_ai_account_id;
         generate_data.top_k = settings.top_k_openai > 0 ? Math.min(Number(settings.top_k_openai), 50) : undefined;
@@ -3057,6 +3145,33 @@ export async function createGenerationParameters(settings, model, type, messages
             delete generate_data.presence_penalty;
             delete generate_data.logit_bias;
             delete generate_data.stop;
+        }
+    }
+
+    if (gptSources.includes(settings.chat_completion_source) && /gpt-6-/.test(model)) {
+        generate_data.max_completion_tokens = generate_data.max_tokens;
+        delete generate_data.max_tokens;
+        if (model.includes('gpt-6-astra') || generate_data.reasoning_effort !== 'none') {
+            delete generate_data.temperature;
+            delete generate_data.top_p;
+            delete generate_data.logprobs;
+            delete generate_data.top_logprobs;
+        }
+    }
+
+    // Claude Fable / Claude 5 models removed sampling parameters and reject them with HTTP 400,
+    // including via OpenAI-compatible proxies. Unanchored to also match prefixed ids
+    // like 'anthropic/claude-fable-5' or 'anthropic/claude-opus-5'.
+    if (/claude-(fable|opus-5|sonnet-5)/.test(model)) {
+        delete generate_data.temperature;
+        delete generate_data.top_p;
+        delete generate_data.top_k;
+        delete generate_data.frequency_penalty;
+        delete generate_data.presence_penalty;
+        // Keep reasoning_effort for the native Claude source, where the backend maps it to
+        // adaptive thinking; proxies may translate it into a thinking budget that these models reject.
+        if (settings.chat_completion_source !== chat_completion_sources.CLAUDE) {
+            delete generate_data.reasoning_effort;
         }
     }
 
@@ -3144,7 +3259,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         checkModerationError(data);
 
         if (data.error) {
-            const message = data.error.message || response.statusText || t`Unknown error`;
+            const message = getChatCompletionErrorMessage(data, response);
             toastr.error(message, t`API returned an error`);
             throw new Error(message);
         }
@@ -3236,7 +3351,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS, chat_completion_sources.XIAOMI].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -3273,6 +3388,7 @@ function parseChatCompletionLogprobs(data) {
                 : parseOpenAITextLogprobs(data.choices[0]?.logprobs);
         case chat_completion_sources.OPENAI:
         case chat_completion_sources.AZURE_OPENAI:
+        case chat_completion_sources.OPENROUTER:
         case chat_completion_sources.DEEPSEEK:
         case chat_completion_sources.XAI:
         case chat_completion_sources.CUSTOM:
@@ -4226,6 +4342,12 @@ function migrateChatCompletionSettings(settings) {
         { oldKey: 'chat_completion_source', oldValue: 'palm', newKey: 'chat_completion_source', newValue: chat_completion_sources.MAKERSUITE },
         { oldKey: 'custom_prompt_post_processing', oldValue: custom_prompt_post_processing_types.CLAUDE, newKey: 'custom_prompt_post_processing', newValue: custom_prompt_post_processing_types.MERGE },
         { oldKey: 'ai21_model', oldValue: /^j2-/, newKey: 'ai21_model', newValue: 'jamba-large' },
+        { oldKey: 'google_model', oldValue: 'gemini-3.1-flash-lite-preview', newKey: 'google_model', newValue: 'gemini-3.1-flash-lite' },
+        { oldKey: 'vertexai_model', oldValue: 'gemini-3.1-flash-lite-preview', newKey: 'vertexai_model', newValue: 'gemini-3.1-flash-lite' },
+        { oldKey: 'google_model', oldValue: 'gemini-3.1-flash-image-preview', newKey: 'google_model', newValue: 'gemini-3.1-flash-image' },
+        { oldKey: 'vertexai_model', oldValue: 'gemini-3.1-flash-image-preview', newKey: 'vertexai_model', newValue: 'gemini-3.1-flash-image' },
+        { oldKey: 'google_model', oldValue: 'gemini-3-pro-image-preview', newKey: 'google_model', newValue: 'gemini-3-pro-image' },
+        { oldKey: 'vertexai_model', oldValue: 'gemini-3-pro-image-preview', newKey: 'vertexai_model', newValue: 'gemini-3-pro-image' },
         { oldKey: 'image_inlining', oldValue: false, newKey: 'media_inlining', newValue: false },
         { oldKey: 'image_inlining', oldValue: true, newKey: 'media_inlining', newValue: true },
         { oldKey: 'video_inlining', oldValue: true, newKey: 'media_inlining', newValue: true },
@@ -5004,6 +5126,23 @@ async function onLogitBiasPresetDeleteClick() {
     saveSettingsDebounced();
 }
 
+/**
+ * Promise that resolves when the most recently started preset application has fully completed.
+ * The change handler defers the actual apply behind an event emission, so programmatic preset
+ * switches (e.g. /preset, connection profiles) must await this to sequence follow-up commands
+ * such as /api and /model correctly.
+ * @type {Promise<void>}
+ */
+let presetApplicationPromise = Promise.resolve();
+
+/**
+ * Gets a promise that resolves when the currently pending preset application completes.
+ * @returns {Promise<void>} Promise that resolves when the preset is fully applied.
+ */
+export function getPresetApplicationPromise() {
+    return presetApplicationPromise;
+}
+
 // Load OpenAI preset settings
 function onSettingsPresetChange() {
     const presetNameBefore = oai_settings.preset_settings_openai;
@@ -5019,7 +5158,7 @@ function onSettingsPresetChange() {
     const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input', { source: 'preset' });
 
     // Allow subscribers to alter the preset before applying deltas
-    eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
+    presetApplicationPromise = eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
         preset: preset,
         presetName: presetName,
         settingsToUpdate: settingsToUpdate,
@@ -5080,6 +5219,8 @@ function getMaxContextOpenAI(value) {
 
     /** @type {[RegExp, number][]} */
     const contextMap = [
+        [/^gpt-6-/, max_1050k],
+        [/^gpt-5\.6/, max_1050k],
         [/^gpt-5\.[45]/, max_1mil],
         [/^gpt-5/, max_400k],
         [/gpt-4\.1/, max_1mil],
@@ -5128,6 +5269,7 @@ function getGeminiMaxContext(model, isUnlocked) {
     /** @type {[RegExp, number][]} */
     const contextMap = [
         [/gemini-2\.5-flash-image/, max_32k],
+        [/gemini-3\.1-flash-image/, max_128k],
         [/gemini-3-pro-image/, max_64k],
         [/gemini-(?:3[.\d]*|2\.(?:5|0))-(pro|flash)/, max_1mil],
         [/(gemini-exp|learnlm-2\.0-flash|gemini-robotics)/, max_1mil],
@@ -5249,7 +5391,7 @@ function getZaiMaxContext(model, isUnlocked) {
     const contextMap = {
         'glm-5.3': max_1mil, // KOTATSU-PATCH 2026-08-14: 1M ctx per Z.AI docs (same base as 5.2)
         'glm-5.3-flash': max_1mil, // KOTATSU-PATCH 2026-08-26: launch-day add (ex-stealth "Ox Alpha"), 1M ctx per Z.AI launch; id live-verified against api.z.ai
-        'glm-5.2': max_1mil, // KOTATSU-PATCH 2026-08-14: 1M ctx per Z.AI model doc
+        'glm-5.2': max_1mil,
         'glm-5.1': max_200k,
         'glm-5-turbo': max_200k,
         'glm-5v-turbo': max_200k,
@@ -5639,6 +5781,15 @@ async function onModelChange() {
         oai_settings.moonshot_model = value;
     }
 
+    if ($(this).is('#model_xiaomi_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null Xiaomi MiMo model selected. Ignoring.');
+            return;
+        }
+        console.log('Xiaomi MiMo model changed to', value);
+        oai_settings.xiaomi_model = value;
+    }
+
     if ($(this).is('#model_fireworks_select')) {
         if (!value || !hasModelsLoaded) {
             console.debug('Null Fireworks model selected. Ignoring.');
@@ -5708,7 +5859,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (/^claude-(sonnet-4-5|sonnet-4-6|opus-4-6|opus-4-7|opus-4-8|sonnet-5|opus-5|fable-5)/.test(value)) {
+        } else if (/^claude-(sonnet-4-5|sonnet-4-6|sonnet-5|opus-4-6|opus-4-7|opus-4-8|opus-5|fable)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (/^claude-(3|opus|haiku|sonnet)/.test(value)) {
             $('#openai_max_context').attr('max', max_200k);
@@ -5945,6 +6096,16 @@ async function onModelChange() {
         $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    // KOTATSU-PATCH 2026-10-04: every MiMo chat model (v2.5, v2.5-pro, v2.6-flash, v2.6-pro)
+    // is 1M context per Xiaomi's model pages (mimo.mi.com/models); /models carries no sizes.
+    if (oai_settings.chat_completion_source === chat_completion_sources.XIAOMI) {
+        $('#openai_max_context').attr('max', oai_settings.max_context_unlocked ? unlocked_max : max_1mil);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(xiaomi_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', xiaomi_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
         const maxContext = getFireworksMaxContext(oai_settings.fireworks_model, oai_settings.max_context_unlocked);
         $('#openai_max_context').attr('max', maxContext);
@@ -6026,6 +6187,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.XAI]: { key: SECRET_KEYS.XAI, selector: '#api_key_xai', proxy: true },
         [chat_completion_sources.AIMLAPI]: { key: SECRET_KEYS.AIMLAPI, selector: '#api_key_aimlapi', proxy: false },
         [chat_completion_sources.MOONSHOT]: { key: SECRET_KEYS.MOONSHOT, selector: '#api_key_moonshot', proxy: true },
+        [chat_completion_sources.XIAOMI]: { key: SECRET_KEYS.XIAOMI, selector: '#api_key_xiaomi', proxy: false },
         [chat_completion_sources.FIREWORKS]: { key: SECRET_KEYS.FIREWORKS, selector: '#api_key_fireworks', proxy: false },
         [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: true },
@@ -6117,6 +6279,8 @@ function toggleChatCompletionForms() {
         $('#model_pollinations_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT) {
         $('#model_moonshot_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.XIAOMI) {
+        $('#model_xiaomi_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
         $('#model_fireworks_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
@@ -6161,10 +6325,8 @@ function reconnectOpenAi() {
     }
 }
 
-function onProxyPasswordShowClick() {
-    const $input = $('#openai_proxy_password');
-    const type = $input.attr('type') === 'password' ? 'text' : 'password';
-    $input.attr('type', type);
+function onProxyAccessKeyShowClick() {
+    $('#openai_proxy_access_key').toggleClass('masked-secret');
     $(this).toggleClass('fa-eye-slash fa-eye');
 }
 
@@ -6211,18 +6373,21 @@ export function isImageInliningSupported() {
         'gpt-4.1',
         'gpt-4.5-preview',
         'gpt-4o',
+        'gpt-6-astra',
+        'gpt-6-sol',
+        'gpt-6-luna',
         'gpt-5',
         'o1',
         'o3',
         'o4-mini',
         // Claude
         'claude-3',
+        'claude-fable',
         'claude-opus-4',
+        'claude-opus-5',
         'claude-sonnet-4',
+        'claude-sonnet-5',
         'claude-haiku-4',
-        'claude-fable', // KOTATSU-PATCH 2026-08-16: 5-family vision (matches upstream #5757)
-        'claude-sonnet-5', // KOTATSU-PATCH 2026-08-16
-        'claude-opus-5', // KOTATSU-PATCH 2026-08-16
         // Cohere
         'c4ai-aya-vision',
         'command-a-vision',
@@ -6254,6 +6419,8 @@ export function isImageInliningSupported() {
         'moonshot-v1-128k-vision-preview',
         'kimi-k2.5',
         'kimi-latest',
+        // DeepSeek
+        'deepseek-v4-flash-vision-exp',
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
@@ -6305,16 +6472,24 @@ export function isImageInliningSupported() {
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.MOONSHOT:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.moonshot_model)?.supports_image_in);
+        case chat_completion_sources.XIAOMI:
+            // KOTATSU-PATCH 2026-10-04: live-probed — v2.6 (incl. pro-ultraspeed) reads images,
+            // mimo-v2.5-pro 404s "No endpoints found that support image input"; v2.5 is omni per Xiaomi.
+            return /^mimo-v2\.6/.test(oai_settings.xiaomi_model) || oai_settings.xiaomi_model === 'mimo-v2.5';
         case chat_completion_sources.NANOGPT:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.nanogpt_model)?.capabilities?.vision);
         case chat_completion_sources.ZAI:
             return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
         case chat_completion_sources.SILICONFLOW:
             return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
+        case chat_completion_sources.DEEPSEEK:
+            return visionSupportedModels.some(model => oai_settings.deepseek_model.includes(model));
         case chat_completion_sources.WORKERS_AI: {
             const waiModel = Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.workers_ai_model);
             return Boolean(waiModel && Array.isArray(waiModel.properties) && waiModel.properties.some(p => p.property_id === 'vision' && p.value === 'true'));
         }
+        case chat_completion_sources.FIREWORKS:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.fireworks_model)?.supports_image_input);
         default:
             return false;
     }
@@ -6483,7 +6658,7 @@ function setProxyPreset(name, url, password) {
     oai_settings.reverse_proxy = url;
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
     oai_settings.proxy_password = password;
-    $('#openai_proxy_password').val(oai_settings.proxy_password);
+    $('#openai_proxy_access_key').val(oai_settings.proxy_password);
     reconnectOpenAi();
 }
 
@@ -6502,7 +6677,7 @@ function onProxyPresetChange() {
 $('#save_proxy').on('click', async function () {
     const presetName = $('#openai_reverse_proxy_name').val();
     const reverseProxy = $('#openai_reverse_proxy').val();
-    const proxyPassword = $('#openai_proxy_password').val();
+    const proxyPassword = $('#openai_proxy_access_key').val();
 
     setProxyPreset(presetName, reverseProxy, proxyPassword);
     saveSettingsDebounced();
@@ -6536,7 +6711,7 @@ $('#delete_proxy').on('click', async function () {
         oai_settings.reverse_proxy = selected_proxy.url;
         $('#openai_reverse_proxy').val(selected_proxy.url);
         oai_settings.proxy_password = selected_proxy.password;
-        $('#openai_proxy_password').val(selected_proxy.password);
+        $('#openai_proxy_access_key').val(selected_proxy.password);
 
         saveSettingsDebounced();
         $('#openai_proxy_preset').val(selected_proxy.name);
@@ -6951,9 +7126,15 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
-    $('#openai_proxy_password').on('input', function () {
+    $('#openai_proxy_access_key').on('input', function () {
         oai_settings.proxy_password = String($(this).val());
         saveSettingsDebounced();
+    });
+
+    $('#openai_proxy_access_key').on('copy cut', function (event) {
+        if ($(this).hasClass('masked-secret')) {
+            event.preventDefault();
+        }
     });
 
     $('#claude_assistant_prefill').on('input', function () {
@@ -7327,6 +7508,7 @@ export function initOpenAI() {
     $('#model_xai_select').on('change', onModelChange);
     $('#model_pollinations_select').on('change', onModelChange);
     $('#model_moonshot_select').on('change', onModelChange);
+    $('#model_xiaomi_select').on('change', onModelChange);
     $('#model_fireworks_select').on('change', onModelChange);
     $('#azure_openai_model').on('change', onModelChange);
     $('#model_zai_select').on('change', onModelChange);
@@ -7344,7 +7526,7 @@ export function initOpenAI() {
     $('#openai_logit_bias_export_preset').on('click', onLogitBiasPresetExportClick);
     $('#openai_logit_bias_delete_preset').on('click', onLogitBiasPresetDeleteClick);
     $('#import_oai_preset').on('click', onImportPresetClick);
-    $('#openai_proxy_password_show').on('click', onProxyPasswordShowClick);
+    $('#openai_proxy_access_key_show').on('click', onProxyAccessKeyShowClick);
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
     $('#openai_proxy_preset').on('change', onProxyPresetChange);
 }

@@ -728,6 +728,421 @@ k-branch-map[variant="overlay"] .k-bm-foot-build {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   6b. STORY LINES (exploration, 2026-10-04)
+   One story as transit lines: x = message index, one row per chat. Line
+   colours are slots (`--k-bm-hue`) onto theme tokens, so packs recolour free.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+k-branch-map[variant="overlay"] .k-bm-scroll[hidden] {
+    display: none;
+}
+
+k-branch-map[variant="overlay"] .is-hue-0 { --k-bm-hue: var(--k-accent); }
+k-branch-map[variant="overlay"] .is-hue-1 { --k-bm-hue: var(--k-rose); }
+k-branch-map[variant="overlay"] .is-hue-2 { --k-bm-hue: var(--k-success); }
+k-branch-map[variant="overlay"] .is-hue-3 { --k-bm-hue: var(--k-warning); }
+k-branch-map[variant="overlay"] .is-hue-4 { --k-bm-hue: var(--k-glow-dawn, var(--k-accent-bright)); }
+k-branch-map[variant="overlay"] .is-hue-5 { --k-bm-hue: var(--k-rose-bright, var(--k-rose)); }
+
+k-branch-map[variant="overlay"] .k-bm-views {
+    flex: none;
+    display: flex;
+    padding: 2px;
+    border-radius: var(--k-radius-pill);
+    background: var(--k-surface-2);
+    border: var(--k-bm-hairline) solid color-mix(in srgb, var(--k-chrome-border) 30%, transparent);
+}
+
+k-branch-map[variant="overlay"] .k-bm-view {
+    block-size: 28px;
+    padding-inline: 12px;
+    border: 0;
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text-dim);
+    font: 500 12px var(--k-font-ui);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+k-branch-map[variant="overlay"] .k-bm-view:hover {
+    color: var(--k-text-strong);
+}
+
+k-branch-map[variant="overlay"] .k-bm-view.is-on {
+    background: color-mix(in srgb, var(--k-accent) 24%, var(--k-surface));
+    color: var(--k-text-strong);
+}
+
+k-branch-map[variant="overlay"] .k-bm-view:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: 1px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-story {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-story-label {
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--k-text-faint);
+}
+
+k-branch-map[variant="overlay"] .k-bm-story-select {
+    max-inline-size: 300px;
+    block-size: 30px;
+    padding-inline: 10px;
+    border-radius: var(--k-radius-md);
+    border: var(--k-bm-hairline) solid var(--k-inset-border);
+    background: var(--k-surface-2);
+    color: var(--k-text);
+    font: 12.5px var(--k-font-ui);
+}
+
+k-branch-map[variant="overlay"] .k-bm-lines-wrap {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    position: relative;
+    display: flex;
+}
+
+k-branch-map[variant="overlay"] .k-bm-lines {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding-inline: var(--k-bm-pad);
+    /* The layout's width is measured from this pane. Reserving the scrollbar's lane whether or
+       not it shows keeps that width independent of the scrollbar, which the layout itself
+       decides — without it a story sitting on the edge can flip the scrollbar on and off
+       forever (seen live in Edge on a 6-chat story, 2026-10-04). */
+    scrollbar-gutter: stable;
+    cursor: grab;
+    /* Pan is ours; a touch drag still scrolls natively. */
+    touch-action: pan-x pan-y;
+}
+
+k-branch-map[variant="overlay"] .k-bm-lines:focus {
+    outline: none;
+}
+
+k-branch-map[variant="overlay"] .k-bm-lines.is-panning {
+    cursor: grabbing;
+    user-select: none;
+}
+
+k-branch-map[variant="overlay"] .k-bm-lines-canvas {
+    position: relative;
+}
+
+/* Dense maps: the rulers step back so the lines carry the read. */
+k-branch-map[variant="overlay"] .k-bm-lines-canvas.is-dense .k-bm-lines-grid {
+    stroke: color-mix(in srgb, var(--k-chrome-border) 11%, transparent);
+}
+
+k-branch-map[variant="overlay"] .k-bm-lines-canvas.is-dense .k-bm-lines-tick {
+    opacity: 0.7;
+}
+
+k-branch-map[variant="overlay"] .k-bm-zoom {
+    position: absolute;
+    inset-inline-end: 18px;
+    inset-block-end: 14px;
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--k-radius-pill);
+    background: color-mix(in srgb, var(--k-surface-2) 92%, transparent);
+    border: var(--k-bm-hairline) solid color-mix(in srgb, var(--k-chrome-border) 32%, transparent);
+    box-shadow: var(--k-elev-2, none);
+}
+
+k-branch-map[variant="overlay"] .k-bm-zoom-btn {
+    min-inline-size: 32px;
+    block-size: 32px;
+    padding-inline: 8px;
+    border: 0;
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text);
+    font: 500 13px var(--k-font-ui);
+    cursor: pointer;
+}
+
+k-branch-map[variant="overlay"] .k-bm-zoom-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--k-accent) 16%, transparent);
+}
+
+k-branch-map[variant="overlay"] .k-bm-zoom-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+k-branch-map[variant="overlay"] .k-bm-zoom-btn:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: 1px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-zoom-level {
+    min-inline-size: 52px;
+    font: 500 11.5px var(--k-font-mono);
+    color: var(--k-text-dim);
+}
+
+k-branch-map[variant="overlay"] .k-bm-lines-axis {
+    position: absolute;
+    inset-inline: 0;
+    top: 14px;
+    block-size: 16px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-lines-tick {
+    position: absolute;
+    transform: translateX(-50%);
+    font: 10.5px var(--k-font-mono);
+    color: var(--k-text-faint);
+}
+
+k-branch-map[variant="overlay"] .k-bm-lines-svg {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+}
+
+k-branch-map[variant="overlay"] .k-bm-lines-grid {
+    stroke: color-mix(in srgb, var(--k-chrome-border) 20%, transparent);
+    stroke-width: 1;
+}
+
+k-branch-map[variant="overlay"] .k-bm-line {
+    fill: none;
+    stroke: var(--k-bm-hue);
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+k-branch-map[variant="overlay"] .k-bm-line.is-unknown {
+    stroke-dasharray: 2 8;
+}
+
+k-branch-map[variant="overlay"] .k-bm-line-glow {
+    fill: none;
+    stroke: var(--k-bm-hue);
+    stroke-width: 14;
+    stroke-opacity: 0.18;
+    stroke-linecap: round;
+}
+
+k-branch-map[variant="overlay"] .k-bm-leader {
+    fill: none;
+    stroke: var(--k-bm-hue);
+    stroke-width: 1.5;
+    stroke-dasharray: 3 4;
+    stroke-opacity: 0.7;
+}
+
+k-branch-map[variant="overlay"] .k-bm-stop,
+k-branch-map[variant="overlay"] .k-bm-end {
+    fill: var(--k-bm-hue);
+}
+
+k-branch-map[variant="overlay"] .k-bm-end.is-active {
+    stroke: color-mix(in srgb, var(--k-bm-hue) 40%, transparent);
+    stroke-width: 9;
+    paint-order: stroke;
+}
+
+k-branch-map[variant="overlay"] .k-bm-fork-dot {
+    fill: var(--k-surface);
+    stroke: var(--k-bm-hue);
+    stroke-width: 3;
+}
+
+k-branch-map[variant="overlay"] .k-bm-cp-mark {
+    fill: var(--k-text-strong);
+}
+
+k-branch-map[variant="overlay"] .k-bm-lines .is-dim {
+    opacity: var(--k-bm-dim-opacity);
+}
+
+k-branch-map[variant="overlay"] .k-bm-forkchip {
+    position: absolute;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    max-inline-size: 380px;
+    padding: 3px 10px;
+    border-radius: var(--k-radius-pill);
+    background: var(--k-surface-2);
+    border: var(--k-bm-hairline) solid color-mix(in srgb, var(--k-bm-hue) 38%, transparent);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+k-branch-map[variant="overlay"] .k-bm-forkchip-at {
+    flex: none;
+    font: 10.5px var(--k-font-mono);
+    color: var(--k-bm-hue);
+}
+
+k-branch-map[variant="overlay"] .k-bm-forkchip-text {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--k-font-prose);
+    font-size: 13px;
+    color: color-mix(in srgb, var(--k-bm-hue) 45%, var(--k-text-strong));
+}
+
+k-branch-map[variant="overlay"] .k-bm-forkchip.is-empty .k-bm-forkchip-text {
+    font-family: var(--k-font-ui);
+    font-size: 11.5px;
+    font-style: italic;
+    color: var(--k-text-faint);
+}
+
+k-branch-map[variant="overlay"] .k-bm-station {
+    position: absolute;
+    transform: translateY(-50%);
+    inline-size: 270px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: var(--k-radius-lg);
+    border: var(--k-bm-hairline) solid color-mix(in srgb, var(--k-chrome-border) 34%, transparent);
+    background: var(--k-surface-2);
+    color: var(--k-text);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+k-branch-map[variant="overlay"] .k-bm-station:hover {
+    border-color: color-mix(in srgb, var(--k-bm-hue) 55%, transparent);
+}
+
+k-branch-map[variant="overlay"] .k-bm-station.is-active {
+    border-color: color-mix(in srgb, var(--k-bm-hue) 60%, transparent);
+}
+
+k-branch-map[variant="overlay"] .k-bm-station.is-selected {
+    border-color: var(--k-bm-hue);
+    background: color-mix(in srgb, var(--k-bm-hue) 10%, var(--k-surface-2));
+}
+
+k-branch-map[variant="overlay"] .k-bm-station:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--k-bm-hue) 65%, transparent);
+    outline-offset: 2px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-station-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-inline-size: 0;
+}
+
+k-branch-map[variant="overlay"] .k-bm-station-title {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--k-text-strong);
+}
+
+k-branch-map[variant="overlay"] .k-bm-here {
+    flex: none;
+    padding: 1px 7px;
+    border-radius: var(--k-radius-pill);
+    background: color-mix(in srgb, var(--k-bm-hue) 18%, transparent);
+    color: var(--k-bm-hue);
+    font-size: 10.5px;
+    font-weight: 500;
+}
+
+k-branch-map[variant="overlay"] .k-bm-station-tag {
+    flex: none;
+    font-size: 11px;
+    color: var(--k-text-faint);
+}
+
+k-branch-map[variant="overlay"] .k-bm-station-preview {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-family: var(--k-font-prose);
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: var(--k-text-quote, var(--k-text));
+}
+
+k-branch-map[variant="overlay"] .k-bm-station-preview.is-short {
+    -webkit-line-clamp: 1;
+}
+
+k-branch-map[variant="overlay"] .k-bm-station-fork {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-inline-size: 0;
+}
+
+k-branch-map[variant="overlay"] .k-bm-station-fork-text {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--k-font-prose);
+    font-size: 13px;
+    color: color-mix(in srgb, var(--k-bm-hue) 45%, var(--k-text-strong));
+}
+
+k-branch-map[variant="overlay"] .k-bm-station-meta {
+    font-size: 11px;
+    color: var(--k-text-dim);
+}
+
+k-branch-map[variant="overlay"] .k-bm-forkcmp {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+k-branch-map[variant="overlay"] .k-bm-forkcmp-side {
+    padding: 8px 10px;
+    border-radius: var(--k-radius-md);
+    border: var(--k-bm-hairline) solid color-mix(in srgb, var(--k-chrome-border) 30%, transparent);
+}
+
+k-branch-map[variant="overlay"] .k-bm-forkcmp-side.is-this {
+    border-color: color-mix(in srgb, var(--k-accent) 55%, transparent);
+}
+
+k-branch-map[variant="overlay"] .k-bm-forkcmp-who {
+    font-size: 11px;
+    color: var(--k-text-dim);
+}
+
+k-branch-map[variant="overlay"] .k-bm-forkcmp-text {
+    margin: 2px 0 0;
+    font-family: var(--k-font-prose);
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--k-text);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    7. NARROW VIEWPORTS
    ═══════════════════════════════════════════════════════════════════════════ */
 

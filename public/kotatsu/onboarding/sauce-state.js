@@ -114,6 +114,63 @@ export function modeGroup(groups) {
 }
 
 /**
+ * Kotatsu Nabe's play styles, said the way a person chooses between them. A reader on macOS
+ * (r/SillyTavernAI, 2026-10-04) couldn't tell Roleplayer, Writer and Companion apart from the
+ * names alone. Other sauces describe themselves: see {@link optionBlurb}.
+ * @type {Readonly<Record<string, string>>}
+ */
+export const MODE_BLURBS = Object.freeze({
+    'nabe-mode-roleplayer': 'Turn by turn. You play your character; the model plays everyone else and keeps the scene moving.',
+    'nabe-mode-writer': 'A book written together. You give directions, the model writes the prose, your character included.',
+    'nabe-mode-companion': 'Slower and closer. Continuity and the small things you share matter more than plot, and you play yourself.',
+});
+
+/**
+ * One plain line under "How do you like to play?" for the selected option. Nabe's are written
+ * for it; any other preset's option speaks for itself through the first sentence of its own
+ * text (at least a few words, so a bare heading like "Game Master." runs on into the sentence
+ * that explains it), with the macros read aloud and markup dropped. {{user}} reads as "your
+ * character": presets write it with third-person verbs ("while {{user}} explores"), which "you"
+ * would break. Empty when there is nothing readable to say.
+ * @param {string} identifier The option's prompt identifier.
+ * @param {string} content The option's prompt text.
+ * @returns {string}
+ */
+export function optionBlurb(identifier, content) {
+    if (Object.hasOwn(MODE_BLURBS, identifier)) return MODE_BLURBS[identifier];
+    /** @type {Record<string, string>} */
+    const spoken = { user: 'your character', char: 'the character' };
+    // The two people become placeholders first, so a {{setvar::…}} value that mentions them
+    // unwraps whole instead of ending at their inner "}}".
+    const raw = String(content ?? '').replace(/\{\{\s*(user|char)\s*\}\}/gi, (_, who) => `\u0001${who.toLowerCase()}\u0002`);
+    // A {{// comment}} is never sent to the model: it is the author describing the module to
+    // people, which is exactly what this line is for (Sparkle: "Main prompt for fanfic writing.").
+    const comment = (/\{\{\/\/\s*([\s\S]*?)\s*\}\}/.exec(raw)?.[1] ?? '').replace(/\s+/g, ' ').trim();
+    const source = comment.length >= 12
+        ? comment
+        // Otherwise the text itself, with {{setvar::name::value}} read as its value, not dropped.
+        : raw.replace(/\{\{setvar::[^:}]*::([\s\S]*?)\}\}/gi, '$1');
+    const text = source
+        .replace(/\{\{[^}]*\}\}/g, '')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/[#*_`>[\]]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        // Read the two people aloud, capitalized where a sentence starts.
+        .replace(/\u0001(user|char)\u0002/g, (_, who, offset, whole) => {
+            const said = spoken[who];
+            const before = whole.slice(0, offset).trimEnd();
+            return !before || /[.!?]$/.test(before) ? said.charAt(0).toUpperCase() + said.slice(1) : said;
+        });
+    // A scrap ("b", "v2") is not a description.
+    if (text.length < 8) return '';
+    const sentence = /^(.{12,220}?[.!?])(?:\s|$)/.exec(text);
+    const first = sentence ? sentence[1] : text;
+    const line = first.charAt(0).toUpperCase() + first.slice(1);
+    return line.length > 200 ? `${line.slice(0, 197).trimEnd()}…` : line;
+}
+
+/**
  * An option as a person reads it inside its group: numbering glyphs dropped, and the group's own
  * name dropped when the preset repeats it ("User: Agency-Lite" in group User → "Agency-Lite").
  * @param {string} groupLabel The group's label.

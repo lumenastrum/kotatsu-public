@@ -69,14 +69,31 @@ if errorlevel 1 (
     echo   [2/5] git found.
 )
 
-if defined NEED_RESTART (
-    echo.
-    echo   A prerequisite was just installed. Close this window and run the installer again
-    echo   so the new programs are on your PATH.
-    echo.
-    pause
-    exit /b 0
-)
+REM A window keeps the PATH it was opened with, so it can't see what winget just installed.
+REM Reload PATH from the registry (what a fresh window would get) and look again, so one run
+REM is enough. "Close and run again" is only the fallback when that still finds nothing.
+if not defined NEED_RESTART goto prereqs_ready
+echo.
+echo   Picking up the newly installed programs...
+call :refresh_path
+set "NODE_MAJOR="
+for /f "tokens=1 delims=v." %%v in ('node -v 2^>nul') do set "NODE_MAJOR=%%v"
+if not defined NODE_MAJOR goto prereqs_restart
+if %NODE_MAJOR% LSS 20 goto prereqs_restart
+git --version >nul 2>&1
+if errorlevel 1 goto prereqs_restart
+echo         Node.js v%NODE_MAJOR% and git are ready.
+goto prereqs_ready
+:prereqs_restart
+echo.
+echo   Node.js or git still isn't available in this window. Close this window and run the
+echo   installer again. If it keeps stopping here, install them by hand and run this again:
+echo     Node.js LTS: https://nodejs.org
+echo     Git:         https://git-scm.com
+echo.
+pause
+exit /b 0
+:prereqs_ready
 
 REM ---------- 3) Claude Code - OPTIONAL (only the Claude subscription connection uses it) ----------
 REM Nothing in this step may stop the install: every failure falls through to step 4 with a note.
@@ -180,4 +197,9 @@ echo   Next time, use the Kotatsu shortcut on your Desktop.
 echo.
 start "Kotatsu" /D "%TARGET%" "%TARGET%\Start.bat"
 endlocal
+exit /b 0
+
+REM PATH as a newly opened window would see it: machine entries, then the user's.
+:refresh_path
+for /f "usebackq delims=" %%p in (`powershell -NoProfile -Command "[Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')"`) do set "PATH=%%p"
 exit /b 0

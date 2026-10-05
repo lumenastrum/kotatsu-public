@@ -94,7 +94,7 @@ import { composerReason } from '../connections/composer-reason.js';
 import { getBridgeEffort, setBridgeEffort } from '../connections/bridge.js';
 import { getPresetManager } from '../../scripts/preset-manager.js';
 import { PROMPT_LIST_RENDERED_EVENT, PROMPT_LIST_TOGGLED_EVENT } from '../prompts/k-prompt-list.js';
-import { DIALS, MATURE_IDENTIFIER, availableSauces, bridgeContextCeiling, dialsFor, modeGroup, modeLabel, optionLabel, promptState, regexNote, selectedOption } from './sauce-state.js';
+import { DIALS, MATURE_IDENTIFIER, availableSauces, bridgeContextCeiling, dialsFor, modeGroup, modeLabel, optionBlurb, optionLabel, promptState, regexNote, selectedOption } from './sauce-state.js';
 import { SCRIPT_TYPES, getCurrentPresetAPI, getCurrentPresetName, getScriptsByType, isPresetScriptsAllowed } from '../../scripts/extensions/regex/engine.js';
 import { FALLBACK_MANIFEST, loadPresetCredits } from './preset-credits.js';
 import { PROVIDERS } from '../connections/providers.js';
@@ -1129,8 +1129,10 @@ export class KOnboarding extends LitElement {
                     <div class="k-onb-seg" role="group" aria-labelledby="k-onb-mode-label">
                         ${group.options.map(option => html`
                             <button type="button" class="k-onb-seg-option" aria-pressed=${option.enabled ? 'true' : 'false'}
+                                aria-describedby="k-onb-mode-blurb"
                                 @click=${() => this.#promptList()?.pickRadio(option.identifier)}>${optionLabel(group.label, option.label)}</button>`)}
                     </div>
+                    ${this.#renderModeBlurb(group)}
                 </div>` : nothing}
             ${seasonings.length ? html`
                 <details class="k-onb-more">
@@ -1167,6 +1169,24 @@ export class KOnboarding extends LitElement {
                 </div>`;
     }) : html`<p class="k-onb-note">This connection's knobs live in the preset dock; the tour leaves them to you.</p>`}
             <p class="k-onb-note">Everything else is in the preset dock in the right rail: Sauce, Dials, Rack. On a narrower screen the rail tucks itself away; the handle on the right edge brings it back.</p>`;
+    }
+
+    /**
+     * What the selected play style means, in one line, under its buttons. Reads the option's own
+     * prompt text through core's prompt manager when the sauce isn't ours (sauce-state.js
+     * `optionBlurb`).
+     * @param {{options: Array<{identifier: string, enabled: boolean}>}} group The mode group.
+     * @returns {unknown}
+     */
+    #renderModeBlurb(group) {
+        const chosen = group.options.find(option => option.enabled);
+        if (!chosen) return nothing;
+        const manager = this.#promptList()?.manager;
+        const content = manager && typeof manager.getPromptById === 'function'
+            ? String(manager.getPromptById(chosen.identifier)?.content ?? '')
+            : '';
+        const blurb = optionBlurb(chosen.identifier, content);
+        return blurb ? html`<span class="k-onb-hint" id="k-onb-mode-blurb" aria-live="polite">${blurb}</span>` : nothing;
     }
 
     /**

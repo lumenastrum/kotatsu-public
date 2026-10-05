@@ -580,7 +580,13 @@ export class ToolManager {
             }
 
             if (typeof deltaValue === 'string') {
-                if (typeof targetValue === 'string') {
+                // `id`, `name`, `type` are sent in full by some providers on every
+                // streaming chunk; concatenating them would duplicate the value.
+                if (key === 'id' || key === 'name' || key === 'type') {
+                    if (!targetValue) {
+                        target[key] = deltaValue;
+                    }
+                } else if (typeof targetValue === 'string') {
                     // Concatenate strings
                     target[key] = targetValue + deltaValue;
                 } else {
@@ -610,6 +616,12 @@ export class ToolManager {
         model = model ?? getChatCompletionModel(settings);
 
         if (main_api !== 'openai' || !settings.function_calling) {
+            return false;
+        }
+
+        // GPT-6 Astra requires Responses for tools. Sol and Luna allow Chat Completions tools only without reasoning.
+        if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)
+            && (/^gpt-6-astra/.test(model) || (/^gpt-6-(sol|luna)/.test(model) && settings.reasoning_effort !== 'min'))) {
             return false;
         }
 
@@ -658,6 +670,7 @@ export class ToolManager {
             chat_completion_sources.XAI,
             chat_completion_sources.POLLINATIONS,
             chat_completion_sources.MOONSHOT,
+            chat_completion_sources.XIAOMI,
             chat_completion_sources.FIREWORKS,
             chat_completion_sources.CHUTES,
             chat_completion_sources.ELECTRONHUB,

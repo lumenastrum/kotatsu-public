@@ -69,7 +69,15 @@ const CARRIAGE_RETURN = 0x0d;
  * @property {string|null} parent Resolved parent file id, or null when unresolved.
  * @property {string} [orphanName] Set when `mainChat` names a missing file.
  * @property {number|null} forkIndex First-divergence index, or null when not yet computed.
+ * @property {ForkPreview|null} [forkPreview] What each side said at the fork; absent until
+ *   computed (sidecars written before it existed fill it in lazily, no version bump).
  * @property {'header'|'adopted'} via How the edge was resolved.
+ */
+
+/**
+ * @typedef {object} ForkPreview
+ * @property {string} parent The parent's message at the fork point, plain text ('' if it ended there).
+ * @property {string} child The child's message at the fork point, plain text ('' if it ended there).
  */
 
 /**
@@ -405,6 +413,18 @@ export async function scanChatFile(filePath) {
  * @returns {Promise<number|null>} Fork index, or null when a file is unreadable.
  */
 export async function computeForkIndex(parentPath, childPath) {
+    return (await computeFork(parentPath, childPath)).index;
+}
+
+/**
+ * The fork walk, keeping what each side said at the divergence: the line where
+ * the story went two ways, which the map shows instead of a bare index. A side
+ * that ended at the fork point (a branch nobody has continued yet) reads ''.
+ * @param {string} parentPath Parent chat file path.
+ * @param {string} childPath Child chat file path.
+ * @returns {Promise<{ index: number|null, preview: ForkPreview|null }>} Both null when a file is unreadable.
+ */
+export async function computeFork(parentPath, childPath) {
     /** @type {{ next: () => Promise<Record<string, any> | null>, close: () => void } | null} */
     let parentReader = null;
     /** @type {{ next: () => Promise<Record<string, any> | null>, close: () => void } | null} */
@@ -421,18 +441,20 @@ export async function computeForkIndex(parentPath, childPath) {
                 childReader.next(),
             ]);
 
-            if (!parentMessage || !childMessage) {
-                return index;
-            }
-
-            if (!sameTriple(toTriple(parentMessage), toTriple(childMessage))) {
-                return index;
+            if (!parentMessage || !childMessage || !sameTriple(toTriple(parentMessage), toTriple(childMessage))) {
+                return {
+                    index,
+                    preview: {
+                        parent: parentMessage ? toPreview(parentMessage.mes) : '',
+                        child: childMessage ? toPreview(childMessage.mes) : '',
+                    },
+                };
             }
 
             index += 1;
         }
     } catch {
-        return null;
+        return { index: null, preview: null };
     } finally {
         parentReader?.close();
         childReader?.close();
@@ -545,6 +567,10 @@ function isValidEdge(edge) {
         && typeof edge.child === 'string'
         && (edge.parent === null || typeof edge.parent === 'string')
         && (edge.forkIndex === null || typeof edge.forkIndex === 'number')
+        && (edge.forkPreview === undefined || edge.forkPreview === null
+            || (typeof edge.forkPreview === 'object'
+                && typeof edge.forkPreview.parent === 'string'
+                && typeof edge.forkPreview.child === 'string'))
         && (edge.via === 'header' || edge.via === 'adopted');
 }
 
@@ -626,11 +652,14 @@ function buildEdges(files, cachedEdges, refreshed) {
 
         if (Object.hasOwn(files, mainChat)) {
             const staleFork = refreshed.has(child) || refreshed.has(mainChat);
-            const forkIndex = !staleFork && cached && cached.via === 'header' && cached.parent === mainChat
-                ? cached.forkIndex
-                : null;
+            const reuse = !staleFork && cached && cached.via === 'header' && cached.parent === mainChat;
 
-            edges.push({ child, parent: mainChat, forkIndex, via: 'header' });
+            /** @type {BranchEdge} */
+            const edge = { child, parent: mainChat, forkIndex: reuse ? cached.forkIndex : null, via: 'header' };
+            if (reuse && cached.forkPreview !== undefined) {
+                edge.forkPreview = cached.forkPreview;
+            }
+            edges.push(edge);
             continue;
         }
 
@@ -640,13 +669,18 @@ function buildEdges(files, cachedEdges, refreshed) {
         if (cached && cached.via === 'adopted' && cached.orphanName === mainChat
             && typeof cached.parent === 'string' && Object.hasOwn(files, cached.parent)
             && !refreshed.has(child) && !refreshed.has(cached.parent)) {
-            edges.push({
+            /** @type {BranchEdge} */
+            const edge = {
                 child,
                 parent: cached.parent,
                 orphanName: mainChat,
                 forkIndex: cached.forkIndex,
                 via: 'adopted',
-            });
+            };
+            if (cached.forkPreview !== undefined) {
+                edge.forkPreview = cached.forkPreview;
+            }
+            edges.push(edge);
             continue;
         }
 
@@ -830,11 +864,16 @@ async function maintainTreeUnlocked(chatFolder) {
     }
 
     for (const edge of edges) {
-        if (typeof edge.parent === 'string' && edge.forkIndex === null) {
-            edge.forkIndex = await computeForkIndex(
+        if (typeof edge.parent === 'string' && (edge.forkIndex === null || edge.forkPreview === undefined)) {
+            const fork = await computeFork(
                 chatFilePath(chatFolder, edge.parent),
                 chatFilePath(chatFolder, edge.child),
             );
+            // An adopted edge already carries its confirmed shared prefix; keep it.
+            if (edge.forkIndex === null) {
+                edge.forkIndex = fork.index;
+            }
+            edge.forkPreview = fork.preview;
             mutated = true;
         }
     }

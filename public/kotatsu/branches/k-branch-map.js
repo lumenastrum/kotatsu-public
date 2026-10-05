@@ -82,8 +82,55 @@ import { characters, getCurrentChatId, this_chid } from '../../script.js';
 import { selected_group } from '../../scripts/group-chats.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from '../../scripts/popup.js';
 import { EMPTY_TREE, branchStore } from './store.js';
+import { STORY_GEOMETRY, displayName, layoutStory, rootOf, storyOrder } from './story-model.js';
+
+/** Story-lines zoom: 1 = the story fits the pane's width; up to 6× for dense forks. */
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 6;
+const ZOOM_STEP = 1.25;
 
 export { toRelative } from '../shell/relative-time.js';
+
+/** Per-viewer convenience: which view the map opens in. Storage may be unavailable. */
+const VIEW_STORAGE_KEY = 'kotatsu.branchMap.view';
+
+/** @returns {'lines'|'list'} */
+function readView() {
+    try {
+        return localStorage.getItem(VIEW_STORAGE_KEY) === 'list' ? 'list' : 'lines';
+    } catch {
+        return 'lines';
+    }
+}
+
+/** @param {'lines'|'list'} view */
+function writeView(view) {
+    try {
+        localStorage.setItem(VIEW_STORAGE_KEY, view);
+    } catch {
+        /* a private window or blocked storage: the choice just doesn't stick */
+    }
+}
+
+/** @returns {string} The active character's name, for trimming stock chat-id prefixes. */
+function characterName() {
+    const index = Number(this_chid);
+    return Number.isInteger(index) && Array.isArray(characters) ? String(characters[index]?.name ?? '') : '';
+}
+
+/**
+ * @param {string} text
+ * @param {number} max
+ * @returns {string} Trimmed at a word boundary, with an ellipsis when cut.
+ */
+function clip(text, max) {
+    if (text.length <= max) {
+        return text;
+    }
+    const cut = text.slice(0, max);
+    const space = cut.lastIndexOf(' ');
+    return `${(space > max * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
+}
 
 /** The open request. Bubbling + composed, like `k-open-settings`. */
 export const OPEN_BRANCH_MAP_EVENT = 'k-open-branch-map';
@@ -281,7 +328,26 @@ export class KBranchMap extends LitElement {
         _renameError: { state: true },
         _busy: { state: true },
         _build: { state: true },
+        _view: { state: true },
+        _storyId: { state: true },
+        _linesW: { state: true },
+        _zoom: { state: true },
     };
+
+    /** @type {{ id: number, x: number, y: number, left: number, top: number }|null} A drag-to-pan in progress. */
+    #pan = null;
+
+    /** @type {ResizeObserver|null} Watches the story-lines pane's width. */
+    #linesObserver = null;
+
+    /** @type {Element|null} The pane that observer is attached to. */
+    #linesObserved = null;
+
+    /** @type {number} The width before the last accepted change, for the flip-flop guard. */
+    #linesPrevW = 0;
+
+    /** @type {number} When the last width change was seen (performance.now()). */
+    #linesChangedAt = 0;
 
     /** @type {Forest} The rendered forest. Rebuilt whenever the tree changes. */
     #forest = { roots: [], byId: new Map(), order: [] };
@@ -355,6 +421,14 @@ export class KBranchMap extends LitElement {
         this._busy = false;
         /** @type {import('./store.js').BranchTreeBuild|null} */
         this._build = null;
+        /** @type {'lines'|'list'} */
+        this._view = readView();
+        /** @type {string} Root of the story the lines view draws. */
+        this._storyId = '';
+        /** @type {number} Measured width of the lines pane; 0 until the first measure. */
+        this._linesW = 0;
+        /** @type {number} Story-lines horizontal zoom, {@link ZOOM_MIN} … {@link ZOOM_MAX}. */
+        this._zoom = 1;
         /** @type {(event: KeyboardEvent) => void} */
         this._onKeyDown = (event) => this.#handleKey(event);
         /** @type {(event: MouseEvent) => void} */
@@ -405,6 +479,11 @@ export class KBranchMap extends LitElement {
             this.#resizeObserver.disconnect();
             this.#resizeObserver = null;
         }
+        if (this.#linesObserver) {
+            this.#linesObserver.disconnect();
+            this.#linesObserver = null;
+            this.#linesObserved = null;
+        }
         // Invalidate anything still in flight; a re-mount starts cold.
         this.#loadToken++;
         this.#forest = { roots: [], byId: new Map(), order: [] };
@@ -441,11 +520,77 @@ export class KBranchMap extends LitElement {
     }
 
     updated() {
+        this.#observeLines();
         if (this.#pendingReveal !== null) {
             const id = this.#pendingReveal;
             this.#pendingReveal = null;
             this.#scrollRowIntoView(id);
         }
+    }
+
+    /**
+     * The lines pane is created and destroyed with the view, so its width
+     * observer follows whichever pane element currently exists.
+     * @returns {void}
+     */
+    #observeLines() {
+        const pane = this.querySelector('.k-bm-lines');
+        if (pane === this.#linesObserved) {
+            return;
+        }
+        this.#linesObserver?.disconnect();
+        this.#linesObserved = pane;
+        if (!pane || typeof ResizeObserver !== 'function') {
+            return;
+        }
+        this.#linesObserver ??= new ResizeObserver((entries) => {
+            const width = Math.floor(entries[0]?.contentRect?.width ?? 0);
+            if (width <= 0 || width === this._linesW) {
+                return;
+            }
+            // Safety net under `scrollbar-gutter: stable`: a width that returns to the value it
+            // left moments ago is the signature of a layout <-> scrollbar loop, not a resize.
+            // Hold the current width instead of feeding it.
+            const now = performance.now();
+            const flipBack = width === this.#linesPrevW && now - this.#linesChangedAt < 500;
+            this.#linesPrevW = this._linesW;
+            this.#linesChangedAt = now;
+            if (flipBack) {
+                console.debug('[k-branch-map] story-lines width flip-flop held at', this._linesW);
+                return;
+            }
+            this._linesW = width;
+        });
+        this.#linesObserver.observe(pane);
+    }
+
+    /**
+     * @param {'lines'|'list'} view
+     * @returns {void}
+     */
+    #setView(view) {
+        if (this._view === view) {
+            return;
+        }
+        this._view = view;
+        writeView(view);
+        if (view === 'list' && this._selectedId) {
+            this.#pendingReveal = this._selectedId;
+        }
+    }
+
+    /** @returns {ForestNode|undefined} The story the lines view draws. */
+    #storyRoot() {
+        return this._storyId ? this.#forest.byId.get(this._storyId) : undefined;
+    }
+
+    /** @returns {string} A sensible story to open on: the active chat's, else the newest that branched. */
+    #defaultStory() {
+        if (this.#lineage.length > 0 && this.#forest.byId.has(this.#lineage[0])) {
+            return this.#lineage[0];
+        }
+        const branched = this.#forest.roots.find(root => root.children.length > 0);
+        return (branched ?? this.#forest.roots[0])?.id ?? '';
     }
 
     /** Moves focus to the search box. Also the `/` and Ctrl+F destination. */
@@ -505,6 +650,11 @@ export class KBranchMap extends LitElement {
             this._selectedId = '';
             this._renaming = false;
         }
+        const story = this.#forest.byId.get(this._storyId);
+        if (!story || story.parent) {
+            // Gone, or a rename/adoption made it someone's child: draw from its root.
+            this._storyId = story ? rootOf(story).id : this.#defaultStory();
+        }
         this._status = this.#forest.order.length === 0 ? 'empty' : 'ready';
         this.#applySearch();
     }
@@ -529,6 +679,13 @@ export class KBranchMap extends LitElement {
         this.#recompute();
         if (this.#search.active && this.#search.first) {
             this.#pendingReveal = this.#search.first;
+            // In the lines view a hit in another story brings that story up.
+            const hit = this.#forest.byId.get(this.#search.first);
+            const story = this.#storyRoot();
+            const storyHasMatch = story ? storyOrder(story).some(node => this.#search.matches.has(node.id)) : false;
+            if (this._view === 'lines' && hit && !storyHasMatch) {
+                this._storyId = rootOf(hit).id;
+            }
         }
     }
 
@@ -691,7 +848,8 @@ export class KBranchMap extends LitElement {
      * @returns {void}
      */
     #move(delta) {
-        const order = this.#layout.visibleOrder;
+        const story = this._view === 'lines' ? this.#storyRoot() : undefined;
+        const order = story ? storyOrder(story).map(node => node.id) : this.#layout.visibleOrder;
         if (order.length === 0) {
             return;
         }
@@ -775,6 +933,14 @@ export class KBranchMap extends LitElement {
             return;
         }
 
+        if (this.#showingLines() && !event.ctrlKey && !event.altKey && !event.metaKey
+            && (event.key === '+' || event.key === '=' || event.key === '-' || event.key === '0')) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.#setZoom(event.key === '0' ? 1 : this._zoom * (event.key === '-' ? 1 / ZOOM_STEP : ZOOM_STEP));
+            return;
+        }
+
         if (event.key === 'F2') {
             if (this._selectedId) {
                 event.preventDefault();
@@ -819,6 +985,14 @@ export class KBranchMap extends LitElement {
         const node = this._selectedId ? this.#forest.byId.get(this._selectedId) : undefined;
         if (!node) {
             this.#move(forward ? 1 : -1);
+            return;
+        }
+        if (this._view === 'lines') {
+            // No expand state to toggle on a map that draws everything: step along the tree.
+            const next = forward ? node.children[0] : node.parent;
+            if (next) {
+                this.#select(next.id);
+            }
             return;
         }
         const expanded = this.#effectiveExpanded().has(node.id);
@@ -991,6 +1165,7 @@ export class KBranchMap extends LitElement {
                 ${this.#renderHeader()}
                 <div class="k-bm-body">
                     ${this.#renderForest()}
+                    ${this.#showingLines() ? this.#renderLines() : nothing}
                     ${this.#renderCard()}
                 </div>
                 ${this.#renderFooter()}
@@ -1014,10 +1189,47 @@ export class KBranchMap extends LitElement {
                         @input=${(/** @type {Event} */ e) => this.#onQuery(e)}
                     >
                 </label>
-                <span class="k-bm-count">${this.#renderCount()}</span>
+                ${this.#showingLines() ? this.#renderStoryPicker() : html`<span class="k-bm-count">${this.#renderCount()}</span>`}
+                <div class="k-bm-views" role="group" aria-label="View">
+                    <button type="button" class="k-bm-view${this._view === 'lines' ? ' is-on' : ''}"
+                        aria-pressed=${this._view === 'lines' ? 'true' : 'false'}
+                        @click=${() => this.#setView('lines')}>Story lines</button>
+                    <button type="button" class="k-bm-view${this._view === 'list' ? ' is-on' : ''}"
+                        aria-pressed=${this._view === 'list' ? 'true' : 'false'}
+                        @click=${() => this.#setView('list')}>List</button>
+                </div>
                 <button type="button" class="k-bm-close" title="Close (Escape)" aria-label="Close branch map"
                     @click=${() => this.close()}>${icons.close}</button>
             </header>`;
+    }
+
+    /** @returns {boolean} Whether the story-lines pane replaces the list right now. */
+    #showingLines() {
+        return this._view === 'lines' && this._status === 'ready' && Boolean(this.#storyRoot());
+    }
+
+    /** @returns {unknown} Which story the lines view draws: every root that ever branched. */
+    #renderStoryPicker() {
+        const name = characterName();
+        const current = this._storyId;
+        const roots = this.#forest.roots.filter(root => root.children.length > 0 || root.id === current);
+        return html`
+            <label class="k-bm-story">
+                <span class="k-bm-story-label">Story</span>
+                <select class="k-bm-story-select" aria-label="Story to draw"
+                    @change=${(/** @type {Event} */ e) => {
+        const target = e.target;
+        if (target instanceof HTMLSelectElement) {
+            this._storyId = target.value;
+            this._selectedId = '';
+        }
+    }}>
+                    ${roots.map(root => {
+        const size = storyOrder(root).length;
+        return html`<option value=${root.id} ?selected=${root.id === current}>${displayName(root.id, name)} · ${size} chat${size === 1 ? '' : 's'}</option>`;
+    })}
+                </select>
+            </label>`;
     }
 
     /** @returns {unknown} Honest node/match counts, or nothing. */
@@ -1055,8 +1267,10 @@ export class KBranchMap extends LitElement {
      */
     #renderForest() {
         const ready = this._status === 'ready';
+        // Hidden, never removed, in the lines view: the ResizeObserver from
+        // `firstUpdated()` must keep watching this exact node (see above).
         return html`
-            <div class="k-bm-scroll${ready ? '' : ' k-bm-scroll--quiet'}"
+            <div class="k-bm-scroll${ready ? '' : ' k-bm-scroll--quiet'}" ?hidden=${this.#showingLines()}
                 @scroll=${(/** @type {Event} */ e) => this.#onScroll(e)}>
                 ${ready ? html`
                     <div class="k-bm-canvas" role="tree" aria-label="Branch forest"
@@ -1104,6 +1318,234 @@ export class KBranchMap extends LitElement {
                 <span class="k-bm-quiet-title">${title}</span>
                 <span class="k-bm-quiet-note">${note}</span>
             </div>`;
+    }
+
+    /**
+     * The story-lines pane: one story as transit lines. The x axis is the
+     * message index, so a branch leaves its parent's line exactly at its fork.
+     * @returns {unknown}
+     */
+    #renderLines() {
+        const root = this.#storyRoot();
+        const name = characterName();
+        const width = Math.round((this._linesW || 960) * this._zoom);
+        const layout = layoutStory(root, width);
+        const searching = this.#search.active;
+        const active = layout.lines.find(line => line.node.id === this.#activeId);
+        /** @param {string} id @returns {string} */
+        const dim = id => (searching && !this.#search.matches.has(id) ? ' is-dim' : '');
+
+        return html`
+            <div class="k-bm-lines-wrap">
+            <div class="k-bm-lines" role="group" aria-label="Story lines" tabindex="-1"
+                @pointerdown=${(/** @type {PointerEvent} */ e) => this.#panStart(e)}
+                @pointermove=${(/** @type {PointerEvent} */ e) => this.#panMove(e)}
+                @pointerup=${(/** @type {PointerEvent} */ e) => this.#panEnd(e)}
+                @pointercancel=${(/** @type {PointerEvent} */ e) => this.#panEnd(e)}
+                @contextmenu=${(/** @type {MouseEvent} */ e) => this.#onLinesMenu(e)}
+                @wheel=${{ handleEvent: (/** @type {WheelEvent} */ e) => this.#onLinesWheel(e), passive: false }}>
+                <div class="k-bm-lines-canvas${layout.dense ? ' is-dense' : ''}" style="width:${layout.extent}px;height:${layout.height}px">
+                    <div class="k-bm-lines-axis" aria-hidden="true">
+                        ${layout.ticks.map(tick => html`<span class="k-bm-lines-tick" style="left:${tick.x}px">${tick.label}</span>`)}
+                    </div>
+                    <svg class="k-bm-lines-svg" width=${layout.extent} height=${layout.height}
+                        viewBox="0 0 ${layout.extent} ${layout.height}" aria-hidden="true" focusable="false">
+                        ${layout.ticks.map(tick => svg`<path class="k-bm-lines-grid" d="M${tick.x} 34V${layout.height}" />`)}
+                        ${active ? svg`<path class="k-bm-line-glow is-hue-${active.hue}" d=${active.d} />` : nothing}
+                        ${layout.lines.map(line => svg`<path class="k-bm-line is-hue-${line.hue}${line.unknownFork ? ' is-unknown' : ''}${dim(line.node.id)}" d=${line.d} />`)}
+                        ${layout.lines.map(line => line.parentY === null
+        ? svg`<circle class="k-bm-stop is-hue-${line.hue}${dim(line.node.id)}" cx=${line.x0} cy=${line.y} r="6" />`
+        : svg`<circle class="k-bm-fork-dot is-hue-${line.hue}${dim(line.node.id)}" cx=${line.x0} cy=${line.parentY} r="5.5" />`)}
+                        ${layout.lines.flatMap(line => line.checkpoints.map(cp => svg`
+                            <rect class="k-bm-cp-mark${dim(line.node.id)}" x=${cp.x - 5} y=${line.y - 5} width="10" height="10"
+                                transform="rotate(45 ${cp.x} ${line.y})"><title>${cp.name || 'Checkpoint'} · #${cp.mesIndex}</title></rect>`))}
+                        ${layout.lines.filter(line => line.leader).map(line => svg`<path class="k-bm-leader is-hue-${line.hue}${dim(line.node.id)}" d="M${line.x1 + 9} ${line.y} L${line.stationX - 2} ${line.stationY}" />`)}
+                        ${layout.lines.map(line => svg`<circle class="k-bm-end is-hue-${line.hue}${line.node.id === this.#activeId ? ' is-active' : ''}${dim(line.node.id)}" cx=${line.x1} cy=${line.y} r="8" />`)}
+                    </svg>
+                    ${layout.lines.map(line => this.#renderForkChip(line, dim(line.node.id)))}
+                    ${layout.lines.map(line => this.#renderStation(line, name, dim(line.node.id)))}
+                </div>
+            </div>
+            <div class="k-bm-zoom" role="group" aria-label="Zoom">
+                <button type="button" class="k-bm-zoom-btn" aria-label="Zoom out" title="Zoom out (-)"
+                    ?disabled=${this._zoom <= ZOOM_MIN} @click=${() => this.#setZoom(this._zoom / ZOOM_STEP)}>−</button>
+                <button type="button" class="k-bm-zoom-btn k-bm-zoom-level" title="Fit to width (0)"
+                    @click=${() => this.#setZoom(1)}>${Math.round(this._zoom * 100)}%</button>
+                <button type="button" class="k-bm-zoom-btn" aria-label="Zoom in" title="Zoom in (+)"
+                    ?disabled=${this._zoom >= ZOOM_MAX} @click=${() => this.#setZoom(this._zoom * ZOOM_STEP)}>+</button>
+            </div>
+            </div>`;
+    }
+
+    /**
+     * Stretches the message axis. Keeps the point under the cursor (or the
+     * pane's centre) where it was, so zooming reads as moving in, not jumping.
+     * @param {number} next Requested zoom.
+     * @param {number} [anchorClientX] Viewport x to hold still.
+     * @returns {void}
+     */
+    #setZoom(next, anchorClientX) {
+        const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(next * 100) / 100));
+        if (zoom === this._zoom) {
+            return;
+        }
+        const pane = this.querySelector('.k-bm-lines');
+        const before = this._zoom;
+        let held = -1;
+        let offset = 0;
+        if (pane instanceof HTMLElement) {
+            const rect = pane.getBoundingClientRect();
+            offset = (anchorClientX ?? rect.left + rect.width / 2) - rect.left;
+            held = pane.scrollLeft + offset;
+        }
+        this._zoom = zoom;
+        this.updateComplete.then(() => {
+            if (pane instanceof HTMLElement && pane.isConnected && held >= 0) {
+                pane.scrollLeft = Math.max(0, held * (zoom / before) - offset);
+            }
+        }).catch(() => { /* the pane went away mid-zoom */ });
+    }
+
+    /**
+     * Ctrl+wheel zooms (and keeps the browser's page zoom out of it); a plain
+     * wheel scrolls as usual, Shift+wheel sideways.
+     * @param {WheelEvent} event
+     * @returns {void}
+     */
+    #onLinesWheel(event) {
+        if (!event.ctrlKey) {
+            return;
+        }
+        event.preventDefault();
+        this.#setZoom(this._zoom * (event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP), event.clientX);
+    }
+
+    /** @param {EventTarget|null} target @returns {boolean} Whether a press there belongs to a control, not the map. */
+    #isControl(target) {
+        return target instanceof Element && Boolean(target.closest('.k-bm-station, .k-bm-forkchip, .k-bm-zoom, button, a, input, select'));
+    }
+
+    /**
+     * Drag-to-pan from the map's background, with the left or right button.
+     * Only scroll offsets move: no relayout, no re-render.
+     * @param {PointerEvent} event
+     * @returns {void}
+     */
+    #panStart(event) {
+        if ((event.button !== 0 && event.button !== 2) || this.#isControl(event.target)) {
+            return;
+        }
+        const pane = event.currentTarget;
+        if (!(pane instanceof HTMLElement)) {
+            return;
+        }
+        this.#pan = { id: event.pointerId, x: event.clientX, y: event.clientY, left: pane.scrollLeft, top: pane.scrollTop };
+        pane.setPointerCapture(event.pointerId);
+        // Grabbing the map hands it the keyboard (+ / − / 0 zoom), which the
+        // search box otherwise keeps: there those keys are just characters.
+        pane.focus({ preventScroll: true });
+        pane.classList.add('is-panning');
+        event.preventDefault();
+    }
+
+    /** @param {PointerEvent} event */
+    #panMove(event) {
+        const pan = this.#pan;
+        const pane = event.currentTarget;
+        if (!pan || pan.id !== event.pointerId || !(pane instanceof HTMLElement)) {
+            return;
+        }
+        pane.scrollLeft = pan.left - (event.clientX - pan.x);
+        pane.scrollTop = pan.top - (event.clientY - pan.y);
+    }
+
+    /** @param {PointerEvent} event */
+    #panEnd(event) {
+        const pane = event.currentTarget;
+        if (!this.#pan || this.#pan.id !== event.pointerId) {
+            return;
+        }
+        this.#pan = null;
+        if (pane instanceof HTMLElement) {
+            pane.classList.remove('is-panning');
+            if (pane.hasPointerCapture(event.pointerId)) {
+                pane.releasePointerCapture(event.pointerId);
+            }
+        }
+    }
+
+    /**
+     * The map's background is a canvas you drag, so its right button pans
+     * instead of opening the browser menu. Stations and pills keep theirs.
+     * @param {MouseEvent} event
+     * @returns {void}
+     */
+    #onLinesMenu(event) {
+        if (!this.#isControl(event.target)) {
+            event.preventDefault();
+        }
+    }
+
+    /**
+     * The line the reader wrote where this branch left its parent.
+     * @param {import('./story-model.js').StoryLine} line
+     * @param {string} dim
+     * @returns {unknown}
+     */
+    #renderForkChip(line, dim) {
+        if (!line.chip) {
+            return nothing;
+        }
+        const text = line.node.forkPreview?.child ?? '';
+        const fork = line.node.forkIndex;
+        return html`
+            <span class="k-bm-forkchip is-hue-${line.hue}${dim}${text ? '' : ' is-empty'}"
+                style="left:${line.chip.x}px;top:${line.y + STORY_GEOMETRY.chipTop}px;max-inline-size:${line.chip.w}px"
+                title=${text ? `Message #${fork} on this path` : 'Nothing written after the split yet'}>
+                <span class="k-bm-forkchip-at">#${fork}</span>
+                ${text ? html`<span class="k-bm-forkchip-text">“${clip(text, 64)}”</span>` : html`<span class="k-bm-forkchip-text">not continued yet</span>`}
+            </span>`;
+    }
+
+    /**
+     * End-of-line card: where this path is now.
+     * @param {import('./story-model.js').StoryLine} line
+     * @param {string} name Character name, for the display title.
+     * @param {string} dim
+     * @returns {unknown}
+     */
+    #renderStation(line, name, dim) {
+        const node = line.node;
+        const active = node.id === this.#activeId;
+        const selected = node.id === this._selectedId;
+        const count = Number.isFinite(node.file?.messageCount) ? node.file.messageCount : null;
+        const relative = toRelative(node.lastMs);
+        const preview = typeof node.file?.leafPreview === 'string' ? node.file.leafPreview : '';
+        const meta = [count === null ? '' : `${count} message${count === 1 ? '' : 's'}`, relative].filter(Boolean).join(' · ');
+        // A branch too short for its chip carries the fork line in its card instead.
+        const forkInCard = line.parentY !== null && !line.unknownFork && !line.chip;
+        const forkText = forkInCard ? (node.forkPreview?.child ?? '') : '';
+        return html`
+            <button type="button"
+                class="k-bm-station is-hue-${line.hue}${active ? ' is-active' : ''}${selected ? ' is-selected' : ''}${dim}"
+                style="left:${line.stationX}px;top:${line.stationY}px"
+                title=${node.id}
+                aria-pressed=${selected ? 'true' : 'false'}
+                @click=${() => this.#select(node.id)}
+                @dblclick=${() => this.#openChat(node.id)}>
+                <span class="k-bm-station-head">
+                    <span class="k-bm-station-title">${displayName(node.id, name)}</span>
+                    ${active ? html`<span class="k-bm-here">You are here</span>` : nothing}
+                    ${line.parentY === null && node.children.length > 0 ? html`<span class="k-bm-station-tag">original</span>` : nothing}
+                </span>
+                ${forkInCard ? html`
+                    <span class="k-bm-station-fork">
+                        <span class="k-bm-forkchip-at">#${node.forkIndex}</span>
+                        <span class="k-bm-station-fork-text">${forkText ? `“${clip(forkText, 60)}”` : 'not continued yet'}</span>
+                    </span>` : nothing}
+                ${preview ? html`<span class="k-bm-station-preview${forkInCard ? ' is-short' : ''}">${clip(preview, 96)}</span>` : nothing}
+                ${meta ? html`<span class="k-bm-station-meta">${meta}</span>` : nothing}
+            </button>`;
     }
 
     /**
@@ -1268,6 +1710,19 @@ export class KBranchMap extends LitElement {
                     ${node.children.length > 0 ? html`<dt>Branches</dt><dd>${node.children.length}</dd>` : nothing}
                 </dl>
 
+                ${node.parent && node.forkPreview ? html`
+                    <div class="k-bm-forkcmp">
+                        <span class="k-bm-card-label">The fork${node.forkIndex !== null ? html` · #${node.forkIndex}` : nothing}</span>
+                        <div class="k-bm-forkcmp-side">
+                            <span class="k-bm-forkcmp-who">${displayName(node.parent.id, characterName())}</span>
+                            <p class="k-bm-forkcmp-text">${node.forkPreview.parent || html`<span class="k-bm-dim">the story ended here</span>`}</p>
+                        </div>
+                        <div class="k-bm-forkcmp-side is-this">
+                            <span class="k-bm-forkcmp-who">This path</span>
+                            <p class="k-bm-forkcmp-text">${node.forkPreview.child || html`<span class="k-bm-dim">not continued yet</span>`}</p>
+                        </div>
+                    </div>` : nothing}
+
                 ${checkpoints.length > 0 ? html`
                     <div class="k-bm-checkpoints">
                         <span class="k-bm-card-label">Checkpoints</span>
@@ -1337,7 +1792,9 @@ export class KBranchMap extends LitElement {
         return html`
             <footer class="k-bm-foot">
                 <span class="k-bm-foot-keys">
-                    ↑↓ move · ←→ collapse/expand · Enter open · F2 rename · Del delete · / search · Esc close
+                    ${this.#showingLines()
+        ? '↑↓ move · ←→ parent/branch · Enter open · F2 rename · Ctrl+wheel or +/− zoom · drag to pan · / search · Esc close'
+        : '↑↓ move · ←→ collapse/expand · Enter open · F2 rename · Del delete · / search · Esc close'}
                 </span>
                 ${stats ? html`<span class="k-bm-foot-build" title="Reported by the tree endpoint">${stats}</span>` : nothing}
             </footer>`;
