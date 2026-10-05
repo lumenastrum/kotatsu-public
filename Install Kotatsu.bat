@@ -35,28 +35,35 @@ echo   Install folder: %TARGET%
 echo.
 
 REM ---------- 1) Node.js 20 or newer ----------
+REM "v" is a delimiter so the token is already the bare major number. Never use %VAR:v=% here:
+REM on an undefined VAR (no Node) cmd expands it to "v=" and the script dies at parse time
+REM ("= was unexpected at this time") - the window just closes on a double-click.
+REM The LSS compare stays out of a parenthesized block for the same reason: an empty
+REM NODE_MAJOR inside a block is a parse error even on the branch that never runs.
 set "NODE_MAJOR="
-for /f "tokens=1 delims=." %%v in ('node -v 2^>nul') do set "NODE_MAJOR=%%v"
-set "NODE_MAJOR=%NODE_MAJOR:v=%"
-if "%NODE_MAJOR%"=="" (
+for /f "tokens=1 delims=v." %%v in ('node -v 2^>nul') do set "NODE_MAJOR=%%v"
+if not defined NODE_MAJOR (
     echo   [1/5] Node.js not found. Installing Node.js LTS with winget...
-    winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements -e
-    set "NEED_RESTART=1"
-) else (
-    if %NODE_MAJOR% LSS 20 (
-        echo   [1/5] Node.js %NODE_MAJOR% is too old. Installing Node.js LTS with winget...
-        winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements -e
-        set "NEED_RESTART=1"
-    ) else (
-        echo   [1/5] Node.js v%NODE_MAJOR% found.
-    )
+    goto node_install
 )
+if %NODE_MAJOR% LSS 20 (
+    echo   [1/5] Node.js %NODE_MAJOR% is too old. Installing Node.js LTS with winget...
+    goto node_install
+)
+echo   [1/5] Node.js v%NODE_MAJOR% found.
+goto node_done
+:node_install
+winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements -e
+if errorlevel 1 echo         If that did not work, install Node.js LTS from https://nodejs.org and run this again.
+set "NEED_RESTART=1"
+:node_done
 
 REM ---------- 2) git ----------
 git --version >nul 2>&1
 if errorlevel 1 (
     echo   [2/5] git not found. Installing Git with winget...
     winget install --id Git.Git --accept-source-agreements --accept-package-agreements -e
+    if errorlevel 1 echo         If that did not work, install Git from https://git-scm.com and run this again.
     set "NEED_RESTART=1"
 ) else (
     echo   [2/5] git found.
