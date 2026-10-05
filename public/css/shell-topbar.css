@@ -808,6 +808,47 @@ body[data-k-layout="rails"] k-model-menu .k-mm__spinner {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   5b. NARROW — the right zone fits, all the way down to the phone sheet
+   ───────────────────────────────────────────────────────────────────────────
+   Once §3 has hidden the command pill (≤ 820), the right zone's fixed claim
+   (there to centre that pill) balances nothing, and `flex: 0 0 auto` let the
+   zone run past the edge instead: from ~690 down to the 601 just above the
+   phone sheet the gear sat up to 88px off-screen and the page scrolled sideways
+   (Reddit report 2026-10-05). Here the zone takes the leftovers and may shrink;
+   the model pill gives first, and inside it only the raw id ellipsises, the way
+   css/kotatsu-phone.css §3 does it under 600. Below 700 the context readout
+   steps out, as it does on the phone sheet. The gear never shrinks. After §4
+   and §5 on purpose: equal specificity, so source order decides.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 820px) {
+    body[data-k-layout="rails"] k-topbar .k-topbar__zone--right {
+        flex: 1 1 auto;
+        min-inline-size: 0;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-pill--model {
+        flex: 0 1 auto;
+        min-inline-size: 0;
+        overflow: hidden;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-pill__provider {
+        flex-shrink: 0;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-pill__model {
+        min-inline-size: 0;
+    }
+}
+
+@media (max-width: 700px) {
+    body[data-k-layout="rails"] k-topbar .k-pill--ctx {
+        display: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    6. MOTION
    ═══════════════════════════════════════════════════════════════════════════ */
 
