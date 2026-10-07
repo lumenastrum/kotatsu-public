@@ -470,10 +470,11 @@ body[data-k-layout="rails"] k-model-menu .k-mm__banner {
 
 body[data-k-layout="rails"] k-model-menu .k-mm__label {
     padding: 8px 8px 4px;
-    font-size: var(--k-mm-label-size);
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: calc(var(--k-mm-label-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 600);
+    letter-spacing: var(--k-label-tracking, 0.06em);
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
     color: var(--k-text-muted);
 }
 

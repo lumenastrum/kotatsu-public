@@ -1,7 +1,11 @@
+import { suggestName, scopeSelector } from './knobs.js';
+import { derivePaletteTokens, validatePalette } from './palette.js';
+
+export { contrastRatio, parseColor } from './color.js';
+
 const PACK_ID_PATTERN = /^[a-z0-9-]+$/;
 const TOKEN_PATTERN = /^--k-[a-z0-9-]+$/;
 const URI_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
-const CSS_NUMBER_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i;
 const FONT_DESCRIPTOR_PATTERN = /^[a-z0-9 .%+-]+$/i;
 const MAX_EXTENDS_DEPTH = 4;
 const PACK_VALUE_PREFIX = 'pack:';
@@ -38,10 +42,15 @@ const TOP_LEVEL_KEYS = new Set([
     'sheet',
     'layout',
     'variants',
+    'palette',
+    'author',
+    'description',
 ]);
 const REQUIRED_KEYS = ['id', 'name', 'version', 'tokens'];
 const ASSET_KEYS = new Set(['fonts', 'backdrop']);
-const FONT_KEYS = new Set(['family', 'src', 'weight', 'style']);
+const FONT_KEYS = new Set(['family', 'src', 'weight', 'style', 'unicodeRange']);
+// One or more U+ ranges: U+0000-00FF, U+0131, U+02??
+const UNICODE_RANGE_PATTERN = /^U\+[0-9A-F?]{1,6}(?:-[0-9A-F]{1,6})?(?:\s*,\s*U\+[0-9A-F?]{1,6}(?:-[0-9A-F]{1,6})?)*$/i;
 const RULE_CONTAINER_AT_RULES = new Set([
     'container',
     'document',
@@ -58,6 +67,7 @@ const RULE_CONTAINER_AT_RULES = new Set([
  * @property {string} src
  * @property {string} [weight]
  * @property {string} [style]
+ * @property {string} [unicodeRange] CSS unicode-range for splitting a family across files.
  */
 
 /**
@@ -78,6 +88,9 @@ const RULE_CONTAINER_AT_RULES = new Set([
  * @property {string} [sheet]
  * @property {Record<string, unknown>} [layout]
  * @property {Record<string, unknown>} [variants]
+ * @property {Record<string, string>} [palette] Friendly seed colours (palette.js `PALETTE_KEYS`).
+ * @property {string} [author] Who made the pack.
+ * @property {string} [description] One line about the pack.
  */
 
 /**
@@ -132,6 +145,7 @@ const RULE_CONTAINER_AT_RULES = new Set([
  * @property {string|null} backdrop
  * @property {ResolvedSheet[]} sheets
  * @property {Record<string, unknown>} variants
+ * @property {{changed: string[], overruled: string[], derived: string[]}} [palette] What this pack's palette changed and grew (palette.js); absent without a palette.
  */
 
 /**
@@ -140,13 +154,7 @@ const RULE_CONTAINER_AT_RULES = new Set([
  * @returns {ThemeManifest|FetchedThemePack|null|undefined|Promise<ThemeManifest|FetchedThemePack|null|undefined>}
  */
 
-/**
- * @typedef {object} ParsedColor
- * @property {number} r
- * @property {number} g
- * @property {number} b
- * @property {number} a
- */
+/** @typedef {import('./color.js').ParsedColor} ParsedColor */
 
 /**
  * @typedef {object} SheetUrlReference
@@ -454,13 +462,27 @@ function validateManifestShape(manifest, knownTokens) {
                 if (!TOKEN_PATTERN.test(token)) {
                     addError(errors, path, 'must be a --k-* token name');
                 } else if (knownTokens && !knownTokens.has(token)) {
-                    addError(errors, path, 'is not a known core token');
+                    const suggestion = suggestName(token, knownTokens);
+                    addError(errors, path, `is not a known token${suggestion ? ` (did you mean "${suggestion}"?)` : ''}`);
                 }
 
                 if (typeof value !== 'string' || value.length === 0) {
                     addError(errors, path, 'must have a non-empty string value');
+                } else {
+                    const problem = validateTokenValue(value);
+                    if (problem) addError(errors, path, problem);
                 }
             }
+        }
+    }
+
+    if (hasOwn(manifest, 'palette')) {
+        for (const [path, message] of validatePalette(manifest.palette)) addError(errors, path, message);
+    }
+
+    for (const key of ['author', 'description']) {
+        if (hasOwn(manifest, key) && (typeof manifest[key] !== 'string' || manifest[key].length === 0)) {
+            addError(errors, `$.${key}`, 'must be a non-empty string');
         }
     }
 
@@ -511,6 +533,13 @@ function validateManifestShape(manifest, knownTokens) {
                             } else if (hasOwn(font, key) && !FONT_DESCRIPTOR_PATTERN.test(/** @type {string} */ (font[key]))) {
                                 addError(errors, keyPath(path, key), 'contains unsupported CSS descriptor characters');
                             }
+                        }
+
+                        // Lets one family be split across files by script (latin, latin-ext...), the
+                        // way font services ship them; without it the last @font-face wins outright.
+                        if (hasOwn(font, 'unicodeRange')
+                            && (typeof font.unicodeRange !== 'string' || !UNICODE_RANGE_PATTERN.test(font.unicodeRange))) {
+                            addError(errors, `${path}.unicodeRange`, 'must be a list of U+ ranges, like "U+0000-00FF, U+0131"');
                         }
                     });
                 }
@@ -640,11 +669,17 @@ function isSafeRootRelativeUrl(value) {
  * assets continue to point at the pack that defines them, and the `variants`
  * layer merges per component the way tokens merge per token.
  *
+ * A palette grows against the colours the page would really show underneath the pack: the
+ * parent's resolved tokens over `baseline` (the core tokens every page falls back to, Blue Hour's
+ * :root). Without it a pack with no `extends` grew against nothing, so every recipe reading the
+ * ground or the panels got no colour and was skipped.
+ *
  * @param {string} id Requested pack id.
  * @param {FetchManifest} fetchManifest Manifest/content provider.
+ * @param {{baseline?: Record<string, string>}} [options] `baseline`: the core token values (tokens.css :root).
  * @returns {Promise<ResolvedThemePack>}
  */
-export async function resolvePack(id, fetchManifest) {
+export async function resolvePack(id, fetchManifest, { baseline = {} } = {}) {
     if (!PACK_ID_PATTERN.test(id)) {
         throw new Error(`Invalid theme pack id "${id}"`);
     }
@@ -743,10 +778,21 @@ export async function resolvePack(id, fetchManifest) {
                 }
             }
 
+            // Tokens, in precedence order: the parent's finished tokens, then what this pack's
+            // palette grows into (palette.js), then the tokens it writes by hand. url() values
+            // are rebased to THIS pack's folder before anything inherits them, like assets are.
+            const ownTokens = rebaseTokenUrls(manifest.tokens, assetBase);
+            const grown = isRecord(manifest.palette)
+                ? derivePaletteTokens(/** @type {Record<string, string>} */ (manifest.palette), { ...baseline, ...(parent?.tokens ?? {}) }, ownTokens)
+                : null;
+
             return {
                 id: manifest.id,
                 name: manifest.name,
-                tokens: { ...(parent?.tokens ?? {}), ...manifest.tokens },
+                tokens: { ...(parent?.tokens ?? {}), ...(grown?.tokens ?? {}), ...ownTokens },
+                // Only present when this pack has a palette, so palette-free packs resolve to
+                // exactly the shape they always did. theme:check reports from it.
+                palette: grown ? { changed: grown.changed, overruled: grown.overruled, derived: grown.derived } : undefined,
                 fonts,
                 backdrop,
                 sheets,
@@ -993,6 +1039,48 @@ function containsStructuralEscape(css) {
 }
 
 /**
+ * Finds strings and comments the browser would read differently from the scanners in this file.
+ * Every scanner here treats a quoted string as running to its closing quote, but CSS ends a
+ * string at a raw line break (a "bad string"), and the text after it is parsed as CSS again: a
+ * sheet could hide whole rules, and url()s the URL policy never sees, inside what looks like one
+ * string here. So a string must close on the line it opens on, and neither a string nor a comment
+ * may run off the end of the sheet.
+ *
+ * @param {string} css Stylesheet text.
+ * @returns {string|null} A plain-language problem, or null.
+ */
+function findBrokenStringOrComment(css) {
+    let quote = '';
+    for (let index = 0; index < css.length; index++) {
+        const character = css[index];
+        if (quote) {
+            if (character === '\\') {
+                // An escaped line break is a legal continuation inside a CSS string.
+                if (css[index + 1] === '\r' && css[index + 2] === '\n') index++;
+                index++;
+            } else if (character === quote) {
+                quote = '';
+            } else if (character === '\n' || character === '\r' || character === '\f') {
+                return 'Pack sheets may not break a quoted string across lines; close the quote on the same line';
+            }
+            continue;
+        }
+
+        if (character === '/' && css[index + 1] === '*') {
+            const end = css.indexOf('*/', index + 2);
+            if (end === -1) return 'Pack sheets may not end inside an unclosed /* comment';
+            index = end + 1;
+            continue;
+        }
+
+        if (character === '"' || character === '\'') {
+            quote = character;
+        }
+    }
+    return quote ? 'Pack sheets may not end inside an unclosed quoted string' : null;
+}
+
+/**
  * Finds the closing parenthesis for a CSS function call.
  *
  * @param {string} css Stylesheet text.
@@ -1084,6 +1172,10 @@ function containsDynamicSourceFunction(css) {
  * @returns {SheetUrlReference[]}
  */
 function collectSheetUrls(css, allowRebased = false) {
+    const brokenToken = findBrokenStringOrComment(css);
+    if (brokenToken) {
+        throw new Error(brokenToken);
+    }
     if (containsStructuralEscape(css)) {
         throw new Error('Pack sheets may not use CSS escapes outside strings or comments');
     }
@@ -1210,10 +1302,90 @@ export function rebaseSheetUrls(css, assetBase) {
 }
 
 /**
+ * Checks that a token or knob value is ONE CSS value and nothing more. Values only ever reach the
+ * page through `style.setProperty()` (on <html>, or on a CSSOM rule for component knobs — see
+ * knobs.js `writeKnobRules`), which already confines them to one declaration; this is the second
+ * layer, and the one that speaks to authors. A value must not be able to close its declaration or
+ * its rule, smuggle `!important`, or fetch anything but a file inside its own pack. `url()`
+ * targets follow the sheet policy (relative, inside the pack, no escapes); they are rebased to the
+ * pack's folder when the pack resolves.
+ *
+ * Control characters are checked before anything else. Line breaks and tabs are plain whitespace
+ * to CSS outside quotes, so older packs that wrap a long value across lines keep working (Andres,
+ * 2026-10-06). Inside a quoted string a raw line break ENDS the string in CSS, so a value scanned
+ * as "one quoted string" here could be several tokens to the browser: refused there. Every other
+ * control character is refused anywhere.
+ *
+ * @param {string} value Token value as written in the manifest.
+ * @returns {string|null} A plain-language problem, or null when the value is safe.
+ */
+export function validateTokenValue(value) {
+    if (value.length > 4000) return 'is too long for one value (4000 characters at most)';
+    // eslint-disable-next-line no-control-regex
+    if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u2028\u2029]/.test(value)) {
+        return 'must not contain control characters (only spaces, tabs and line breaks are allowed)';
+    }
+    let openQuote = '';
+    for (const character of value) {
+        if (openQuote) {
+            // Tabs don't end a CSS string, but no value needs one inside quotes: refused too, so the
+            // only whitespace a quoted text can hold is a plain space.
+            if (character === '\n' || character === '\r' || character === '\t') {
+                return 'must not break a line inside quotes: keep each quoted text on one line';
+            }
+            if (character === openQuote) openQuote = '';
+        } else if (character === '"' || character === '\'') {
+            openQuote = character;
+        }
+    }
+    if (/[;{}<>!@]/.test(value.replace(/"[^"]*"|'[^']*'/g, '""'))) {
+        return 'must be a single CSS value: no ; { } < > ! or @ outside quotes';
+    }
+    if (value.includes('\\')) return 'must not contain backslashes';
+    // An unclosed comment would swallow the rest of the generated knob sheet.
+    if (value.includes('/*') || value.includes('*/')) return 'must not contain CSS comments (/* */)';
+    let depth = 0;
+    let quote = '';
+    for (const character of value) {
+        if (quote) {
+            if (character === quote) quote = '';
+            continue;
+        }
+        if (character === '"' || character === '\'') quote = character;
+        else if (character === '(') depth++;
+        else if (character === ')' && --depth < 0) break;
+    }
+    if (quote || depth !== 0) return 'has an unclosed quote or bracket';
+    try {
+        collectSheetUrls(value);
+    } catch {
+        return 'may only use url() for files inside your pack folder, like url("textures/wood.svg")';
+    }
+    return null;
+}
+
+/**
+ * Rebases every pack-relative `url()` in a token map to the defining pack's folder.
+ *
+ * @param {Record<string, string>} tokens Validated tokens.
+ * @param {string|undefined} assetBase The defining pack's asset base.
+ * @returns {Record<string, string>}
+ */
+function rebaseTokenUrls(tokens, assetBase) {
+    if (!assetBase) return { ...tokens };
+    /** @type {Record<string, string>} */
+    const rebased = {};
+    for (const [name, value] of Object.entries(tokens)) {
+        rebased[name] = /url\s*\(/i.test(value) ? rebaseSheetUrls(value, assetBase) : value;
+    }
+    return rebased;
+}
+
+/**
  * Prefixes qualified rules in one stylesheet/rule-list level.
  *
  * @param {string} css Stylesheet or nested rule list.
- * @param {string} scope Prefix selector.
+ * @param {string} scope Pack id; each selector is scoped with knobs.js `scopeSelector`.
  * @returns {string}
  */
 function prefixRuleList(css, scope) {
@@ -1284,7 +1456,7 @@ function prefixRuleList(css, scope) {
         const trailingSpace = /\s*$/.exec(selectorWithSpace)?.[0] ?? '';
         const selectorText = selectorWithSpace.slice(0, selectorWithSpace.length - trailingSpace.length);
         const selectors = splitSelectorList(selectorText);
-        output += selectors.map(selector => `${scope} ${selector}`).join(', ');
+        output += selectors.map(selector => scopeSelector(selector, scope)).join(', ');
         output += trailingSpace;
         output += css.slice(preludeEnd.index, close + 1);
         cursor = close + 1;
@@ -1314,186 +1486,6 @@ export function prefixSheet(css, id) {
     }
     collectSheetUrls(css, true);
 
-    return prefixRuleList(css, `body[data-k-theme="${id}"]`);
+    return prefixRuleList(css, id);
 }
 
-/**
- * Clamps a numeric channel to a valid range.
- *
- * @param {number} value Input number.
- * @param {number} maximum Upper bound.
- * @returns {number}
- */
-function clamp(value, maximum) {
-    return Math.min(maximum, Math.max(0, value));
-}
-
-/**
- * Parses one rgb channel in numeric or percentage form.
- *
- * @param {string} value Channel source.
- * @returns {number|null}
- */
-function parseRgbChannel(value) {
-    const source = value.trim();
-    const percentage = source.endsWith('%');
-    const numberSource = percentage ? source.slice(0, -1) : source;
-    if (!CSS_NUMBER_PATTERN.test(numberSource)) {
-        return null;
-    }
-
-    const numeric = Number(numberSource);
-    return percentage ? clamp(numeric, 100) / 100 * 255 : clamp(numeric, 255);
-}
-
-/**
- * Parses one alpha channel in numeric or percentage form.
- *
- * @param {string} value Alpha source.
- * @returns {number|null}
- */
-function parseAlpha(value) {
-    const source = value.trim();
-    const percentage = source.endsWith('%');
-    const numberSource = percentage ? source.slice(0, -1) : source;
-    if (!CSS_NUMBER_PATTERN.test(numberSource)) {
-        return null;
-    }
-
-    const numeric = Number(numberSource);
-    return percentage ? clamp(numeric, 100) / 100 : clamp(numeric, 1);
-}
-
-/**
- * Parses a supported CSS color. v0 intentionally accepts only hexadecimal and
- * rgb()/rgba() sRGB forms; named colors, hsl(), color-mix(), and var() return
- * null so tooling can report them as unresolved.
- *
- * @param {string} value CSS color source.
- * @returns {ParsedColor|null}
- */
-export function parseColor(value) {
-    if (typeof value !== 'string') {
-        return null;
-    }
-
-    const source = value.trim();
-    const hex = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(source);
-    if (hex) {
-        const digits = hex[1].length <= 4
-            ? [...hex[1]].map(digit => `${digit}${digit}`).join('')
-            : hex[1];
-        return {
-            r: Number.parseInt(digits.slice(0, 2), 16),
-            g: Number.parseInt(digits.slice(2, 4), 16),
-            b: Number.parseInt(digits.slice(4, 6), 16),
-            a: digits.length === 8 ? Number.parseInt(digits.slice(6, 8), 16) / 255 : 1,
-        };
-    }
-
-    const functional = /^rgba?\((.*)\)$/i.exec(source);
-    if (!functional) {
-        return null;
-    }
-
-    /** @type {string[]} */
-    let channels;
-    /** @type {string|null} */
-    let alphaSource = null;
-    const body = functional[1].trim();
-    if (body.includes(',')) {
-        const parts = body.split(',').map(part => part.trim());
-        if (parts.length !== 3 && parts.length !== 4) {
-            return null;
-        }
-        channels = parts.slice(0, 3);
-        alphaSource = parts[3] ?? null;
-        if (parts.some(part => part.includes('/'))) {
-            return null;
-        }
-    } else {
-        const slashParts = body.split('/').map(part => part.trim());
-        if (slashParts.length > 2) {
-            return null;
-        }
-        channels = slashParts[0].split(/\s+/);
-        alphaSource = slashParts[1] ?? null;
-        if (channels.length !== 3) {
-            return null;
-        }
-    }
-
-    const parsedChannels = channels.map(parseRgbChannel);
-    if (parsedChannels.some(channel => channel === null)) {
-        return null;
-    }
-    const alpha = alphaSource === null ? 1 : parseAlpha(alphaSource);
-    if (alpha === null) {
-        return null;
-    }
-
-    return {
-        r: /** @type {number} */ (parsedChannels[0]),
-        g: /** @type {number} */ (parsedChannels[1]),
-        b: /** @type {number} */ (parsedChannels[2]),
-        a: alpha,
-    };
-}
-
-/**
- * Composites a color over an opaque background.
- *
- * @param {ParsedColor} foreground Foreground color.
- * @param {ParsedColor} background Opaque background color.
- * @returns {ParsedColor}
- */
-function composite(foreground, background) {
-    return {
-        r: foreground.r * foreground.a + background.r * (1 - foreground.a),
-        g: foreground.g * foreground.a + background.g * (1 - foreground.a),
-        b: foreground.b * foreground.a + background.b * (1 - foreground.a),
-        a: 1,
-    };
-}
-
-/**
- * Computes WCAG relative luminance for an opaque sRGB color.
- *
- * @param {ParsedColor} color Opaque sRGB color.
- * @returns {number}
- */
-function relativeLuminance(color) {
-    const channels = [color.r, color.g, color.b].map(channel => {
-        const normalized = channel / 255;
-        return normalized <= 0.04045
-            ? normalized / 12.92
-            : ((normalized + 0.055) / 1.055) ** 2.4;
-    });
-    return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
-}
-
-/**
- * Computes the WCAG contrast ratio of two supported CSS colors. A translucent
- * background is composited over white, then the foreground over that result.
- * Unsupported color syntaxes return null.
- *
- * @param {string} foreground Foreground color.
- * @param {string} background Background color.
- * @returns {number|null}
- */
-export function contrastRatio(foreground, background) {
-    const foregroundColor = parseColor(foreground);
-    const backgroundColor = parseColor(background);
-    if (!foregroundColor || !backgroundColor) {
-        return null;
-    }
-
-    const white = { r: 255, g: 255, b: 255, a: 1 };
-    const opaqueBackground = composite(backgroundColor, white);
-    const opaqueForeground = composite(foregroundColor, opaqueBackground);
-    const foregroundLuminance = relativeLuminance(opaqueForeground);
-    const backgroundLuminance = relativeLuminance(opaqueBackground);
-    const lighter = Math.max(foregroundLuminance, backgroundLuminance);
-    const darker = Math.min(foregroundLuminance, backgroundLuminance);
-    return (lighter + 0.05) / (darker + 0.05);
-}

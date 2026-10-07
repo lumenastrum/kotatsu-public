@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
+  <!-- Midnight Kissaten: fine tooth, like a menu card's paper or a booth's worn leather.
+       Light and dark specks around a neutral middle, so it adds texture without shifting colour. -->
+  <filter id="tooth" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3" stitchTiles="stitch"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 0.92  0 0 0 0 0.8  2.2 0 0 0 -1.25"/>
+  </filter>
+  <filter id="shade" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="9" stitchTiles="stitch"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -2.2 0 0 0 0.98"/>
+  </filter>
+  <rect width="220" height="220" filter="url(#tooth)" opacity="0.14"/>
+  <rect width="220" height="220" filter="url(#shade)" opacity="0.16"/>
+</svg>

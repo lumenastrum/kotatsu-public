@@ -314,11 +314,11 @@ body[data-k-layout="rails"] #extensions_settings2 .inline-drawer-toggle.inline-d
 body[data-k-layout="rails"] #user-settings-block h4,
 body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .standoutHeader {
     color: var(--k-accent);
-    font-family: var(--k-font-ui);
-    font-size: var(--k-rack-label-size);
-    font-weight: 700;
-    letter-spacing: var(--k-rack-label-track);
-    text-transform: uppercase;
+    font-family: var(--k-font-label, var(--k-font-ui));
+    font-size: calc(var(--k-rack-label-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, var(--k-rack-label-track));
+    text-transform: var(--k-label-case, uppercase);
 }
 
 /* Padding only for the banners that are NOT click targets. A `.standoutHeader`
@@ -364,11 +364,11 @@ body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .standoutHeader.i
    `h3` is untouched — see the sheet header. */
 body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) h4 {
     color: var(--k-text-muted);
-    font-family: var(--k-font-ui);
-    font-size: var(--k-rack-label-size);
-    font-weight: 700;
-    letter-spacing: var(--k-rack-label-track);
-    text-transform: uppercase;
+    font-family: var(--k-font-label, var(--k-font-ui));
+    font-size: calc(var(--k-rack-label-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, var(--k-rack-label-track));
+    text-transform: var(--k-label-case, uppercase);
 }
 
 /* `h4.title_restorable` is a label with buttons parked at its right end

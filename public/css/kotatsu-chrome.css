@@ -375,14 +375,20 @@ body[data-k-prose-scale="xl"] {
    sizes read "cursive-ish" (decision upheld). They keep the UI baseline
    from the rule above. The display voice stays where a NAME is being said:
    nameplates and popup titles. */
-.name_text,
-.ch_name,
 .popup h3,
 .popup h4,
 #dialogue_popup h3,
 #select_chat_popup h3 {
     font-family: var(--k-font-display);
     font-weight: var(--k-display-weight);
+}
+
+/* The NAME voice (tokens.css §Voice). Defaults to the display face and weight, so this is the
+   rule above for the two nameplate sites; a pack can give speakers their own hand. */
+.name_text,
+.ch_name {
+    font-family: var(--k-font-name);
+    font-weight: var(--k-name-weight);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -549,6 +555,81 @@ code.hljs {
 
 body {
     background-image: var(--k-app-backdrop);
+}
+
+/* The atmosphere layer (tokens.css §Atmosphere): one full-window plane between the backdrop and
+   everything else. With the Blue Hour defaults it paints nothing (no image), so no pack without
+   an atmosphere can see it.
+
+   Geometry is stated in dvw/dvh, not `inset: 0`: core puts a transform on <html> (style.css:157),
+   which makes <html> the containing block of every fixed descendant, and under rails <html>
+   collapses (shell-frame.css §1). `z-index: -1` paints it above the canvas (where the body
+   backdrop propagates) and below every in-flow and positioned surface; <body> is not a stacking
+   context, so nothing new is created.
+
+   Motion moves `background-position`, not a transform, so `--k-atmosphere-mask` stays pinned to
+   the window while the image slides under it. That is a repaint of this one layer per hop —
+   never layout — and `steps()` keeps the hops to a few per second (`--k-atmosphere-steps`).
+   Reduced motion (the setting or the OS) stops it dead. */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100dvw;
+    height: 100dvh;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--k-atmosphere);
+    opacity: var(--k-atmosphere-opacity);
+    mix-blend-mode: var(--k-atmosphere-blend);
+    -webkit-mask-image: var(--k-atmosphere-mask);
+    mask-image: var(--k-atmosphere-mask);
+    animation: var(--k-atmosphere-motion) var(--k-atmosphere-period) steps(var(--k-atmosphere-steps)) infinite;
+}
+
+body.reduced-motion::before {
+    animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body::before {
+        animation: none;
+    }
+}
+
+@keyframes k-atmo-fall {
+    from {
+        background-position: 0 0;
+    }
+
+    to {
+        background-position: 0 var(--k-atmosphere-travel);
+    }
+}
+
+@keyframes k-atmo-drift {
+    from {
+        background-position: 0 0;
+    }
+
+    to {
+        background-position: var(--k-atmosphere-travel) 0;
+    }
+}
+
+/* Breathing sets its own easing per keyframe, so the element's `steps()` never applies to it. */
+@keyframes k-atmo-breathe {
+    0%,
+    100% {
+        opacity: var(--k-atmosphere-opacity);
+        animation-timing-function: ease-in-out;
+    }
+
+    50% {
+        opacity: calc(var(--k-atmosphere-opacity) * 0.55);
+        animation-timing-function: ease-in-out;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

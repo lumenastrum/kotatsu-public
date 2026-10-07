@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "/kotatsu/theme/theme.schema.json",
-    "title": "Kotatsu theme pack manifest v0",
+    "title": "Kotatsu theme pack manifest",
     "type": "object",
     "additionalProperties": false,
     "required": [
@@ -20,13 +20,100 @@
         },
         "name": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "The name people see in the theme picker."
+        },
+        "author": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Who made the pack."
+        },
+        "description": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One line about the pack."
         },
         "version": {
             "const": 1
         },
         "extends": {
-            "$ref": "#/$defs/packId"
+            "$ref": "#/$defs/packId",
+            "description": "The pack this one starts from (usually \"blue-hour\"). Everything you do not set is inherited from it."
+        },
+        "palette": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "A few friendly seed colours. Change one and every colour that grows from it follows (docs/theme-authoring-guide.md). Tokens you write by hand always win.",
+            "properties": {
+                "background": {
+                    "$ref": "#/$defs/color",
+                    "description": "The room: the deepest colour, behind everything."
+                },
+                "panel": {
+                    "$ref": "#/$defs/color",
+                    "description": "Panels, cards and popups that sit on the background."
+                },
+                "text": {
+                    "$ref": "#/$defs/color",
+                    "description": "Body text. The greys (dim, muted, faint) grow from this and the background."
+                },
+                "prose": {
+                    "$ref": "#/$defs/color",
+                    "description": "The story text in messages. Leave it out to use `text`."
+                },
+                "accent": {
+                    "$ref": "#/$defs/color",
+                    "description": "The main accent: links, buttons, focus rings, the user's name."
+                },
+                "dialogue": {
+                    "$ref": "#/$defs/color",
+                    "description": "Quoted \"dialogue\" in messages, and the second accent (selected rows)."
+                },
+                "actions": {
+                    "$ref": "#/$defs/color",
+                    "description": "Italic *actions* in messages. Leave it out to use `accent`."
+                },
+                "border": {
+                    "$ref": "#/$defs/color",
+                    "description": "Hairlines around panels and cards. Grows from text + background if left out."
+                },
+                "character-message": {
+                    "$ref": "#/$defs/color",
+                    "description": "The card behind the character's messages."
+                },
+                "user-message": {
+                    "$ref": "#/$defs/color",
+                    "description": "The card behind your own messages."
+                },
+                "shadow": {
+                    "$ref": "#/$defs/color",
+                    "description": "Shadows under floating things."
+                },
+                "glow-top": {
+                    "$ref": "#/$defs/color",
+                    "description": "Ambient glow in the top-right of the background."
+                },
+                "glow-left": {
+                    "$ref": "#/$defs/color",
+                    "description": "Ambient glow in the bottom-left of the background."
+                },
+                "glow-bottom": {
+                    "$ref": "#/$defs/color",
+                    "description": "Ambient glow along the bottom of the background."
+                },
+                "success": {
+                    "$ref": "#/$defs/color",
+                    "description": "Good news: saved, connected."
+                },
+                "warning": {
+                    "$ref": "#/$defs/color",
+                    "description": "Careful: warnings."
+                },
+                "danger": {
+                    "$ref": "#/$defs/color",
+                    "description": "Bad news and delete buttons."
+                }
+            }
         },
         "tokens": {
             "type": "object",
@@ -36,7 +123,8 @@
             "additionalProperties": {
                 "type": "string",
                 "minLength": 1
-            }
+            },
+            "description": "Any --k-* token from public/css/tokens.css, or a component knob from public/kotatsu/theme/knobs.json. One CSS value each; url() may point at files inside your pack."
         },
         "assets": {
             "type": "object",
@@ -68,6 +156,11 @@
                                 "type": "string",
                                 "minLength": 1,
                                 "pattern": "^[A-Za-z0-9 .%+-]+$"
+                            },
+                            "unicodeRange": {
+                                "type": "string",
+                                "pattern": "^U\\+[0-9A-Fa-f?]{1,6}(-[0-9A-Fa-f]{1,6})?(\\s*,\\s*U\\+[0-9A-Fa-f?]{1,6}(-[0-9A-Fa-f]{1,6})?)*$",
+                                "description": "Which characters this file covers, to split one family across files (latin, latin-ext). Copy it from the font service."
                             }
                         }
                     }
@@ -110,6 +203,11 @@
             "type": "string",
             "minLength": 1,
             "pattern": "^(?!\\s)(?![?#])(?![A-Za-z][A-Za-z0-9+.-]*:)(?!/)(?!.*%)(?!.*[\\u0000-\\u001F\\u007F])(?!.*//)(?!.*\\\\)(?!.*(?:^|/)\\.{1,2}(?:/|$)).*[^/\\s]$"
+        },
+        "color": {
+            "type": "string",
+            "pattern": "^(#[0-9a-fA-F]{3}[fF]?|#[0-9a-fA-F]{6}(?:[fF]{2})?|rgba?\\(.*\\))$",
+            "description": "A solid colour: #rgb, #rrggbb, the same with a fully opaque alpha (#rgbf, #rrggbbff), or rgb(r, g, b). Palette colours cannot be see-through."
         }
     }
 }

@@ -134,6 +134,8 @@ body[data-k-layout="rails"] #k-topbar {
     min-width: 0;
     border-bottom: var(--k-frame-hairline) solid var(--k-frame-border-color);
     background: var(--k-surface-2);
+    /* tokens.css §Materials: image layers over the bar's colour; `none` in Blue Hour. */
+    background-image: var(--k-material-topbar);
     font-family: var(--k-font-ui);
     color: var(--k-text);
 }
@@ -157,6 +159,8 @@ body[data-k-layout="rails"] #k-rail-right {
     min-height: 0;
     overflow: hidden;
     background: var(--k-surface-2);
+    /* tokens.css §Materials: image layers over the rails' colour; `none` in Blue Hour. */
+    background-image: var(--k-material-rail);
 }
 
 body[data-k-layout="rails"] #k-rail-left {
@@ -235,10 +239,10 @@ body[data-k-layout="rails"] .k-slot-placeholder {
 
 body[data-k-layout="rails"] .k-slot-placeholder-title {
     color: var(--k-text-muted);
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    font-size: 10.5px;
+    font-weight: var(--k-label-weight, 600);
+    letter-spacing: var(--k-label-tracking, 0.06em);
+    text-transform: var(--k-label-case, uppercase);
+    font-size: calc(10.5px * var(--k-label-scale, 1));
 }
 
 body[data-k-layout="rails"] .k-slot-placeholder-note {

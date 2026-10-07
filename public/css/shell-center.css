@@ -399,10 +399,11 @@ body[data-k-layout="rails"] .k-cs__label {
     align-items: baseline;
     justify-content: space-between;
     padding: 8px 8px 4px;
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: calc(10.5px * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 600);
+    letter-spacing: var(--k-label-tracking, 0.06em);
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
     color: var(--k-text-muted);
 }
 
@@ -714,6 +715,12 @@ body[data-k-layout="rails"] #sheld::before {
     background-color: var(--SmartThemeChatTintColor);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
+}
+
+/* tokens.css §Materials: the lamp over the table, a vignette (`none` in Blue Hour). In its own
+   zero-weight rule, so a pack's sheet painting this layer always outranks the stock material. */
+:where(body[data-k-layout="rails"] #sheld)::before {
+    background-image: var(--k-material-reading);
 }
 
 body[data-k-layout="rails"] #chat {
@@ -1063,6 +1070,23 @@ body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .mes_text:empty {
     background-color: transparent;
 }
 
+/* Message materials (tokens.css §Materials): image layers over the card colour, only in the
+   looks where `.mes_text` IS the card — card (the default) and bubble. The other looks turn the
+   card into a document, a script, pills or a rail, and a texture there would float behind bare
+   text. Never on an empty card (the streaming placeholder above). Blue Hour paints `none`.
+
+   The context sits in `:where()`, so these rules weigh only `.mes_text:not(:empty)` (0,2,0): a
+   pack's `sheet.css` rule on the card (scoped, so at least (0,2,1)) always outranks the stock
+   material, the way it outranked the stock card before materials existed. Without it the
+   (1,7,1) context erased the built-in Midnight Kissaten's lamp gradient on every card. */
+:where(body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="bubble"]) .mes[is_user="false"]:not(.smallSysMes)) .mes_text:not(:empty) {
+    background-image: var(--k-material-message);
+}
+
+:where(body[data-k-layout="rails"] #chat:is(:not([data-k-mes-variant]), [data-k-mes-variant="card"], [data-k-mes-variant="bubble"]) .mes[is_user="true"]:not(.smallSysMes)) .mes_text:not(:empty) {
+    background-image: var(--k-material-message-user);
+}
+
 /* ── User messages: mirrored row, right-aligned bubble ─────────────────────── */
 
 /* The avatar column is MOVED, not hidden. The mockup shows no avatar beside a user
@@ -1153,7 +1177,10 @@ body[data-k-layout="rails"] #send_form {
     padding: var(--k-cc-composer-pad-y) var(--k-cc-composer-pad-x);
     border: 1px solid var(--k-inset-border);
     border-radius: var(--k-radius-lg);
-    background: var(--k-cc-composer-fill);
+    /* tokens.css §Materials: image layers over the composer's fill (`none` in Blue Hour), as one
+       layer list, so a fill set through the `--k-cc-composer-fill` knob (a colour OR a gradient)
+       is never erased by a separate `background-image`. */
+    background: var(--k-material-composer), var(--k-cc-composer-fill);
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;

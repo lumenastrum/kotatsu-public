@@ -228,7 +228,8 @@ body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .name_text 
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.78em;
+    /* A knob by fallback (theme/knobs.js catalogs it): packs with a showier name face raise it. */
+    font-size: var(--k-bubble-name-size, 0.78em);
     letter-spacing: 0.02em;
     color: var(--k-text-muted);
 }
@@ -826,12 +827,18 @@ body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) .mes_block .me
     --k-nameplate-gap: 5px;
 }
 
-@supports (overflow-clip-margin: 1px) {
+/* 2026-10-06: the clip-margin version above never worked. Chrome rejects calc() in
+   `overflow-clip-margin` (measured on 151: `calc(20px + 5px)` does not parse, and the var() form
+   computes to 0px), so the lifted row sat entirely outside the clip and `.ch_name` (name,
+   timestamp AND the action bar) vanished in every look. The block now clips only sideways, which
+   is the overflow core cares about (a wide table or code line); vertically it stays visible, so
+   nothing above the block can ever be cut. No clip margin, no length that can fail to parse. */
+@supports (overflow-x: clip) {
     body #chat[data-k-mes-nameplate="above"] .mes:not(.smallSysMes) .mes_block {
         position: relative;
         margin-top: calc(var(--k-nameplate-h) + var(--k-nameplate-gap));
-        overflow: clip;
-        overflow-clip-margin: calc(var(--k-nameplate-h) + var(--k-nameplate-gap));
+        overflow-x: clip;
+        overflow-y: visible;
     }
 
     body #chat[data-k-mes-nameplate="above"] .mes:not(.smallSysMes) .mes_block .ch_name {

@@ -1,0 +1,5460 @@
+{
+ "generated": "by `npm run theme:knobs` from the stylesheets in public/. Do not edit by hand.",
+ "knobs": {
+  "--k-app-backdrop": {
+   "group": "Chrome: fills, backdrop, inset cards",
+   "file": "css/kotatsu-chrome.css",
+   "default": "radial-gradient(ellipse 75% 60% at 85% -12%, color-mix(in srgb, var(--k-glow-dawn) 48%, transparent), transparent 64%), radial-gradient(ellipse 65% 52% at 4% 112%, color-mix(in srgb, var(--k-glow-rose) 42%, transparent), transparent 64%), radial-gradient(ellipse 40% 30% at 50% 118%, color-mix(in srgb, var(--k-glow-deep) 22%, transparent), transparent 70%), linear-gradient(175deg, var(--k-backdrop-top) 0%, var(--k-ground) 100%)",
+   "note": "Ambient backdrop [11] Core `body` (style.css:157-175) sets `background-color` only, so the three glow ellipses need a background-image. Painted on `body`, not on a new element, so a background image chosen in ST (inline on #bg1) covers it naturally. Exposed as a token so a sheet can replace the whole recipe rather than only re-tinting the three glows. The top stop reads --k-backdrop-top, NOT --k-surface: the compat map writes `blur_tint_color` into --k-surface and that value carries its own alpha, which collapsed the sweep into a flat wash over an identically-colored body background. Caught by a live computed-style read (--k-surface resolves to rgba(15, 18, 27, 0.82) at runtime), not by review.",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-avatar-aspect": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "1.5",
+   "note": "`--k-pcol-w` / `--k-pcol-gap` inherit from the body rule above.",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait-column\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-card-w": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "340px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    },
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": [
+      "@media (max-width: 900px)"
+     ]
+    }
+   ]
+  },
+  "--k-bm-chip-size": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-dim-opacity": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "0.34",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-foot-h": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "30px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-gap": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-hairline": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "1px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-head-h": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "52px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-hue": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "var(--k-accent)",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"] .is-hue-0",
+     "at": []
+    },
+    {
+     "selector": "k-branch-map[variant=\"overlay\"] .is-hue-1",
+     "at": []
+    },
+    {
+     "selector": "k-branch-map[variant=\"overlay\"] .is-hue-2",
+     "at": []
+    },
+    {
+     "selector": "k-branch-map[variant=\"overlay\"] .is-hue-3",
+     "at": []
+    },
+    {
+     "selector": "k-branch-map[variant=\"overlay\"] .is-hue-4",
+     "at": []
+    },
+    {
+     "selector": "k-branch-map[variant=\"overlay\"] .is-hue-5",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-indent": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "20px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-meta-size": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-name-size": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "12.5px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-pad": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-quiet-size": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-row-h": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "30px",
+   "note": "Geometry the component reads back. Keep px. `--k-bm-stem` is the x of a DEPTH-0 MARKER'S CENTRE, not a left inset: every connector springs from a parent marker, and each row's `padding-inline-start` is derived from it (`stem + depth × indent − 8`, where 8 is half the .k-bm-twist box below). Mirrored by GEOMETRY_FALLBACK in k-branch-map.js — change both together.",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-section-gap": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-sheet-inset-block": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "3vh",
+   "note": "Slice-local shape",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    },
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": [
+      "@media (max-width: 900px)"
+     ]
+    }
+   ]
+  },
+  "--k-bm-sheet-inset-inline": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "3vw",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    },
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": [
+      "@media (max-width: 900px)"
+     ]
+    }
+   ]
+  },
+  "--k-bm-sheet-max-w": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "1400px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-stem": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "20px",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bm-z": {
+   "group": "Branch map",
+   "file": "css/branch-map.css",
+   "default": "30000",
+   "note": "Above every in-page core surface (#options 29999, style.css:1097) and below toastr / the boot loader (999999). Core popups are showModal() dialogs and live in the top layer, so a confirm always paints over this. Mirrored by MAP_Z_INDEX in k-branch-map.js.",
+   "contexts": [
+    {
+     "selector": "k-branch-map[variant=\"overlay\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-broadcast-dim": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "0.55",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-broadcast-gap": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "16px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-broadcast-name-track": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "0.14em",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-broadcast-pad": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-broadcast-rail": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "3px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-broadcast-rail-color": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "var(--k-rose)",
+   "note": "The speaker colours css/kotatsu-chrome.css §15 already uses for the row stripe: rose for the character, lavender for you. One token, overridden once for user turns.",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "at": []
+    },
+    {
+     "selector": "body #chat[data-k-mes-variant=\"broadcast\"] .mes[is_user=\"true\"]:not(.smallSysMes)",
+     "at": []
+    }
+   ]
+  },
+  "--k-bubble-border": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) 22%, transparent)",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "at": []
+    },
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bubble-bot-fill": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "color-mix(in srgb, var(--k-bot-mes) 88%, transparent)",
+   "note": "Core's own alpha stops (style.css:85-86), so a pack that retints `--k-user-mes` / `--k-bot-mes` retints the pills with it.",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "at": []
+    },
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bubble-gap": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "at": []
+    },
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bubble-max-w": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "72%",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "at": []
+    },
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bubble-name-size": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "0.78em",
+   "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
+   "contexts": []
+  },
+  "--k-bubble-pad-x": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "at": []
+    },
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bubble-pad-y": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "9px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "at": []
+    },
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bubble-radius": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "16px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "at": []
+    },
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bubble-tail": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "5px",
+   "note": "The corner nearest the speaker's avatar. One token, mirrored by the two rules that consume it, instead of two hand-written corner quartets.",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "at": []
+    },
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-bubble-user-fill": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "color-mix(in srgb, var(--k-user-mes) 88%, transparent)",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "at": []
+    },
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-avatar": {
+   "group": "Phone",
+   "file": "css/kotatsu-phone.css",
+   "default": "var(--k-phone-avatar)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] #chat .mes:not(.smallSysMes)",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-avatar-col": {
+   "group": "Phone",
+   "file": "css/kotatsu-phone.css",
+   "default": "var(--k-phone-avatar)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] #chat .mes:not(.smallSysMes)",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"].big-avatars",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-bot-bubble": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "color-mix(in srgb, var(--k-bot-mes) 88%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-branch-fill": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "color-mix(in srgb, var(--k-surface-sunken) 55%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-branch-height": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "20px",
+   "note": "Now the SWITCHER's branch chip (§1b) — 20/7 per the approved canvas; the old 24px breadcrumb pill these were minted for is deleted.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-branch-pad": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "7px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-branch-size": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-bubble-border": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) 22%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-bubble-pad-x": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-bubble-pad-y": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-bubble-radius": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "var(--k-radius-lg)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-char-size": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "14px",
+   "note": "Type scale",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-column": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "calc(var(--k-cc-column-base) * var(--k-prose-scale, 1) + var(--k-cc-track-extra, 0px))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-column-base": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "760px",
+   "note": "The mockup's 760/560 are the BASE, at reading size M. The effective column is the base × `--k-prose-scale` (kotatsu-chrome.css §2/§3, `body[data-k-prose-scale]`), so a bigger reading size widens the column in step and the measure holds at ~75 characters per line — reader-polish v0 finding 1: on a 3440 monitor the 15px/760px column owned 22% of the track, and the honest fix is bigger type at the same measure, never a wider measure (75 CPL is already the top of the comfortable range). At scale 1 the calc is byte-identical to the old literals. `shell/rail-collapse.js` reads the BASE and the scale as two separate numbers (a calc() custom property does not parseFloat), so keep them plain: a px length and a unitless number. `--k-cc-track-extra` (registered above; written by css/mes-variants.css for looks that trade avatar width for art) is the one additive term — it widens the track so the MEASURE survives the look, it never widens the measure.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-composer-fill": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "color-mix(in srgb, var(--k-surface-sunken) 92%, transparent)",
+   "note": "The composer's own fill, and the one token §4 had to mint rather than borrow. `--k-inset-fill` is the INTERIOR card stop — 55% of `--k-surface-sunken` (kotatsu-chrome.css:195), minted for inline drawers and roster rows that sit ON an already-opaque panel, where the other 45% reveals that panel and nothing else. The rails composer has no such parent: `#k-center` paints no background (shell-frame.css §1), so under the pill that 45% was reading straight through to `#bg1`, and core's `backdrop-filter` was the only thing standing between a photographic background and the line being typed. With the blur gone (§4, composer performance v0 §8 C1) the fill has to hold contrast by itself, so it takes the alpha `--k-chrome-fill`'s bottom stop already uses for chrome that rides over the app background (kotatsu-chrome.css:187-189). Same colour, same border, same vocabulary, and the pack values are why that is not a cheat: the alpha only matters in proportion to how far the backdrop is from `--k-surface-sunken`, and under the composer it is barely anywhere. The move costs `0.37 × (sunken − backdrop)` per channel — at most ~6/255 against the bare gradient bottom in Blue Hour, low single digits in both packs once the ambient glow that actually sits under the pill is in the mix (tokens.css `--k-app-backdrop`). That is the point: a field that stops depending on a blur, not a field that looks like a performance mode. Arithmetic, not a measurement — the eye check is the shell QA pass.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-composer-gap": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-composer-min": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "46px",
+   "note": "Composer",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-composer-pad-x": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-composer-pad-y": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "4px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-count-size": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "11.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-glyph-size": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "16px",
+   "note": "css/kotatsu-chrome.css:705-728 sizes these glyphs at 18px for the classic compose row; in a 30/32px square that reads as an icon that outgrew its button.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-hairline": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent)",
+   "note": "Surfaces",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-hint-gap": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "6px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-hint-size": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "10.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-icon-size": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "30px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-meta-size": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-name-size": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "13px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-nameplate-gap": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "4px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-nameplate-min": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "18px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-qr-size": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "11.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-row-gap": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-row-pad-x": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "16px",
+   "note": "Message rows",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-row-pad-y": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-send-size": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "32px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-strip-gap": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-strip-height": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "44px",
+   "note": "Header strip",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-strip-pad": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "16px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-swipe-gutter": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "34px",
+   "note": "The swipe UI (`.swipeRightBlock`) is `position: absolute; right: 0; bottom: 0` of `.mes` (style.css:1271-1276) and its counter is `min-width: 40px` (:1278-1301), so it overlays whatever reaches the row's right edge. Core reserves 30px for it on every `.mes_text` via `--mes-right-spacing`; this is the same reservation, sized to the counter and applied as the right padding of the bot bubbles that can actually show the arrow — the last row, or every row under `body.swipeAllMessages` (§3) — so it sits in padding rather than on top of a word. Every other bubble, and every user bubble (they never carry swipes), stays symmetric.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-title-size": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "13px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-user-bubble": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "color-mix(in srgb, var(--k-user-mes) 80%, transparent)",
+   "note": "The message tints, at core's own alpha stops (style.css:85-86) so a theme pack that retints `--k-user-mes` / `--k-bot-mes` (theme/loader.js:17-18) retints the bubbles with it. User is the raised stop, bot one step down — which is what those two tokens already encode (#202536 over #181d2a in Blue Hour).",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-user-max": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "calc(var(--k-cc-user-max-base) * var(--k-prose-scale, 1))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-user-max-base": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "560px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-chibi-eye-l-x": {
+   "group": "css/loader.css",
+   "file": "css/loader.css",
+   "default": "40.01%",
+   "note": "Measured from docs/design/mascot/chibi.png by scripts/mascot-prep.mjs, which fails when these stop matching the painting. Percent of the sprite.",
+   "contexts": [
+    {
+     "selector": "#load-spinner.k-chibi",
+     "at": []
+    }
+   ]
+  },
+  "--k-chibi-eye-l-y": {
+   "group": "css/loader.css",
+   "file": "css/loader.css",
+   "default": "41.45%",
+   "contexts": [
+    {
+     "selector": "#load-spinner.k-chibi",
+     "at": []
+    }
+   ]
+  },
+  "--k-chibi-eye-r-x": {
+   "group": "css/loader.css",
+   "file": "css/loader.css",
+   "default": "63.50%",
+   "contexts": [
+    {
+     "selector": "#load-spinner.k-chibi",
+     "at": []
+    }
+   ]
+  },
+  "--k-chibi-eye-r-y": {
+   "group": "css/loader.css",
+   "file": "css/loader.css",
+   "default": "37.32%",
+   "contexts": [
+    {
+     "selector": "#load-spinner.k-chibi",
+     "at": []
+    }
+   ]
+  },
+  "--k-chrome-fill": {
+   "group": "Chrome: fills, backdrop, inset cards",
+   "file": "css/kotatsu-chrome.css",
+   "default": "linear-gradient(180deg, color-mix(in srgb, var(--k-surface-2) 94%, transparent), color-mix(in srgb, var(--k-ground-deep) 92%, transparent))",
+   "note": "Chrome fills Blue Hour painted three near-identical vertical gradients: 94/92 for the floating bar and compose pill, 96/94 for drawer cards, 97/96 for popups and menus. Reconciled to two — the 2% difference between the card and modal stops is below the perceptual floor, and two recipes is one fewer thing for a second sheet to keep in sync. `--k-chrome-fill` rides over the chat and stays translucent enough for the blur behind it to read. `--k-panel-fill` is for surfaces that must be legible over arbitrary content, so it is fully opaque: at 96-97% the model menu ghosted the landing page's buttons through its model list (measured 2026-10-01, connections-v0 §10), and every popover here shares the fill.",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-ext-gutter": {
+   "group": "Extension dock",
+   "file": "css/shell-ext-dock.css",
+   "default": "clamp(280px, 22.5dvw, 380px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-flat-gap": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "20px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-flat-indent": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "1.25em",
+   "note": "Book rhythm: print prose separates paragraphs by first-line indent, not vertical gap. Set to 0 to fall back to gap-separated paragraphs.",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-flat-measure": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "72ch",
+   "note": "The measure is set on `.mes_block` so the byline and the prose share one column edge. `ch` there resolves against the UI face rather than the prose face — a few percent wider than a measure set on `.mes_text`, and worth it for the alignment.",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-flat-name-gap": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "2px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-flat-name-size": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "0.82em",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-flat-pad": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "6px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-frame-border-color": {
+   "group": "Shell frame",
+   "file": "css/shell-frame.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent)",
+   "note": "Sheet-local derivations, the css/kotatsu-chrome.css §2 pattern. The border reads the UNPINNED peer --k-chrome-border, not --k-border: applyThemeColor() can inline-pin --k-border onto :root from a legacy theme JSON, and an inline pin outranks every body[data-k-theme] rule (tokens.css:79-83). Chrome that must stay pack-switchable derives from the peer.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-frame-hairline": {
+   "group": "Shell frame",
+   "file": "css/shell-frame.css",
+   "default": "1px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-frame-scrim": {
+   "group": "Shell frame",
+   "file": "css/shell-frame.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 60%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-ghost-hover": {
+   "group": "Chrome: fills, backdrop, inset cards",
+   "file": "css/kotatsu-chrome.css",
+   "default": "color-mix(in srgb, var(--k-accent) 10%, transparent)",
+   "note": "Ghost hover wash — one accent tint reused by every ghost control.",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-inset-border": {
+   "group": "Chrome: fills, backdrop, inset cards",
+   "file": "css/kotatsu-chrome.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) 28%, transparent)",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-inset-fill": {
+   "group": "Chrome: fills, backdrop, inset cards",
+   "file": "css/kotatsu-chrome.css",
+   "default": "color-mix(in srgb, var(--k-surface-sunken) 55%, transparent)",
+   "note": "Interior card layer (inline drawers, roster entries, inset fields).",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-accent-l": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "72%",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-accent-s": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "38%",
+   "note": "The accent band The per-card hue is a pure function of the avatar (view-model.js `accentHue`); saturation and lightness are NOT per-card, they are these two values, so every accent lands inside Blue Hour's pastel register and a pack retunes all of them at once. Blue Hour's own --k-accent is ~hsl(230 37% 71%); this band is that, widened by a hair.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-block-gap": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "clamp(22px, 2.6vw, 38px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-bloom-duration": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "0.6s",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-bloom-scale": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "1.03",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-body-lh": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "1.5",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-body-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-card-border": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent)",
+   "note": "Derived from the UNPINNED peer, like every other kotatsu hairline: applyThemeColor() can inline-pin --k-border onto :root from a legacy theme JSON and outrank us (tokens.css:79-83). The design doc names this `--k-border-soft`; no such token exists in the substrate, so the recipe is spelled out instead of inventing a root name.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-card-fill": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "var(--k-surface-sunken)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-card-min-h": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "300px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-card-pad": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-card-radius": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "var(--k-radius-lg)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-card-ratio": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "2 / 3",
+   "note": "Card",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-chrome-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "32px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-eyebrow-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-eyebrow-track": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "0.16em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-field-fill": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "color-mix(in srgb, var(--k-ground-deep) 70%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-foot-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-glass": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 55%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-grid-gap": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "clamp(12px, 1.4vw, 20px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-grid-min": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "240px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-gutter": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "clamp(24px, 4vw, 64px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-hairline": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent)",
+   "note": "Shared surfaces",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-hover-fill": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "color-mix(in srgb, var(--k-accent) 10%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-kicker-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-kicker-track": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "0.14em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-kicker-weight": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "700",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-lift": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "-5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-measure": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "1440px",
+   "note": "Page rhythm",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-micro-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-name-lh": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "1.05",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-name-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "26px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-portrait-bloom": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "1",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-portrait-rest": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "0.8",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-scrim-clear": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "transparent",
+   "note": "The two-gradient scrim (Kirara's vignette, retunable) Vertical: clear through the face, near-opaque under the copy. Horizontal: a faint left-edge darkener so the kicker never sits on a bright cheek.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-scrim-deep": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 94%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-scrim-edge": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 45%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-scrim-edge-end": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "34%",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-scrim-end": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "86%",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-scrim-knee": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "64%",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-scrim-mid": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 55%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-scrim-start": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "38%",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-section-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-sub-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-tag-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-title-lh": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "1.02",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-title-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "clamp(38px, 4vw, 60px)",
+   "note": "Type (floor 11px, docs/library-v0.md §1.3)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-title-track": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "-0.02em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-lib-ui-size": {
+   "group": "Library",
+   "file": "css/library.css",
+   "default": "12.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-mascot-display": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "flex",
+   "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
+   "contexts": []
+  },
+  "--k-meta-hidden-opacity": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "0",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-metadata=\"hover\"]",
+     "at": []
+    },
+    {
+     "selector": "#chat[data-k-mes-metadata=\"click\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-busted": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "var(--k-danger)",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-chip-gap": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "5px",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-crit": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "var(--k-danger)",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-fg": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "var(--k-text-faint)",
+   "note": "Same rank as the timestamp and token counter — this is the fifth readout of that family, not a fifth thing competing with the message.",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-gap": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-healthy": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "var(--k-success)",
+   "note": "Cache verdicts",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-na": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "var(--k-text-dim)",
+   "note": "The state the extension never styled: \"this provider reports no cache figures\". It has to read as an absence, not as a fourth verdict.",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-ok": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "var(--k-success)",
+   "note": "Context states",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-priming": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "var(--k-accent)",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-size": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "0.72em",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-track-bg": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "color-mix(in srgb, var(--k-border) 40%, transparent)",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-track-h": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "4px",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-track-w": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "64px",
+   "note": "Geometry The track is a FIXED 64×4. A proportional one would make two adjacent messages incomparable at a glance, which is the entire job of a gauge.",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-metrics-warm": {
+   "group": "Message metrics",
+   "file": "css/mes-metrics.css",
+   "default": "var(--k-warning)",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-mm-filter-height": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "28px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-model-menu[variant=\"popover\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-mm-label-size": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "10.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-model-menu[variant=\"popover\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-mm-mark-size": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-model-menu[variant=\"popover\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-mm-max-height": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "min(520px, calc(100dvh - 70px))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-model-menu[variant=\"popover\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-mm-micro-size": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "10.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-model-menu[variant=\"popover\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-mm-models-max": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "148px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-model-menu[variant=\"popover\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-mm-name-size": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "12.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-model-menu[variant=\"popover\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-mm-offset": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-model-menu[variant=\"popover\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-mm-row-pad": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "6px 8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-model-menu[variant=\"popover\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-mm-selected-fill": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "color-mix(in srgb, var(--k-rose) 12%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-model-menu[variant=\"popover\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-mm-width": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "320px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-model-menu[variant=\"popover\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-nameplate-gap": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "5px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-nameplate=\"above\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-nameplate-h": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "20px",
+   "note": "The row's reserved height. One token drives all three halves of the lift — the reservation, the label box and the clip margin — so a pack that wants a taller label line changes one number (recon §3.4).",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-nameplate=\"above\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-dot": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "#dca9a4",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-height": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "min(680px, calc(100dvh - 32px))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-indigo": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "#2a3150",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-mascot-w": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "250px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-mikan": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "#f4963a",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-pad": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "28px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-onb-main",
+     "at": [
+      "@media (max-width: 640px)"
+     ]
+    }
+   ]
+  },
+  "--k-onb-peri": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "#9aa4d2",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-warm": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "linear-gradient(135deg, var(--k-onb-mikan), var(--k-onb-dot))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-width": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "min(880px, calc(100vw - 32px))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-z-scrim": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "4080",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-z-sheet": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "4081",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-panel-fill": {
+   "group": "Chrome: fills, backdrop, inset cards",
+   "file": "css/kotatsu-chrome.css",
+   "default": "linear-gradient(180deg, var(--k-surface-2), var(--k-ground-deep))",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-panel-inline-size": {
+   "group": "Docked panels",
+   "file": "css/shell-panels.css",
+   "default": "clamp(400px, 38vw, 560px)",
+   "note": "Wide enough for the widest row inside (the \"In-chat @ Depth\" line measures ~310px of min-content), capped so it never reads as a page. `min-width: 100px !important` (style.css:5642) is a floor below this range and does not need beating, and core's `max-width: 90dvw` (style.css:2960) cannot bite above 1001px either — which keeps the centring arithmetic below exact.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] #floatingPrompt",
+     "at": [
+      "@media screen and (min-width: 1001px)"
+     ]
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] #cfgConfig",
+     "at": [
+      "@media screen and (min-width: 1001px)"
+     ]
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] #logprobsViewer",
+     "at": [
+      "@media screen and (min-width: 1001px)"
+     ]
+    }
+   ]
+  },
+  "--k-pcol-art": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "var(--k-mes-avatar-original, var(--k-mes-avatar))",
+   "note": "§2.5 mechanism #3: the 168px column wants the original, not the 96px thumb. Row scope for the same reason as portrait's art var — see the note there.",
+   "contexts": [
+    {
+     "selector": "body #chat[data-k-mes-variant=\"portrait-column\"] .mes:not(.smallSysMes)",
+     "at": []
+    }
+   ]
+  },
+  "--k-pcol-gap": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "18px",
+   "contexts": [
+    {
+     "selector": "body:has(#chat[data-k-mes-variant=\"portrait-column\"])",
+     "at": []
+    }
+   ]
+  },
+  "--k-pcol-radius": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "var(--k-radius-lg)",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait-column\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pcol-top": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait-column\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pcol-w": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "168px",
+   "contexts": [
+    {
+     "selector": "body:has(#chat[data-k-mes-variant=\"portrait-column\"])",
+     "at": []
+    }
+   ]
+  },
+  "--k-ph-mascot-w": {
+   "group": "Phone card",
+   "file": "css/phone-card.css",
+   "default": "132px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-ph__success",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-ph__success",
+     "at": [
+      "@media (max-width: 480px)"
+     ]
+    }
+   ]
+  },
+  "--k-phone-avatar": {
+   "group": "Phone",
+   "file": "css/kotatsu-phone.css",
+   "default": "36px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    }
+   ]
+  },
+  "--k-phone-bar": {
+   "group": "Phone",
+   "file": "css/kotatsu-phone.css",
+   "default": "var(--k-topbar-pill-height, 44px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    }
+   ]
+  },
+  "--k-phone-rail-w": {
+   "group": "Phone",
+   "file": "css/kotatsu-phone.css",
+   "default": "min(340px, 88vw)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    }
+   ]
+  },
+  "--k-pl-chip-size": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "9.5px",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-depth": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "0",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-dim-opacity": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "0.32",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-gap": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "6px",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-hairline": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "1px",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-head-size": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-indent": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-knob": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-meta-size": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "10.5px",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-name-leading": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "1.28",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-name-size": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "12.5px",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-off-opacity": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "0.5",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-pad": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "6px",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-row-h": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "26px",
+   "note": "Slice-local geometry",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-switch-h": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pl-switch-w": {
+   "group": "Prompt list",
+   "file": "css/prompt-list.css",
+   "default": "26px",
+   "contexts": [
+    {
+     "selector": "k-prompt-list[variant=\"list\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-gap": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-hairline": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "1px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-height": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "34px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-label-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "10.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-list-max": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "240px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-mark-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-max-height": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "min(380px, calc(100dvh - 160px))",
+   "note": "Viewport-relative, the same defensive shape --k-mm-max-height uses (shell-topbar.css:379): #k-rail-left clips overflow (shell-frame.css: 117-125), so a popover taller than the rail's own box would be cut rather than spill — this budget keeps it inside the common case.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-name-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "12.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-offset": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-pad-inline": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-portrait": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "22px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-portrait-row": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "20px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pm-selected-fill": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "color-mix(in srgb, var(--k-rose) 12%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-persona-menu[variant=\"chip\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pop-btn-gap": {
+   "group": "Popups",
+   "file": "css/rechrome-popups.css",
+   "default": "10px",
+   "note": "`.k-lib-hero-actions` sits at 8px. Loosened by two here: these are commit-or-cancel decisions, and the tag-import row puts five of them side by side.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pop-btn-pad-block": {
+   "group": "Popups",
+   "file": "css/rechrome-popups.css",
+   "default": "8px",
+   "note": "Button anatomy, copied from `.k-lib-btn`.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pop-btn-pad-inline": {
+   "group": "Popups",
+   "file": "css/rechrome-popups.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pop-hairline": {
+   "group": "Popups",
+   "file": "css/rechrome-popups.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent)",
+   "note": "Hairline off the UNPINNED peer, not `--k-border`: applyThemeColor() can inline-pin `--k-border` onto :root from a legacy theme JSON and outrank every sheet rule (css/tokens.css:79-83). Same recipe, name for name, as `--k-studio-hairline` and `--k-lib-hairline`.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pop-hover-fill": {
+   "group": "Popups",
+   "file": "css/rechrome-popups.css",
+   "default": "color-mix(in srgb, var(--k-accent) 10%, transparent)",
+   "note": "One accent wash for every ghost control in the sheet — the same mix `--k-ghost-hover`, `--k-lib-hover-fill` and `--k-studio-hover-fill` all spell out.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pop-pad": {
+   "group": "Popups",
+   "file": "css/rechrome-popups.css",
+   "default": "18px",
+   "note": "The sheet's own inset. Stock is `4px 14px` (css/popup.css:15), which puts 15px above the title and 5px under the button row — the asymmetry reads as a crop, and it gets worse the moment the row grows to pill height.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pop-pad-top": {
+   "group": "Popups",
+   "file": "css/rechrome-popups.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pop-toast-pad": {
+   "group": "Popups",
+   "file": "css/rechrome-popups.css",
+   "default": "15px 16px 15px 18px",
+   "note": "Toast card: stock is `15px 15px 15px 50px`, where 50 is a gutter for a raster icon this sheet removes. Vertical stays at stock so no toast gets SHORTER than it is today (contract 7); the left inset is 18 rather than 16 so copy clears kotatsu-chrome §11's 3px status edge.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pop-toast-pad-compact": {
+   "group": "Popups",
+   "file": "css/rechrome-popups.css",
+   "default": "8px 8px 8px 12px",
+   "note": "toastr's own compact breakpoint (`max-width: 480px`), restated verbatim so the small-screen card does not inflate.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pop-ui-size": {
+   "group": "Popups",
+   "file": "css/rechrome-popups.css",
+   "default": "12.5px",
+   "note": "Type: the 12.5px UI size shared by `--k-lib-ui-size` and `--k-studio-ui-size`. Floor is 11px, everywhere.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-popup-wide": {
+   "group": "Docked panels",
+   "file": "css/shell-panels.css",
+   "default": "clamp(750px, 55dvw, 1100px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-portrait-art": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "var(--k-mes-avatar-original, var(--k-mes-avatar))",
+   "contexts": [
+    {
+     "selector": "body #chat[data-k-mes-variant=\"portrait\"] .mes:not(.smallSysMes)",
+     "at": []
+    }
+   ]
+  },
+  "--k-portrait-art-gap": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-portrait-art-min-w": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "120px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-portrait-art-w": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "34%",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-portrait-fade-bottom": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "40%",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-portrait-fade-inner": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "30%",
+   "note": "Mask stops. `0%` = a hard edge flush with the message surface; any positive length = that edge dissolves into the text over that fraction of the box. Moonlit's shipped Echo/Ripple values are inner 30% / bottom 40%, outer and top hard.",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-portrait-fade-outer": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "0%",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-portrait-fade-top": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "0%",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-portrait-min-h": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "140px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-portrait-radius": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-art-scrim-fill": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 88%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-chip-fill": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "color-mix(in srgb, var(--k-surface-2) 85%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-hairline": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "color-mix(in srgb, var(--k-border) 60%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-hero-h": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "340px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-pad": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "28px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-ring": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "var(--k-accent-bright)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-row-here": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "color-mix(in srgb, var(--k-accent) 14%, var(--k-surface))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-scrim-fill": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 45%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-sheet-base": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "var(--k-ground)",
+   "note": "Under the fill: some themes' surface is translucent (native Blue Hour's is 82%), and the sheet sits over the busy right rail behind a light scrim, so the ground backs it.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-sheet-fill": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "var(--k-surface)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-top": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "44px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-width": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "440px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-z-scrim": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "4060",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pp-z-sheet": {
+   "group": "css/portrait-peek.css",
+   "file": "css/portrait-peek.css",
+   "default": "4061",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rack-hairline": {
+   "group": "Rack",
+   "file": "css/rechrome-rack.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent)",
+   "note": "The unpinned-peer hairline. Same recipe as --k-studio-hairline (studio.css:168) and --k-frame-border-color (shell-frame.css:45): reads --k-chrome-border, NOT --k-border, because applyThemeColor() can inline-pin --k-border onto :root from a legacy theme JSON and an inline pin outranks every sheet rule.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rack-hairline-hot": {
+   "group": "Rack",
+   "file": "css/rechrome-rack.css",
+   "default": "color-mix(in srgb, var(--k-accent) 40%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rack-icon-box": {
+   "group": "Rack",
+   "file": "css/rechrome-rack.css",
+   "default": "calc(var(--mainFontSize) * 1.5)",
+   "note": "Chevron: core sizes `.inline-drawer-icon` at `calc(var(--mainFontSize) * 1.5)` (style.css:5554) and Font Awesome pins `line-height: 1` (fontawesome.min.css), so stock's box is exactly a 1.5em square that tracks the user's --fontScale knob. --k-rack-icon-box restates that square as the HIT TARGET while --k-rack-icon-glyph draws a smaller mark inside it: the chonk goes, the target does not move, at any font scale.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rack-icon-glyph": {
+   "group": "Rack",
+   "file": "css/rechrome-rack.css",
+   "default": "calc(var(--mainFontSize) * 1.05)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rack-label-size": {
+   "group": "Rack",
+   "file": "css/rechrome-rack.css",
+   "default": "11px",
+   "note": "Type. Floor 11px, the studio's own floor.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rack-label-track": {
+   "group": "Rack",
+   "file": "css/rechrome-rack.css",
+   "default": "0.11em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rack-row-size": {
+   "group": "Rack",
+   "file": "css/rechrome-rack.css",
+   "default": "12.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rail-collapsed-w": {
+   "group": "Shell frame",
+   "file": "css/shell-frame.css",
+   "default": "0px",
+   "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
+   "contexts": []
+  },
+  "--k-rail-handle-h": {
+   "group": "Shell frame",
+   "file": "css/shell-frame.css",
+   "default": "64px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rail-handle-rest": {
+   "group": "Shell frame",
+   "file": "css/shell-frame.css",
+   "default": "0.5",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rail-handle-w": {
+   "group": "Shell frame",
+   "file": "css/shell-frame.css",
+   "default": "16px",
+   "note": "Slice-local geometry, the §1 pattern (--k-frame-*): declared on the gated body rule rather than :root so it stays out of the pack mirror.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-fill": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "transparent",
+   "note": "The ghost: `.k-lib-btn` is `background: transparent` and reads off its border. `--k-ghost-hover` (css/kotatsu-chrome.css §2) is the one accent tint every ghost control in this codebase already shares.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-gap": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "6px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-icon-pad": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "6px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-min-h": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "30px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-pad-x": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-pad-y": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "6px",
+   "note": "Button Padding is `.k-studio-tab`'s (css/studio.css:386). The icon pad is square and deliberately smaller than the text pad-x: several stock icon buttons are pinned to a fixed square box by an ID rule (`#rm_button_bar .menu_button` is `calc(var(--mainFontSize) * 1.7)`, ~25.5px, at (1,1,1)), and with `box-sizing: border-box` everywhere (style.css:146) a 14px pad would leave the glyph almost no content box. 6px leaves ~13.5px against a 15px glyph — the overflow is centred by the button's own flex centring and renders clean, and the HIT TARGET is that ID rule's box either way.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-size": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "12.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-weight": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "600",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-cat": {
+   "group": "Receipts",
+   "file": "css/receipt-tracker.css",
+   "default": "var(--k-viz-1)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] [data-k-cat=\"chat\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] [data-k-cat=\"preset\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] [data-k-cat=\"character\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] [data-k-cat=\"world\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] [data-k-cat=\"persona\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] [data-k-cat=\"other\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-chevron": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "linear-gradient(45deg, transparent var(--k-rc-chevron-a), var(--k-rc-chevron-ink) var(--k-rc-chevron-a), var(--k-rc-chevron-ink) var(--k-rc-chevron-b), transparent var(--k-rc-chevron-b)), linear-gradient(135deg, transparent var(--k-rc-chevron-a), var(--k-rc-chevron-ink) var(--k-rc-chevron-a), var(--k-rc-chevron-ink) var(--k-rc-chevron-b), transparent var(--k-rc-chevron-b))",
+   "note": "The chevron. Replaces `/img/down-arrow.svg`'s frozen `#888888` triangle — see the header for why this is gradients and not a data: URI, and the parameters block for why the recipe is declared HERE, on the control, and not up there with its own parameters. Declared once; §2f reuses it.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] select",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-chevron-a": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "calc(50% - var(--k-rc-chevron-weight) / 2)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-chevron-arm": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-chevron-b": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "calc(50% + var(--k-rc-chevron-weight) / 2)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-chevron-ink": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-text-muted)",
+   "note": "Chevron Two diagonal bands, each clipped to its own `--k-rc-chevron-arm` square: 45deg puts a \"\\\" through the left square, 135deg a \"/\" through the right one, and the two squares are laid edge to edge so the strokes meet at the bottom — a 10x5 stroked chevron with the arm angle a designer would draw. The `a`/`b` stops are the band edges: the gradient line across a 5px square at 45° is 5√2 ≈ 7.07px long, so `50% ± weight/2` in px IS the stroke width measured perpendicular to the stroke. The ink is a var, not a literal, on purpose — it is what makes this repaintable. A pack retints every chevron in the app by declaring `--k-rc-chevron-ink`, and the hover rules retint one control the same way. The RECIPE itself (`--k-rc-chevron`) is deliberately NOT declared here, next to its own parameters, and that is not an oversight. A custom property's computed value is its token stream WITH ITS var()s ALREADY SUBSTITUTED, resolved on the element that declares it — so a `--k-rc-chevron` declared on `body` would bake in body's ink and then be inherited already-frozen. Overriding `--k-rc-chevron-ink` on `select:hover` would compile, apply, and change absolutely nothing. It lives on the `select` rule instead, §2a, where the substitution happens on the control itself and the hover override is in scope.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] select:hover",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] select:focus-visible",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-control select:hover",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-control select:focus-visible",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-chevron-ink-active": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-accent-bright)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-chevron-inset": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "9px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-chevron-weight": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "1.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-danger-fill": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "color-mix(in srgb, var(--k-danger) 16%, transparent)",
+   "note": "Danger `--k-danger` tinted the way `.k-lib-btn--primary` tints `--k-accent` (css/library.css:321-331): 18%-ish fill, 55%-ish border, strong ink. The stock treatment was a flat opaque `--crimson70a` slab that went FULL `--fullred` on hover — a solid red brick in a sheet full of hairlines.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-danger-fill-hover": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "color-mix(in srgb, var(--k-danger) 30%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-danger-ink": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-danger)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-danger-line": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "color-mix(in srgb, var(--k-danger) 50%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-danger-line-hover": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-danger)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-field-fill": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "color-mix(in srgb, var(--k-ground-deep) 70%, transparent)",
+   "note": "Field (the select bar) `--k-inset-border` is css/kotatsu-chrome.css §2's own name for this layer (\"inline drawers, roster entries, inset fields\") and already carries stock's 28% strength, so the bar's edge does not get heavier than it was. The fill is css/library.css's `--k-lib-field-fill` recipe: the deepest ground token, held translucent so the bar reads as CUT INTO whatever panel it lands on instead of as a slab laid over it.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-field-fill-hover": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "color-mix(in srgb, var(--k-ground-deep) 84%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-field-lh": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "1.35",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-field-line": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-inset-border)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-field-pad-x": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-field-pad-y": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "6px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-field-radius": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-radius-md)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-field-size": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "12.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-hairline": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent)",
+   "note": "Same recipe as `--k-lib-hairline` / `--k-studio-hairline`, restated rather than borrowed: those are sheet-local to their own slices. Derived from the UNPINNED peer `--k-chrome-border`, because applyThemeColor() can inline-pin `--k-border` onto :root from a legacy theme JSON and an inline pin outranks every `body[data-k-theme]` rule (css/tokens.css:79-83).",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-ring": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "color-mix(in srgb, var(--k-accent) 34%, transparent)",
+   "note": "`.k-studio-control`'s focus ring, restated locally (css/studio.css:547).",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-select-gutter": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "calc(var(--k-rc-chevron-inset) + var(--k-rc-chevron-arm) * 2 + 5px)",
+   "note": "Text must clear both arms plus a breath: inset + 2 arms + 5px.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-area-line": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "1.5",
+   "note": "A paragraph needs air a single line does not; textareas take the studio's leading.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-check-gap": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-check-min": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "16px",
+   "note": "Core sizes the box off `--mainFontSize` (style.css:4071-4072): 15px at fontScale 1, and smaller the moment the user turns the font knob down. This is a FLOOR, not a fixed size — the box still grows with the knob, it just may not fall under 16px.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-counter-size": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "0.85em",
+   "note": "The two counter boxes are metadata, and metadata is mono in this house (css/kotatsu-chrome.css §3 already lists `.neo-range-input` in that group). 0.85em of the counter block's own 0.95em ≈ 12px, which clears the 11px type floor.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-fill": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "var(--k-ground-deep)",
+   "note": "Fields read as CUT INTO the panel. The darkest surface token there is.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-hairline": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (prefers-contrast: more)"
+     ]
+    }
+   ]
+  },
+  "--k-rcf-hairline-lit": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "color-mix(in srgb, var(--k-accent) 45%, transparent)",
+   "note": "Hover: the same hairline, leaned on. Not a colour change, a pressure change.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-line": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "1.35",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-pad-x": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-pad-y": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "6px",
+   "note": "Field rhythm",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-radius": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "var(--k-radius-md)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-ring": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "color-mix(in srgb, var(--k-accent) 34%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (prefers-contrast: more)"
+     ]
+    }
+   ]
+  },
+  "--k-rcf-ring-w": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "3px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-size": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "13px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-slider-h": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "var(--k-rcf-thumb-outer)",
+   "note": "The `.neo-range-slider` box only. Exactly the thumb's outer size, so the thumb stops overflowing the control it belongs to and the whole of it becomes grabbable.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-thumb-core": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "14px",
+   "note": "14px core + a 2px ring on each side, copied off the webkit thumb core already ships (style.css:4311-4326).",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-thumb-outer": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "calc(var(--k-rcf-thumb-core) + var(--k-rcf-thumb-ring-w) * 2)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-thumb-rim": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "color-mix(in srgb, var(--k-ground-deep) 90%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-thumb-ring-w": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "2px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-track-fill": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) 40%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-track-h": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "4px",
+   "note": "The visible bar keeps stock's 4px (style.css:4300); the weight of the line was never the problem. Read §4 before touching any of these — the split between the two slider families, and the reason only one of them declares a track height, is a measured hit-target result, not a preference.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rcf-track-inset": {
+   "group": "Fields",
+   "file": "css/rechrome-fields.css",
+   "default": "inset 0 0 2px color-mix(in srgb, var(--k-scrim) 50%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-badge-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-block-pad": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-branch-indent": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "12px",
+   "note": "Branches section (branch panel v0 slice C). One indent step per hop away from the open chat, a tighter gap for the trailing fork/recency pair, and a size below --k-rl-meta-size for the two badges, which are annotations on a row rather than a column of their own.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-branch-meta-gap": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "6px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-chat-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "11.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-chip-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "24px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-chip-size-text": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "10.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-gap": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-head-height": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "28px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-head-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "10.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-head-track": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "0.1em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-icon-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "20px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-inset": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-meta-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-name-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "13px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-quiet-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "11.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-row-height": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "34px",
+   "note": "Slice-local geometry (mockup numbers, docs/shell-v0.md §\"The target\")",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-row-pad": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-section-gap": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-weight-active": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "600",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-weight-head": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "700",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-weight-rest": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "500",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-script-gap": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "28px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"script\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-script-measure": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "58ch",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"script\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-script-name-gap": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"script\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-script-name-size": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "0.72em",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"script\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-script-name-track": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "0.18em",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"script\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-active-fill": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "color-mix(in srgb, var(--k-rose) 12%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-btn-h": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "32px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-card-border": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) 22%, transparent)",
+   "note": "The card's own hairline stop (22%) doubles as its border AND its eyebrow's underline — one name, both jobs, since the README gives them the same number.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-card-fill": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "color-mix(in srgb, var(--k-surface-2) 60%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-chip-h": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "22px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-close-size": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "30px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-danger-border": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "color-mix(in srgb, var(--k-danger) 40%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-eyebrow-gap": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "6px",
+   "note": "Eyebrow-to-title gap in the header's now-inline copy row (§2), NOT the card eyebrow's own spacing — that one is a literal in the card rule, straight off the README table, because it no longer shares a formula with anything else.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-eyebrow-size": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-eyebrow-track": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "0.16em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-field-fill": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "var(--k-ground-deep)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-gap": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "16px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-group-gap": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "12px",
+   "note": "Group-to-group spacing. Was the `.k-set-rows` flex gap when groups were bare eyebrow runs; now it is `.k-set-group`'s own margin-bottom, because `.k-set-rows` is a `columns` container and multicol has no row-gap for the blocks stacked inside one column — see the card comment below.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-hairline": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-height": {
+   "group": "Phone",
+   "file": "css/kotatsu-phone.css",
+   "default": "100dvh",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-settings-modal",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-hint-size": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-hover-fill": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "color-mix(in srgb, var(--k-accent) 10%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-input-h": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "27px",
+   "note": "Row controls only — the header search pill and close button are their own literals now (§2), decoupled on purpose: a 49px header and a 27px row never wanted the same number twice. 27, not the README's 24-25: a bare 25px clipped stock `<select>`'s own line-height/padding against a fixed box (pixel QA, \"Blue Hour (Native)\"/\"Card\"/\"Inline\"/\"List\" cut at the baseline) — 2px bought back the room, and the select rule below still pins its own line-height and padding-block explicitly rather than trusting that 2px alone holds at every font scale.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-label-size": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "11.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-label-track": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "0.09em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-nav-w": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "180px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-pad": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "16px 20px 20px",
+   "note": "Body padding only now — the header's diverged (§2 below) since it dropped to a single 49px row and stopped sharing a rhythm with the panel underneath it.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-ring": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "color-mix(in srgb, var(--k-accent) 34%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-row-hairline": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) 12%, transparent)",
+   "note": "The per-row separator inside a card. Lighter than the card's own border (12% against 22%) so eight rows don't out-shout the four corners holding them.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-run-gap": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "0px",
+   "note": "Row-to-row inside a run. Zero, on purpose: the per-row hairline (§4) is what separates rows now, and a gap on top of a border would double the seam. This is also the color-grid's row-gap — \"0 18px\" falls out of this var plus `--k-set-weave-gap` below with no extra rule needed.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-scrim-fill": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 72%, transparent)",
+   "note": "Surfaces",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-search-h": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "30px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-sheet-fill": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "var(--k-surface)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-title-lh": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "1",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-title-size": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "21px",
+   "note": "Fixed now, not a clamp: the header is one literal 49px row, not a shape that negotiates with viewport width.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-ui-size": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "12.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-weave-gap": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "18px",
+   "note": "The weave's column gutter, and the color grid's. Wider than the row gap so the two columns read as columns rather than as one wrapped list.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-width": {
+   "group": "Phone",
+   "file": "css/kotatsu-phone.css",
+   "default": "100vw",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-settings-modal",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-z-scrim": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "4090",
+   "note": "Stacking (mirrors SETTINGS_Z in k-settings-modal.js)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-set-z-sheet": {
+   "group": "Settings",
+   "file": "kotatsu/settings/settings-modal.css",
+   "default": "4091",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-split-gap": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "5px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-split-pad-x": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "var(--k-bubble-pad-x)",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-split-pad-y": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "var(--k-bubble-pad-y)",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-area-min-h": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "120px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-area-tall-h": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "180px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-eyebrow-size": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-eyebrow-track": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "0.16em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-field-fill": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-ground-deep)",
+   "note": "Fields read as CUT INTO the panel — Kirara's move. The darkest surface token there is.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-field-radius": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-radius-md)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-field-size": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "13px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-gap": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "clamp(14px, 1.4vw, 22px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-hairline": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-hint-size": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-hover-fill": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "color-mix(in srgb, var(--k-accent) 10%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-input-h": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "34px",
+   "note": "Field heights",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-label-size": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-label-track": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "0.11em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-max-h": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "calc(100dvh - 64px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-pad": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "clamp(16px, 1.6vw, 26px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-rail-w": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "280px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-ring": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "color-mix(in srgb, var(--k-accent) 34%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-scrim-fill": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 72%, transparent)",
+   "note": "Surfaces",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-sheet-fill": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-surface)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-title-lh": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "1.1",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-title-size": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "clamp(22px, 2vw, 30px)",
+   "note": "Type (floor 11px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-ui-size": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "12.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-width": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "min(1060px, calc(100vw - 64px))",
+   "note": "Sheet geometry (doc §2.2)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-z-scrim": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "4100",
+   "note": "Stacking (mirrors STUDIO_Z in k-card-studio.js)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-z-sheet": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "4101",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-swipe-arrow": {
+   "group": "Phone",
+   "file": "css/kotatsu-phone.css",
+   "default": "38px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "at": [
+      "@media (pointer: coarse)"
+     ]
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "at": []
+    }
+   ]
+  },
+  "--k-swipe-count-w": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "42px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "at": []
+    }
+   ]
+  },
+  "--k-swipe-h": {
+   "group": "Phone",
+   "file": "css/kotatsu-phone.css",
+   "default": "34px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "at": [
+      "@media (pointer: coarse)"
+     ]
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "at": []
+    }
+   ]
+  },
+  "--k-swipe-inset": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-chip-gap": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "7px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-chip-height": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "26px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-chip-pad": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "9px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-cmd-font": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "12.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-cmd-gap": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-cmd-height": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "30px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-cmd-icon": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "13px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-cmd-pad": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-cmd-width": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "420px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-dot-halo": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "7px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-dot-size": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "6px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-focus-ring": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "2px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-gear-size": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "26px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-glow-blur": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "9px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-glow-halo": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "20px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-glow-size": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-hairline": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "1px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-hint-pad-block": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "1px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-hint-pad-inline": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-icon-size": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-label-size": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "11.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-label-weight": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "600",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-left-gap": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "9px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-left-zone": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "264px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-model-max": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "190px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-mono-size": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "11.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-pad-inline": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-provider-max": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "118px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-right-gap": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-wordmark-size": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "15px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-wordmark-tracking": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "-0.01em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-wordmark-weight": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "700",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-topbar-zone-gap": {
+   "group": "Top bar",
+   "file": "css/shell-topbar.css",
+   "default": "12px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-gap": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-label-size": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "10.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-label-track": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "0.01em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-page-pad": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-quiet-size": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "11.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-row-height": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "34px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-row-pad": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-strip-gap": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "4px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-strip-pad": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "8px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-tab-gap": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-tab-height": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "32px",
+   "note": "Slice-local geometry (mockup numbers, docs/shell-v0.md §\"The target\")",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-tab-pad": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "7px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-weight-active": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "600",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-tr-weight-rest": {
+   "group": "Right rail",
+   "file": "css/shell-right.css",
+   "default": "500",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  }
+ }
+}

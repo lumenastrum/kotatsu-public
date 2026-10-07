@@ -17,6 +17,7 @@
  */
 
 import { installAnSheet, uninstallAnSheet } from '../an-sheet.js';
+import { installPortraitPeek, uninstallPortraitPeek } from '../../renderer/k-portrait-peek.js';
 import { installDocScrollPin, uninstallDocScrollPin } from '../doc-scroll-pin.js';
 import { installExtDock, uninstallExtDock } from '../ext-dock.js';
 import { installExtGuard, uninstallExtGuard } from '../ext-guard.js';
@@ -243,6 +244,11 @@ export const railsLayout = {
         // itself is not touched; the installer only observes it.
         installAnSheet();
 
+        // Portrait peek v0 (docs/portrait-peek-v0.md): a click on a row portrait opens the peek
+        // sheet / art lightbox instead of core's MovingUI zoom, which lands behind the left rail
+        // under rails. One capture listener on #chat; unmount hands the click back to core.
+        installPortraitPeek();
+
         // Rail collapse (variant wardrobe v0 slice C). Last, so the first apply()
         // describes rails whose components have already mounted — and so a
         // stored `collapsed` hides a real rail rather than an empty slot that is
@@ -291,6 +297,7 @@ export const railsLayout = {
         uninstallRailCollapse();
         uninstallExtDock();
         uninstallAnSheet();
+        uninstallPortraitPeek();
         // Before restoreAll(), like every other centre-column guest: the element's
         // disconnectedCallback is what unbinds its document listeners, so it has to run while
         // #sheld is still where the gallery expects it (the tab-rail ordering lesson).

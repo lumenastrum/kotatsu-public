@@ -207,8 +207,14 @@ body[data-k-layout="rails"] .k-gc__field {
 
 body[data-k-layout="rails"] .k-gc__cap {
     font: 600 11px var(--k-font-ui);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    /* The label voice, over the shorthand. Each fallback is exactly what the shorthand sets
+       (an `inherit` here would replace --k-font-ui with the parent's face, since the voice
+       tokens default to `initial`). */
+    font-family: var(--k-font-label, var(--k-font-ui));
+    font-size: calc(11px * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 600);
+    letter-spacing: var(--k-label-tracking, 0.06em);
+    text-transform: var(--k-label-case, uppercase);
     color: var(--k-text-muted);
 }
 

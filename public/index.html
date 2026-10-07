@@ -111,6 +111,9 @@
          same reason as the studio: the view reuses the gallery's `.k-lib-*` rules and only
          adds to them. Rails-only and gated the same way. See the sheet's header. -->
     <link rel="stylesheet" type="text/css" href="css/market.css">
+    <!-- Portrait peek v0 (docs/portrait-peek-v0.md): what a click on a row portrait opens under
+         rails. Owns its own classes only; rails-gated, so classic keeps core's zoomed avatar. -->
+    <link rel="stylesheet" type="text/css" href="css/portrait-peek.css">
     <!-- Settings v0 slice B (docs/settings-v0.md §2). The one Kotatsu sheet that lives beside
          its module rather than in css/, because the settings surface is a module folder that
          also holds the control registry. Rails-only and gated the same way as the studio; it
@@ -158,7 +161,7 @@
 </head>
 
 <body class="no-blur">
-    <script>try{const p=JSON.parse(localStorage.getItem('kotatsu.theme'));if(p?.id&&p?.tokens){for(const[k,v]of Object.entries(p.tokens))document.documentElement.style.setProperty(k,v);document.body.dataset.kTheme=p.id}}catch{}</script>
+    <script>try{const p=JSON.parse(localStorage.getItem('kotatsu.theme'));if(p?.id&&p?.tokens){for(const[k,v]of Object.entries(p.tokens))document.documentElement.style.setProperty(k,v);document.body.dataset.kTheme=p.id;if(Array.isArray(p.rules)&&p.rules.length){const s=document.createElement('style');s.id='k-pack-cache';document.head.append(s);for(const r of p.rules)if(typeof r==='string')try{s.sheet.insertRule(r,s.sheet.cssRules.length)}catch{}}}}catch{}</script>
     <!-- Layout first-paint, same idea as the theme replay above and in its own
          try/catch so one cannot break the other. The shell registers at
          script.js:727, which is long after first paint; without this the rails

@@ -14,6 +14,7 @@ import {
     VARIANT_AXES,
     VARIANT_AXIS_SETTINGS,
 } from './core.js';
+import { expandRuntimeRegistry, planKnobRules, splitOverrides, writeKnobRules } from './knobs.js';
 import { initProseScale } from './prose-scale.js';
 import { initWardrobePicker, renderWardrobePicker } from './wardrobe.js';
 
@@ -61,6 +62,7 @@ const ALL_LEGACY_PINS = [...LEGACY_TOKEN_PINS, ...SMART_THEME_PINS];
  * @property {string} src
  * @property {string} [weight]
  * @property {string} [style]
+ * @property {string} [unicodeRange]
  */
 
 /**
@@ -86,6 +88,10 @@ let activePackVariants = readVariantAxes(null);
 let knownTokensPromise = null;
 /** @type {Promise<Record<string, string>>|null} */
 let blueHourTokensPromise = null;
+/** @type {Promise<import('./knobs.js').RuntimeKnobRegistry>|null} */
+let knobRegistryPromise = null;
+/** @type {Promise<Set<string>>|null} Core tokens + knob names, built once (every pack in a chain asks). */
+let allowedNamesPromise = null;
 /** @type {string|null} */
 let currentPackId = null;
 /** @type {Map<string, {value: string, priority: string}>|null} */
@@ -161,6 +167,51 @@ function getKnownTokens() {
         });
 
     return knownTokensPromise;
+}
+
+/**
+ * Loads the component knobs' boot-time slice (`knobs.runtime.json`: names and the places each is
+ * declared, nothing for authors), lazily: only a pack that writes a name tokens.css does not
+ * declare ever costs the fetch, so Blue Hour, Sparkle and Natsumikan boot exactly as they did
+ * before knobs existed. The full authoring catalog (`knobs.json`) is never fetched by the app.
+ * @returns {Promise<import('./knobs.js').RuntimeKnobRegistry>}
+ */
+function getKnobRegistry() {
+    knobRegistryPromise ??= fetch('/kotatsu/theme/knobs.runtime.json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Could not load the knob catalog (${response.status})`);
+            }
+            return response.json();
+        })
+        .then(packed => expandRuntimeRegistry(packed))
+        .catch(error => {
+            knobRegistryPromise = null;
+            throw error;
+        });
+    return knobRegistryPromise;
+}
+
+/**
+ * The names a manifest may use: core tokens, plus the knob catalog when the manifest reaches
+ * past the core set.
+ * @param {unknown} manifest
+ * @returns {Promise<Set<string>>}
+ */
+async function getAllowedTokens(manifest) {
+    const known = await getKnownTokens();
+    const tokens = manifest && typeof manifest === 'object' && !Array.isArray(manifest)
+        ? /** @type {{tokens?: unknown}} */ (manifest).tokens
+        : null;
+    const names = tokens && typeof tokens === 'object' && !Array.isArray(tokens) ? Object.keys(tokens) : [];
+    if (names.every(name => known.has(name))) return known;
+    allowedNamesPromise ??= getKnobRegistry()
+        .then(registry => new Set([...known, ...Object.keys(registry.knobs)]))
+        .catch(error => {
+            allowedNamesPromise = null;
+            throw error;
+        });
+    return allowedNamesPromise;
 }
 
 /**
@@ -292,7 +343,7 @@ async function fetchManifest(id) {
     } catch {
         throw new Error(`Invalid theme pack "${id}": $ must be valid JSON`);
     }
-    const validation = validateManifest(manifest, await getKnownTokens());
+    const validation = validateManifest(manifest, await getAllowedTokens(manifest));
     if (!validation.ok) {
         const details = validation.errors.map(error => `${error.path}: ${error.message}`).join('; ');
         throw new Error(`Invalid theme pack "${id}": ${details}`);
@@ -333,6 +384,9 @@ function resetAppliedState(removeCache) {
     document.body?.removeAttribute('data-k-theme');
     document.getElementById('k-pack-fonts')?.remove();
     document.getElementById('k-pack-sheet')?.remove();
+    document.getElementById('k-pack-knobs')?.remove();
+    // The first-paint replay's copy of the knob rules (index.html); the real ones replace it.
+    document.getElementById('k-pack-cache')?.remove();
     currentPackId = null;
     activePackVariants = readVariantAxes(null);
 
@@ -472,6 +526,7 @@ function buildFontSheet(fonts) {
         ];
         if (font.weight) descriptors.push(`font-weight: ${font.weight};`);
         if (font.style) descriptors.push(`font-style: ${font.style};`);
+        if (font.unicodeRange) descriptors.push(`unicode-range: ${font.unicodeRange};`);
         return `@font-face { ${descriptors.join(' ')} }`;
     }).join('\n');
 }
@@ -480,18 +535,37 @@ function buildFontSheet(fonts) {
  * Applies an already validated and resolved pack to the document.
  * @param {ResolvedThemePack} resolved
  * @param {Record<string, string>} blueHourTokens
+ * @param {import('./knobs.js').RuntimeKnobRegistry|null} knobRegistry Needed only when the pack sets knobs.
  * @returns {void}
  */
-function commitPack(resolved, blueHourTokens) {
+function commitPack(resolved, blueHourTokens, knobRegistry) {
     const overrides = getTokenOverrides(resolved.tokens, blueHourTokens);
+    // Core tokens and root-scoped knobs go inline on <html>; component knobs become one scoped
+    // sheet (theme/knobs.js). The Blue Hour mirror carries every core name, so it is the core set.
+    const { root, scoped } = splitOverrides(overrides, new Set(Object.keys(blueHourTokens)), knobRegistry);
     snapshotLegacyPins();
     resetAppliedState(false);
     stripLegacyPins();
     const rootStyle = document.documentElement.style;
 
-    for (const [token, value] of Object.entries(overrides)) {
+    for (const [token, value] of Object.entries(root)) {
         rootStyle.setProperty(token, value);
         activeTokenNames.add(token);
+    }
+    // Built through the CSSOM, never as text (knobs.js `writeKnobRules`): a pack value can only
+    // ever be one custom-property value. The cache keeps the browser's own serialization.
+    const knobRules = knobRegistry ? planKnobRules(scoped, knobRegistry, resolved.id) : [];
+    /** @type {string[]} */
+    let knobCssText = [];
+    if (knobRules.length > 0) {
+        const style = document.createElement('style');
+        style.id = 'k-pack-knobs';
+        document.head.append(style);
+        const written = writeKnobRules(/** @type {CSSStyleSheet} */ (style.sheet), knobRules);
+        knobCssText = written.cssText;
+        for (const { name, value, reason } of written.refused) {
+            console.warn(`[Kotatsu theme] ${resolved.id}: ${reason ?? `the browser refused ${JSON.stringify(value)}`} for ${name}; it was left unset.`);
+        }
     }
 
     document.body.dataset.kTheme = resolved.id;
@@ -523,7 +597,12 @@ function commitPack(resolved, blueHourTokens) {
         // axis keeps the v0 key name `variant` so caches written before the wardrobe replay.
         localStorage.setItem(CACHE_KEY, JSON.stringify({
             id: resolved.id,
-            tokens: overrides,
+            tokens: root,
+            // The knob rules replay at first paint too (index.html), so a knob-dressed pack does
+            // not flash the stock component look before settings load. One entry per rule, as
+            // the browser serialized it; the replay inserts them one `insertRule()` at a time, so
+            // an entry can never become more than one rule. Absent for knob-free packs.
+            rules: knobCssText.length > 0 ? knobCssText : undefined,
             variant: activePackVariants.message ?? undefined,
             nameplate: activePackVariants.nameplate ?? undefined,
             metadata: activePackVariants.metadata ?? undefined,
@@ -538,11 +617,12 @@ function commitPack(resolved, blueHourTokens) {
  * `variants` layer declares.
  * @param {ResolvedThemePack} resolved
  * @param {Record<string, string>} blueHourTokens Canonical Blue Hour mirror.
+ * @param {import('./knobs.js').RuntimeKnobRegistry|null} [knobRegistry] The knob catalog, when the pack sets knobs.
  * @returns {void}
  */
-export function applyPack(resolved, blueHourTokens) {
+export function applyPack(resolved, blueHourTokens, knobRegistry = null) {
     loadRevision++;
-    commitPack(resolved, blueHourTokens);
+    commitPack(resolved, blueHourTokens, knobRegistry);
 }
 
 /**
@@ -576,12 +656,13 @@ async function applyById(value, { persist = true } = {}) {
 
     try {
         if (!getListing(id)) await listPacks();
-        const [resolved, blueHourTokens] = await Promise.all([
-            resolvePack(id, fetchManifest),
-            getBlueHourTokens(),
-        ]);
+        // The Blue Hour mirror is the page's own baseline, so a palette grows against it (core.js).
+        const blueHourTokens = await getBlueHourTokens();
+        const resolved = await resolvePack(id, fetchManifest, { baseline: blueHourTokens });
+        const usesKnobs = Object.keys(resolved.tokens).some(name => !(name in blueHourTokens));
+        const knobRegistry = usesKnobs ? await getKnobRegistry() : null;
         if (revision !== loadRevision) return false;
-        commitPack(/** @type {ResolvedThemePack} */ (resolved), blueHourTokens);
+        commitPack(/** @type {ResolvedThemePack} */ (resolved), blueHourTokens, knobRegistry);
         if (persist) {
             power_user.theme = `${PACK_VALUE_PREFIX}${id}`;
             const select = document.getElementById('themes');

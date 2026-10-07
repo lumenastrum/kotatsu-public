@@ -4,6 +4,8 @@ import path from 'node:path';
 import express from 'express';
 
 import { serverDirectory } from '../../server-directory.js';
+// The files a user pack may serve (fonts, pictures, its sheet); theme:check enforces the same list.
+import { ASSET_TYPES } from './theme-asset-types.js';
 
 const THEME_ID_PATTERN = /^[a-z0-9-]+$/;
 const BUILTIN_THEME_ROOT = path.join(serverDirectory, 'public', 'themes');
@@ -289,7 +291,25 @@ router.get('/:id/assets/*', async (request, response) => {
             return response.sendStatus(404);
         }
 
-        return response.sendFile(assetFile, { dotfiles: 'deny' });
+        // A pack is shared by strangers and served from Kotatsu's own origin: only the kinds of
+        // file a theme can use leave this route, never sniffed into something else, and a file
+        // opened directly (an SVG with a script in it, say) runs sandboxed, with no scripts and
+        // no access to the app.
+        const type = ASSET_TYPES[path.extname(assetFile).toLowerCase()];
+        if (!type) {
+            return response.sendStatus(404);
+        }
+        response.set({
+            'Content-Type': type,
+            'X-Content-Type-Options': 'nosniff',
+            'Content-Security-Policy': 'default-src \'none\'; style-src \'unsafe-inline\'; sandbox',
+        });
+
+        // Relative to the theme-packs root, so `dotfiles: 'deny'` judges the pack's own path
+        // (a hidden file inside the pack), not the data folder's location on disk: a data root
+        // under a dot-folder (~/.local/share/..., a --dataRoot like .kotatsu) used to 403 every
+        // user pack asset.
+        return response.sendFile(path.relative(userThemeRoot, assetFile), { root: userThemeRoot, dotfiles: 'deny' });
     } catch (error) {
         console.error(`Failed to read Kotatsu theme asset ${request.params.id}/${assetPath}:`, error);
         return response.sendStatus(500);

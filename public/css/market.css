@@ -377,10 +377,11 @@ body[data-k-layout="rails"] .k-mkt-preview-fold {
 
 body[data-k-layout="rails"] .k-mkt-preview-fold-title {
     color: var(--k-text-muted);
-    font-size: var(--k-lib-section-size);
-    font-weight: 700;
-    letter-spacing: var(--k-lib-eyebrow-track);
-    text-transform: uppercase;
+    font-size: calc(var(--k-lib-section-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, var(--k-lib-eyebrow-track));
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
     cursor: pointer;
 }
 

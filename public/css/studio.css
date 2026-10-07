@@ -159,10 +159,11 @@ body[data-k-layout="rails"] .k-studio-head-copy {
 
 body[data-k-layout="rails"] .k-studio-eyebrow {
     color: var(--k-accent);
-    font-size: var(--k-studio-eyebrow-size);
-    font-weight: 700;
-    letter-spacing: var(--k-studio-eyebrow-track);
-    text-transform: uppercase;
+    font-size: calc(var(--k-studio-eyebrow-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, var(--k-studio-eyebrow-track));
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
 }
 
 body[data-k-layout="rails"] .k-studio-title {
@@ -317,10 +318,11 @@ body[data-k-layout="rails"] .k-studio-ready-head {
 
 body[data-k-layout="rails"] .k-studio-ready-label {
     color: var(--k-text-muted);
-    font-size: var(--k-studio-label-size);
-    font-weight: 700;
-    letter-spacing: var(--k-studio-label-track);
-    text-transform: uppercase;
+    font-size: calc(var(--k-studio-label-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, var(--k-studio-label-track));
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
 }
 
 body[data-k-layout="rails"] .k-studio-ready-score {
@@ -459,10 +461,11 @@ body[data-k-layout="rails"] .k-studio-labelrow {
 
 body[data-k-layout="rails"] .k-studio-label {
     color: var(--k-text-muted);
-    font-size: var(--k-studio-label-size);
-    font-weight: 700;
-    letter-spacing: var(--k-studio-label-track);
-    text-transform: uppercase;
+    font-size: calc(var(--k-studio-label-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, var(--k-studio-label-track));
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
     white-space: nowrap;
 }
 

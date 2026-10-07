@@ -132,10 +132,11 @@ body[data-k-layout="rails"] .k-rl-head {
 }
 
 body[data-k-layout="rails"] .k-rl-head-label {
-    font-size: var(--k-rl-head-size);
-    font-weight: var(--k-rl-weight-head);
-    letter-spacing: var(--k-rl-head-track);
-    text-transform: uppercase;
+    font-size: calc(var(--k-rl-head-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, var(--k-rl-weight-head));
+    letter-spacing: var(--k-label-tracking, var(--k-rl-head-track));
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -746,10 +747,11 @@ body[data-k-layout="rails"] k-persona-menu .k-pm__pop {
 
 body[data-k-layout="rails"] k-persona-menu .k-pm__label {
     padding: 8px 8px 4px;
-    font-size: var(--k-pm-label-size);
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: calc(var(--k-pm-label-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 600);
+    letter-spacing: var(--k-label-tracking, 0.06em);
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
     color: var(--k-text-muted);
 }
 

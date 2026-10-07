@@ -1,0 +1,50 @@
+/*
+ * Midnight Kissaten — tracked debt (docs/theme-packs-v0.md decision 11: every rule here is a
+ * missing token). The loader prefixes each rule with body[data-k-theme="midnight-kissaten"].
+ * Each rule below names the token it is standing in for; the guide's Proposals list carries them.
+ */
+
+/* Missing token: a bubble FILL (image), not just a bubble colour. The pendant lamp pools on
+   each reply from above: a warm wash at the top edge of the bubble that is gone by the third
+   line. The colour stays --k-bot-mes / --k-user-mes underneath, so contrast is measured
+   against those. Card paints its bubble on .mes_text, bubble paints it on .mes_block; the
+   other looks are bubble-less (flat, script, broadcast) or carry art (portraits), so the lamp
+   stays off them. */
+#chat[data-k-mes-variant="card"] .mes:not(.smallSysMes) .mes_text:not(:empty),
+#chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block {
+    background-image: linear-gradient(180deg,
+            color-mix(in srgb, var(--k-accent) 8%, transparent),
+            transparent 10em);
+}
+
+/* Missing token: a nameplate face. Speaker names are written by hand, like the menu. */
+#chat .mes .name_text {
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+}
+
+/* Missing token: a panel TEXTURE. The rails are the room's lacquered wood: the colour is still
+   --k-surface-2 (shell-frame.css paints it), this only lays the grain over it. */
+#k-rail-left,
+#k-rail-right {
+    background-image: url("bg/grain.svg");
+    background-size: 240px 640px;
+}
+
+/* Missing tokens: the library's --k-lib-* knobs are component-scope, not tokens.css names.
+   Per-card accent band warmed a little; the gallery's opaque sheet lets the room show through
+   its top so the home page is in the same kissaten as the chat. */
+k-library {
+    --k-lib-accent-s: 46%;
+    --k-lib-accent-l: 70%;
+}
+
+k-library .k-lib-sheet {
+    background-image:
+        linear-gradient(180deg,
+            color-mix(in srgb, var(--k-ground) 30%, transparent),
+            color-mix(in srgb, var(--k-ground) 86%, transparent) 55%),
+        var(--k-app-backdrop);
+    background-size: cover;
+    background-position: center top;
+}

@@ -258,10 +258,11 @@ body[data-k-layout="rails"] .k-bc__field {
 }
 
 body[data-k-layout="rails"] .k-bc__cap {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: calc(11px * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 600);
+    letter-spacing: var(--k-label-tracking, 0.14em);
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
     color: var(--k-text-muted);
 }
 

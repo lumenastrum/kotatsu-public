@@ -48,8 +48,13 @@ const COMMIT_NAME = 'lumenastrum';
  */
 const coAuthor = (model) => `Co-Authored-By: Clio (${model}) <sparklenailsclio@gmail.com>`;
 
-/** Public-facing contracts the README links to; everything else under docs/ is internal. */
-const KEEP_DOCS = new Set(['docs/data-contract.md', 'docs/providers.md']);
+/**
+ * Public-facing docs: the contracts the README links to, and the theme authoring guide with the
+ * example packs it walks through (people make themes from the mirror). Everything else under
+ * docs/ is internal.
+ */
+const KEEP_DOCS = new Set(['docs/data-contract.md', 'docs/providers.md', 'docs/theme-authoring-guide.md']);
+const KEEP_DOC_PREFIXES = ['docs/theme-examples/'];
 // default/presets-upstream/ holds authors' original files; the mirror ships the normalized copies.
 const STRIP_PREFIXES = ['docs/', 'tests/', '.claude/', 'default/presets-upstream/'];
 const STRIP_FILES = new Set(['CLAUDE.md']);
@@ -62,7 +67,7 @@ const STRIP_FILES = new Set(['CLAUDE.md']);
 const PLACEHOLDERS = new Set(['data/.gitkeep', 'plugins/.gitkeep', 'plugins/package.json', 'backups/!README.md']);
 const FORBIDDEN = [
     /^(data|plugins|backups)\//, /^config\.yaml$/, /(^|\/)secrets\.json$/,
-    /^CLAUDE\.md$/, /^\.claude\//, /^tests\//, /^docs\/(?!data-contract\.md$|providers\.md$)/,
+    /^CLAUDE\.md$/, /^\.claude\//, /^tests\//, /^docs\/(?!data-contract\.md$|providers\.md$|theme-authoring-guide\.md$|theme-examples\/)/,
     /^node_modules\//, /\.jsonl$/,
 ];
 const isForbidden = (rel) => !PLACEHOLDERS.has(rel) && FORBIDDEN.some((re) => re.test(rel));
@@ -116,7 +121,7 @@ function sha256(file) {
 
 function shouldStrip(rel) {
     if (STRIP_FILES.has(rel)) return true;
-    if (KEEP_DOCS.has(rel)) return false;
+    if (KEEP_DOCS.has(rel) || KEEP_DOC_PREFIXES.some((prefix) => rel.startsWith(prefix))) return false;
     return STRIP_PREFIXES.some((prefix) => rel.startsWith(prefix));
 }
 

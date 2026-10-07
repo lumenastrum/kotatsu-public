@@ -221,10 +221,11 @@ body[data-k-layout="rails"] .k-set-head-copy {
    for the inline baseline nudge below. */
 body[data-k-layout="rails"] .k-set-eyebrow {
     color: var(--k-accent);
-    font-size: var(--k-set-eyebrow-size);
-    font-weight: 700;
-    letter-spacing: var(--k-set-eyebrow-track);
-    text-transform: uppercase;
+    font-size: calc(var(--k-set-eyebrow-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, var(--k-set-eyebrow-track));
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
 }
 
 /* Inline variant: the header's "KOTATSU" now sits beside "Settings" instead of above
@@ -239,10 +240,11 @@ body[data-k-layout="rails"] .k-set-header-eyebrow {
     top: 3px;
     margin-inline-start: 8px;
     color: var(--k-accent);
-    font-size: var(--k-set-eyebrow-size);
-    font-weight: 700;
-    letter-spacing: var(--k-set-eyebrow-track);
-    text-transform: uppercase;
+    font-size: calc(var(--k-set-eyebrow-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, var(--k-set-eyebrow-track));
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
 }
 
 body[data-k-layout="rails"] .k-set-title {
@@ -545,12 +547,12 @@ body[data-k-layout="rails"] .k-set-group-eyebrow {
     padding: 0 6px 5px;
     border-bottom: 1px solid var(--k-set-card-border);
     color: var(--k-text-muted);
-    font-family: var(--k-font-ui);
-    font-size: var(--k-set-eyebrow-size);
-    font-weight: 700;
-    letter-spacing: var(--k-set-eyebrow-track);
+    font-family: var(--k-font-label, var(--k-font-ui));
+    font-size: calc(var(--k-set-eyebrow-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, var(--k-set-eyebrow-track));
     line-height: 1.3;
-    text-transform: uppercase;
+    text-transform: var(--k-label-case, uppercase);
 }
 
 body[data-k-layout="rails"] .k-set-run {

@@ -161,9 +161,9 @@ body[data-k-layout="rails"] .k-lib-sheet {
     /* Opaque on purpose (doc §0): the chat is still mounted underneath and must not read
        through. The ambient wash matches what the shell paints elsewhere. */
     background-color: var(--k-ground);
-    background-image: linear-gradient(180deg,
-            color-mix(in srgb, var(--k-backdrop-top) 70%, transparent),
-            var(--k-ground) 42%);
+    /* tokens.css §Materials: the library's backdrop. Its default is the ambient wash this rule
+       always painted; a pack can hang its room here (`var(--k-app-backdrop)`) instead. */
+    background-image: var(--k-material-library);
 }
 
 body[data-k-layout="rails"] .k-lib-page {
@@ -263,10 +263,11 @@ body[data-k-layout="rails"] .k-lib-hero-copy {
 
 body[data-k-layout="rails"] .k-lib-eyebrow {
     color: var(--k-accent);
-    font-size: var(--k-lib-eyebrow-size);
-    font-weight: 700;
-    letter-spacing: var(--k-lib-eyebrow-track);
-    text-transform: uppercase;
+    font-size: calc(var(--k-lib-eyebrow-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, var(--k-lib-eyebrow-track));
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
 }
 
 /* The serif voice. `--k-font-display` is Newsreader, self-hosted and resolved by
@@ -344,11 +345,11 @@ body[data-k-layout="rails"] .k-lib-continue {
 body[data-k-layout="rails"] .k-lib-sectiontitle {
     margin: 0;
     color: var(--k-text-muted);
-    font-family: inherit;
-    font-size: var(--k-lib-section-size);
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font-family: var(--k-font-label, inherit);
+    font-size: calc(var(--k-lib-section-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, 0.1em);
+    text-transform: var(--k-label-case, uppercase);
 }
 
 body[data-k-layout="rails"] .k-lib-recents {
@@ -802,10 +803,11 @@ body[data-k-layout="rails"] .k-lib-card-copy {
 
 body[data-k-layout="rails"] .k-lib-card-kicker {
     color: var(--card-accent);
-    font-size: var(--k-lib-kicker-size);
-    font-weight: var(--k-lib-kicker-weight);
-    letter-spacing: var(--k-lib-kicker-track);
-    text-transform: uppercase;
+    font-size: calc(var(--k-lib-kicker-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, var(--k-lib-kicker-weight));
+    letter-spacing: var(--k-label-tracking, var(--k-lib-kicker-track));
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;

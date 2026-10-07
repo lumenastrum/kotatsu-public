@@ -167,11 +167,11 @@ body[data-k-layout="rails"] .k-onb-speaker {
     display: block;
     margin-bottom: 4px;
     color: var(--k-rose);
-    font-family: var(--k-font-ui);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.11em;
-    text-transform: uppercase;
+    font-family: var(--k-font-label, var(--k-font-ui));
+    font-size: calc(11px * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, 0.11em);
+    text-transform: var(--k-label-case, uppercase);
 }
 
 body[data-k-layout="rails"] .k-onb-body {
@@ -237,10 +237,11 @@ body[data-k-layout="rails"] .k-onb-field {
 
 body[data-k-layout="rails"] .k-onb-label {
     color: var(--k-text-muted);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.11em;
-    text-transform: uppercase;
+    font-size: calc(11px * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, 0.11em);
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
 }
 
 body[data-k-layout="rails"] .k-onb-select {

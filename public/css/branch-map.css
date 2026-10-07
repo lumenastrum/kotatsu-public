@@ -412,9 +412,9 @@ k-branch-map[variant="overlay"] .k-bm-chip {
     block-size: 15px;
     border: var(--k-bm-hairline) solid transparent;
     border-radius: var(--k-radius-pill);
-    font-size: var(--k-bm-chip-size);
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    font-size: calc(var(--k-bm-chip-size) * var(--k-label-scale, 1));
+    letter-spacing: var(--k-label-tracking, 0.02em);
+    text-transform: var(--k-label-case, uppercase);
     white-space: nowrap;
 }
 
@@ -549,10 +549,11 @@ k-branch-map[variant="overlay"] .k-bm-card-label {
     display: block;
     margin-block-end: 4px;
     color: var(--k-text-faint);
-    font-size: var(--k-bm-chip-size);
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font-size: calc(var(--k-bm-chip-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, 0.1em);
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
 }
 
 k-branch-map[variant="overlay"] .k-bm-facts {
@@ -787,9 +788,10 @@ k-branch-map[variant="overlay"] .k-bm-story {
 }
 
 k-branch-map[variant="overlay"] .k-bm-story-label {
-    font-size: 10.5px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    font-size: calc(10.5px * var(--k-label-scale, 1));
+    letter-spacing: var(--k-label-tracking, 0.12em);
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
     color: var(--k-text-faint);
 }
 

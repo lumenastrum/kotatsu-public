@@ -1,0 +1,88 @@
+{
+    "$schema": "../../kotatsu/theme/theme.schema.json",
+    "id": "midnight-kissaten",
+    "name": "Midnight Kissaten",
+    "version": 1,
+    "extends": "blue-hour",
+    "tokens": {
+        "--k-ground": "#120c09",
+        "--k-ground-deep": "#0d0806",
+        "--k-surface": "#1f1611",
+        "--k-backdrop-top": "#1c120d",
+        "--k-surface-2": "#18100c",
+        "--k-surface-sunken": "#231912",
+        "--k-scrim": "#070403",
+
+        "--k-text": "#eadfcc",
+        "--k-text-strong": "#f8efde",
+        "--k-text-prose": "#e2d4bc",
+        "--k-text-quote": "#d9c7a8",
+        "--k-text-dim": "#b8a387",
+        "--k-text-muted": "#ab957b",
+        "--k-text-faint": "#7f6b58",
+        "--k-text-reasoning": "#bda68a",
+
+        "--k-accent": "#e0a458",
+        "--k-accent-bright": "#f4c886",
+        "--k-rose": "#e9b4a0",
+        "--k-rose-bright": "#f5d2c3",
+
+        "--k-border": "#6b4b35",
+        "--k-border-strength": "42%",
+        "--k-shadow": "#050201",
+        "--k-chrome-border": "#6b4b35",
+        "--k-elevation-shadow": "#050201",
+
+        "--k-user-mes": "#2d1a16",
+        "--k-bot-mes": "#1f1611",
+        "--k-chat-tint": "#130c09",
+
+        "--k-success": "#a9c48a",
+        "--k-warning": "#e6b55c",
+        "--k-danger": "#e38b7c",
+
+        "--k-checkbox-tick": "var(--k-accent)",
+
+        "--k-glow-dawn": "#d8913f",
+        "--k-glow-rose": "#c24a6e",
+        "--k-glow-deep": "#2f8f8f",
+
+        "--k-radius-sm": "5px",
+        "--k-radius-md": "7px",
+        "--k-radius-lg": "11px",
+        "--k-radius-xl": "14px",
+
+        "--k-elev-1": "0 2px 10px color-mix(in srgb, var(--k-elevation-shadow) 45%, transparent), inset 0 1px 0 color-mix(in srgb, var(--k-accent-bright) 5%, transparent)",
+        "--k-elev-2": "0 8px 26px color-mix(in srgb, var(--k-elevation-shadow) 55%, transparent), inset 0 1px 0 color-mix(in srgb, var(--k-accent-bright) 7%, transparent)",
+        "--k-elev-3": "0 12px 36px color-mix(in srgb, var(--k-elevation-shadow) 62%, transparent), inset 0 1px 0 color-mix(in srgb, var(--k-accent-bright) 8%, transparent)",
+        "--k-elev-3-soft": "0 12px 36px color-mix(in srgb, var(--k-elevation-shadow) 55%, transparent), inset 0 1px 0 color-mix(in srgb, var(--k-accent-bright) 6%, transparent)",
+        "--k-elev-4": "0 18px 54px color-mix(in srgb, var(--k-elevation-shadow) 68%, transparent), inset 0 1px 0 color-mix(in srgb, var(--k-accent-bright) 9%, transparent)",
+        "--k-ring-soft": "0 0 14px color-mix(in srgb, var(--k-accent) 26%, transparent), inset 0 0 8px color-mix(in srgb, var(--k-accent) 6%, transparent)",
+        "--k-avatar-bot-shadow": "0 4px 16px color-mix(in srgb, var(--k-elevation-shadow) 55%, transparent), 0 0 16px color-mix(in srgb, var(--k-accent) 16%, transparent)",
+        "--k-avatar-user-shadow": "0 4px 16px color-mix(in srgb, var(--k-elevation-shadow) 55%, transparent), 0 0 12px color-mix(in srgb, var(--k-rose) 12%, transparent)",
+
+        "--k-dur-2": "200ms",
+        "--k-dur-3": "260ms",
+        "--k-ease-out": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "--k-ease-glide": "cubic-bezier(0.45, 0, 0.25, 1)",
+        "--k-rise": "4px",
+        "--k-avatar-motion": "220ms cubic-bezier(0.16, 1, 0.3, 1)",
+
+        "--k-font-display": "'Klee One', 'Newsreader', Georgia, serif",
+        "--k-display-weight": "600",
+        "--k-mes-line-height": "1.72",
+        "--k-mes-weight": "440",
+        "--k-mes-para-gap": "0.95em"
+    },
+    "assets": {
+        "fonts": [
+            { "family": "Klee One", "src": "fonts/klee-one-400-latin.woff2", "weight": "400", "style": "normal" },
+            { "family": "Klee One", "src": "fonts/klee-one-600-latin.woff2", "weight": "600", "style": "normal" }
+        ],
+        "backdrop": "bg/kissaten.svg"
+    },
+    "variants": {
+        "metadata": "hover"
+    },
+    "sheet": "sheet.css"
+}

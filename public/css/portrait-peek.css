@@ -1,0 +1,497 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   portrait-peek.css — <k-portrait-peek variant="sheet"> (docs/portrait-peek-v0.md)
+
+   What a click on a row portrait opens under rails: a peek sheet over the right rail (a
+   bottom sheet at phone width) and a full-art lightbox. Every rule is gated on
+   body[data-k-layout="rails"]; classic keeps core's zoomed avatar and never matches a rule here.
+
+   The host is `display: contents` (the studio's lesson): no box and no stacking context, so the
+   scrim and the sheet carry real page-level z-indices. They sit above the topbar (3005) and the
+   Author's Note (4000), below the settings modal (4090) and the studio (4100) — the peek closes
+   itself before it opens the studio.
+
+   1. Tokens   2. Scrim + sheet   3. Hero   4. Head + body   5. Actions + close
+   6. Art lightbox   7. Source ring   8. Phone   9. Motion
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. TOKENS ───────────────────────────────────────────────────────────────── */
+body[data-k-layout="rails"] {
+    --k-pp-z-scrim: 4060;
+    --k-pp-z-sheet: 4061;
+    --k-pp-width: 440px;
+    --k-pp-top: 44px;
+    --k-pp-hero-h: 340px;
+    --k-pp-pad: 28px;
+    --k-pp-scrim-fill: color-mix(in srgb, var(--k-scrim) 45%, transparent);
+    --k-pp-art-scrim-fill: color-mix(in srgb, var(--k-scrim) 88%, transparent);
+    --k-pp-sheet-fill: var(--k-surface);
+    /* Under the fill: some themes' surface is translucent (native Blue Hour's is 82%), and the
+       sheet sits over the busy right rail behind a light scrim, so the ground backs it. */
+    --k-pp-sheet-base: var(--k-ground);
+    --k-pp-hairline: color-mix(in srgb, var(--k-border) 60%, transparent);
+    --k-pp-chip-fill: color-mix(in srgb, var(--k-surface-2) 85%, transparent);
+    --k-pp-row-here: color-mix(in srgb, var(--k-accent) 14%, var(--k-surface));
+    --k-pp-ring: var(--k-accent-bright);
+}
+
+body[data-k-layout="rails"] k-portrait-peek {
+    display: contents;
+}
+
+/* 2. SCRIM + SHEET ─────────────────────────────────────────────────────────── */
+body[data-k-layout="rails"] .k-pp-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: var(--k-pp-z-scrim);
+    background: var(--k-pp-scrim-fill);
+}
+
+body[data-k-layout="rails"] .k-pp-sheet {
+    box-sizing: border-box;
+    position: fixed;
+    top: var(--k-pp-top);
+    right: 0;
+    bottom: 0;
+    z-index: var(--k-pp-z-sheet);
+    display: flex;
+    flex-direction: column;
+    width: min(var(--k-pp-width), 100vw);
+    overflow: hidden;
+    border-left: 1px solid var(--k-pp-hairline);
+    background: linear-gradient(var(--k-pp-sheet-fill), var(--k-pp-sheet-fill)), var(--k-pp-sheet-base);
+    backdrop-filter: blur(var(--k-blur-panel));
+    -webkit-backdrop-filter: blur(var(--k-blur-panel));
+    box-shadow: var(--k-elev-4);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+}
+
+body[data-k-layout="rails"] .k-pp-grip {
+    display: none;
+}
+
+/* 3. HERO ──────────────────────────────────────────────────────────────────── */
+body[data-k-layout="rails"] .k-pp-hero {
+    position: relative;
+    flex-shrink: 0;
+    height: var(--k-pp-hero-h);
+}
+
+body[data-k-layout="rails"] .k-pp-hero-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 12%;
+    user-select: none;
+    /* The portrait melts into the sheet instead of ending on a hard edge. */
+    mask-image: linear-gradient(180deg, #000 62%, transparent 100%);
+}
+
+body[data-k-layout="rails"] .k-pp-full {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-pill);
+    background: color-mix(in srgb, var(--k-surface-2) 85%, transparent);
+    color: var(--k-text);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-pp-full:hover,
+body[data-k-layout="rails"] .k-pp-full:focus-visible {
+    color: var(--k-text-strong);
+    border-color: var(--k-accent);
+}
+
+/* 4. HEAD + BODY ───────────────────────────────────────────────────────────── */
+body[data-k-layout="rails"] .k-pp-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px var(--k-pp-pad) 0;
+}
+
+body[data-k-layout="rails"] .k-pp-name {
+    margin: 0;
+    font-family: var(--k-font-display);
+    font-size: 34px;
+    font-weight: 500;
+    line-height: 1.1;
+    color: var(--k-text-strong);
+    overflow-wrap: anywhere;
+}
+
+body[data-k-layout="rails"] .k-pp-byline {
+    margin: 0;
+    font-size: 13px;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-pp-body {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 18px var(--k-pp-pad);
+}
+
+body[data-k-layout="rails"] .k-pp-label {
+    margin: 0 0 6px;
+    font-family: var(--k-font-ui);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-pp-note {
+    padding: 12px 14px;
+    border: 1px solid var(--k-pp-hairline);
+    border-radius: var(--k-radius-md);
+    background: var(--k-pp-chip-fill);
+}
+
+body[data-k-layout="rails"] .k-pp-note-text {
+    margin: 0;
+    font-family: var(--k-font-prose);
+    font-size: 16px;
+    line-height: 1.45;
+    color: var(--k-text-quote);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+body[data-k-layout="rails"] .k-pp-chats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+body[data-k-layout="rails"] .k-pp-chat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    color: var(--k-text-quote);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-pp-chat:hover,
+body[data-k-layout="rails"] .k-pp-chat:focus-visible {
+    background: var(--k-pp-chip-fill);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-pp-chat.is-here {
+    background: var(--k-pp-row-here);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-pp-chat-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-pp-chat-meta {
+    flex-shrink: 0;
+    font-family: var(--k-font-mono);
+    font-size: 12px;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-pp-quiet {
+    margin: 0;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-pp-more {
+    align-self: flex-start;
+    min-height: 36px;
+    padding: 0 12px;
+    border: 0;
+    background: transparent;
+    color: var(--k-accent-bright);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* 5. ACTIONS + CLOSE ───────────────────────────────────────────────────────── */
+body[data-k-layout="rails"] .k-pp-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+    padding: 0 var(--k-pp-pad) 24px;
+}
+
+body[data-k-layout="rails"] .k-pp-btn {
+    flex: 1 1 0;
+    min-height: 44px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-md);
+    background: transparent;
+    color: var(--k-text);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-pp-btn:hover,
+body[data-k-layout="rails"] .k-pp-btn:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-pp-btn--primary {
+    border-color: transparent;
+    background: var(--k-accent-bright);
+    color: var(--k-surface-2);
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] .k-pp-btn--primary:hover,
+body[data-k-layout="rails"] .k-pp-btn--primary:focus-visible {
+    border-color: transparent;
+    background: var(--k-text-strong);
+    color: var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] .k-pp-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-round);
+    background: color-mix(in srgb, var(--k-surface-2) 85%, transparent);
+    color: var(--k-text);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-pp-close:hover,
+body[data-k-layout="rails"] .k-pp-close:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+/* 6. ART LIGHTBOX ──────────────────────────────────────────────────────────── */
+body[data-k-layout="rails"] .k-pp-scrim--art {
+    background: var(--k-pp-art-scrim-fill);
+}
+
+body[data-k-layout="rails"] .k-pp-art {
+    position: fixed;
+    inset: 0;
+    z-index: var(--k-pp-z-sheet);
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: fit-content;
+    height: fit-content;
+    pointer-events: none;
+}
+
+body[data-k-layout="rails"] .k-pp-art-img {
+    display: block;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100dvh - 120px);
+    border-radius: var(--k-radius-lg);
+    box-shadow: var(--k-elev-4);
+    user-select: none;
+    cursor: zoom-out;
+    pointer-events: auto;
+}
+
+body[data-k-layout="rails"] .k-pp-art-caption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px 16px;
+}
+
+body[data-k-layout="rails"] .k-pp-art-name {
+    font-family: var(--k-font-display);
+    font-size: 22px;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-pp-art-hint {
+    font-family: var(--k-font-mono);
+    font-size: 12px;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-pp-close--art {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: var(--k-pp-z-sheet);
+}
+
+/* 7. SOURCE RING — the portrait the peek came from. ───────────────────────── */
+body[data-k-layout="rails"] #chat .mes .avatar.k-pp-source img {
+    box-shadow: 0 0 0 2px var(--k-ground), 0 0 0 4px var(--k-pp-ring);
+}
+
+/* 8. PHONE — the same line as css/kotatsu-phone.css. ─────────────────────── */
+@media (max-width: 600px) {
+    body[data-k-layout="rails"] .k-pp-sheet {
+        display: grid;
+        /* 20px gutter + the 112px thumbnail; the hero carries the gutter as its margin. */
+        grid-template-columns: 132px minmax(0, 1fr);
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        column-gap: 16px;
+        top: auto;
+        left: 0;
+        width: auto;
+        max-height: min(600px, calc(100dvh - 64px));
+        padding-top: 10px;
+        border-left: 0;
+        border-top: 1px solid var(--k-pp-hairline);
+        border-radius: var(--k-radius-xl) var(--k-radius-xl) 0 0;
+    }
+
+    body[data-k-layout="rails"] .k-pp-grip {
+        display: block;
+        grid-column: 1 / -1;
+        justify-self: center;
+        width: 40px;
+        height: 5px;
+        margin-bottom: 8px;
+        border-radius: var(--k-radius-pill);
+        background: var(--k-border);
+    }
+
+    body[data-k-layout="rails"] .k-pp-hero {
+        grid-column: 1;
+        width: 112px;
+        height: 168px;
+        margin-left: 20px;
+        border-radius: var(--k-radius-md);
+        overflow: hidden;
+    }
+
+    body[data-k-layout="rails"] .k-pp-hero-img {
+        object-position: top;
+        mask-image: none;
+    }
+
+    body[data-k-layout="rails"] .k-pp-full {
+        right: 6px;
+        bottom: 6px;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    body[data-k-layout="rails"] .k-pp-full-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    body[data-k-layout="rails"] .k-pp-head {
+        grid-column: 2;
+        align-self: end;
+        padding: 0 56px 6px 0;
+    }
+
+    body[data-k-layout="rails"] .k-pp-name {
+        font-size: 30px;
+    }
+
+    body[data-k-layout="rails"] .k-pp-body {
+        grid-column: 1 / -1;
+        padding: 18px 20px;
+    }
+
+    body[data-k-layout="rails"] .k-pp-actions {
+        grid-column: 1 / -1;
+        padding: 0 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    }
+
+    body[data-k-layout="rails"] .k-pp-btn {
+        min-height: 48px;
+    }
+
+    body[data-k-layout="rails"] .k-pp-close {
+        top: 20px;
+        right: 16px;
+    }
+}
+
+/* 9. MOTION — entrances only, gated by the house motion token. ────────────── */
+@keyframes k-pp-fade {
+    from { opacity: 0; }
+}
+
+@keyframes k-pp-slide-in {
+    from { transform: translateX(24px); opacity: 0; }
+}
+
+@keyframes k-pp-rise {
+    from { transform: translateY(24px); opacity: 0; }
+}
+
+body[data-k-layout="rails"] .k-pp-scrim,
+body[data-k-layout="rails"] .k-pp-art {
+    animation: k-pp-fade var(--k-motion-duration, 150ms) ease-out;
+}
+
+body[data-k-layout="rails"] .k-pp-sheet {
+    animation: k-pp-slide-in calc(var(--k-motion-duration, 150ms) * 1.4) ease-out;
+}
+
+@media (max-width: 600px) {
+    body[data-k-layout="rails"] .k-pp-sheet {
+        animation-name: k-pp-rise;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"] .k-pp-scrim,
+    body[data-k-layout="rails"] .k-pp-art,
+    body[data-k-layout="rails"] .k-pp-sheet {
+        animation: none;
+    }
+}

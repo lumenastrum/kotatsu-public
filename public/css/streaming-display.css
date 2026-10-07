@@ -168,12 +168,12 @@
 }
 
 .streaming-display-reasoning-label {
-    font-size: 0.8em;
-    font-weight: 600;
+    font-size: calc(0.8em * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 600);
     opacity: 0.5;
     margin-bottom: 4px;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+    letter-spacing: var(--k-label-tracking, 0.03em);
+    text-transform: var(--k-label-case, uppercase);
 }
 
 .streaming-display-reasoning-content {

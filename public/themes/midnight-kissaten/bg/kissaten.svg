@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <!-- Midnight Kissaten backdrop. A pack backdrop replaces the whole ambient stack, so this file
+       paints all of it. Three layers, back to front:
+         1. the room: lacquered dark wood, warmest in the middle where the pendant lamps hang;
+         2. the front window: street neon smeared into tall soft streaks by rain on the glass,
+            living at the edges and the top, fading out before the middle;
+         3. the rain itself: thin streaks and a few beads on the glass, whisper-quiet.
+       And one object: the record on the hi-fi, bottom right, mostly off the edge.
+       Nothing here is bright. The conversation sits on top of this; this is only the room.
+       Colors mirror theme.json: ground #120c09, backdrop-top #1c120d, glows amber #d8913f,
+       neon rose #c24a6e, neon teal #2f8f8f. -->
+  <defs>
+    <linearGradient id="room" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c120d"/>
+      <stop offset="0.55" stop-color="#150d0a"/>
+      <stop offset="1" stop-color="#0e0806"/>
+    </linearGradient>
+
+    <!-- The pendant lamps: a warm pool from above, centred on the counter. -->
+    <radialGradient id="lamp" cx="800" cy="-60" r="760" gradientUnits="userSpaceOnUse"
+                    gradientTransform="translate(800 -60) scale(1.15 1) translate(-800 60)">
+      <stop offset="0" stop-color="#e09a4a" stop-opacity="0.30"/>
+      <stop offset="0.38" stop-color="#c47a35" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#a0602a" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Light landing on the lacquered counter at the bottom. -->
+    <radialGradient id="counter" cx="800" cy="1040" r="620" gradientUnits="userSpaceOnUse"
+                    gradientTransform="translate(800 1040) scale(1.3 0.42) translate(-800 -1040)">
+      <stop offset="0" stop-color="#d8913f" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#d8913f" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Neon, smeared tall by water on the glass. Each is a soft ellipse, stretched vertically. -->
+    <radialGradient id="neonRose" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff5a8a" stop-opacity="0.55"/>
+      <stop offset="0.35" stop-color="#c24a6e" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#c24a6e" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="neonTeal" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#4fd0c8" stop-opacity="0.45"/>
+      <stop offset="0.4" stop-color="#2f8f8f" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#2f8f8f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="neonAmber" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffb04a" stop-opacity="0.50"/>
+      <stop offset="0.4" stop-color="#d8913f" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#d8913f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="neonRed" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff4b3a" stop-opacity="0.45"/>
+      <stop offset="0.4" stop-color="#b8352a" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#b8352a" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Rain on the glass: two offset patterns so the streaks never read as a grid. -->
+    <pattern id="rainA" width="37" height="190" patternUnits="userSpaceOnUse" patternTransform="rotate(7)">
+      <line x1="6" y1="10" x2="6" y2="64" stroke="#d9e4ea" stroke-opacity="0.10" stroke-width="1"/>
+      <line x1="24" y1="96" x2="24" y2="132" stroke="#d9e4ea" stroke-opacity="0.07" stroke-width="1"/>
+      <line x1="15" y1="150" x2="15" y2="186" stroke="#d9e4ea" stroke-opacity="0.08" stroke-width="0.8"/>
+    </pattern>
+    <pattern id="rainB" width="61" height="260" patternUnits="userSpaceOnUse" patternTransform="rotate(9) translate(19 40)">
+      <line x1="10" y1="20" x2="10" y2="110" stroke="#e8d6c2" stroke-opacity="0.06" stroke-width="1.2"/>
+      <line x1="44" y1="150" x2="44" y2="214" stroke="#e8d6c2" stroke-opacity="0.05" stroke-width="1"/>
+    </pattern>
+
+    <!-- The window lives at the edges and along the top. The middle third is the room. -->
+    <radialGradient id="windowVeil" cx="0.5" cy="0.62" r="0.62">
+      <stop offset="0.38" stop-color="#000"/>
+      <stop offset="0.9" stop-color="#fff"/>
+    </radialGradient>
+    <mask id="window">
+      <rect width="1600" height="1000" fill="url(#windowVeil)"/>
+    </mask>
+
+    <!-- A bead of water: dark body, one lit edge. -->
+    <radialGradient id="bead" cx="0.38" cy="0.32" r="0.7">
+      <stop offset="0" stop-color="#f3e3cf" stop-opacity="0.28"/>
+      <stop offset="0.45" stop-color="#f3e3cf" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.18"/>
+    </radialGradient>
+
+    <radialGradient id="vignette" cx="0.5" cy="0.5" r="0.75">
+      <stop offset="0.55" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.45"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 1. The room -->
+  <rect width="1600" height="1000" fill="url(#room)"/>
+
+  <!-- 2. The window: neon smears, masked to the edges -->
+  <g mask="url(#window)">
+    <ellipse cx="120" cy="250" rx="120" ry="330" fill="url(#neonRose)"/>
+    <ellipse cx="300" cy="120" rx="70" ry="210" fill="url(#neonAmber)" opacity="0.7"/>
+    <ellipse cx="40" cy="640" rx="90" ry="260" fill="url(#neonTeal)"/>
+    <ellipse cx="1500" cy="200" rx="130" ry="340" fill="url(#neonTeal)"/>
+    <ellipse cx="1320" cy="90" rx="80" ry="220" fill="url(#neonRose)"/>
+    <ellipse cx="1580" cy="560" rx="80" ry="240" fill="url(#neonRed)"/>
+    <ellipse cx="560" cy="20" rx="60" ry="160" fill="url(#neonTeal)" opacity="0.4"/>
+    <ellipse cx="1080" cy="10" rx="70" ry="170" fill="url(#neonAmber)" opacity="0.45"/>
+    <rect width="1600" height="1000" fill="url(#rainA)"/>
+    <rect width="1600" height="1000" fill="url(#rainB)"/>
+    <!-- beads on the glass -->
+    <g>
+      <circle cx="96" cy="182" r="5" fill="url(#bead)"/>
+      <circle cx="210" cy="402" r="3.5" fill="url(#bead)"/>
+      <circle cx="58" cy="520" r="6" fill="url(#bead)"/>
+      <circle cx="268" cy="610" r="3" fill="url(#bead)"/>
+      <circle cx="150" cy="760" r="4.5" fill="url(#bead)"/>
+      <circle cx="342" cy="96" r="4" fill="url(#bead)"/>
+      <circle cx="1270" cy="140" r="4.5" fill="url(#bead)"/>
+      <circle cx="1440" cy="330" r="6" fill="url(#bead)"/>
+      <circle cx="1530" cy="470" r="3.5" fill="url(#bead)"/>
+      <circle cx="1360" cy="700" r="5" fill="url(#bead)"/>
+      <circle cx="1490" cy="820" r="3" fill="url(#bead)"/>
+      <circle cx="1180" cy="60" r="3" fill="url(#bead)"/>
+    </g>
+  </g>
+
+  <!-- The window frame: two mullions and a transom, lacquer-dark, barely there. -->
+  <g fill="#0b0605" fill-opacity="0.55">
+    <rect x="388" y="0" width="10" height="1000"/>
+    <rect x="1202" y="0" width="10" height="1000"/>
+    <rect x="0" y="318" width="398" height="8"/>
+    <rect x="1202" y="318" width="398" height="8"/>
+  </g>
+
+  <!-- The lamps and the counter -->
+  <rect width="1600" height="1000" fill="url(#lamp)"/>
+  <rect width="1600" height="1000" fill="url(#counter)"/>
+
+  <!-- The record on the hi-fi, bottom right, mostly past the edge. -->
+  <g transform="translate(1530 1010)" opacity="0.5">
+    <circle r="250" fill="#0a0605"/>
+    <g fill="none" stroke="#3a2a1f" stroke-opacity="0.55" stroke-width="1">
+      <circle r="236"/><circle r="222"/><circle r="208"/><circle r="194"/>
+      <circle r="180"/><circle r="166"/><circle r="152"/><circle r="138"/>
+      <circle r="124"/><circle r="110"/><circle r="96"/>
+    </g>
+    <!-- the lamp's reflection across the grooves -->
+    <path d="M -170 -170 A 240 240 0 0 1 -60 -232 L -40 -150 A 160 160 0 0 0 -112 -112 Z"
+          fill="#e09a4a" fill-opacity="0.10"/>
+    <circle r="70" fill="#8a4a22"/>
+    <circle r="70" fill="none" stroke="#c47a35" stroke-opacity="0.5" stroke-width="2"/>
+    <circle r="6" fill="#0a0605"/>
+  </g>
+
+  <rect width="1600" height="1000" fill="url(#vignette)"/>
+</svg>

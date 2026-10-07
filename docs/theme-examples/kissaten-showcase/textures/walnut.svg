@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480">
+  <!-- Midnight Kissaten: dark walnut grain, laid as a translucent layer over the rail colour.
+       Fractal noise stretched along the board (low y frequency) reads as grain; stitchTiles keeps
+       the tile seamless. Rasterized once, never animated. -->
+  <filter id="grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.028 0.0021" numOctaves="5" seed="11" stitchTiles="stitch"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 0.66  0 0 0 0 0.43  0 0 0 0 0.26  1.6 0 0 0 -0.78"/>
+  </filter>
+  <filter id="pores" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9 0.06" numOctaves="2" seed="5" stitchTiles="stitch"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 0.02  0 0 0 0 0.01  0 0 0 0 0  1.4 0 0 0 -0.78"/>
+  </filter>
+  <rect width="480" height="480" filter="url(#grain)" opacity="0.22"/>
+  <rect width="480" height="480" filter="url(#pores)" opacity="0.18"/>
+</svg>

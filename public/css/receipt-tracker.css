@@ -46,10 +46,10 @@ body[data-k-layout="rails"] .k-rt-section {
 
 body[data-k-layout="rails"] .k-rt-heading {
     margin: 0;
-    font-size: var(--k-tr-label-size);
-    font-weight: 600;
-    letter-spacing: var(--k-tr-label-track, 0.01em);
-    text-transform: uppercase;
+    font-size: calc(var(--k-tr-label-size) * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 600);
+    letter-spacing: var(--k-label-tracking, var(--k-tr-label-track, 0.01em));
+    text-transform: var(--k-label-case, uppercase);
     color: var(--k-text-faint);
 }
 
@@ -507,10 +507,10 @@ body[data-k-layout="rails"] .k-rc-section {
 
 body[data-k-layout="rails"] .k-rc-heading {
     margin: 0;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: calc(11px * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 600);
+    letter-spacing: var(--k-label-tracking, 0.06em);
+    text-transform: var(--k-label-case, uppercase);
     color: var(--k-text-faint);
 }
 
@@ -599,10 +599,11 @@ body[data-k-layout="rails"] .k-rc-legend-row:focus-visible {
 
 body[data-k-layout="rails"] .k-rc-legend-head {
     min-height: 22px;
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-size: calc(10.5px * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 600);
+    letter-spacing: var(--k-label-tracking, 0.04em);
+    text-transform: var(--k-label-case, uppercase);
+    font-family: var(--k-font-label, inherit);
     color: var(--k-text-faint);
 }
 
@@ -988,10 +989,10 @@ body[data-k-layout="rails"] .k-rtr-table td {
 }
 
 body[data-k-layout="rails"] .k-rtr-table thead th {
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-size: calc(10.5px * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 600);
+    letter-spacing: var(--k-label-tracking, 0.04em);
+    text-transform: var(--k-label-case, uppercase);
     color: var(--k-text-faint);
 }
 

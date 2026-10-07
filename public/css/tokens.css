@@ -337,4 +337,64 @@
     --k-code-meta-keyword: var(--k-accent);
     /* (leak) .hljs-meta .hljs-string — `#include <…>`, decorators: it is a string */
     --k-code-meta-string: var(--k-rose);
+
+    /* ── Materials ───────────────────────────────────────────────────────
+       What the big surfaces are made of, beyond their colour. Each is a list of
+       background IMAGE layers painted over that surface's colour (the colour itself
+       still comes from the palette): gradients, or a texture from the pack folder,
+       url("textures/wood.svg"). A texture tiles at its own size, so give its <svg>
+       a width and height; a gradient fills the surface. `none` is the plain colour,
+       which is Blue Hour. Consumed by shell-frame.css (top bar, rails) and
+       shell-center.css (reading track, message cards, composer). */
+    --k-material-topbar: none;
+    --k-material-rail: none;
+    /* the reading track behind the conversation: a lamp pool, a vignette */
+    --k-material-reading: none;
+    /* the character's message cards (card and bubble looks) */
+    --k-material-message: none;
+    /* your own message cards */
+    --k-material-message-user: none;
+    --k-material-composer: none;
+    /* the library (home) page's backdrop: the ambient wash it has always painted */
+    --k-material-library: linear-gradient(180deg,
+            color-mix(in srgb, var(--k-backdrop-top) 70%, transparent),
+            var(--k-ground) 42%);
+
+    /* ── Atmosphere ──────────────────────────────────────────────────────
+       One full-window layer between the background and everything else: rain on
+       the glass, drifting haze, film grain. Image layers, like a material.
+       kotatsu-chrome.css §5 paints it on `body::before`. */
+    --k-atmosphere: none;
+    --k-atmosphere-opacity: 1;
+    /* any mix-blend-mode: normal, screen, soft-light, overlay */
+    --k-atmosphere-blend: normal;
+    /* a mask-image; e.g. a radial-gradient that keeps the middle of the window clear */
+    --k-atmosphere-mask: none;
+    /* none, k-atmo-fall (slides down), k-atmo-drift (slides sideways) or
+       k-atmo-breathe (fades gently in and out). Stops for reduced motion. */
+    --k-atmosphere-motion: none;
+    /* how long one loop takes */
+    --k-atmosphere-period: 60s;
+    /* how far one fall/drift loop travels: your texture's height (fall) or width
+       (drift), so the loop joins up without a jump */
+    --k-atmosphere-travel: 0px;
+    /* hops per fall/drift loop. Fewer is lighter on the graphics card; the default
+       moves a slow layer about a pixel at a time, a few times a second */
+    --k-atmosphere-steps: 600;
+
+    /* ── Voice: names and labels ─────────────────────────────────────────
+       The face that says a speaker's NAME (message nameplates, the chat title) and
+       the small section labels (CHARACTERS, THE CAST, DESCRIPTION...). The label
+       tokens start unset (`initial`), which means "each label keeps its own built-in
+       style": uppercase, letter-spaced, the UI face. Set them and every label in
+       the app follows: a handwritten face, normal case, a little bigger. */
+    --k-font-name: var(--k-font-display);
+    --k-name-weight: var(--k-display-weight);
+    --k-font-label: initial;
+    /* uppercase, none, lowercase or capitalize */
+    --k-label-case: initial;
+    --k-label-tracking: initial;
+    --k-label-weight: initial;
+    /* multiplies every label's own size; a handwritten face wants about 1.4 */
+    --k-label-scale: 1;
 }

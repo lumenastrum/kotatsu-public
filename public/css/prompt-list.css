@@ -143,9 +143,9 @@ k-prompt-list[variant="list"] .k-pl-stat--tier {
     border-radius: var(--k-radius-pill);
     border: var(--k-pl-hairline) solid var(--k-inset-border);
     color: var(--k-text-faint);
-    font-size: var(--k-pl-chip-size);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-size: calc(var(--k-pl-chip-size) * var(--k-label-scale, 1));
+    text-transform: var(--k-label-case, uppercase);
+    letter-spacing: var(--k-label-tracking, 0.05em);
 }
 
 /* The regex chip (issue #6): the same pill as the tier chip, but a button — it is the way back
@@ -160,10 +160,10 @@ k-prompt-list[variant="list"] .k-pl-stat--regex {
     border: var(--k-pl-hairline) solid var(--k-inset-border);
     background: transparent;
     color: var(--k-text-faint);
-    font-size: var(--k-pl-chip-size);
+    font-size: calc(var(--k-pl-chip-size) * var(--k-label-scale, 1));
     line-height: inherit;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    text-transform: var(--k-label-case, uppercase);
+    letter-spacing: var(--k-label-tracking, 0.05em);
     cursor: pointer;
     transition: border-color var(--k-motion-duration) var(--k-motion), color var(--k-motion-duration) var(--k-motion);
 }
@@ -439,8 +439,8 @@ k-prompt-list[variant="list"] .k-pl-chip--override {
 k-prompt-list[variant="list"] .k-pl-chip--exclusive {
     color: var(--k-accent);
     border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    text-transform: var(--k-label-case, uppercase);
+    letter-spacing: var(--k-label-tracking, 0.04em);
 }
 
 k-prompt-list[variant="list"] .k-pl-chip--missing {
@@ -695,11 +695,11 @@ k-prompt-list[variant="list"] .k-pl-recount.is-busy {
 }
 
 k-prompt-list[variant="list"] .k-pl-chip--relax {
-    font-family: inherit;
+    font-family: var(--k-font-label, inherit);
     cursor: pointer;
     color: var(--k-text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    text-transform: var(--k-label-case, uppercase);
+    letter-spacing: var(--k-label-tracking, 0.04em);
     transition:
         color var(--k-motion-duration) var(--k-motion),
         border-color var(--k-motion-duration) var(--k-motion);

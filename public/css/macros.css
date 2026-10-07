@@ -222,12 +222,12 @@
 }
 
 .macro-details .macro-details-label {
-    font-weight: bold;
-    font-size: 0.85em;
+    font-weight: var(--k-label-weight, bold);
+    font-size: calc(0.85em * var(--k-label-scale, 1));
     opacity: 0.8;
     margin-bottom: 0.25em;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    text-transform: var(--k-label-case, uppercase);
+    letter-spacing: var(--k-label-tracking, 0.05em);
 }
 
 .macro-details .macro-details-text {
@@ -512,12 +512,12 @@
     display: inline-block;
     background: linear-gradient(135deg, #f0ad4e, #ec971f);
     color: #000;
-    font-weight: bold;
-    font-size: 0.75em;
+    font-weight: var(--k-label-weight, bold);
+    font-size: calc(0.75em * var(--k-label-scale, 1));
     padding: 0.15em 0.5em;
     border-radius: 3px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    text-transform: var(--k-label-case, uppercase);
+    letter-spacing: var(--k-label-tracking, 0.05em);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
