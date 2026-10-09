@@ -31,7 +31,7 @@
  * alternative (a second comparator) is the drift this project refuses.
  */
 
-import { getEntitiesList, getThumbnailUrl } from '../../script.js';
+import { getEntitiesList } from '../../script.js';
 import { isNarratorCard } from '../../scripts/group-nudge.js';
 import { power_user, sortEntitiesList } from '../../scripts/power-user.js';
 import { getTagKeyForEntity, getTagsList } from '../../scripts/tags.js';
@@ -201,9 +201,9 @@ function groupRow(entity, byAvatar) {
         initials: toInitials(name),
         avatar: '',
         portrait: '',
-        // Thumbnails here, not full-res: the stack draws these at ~44px, which is exactly what
-        // core's avatar thumbnail is sized for.
-        members: resolved.slice(0, 4).map(member => getThumbnailUrl('avatar', member)),
+        // Full-res, like a character's portrait: the stack is the card's collage, so each face
+        // fills half a poster, and core's 96px thumbnail stretched that far turns to mush.
+        members: resolved.slice(0, 4).map(member => `/characters/${encodeURIComponent(member)}`),
         memberCount: resolved.length,
         chatCount: Array.isArray(item.chats) ? item.chats.length : 0,
         lastChat: toEpochMs(item.date_last_chat),

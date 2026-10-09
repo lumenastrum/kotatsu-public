@@ -4414,6 +4414,18 @@
     }
    ]
   },
+  "--k-scene-tile-shade": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 88%, transparent)",
+   "note": "The fade under each cast tile's name in the scene studio. Keep it the opposite of --k-text-strong: a light theme fades to its surface, since its --k-scrim is a dark dim.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-scene-title-size": {
    "group": "css/scenes.css",
    "file": "css/scenes.css",

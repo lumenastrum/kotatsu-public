@@ -575,7 +575,8 @@ export class KSceneStudio extends LitElement {
                 aria-label=${seated ? `${tile.name}, seat ${seat + 1}. Click to unseat.` : `Seat ${tile.name}`}
                 @click=${() => this.#toggle(tile.avatar)}>
                 ${tile.hasArt
-        ? html`<img class="k-scene-tile-art" src=${getThumbnailUrl('avatar', tile.avatar)} alt="" loading="lazy" decoding="async">`
+        // Full-res: a tile is poster-sized, well past core's 96px avatar thumbnail.
+        ? html`<img class="k-scene-tile-art" src=${`/characters/${encodeURIComponent(tile.avatar)}`} alt="" loading="lazy" decoding="async">`
         : html`<span class="k-scene-tile-initials" aria-hidden="true">${initials(tile.name)}</span>`}
                 <span class="k-scene-tile-shade" aria-hidden="true"></span>
                 <span class="k-scene-tile-name">${tile.name}</span>

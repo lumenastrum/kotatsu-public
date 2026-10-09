@@ -76,7 +76,9 @@
         "--k-viz-3": "#1baf7a",
         "--k-viz-4": "#eda100",
         "--k-viz-5": "#e87ba4",
-        "--k-viz-other": "#a9a49b"
+        "--k-viz-other": "#a9a49b",
+
+        "--k-scene-tile-shade": "color-mix(in srgb, var(--k-surface) 94%, transparent)"
     },
     "assets": {
         "fonts": [

@@ -8,8 +8,8 @@
  * forward with the install.
  *   - equal to the running version → nothing to show.
  *   - older                        → show every release in between that has notes, newest first.
- *   - absent                       → an install from before What's New existed: show the running
- *                                    release's notes, once.
+ *   - absent                       → an install from before What's New existed: show the newest
+ *                                    notes at or below the running version, once.
  *   - newer (a downgrade)          → nothing to show; the flag follows the install back down.
  * A brand-new install never sees it: the welcome tour is its first impression, so while the tour
  * is due the flag is just stamped with the running version.
@@ -79,10 +79,12 @@ export function whatsNewPlan({ seen, current, tourDue, releases }) {
     if (known && compareVersions(known, running) > 0) return none(running);
     const shown = releases
         .filter(release => parseVersion(release.version) && compareVersions(release.version, running) <= 0)
-        .filter(release => known ? compareVersions(release.version, known) > 0 : compareVersions(release.version, running) === 0)
+        .filter(release => !known || compareVersions(release.version, known) > 0)
         .filter(release => Array.isArray(release.cards) && release.cards.length > 0)
         .sort((a, b) => compareVersions(b.version, a.version))
-        .slice(0, MAX_RELEASES);
+        // No flag: just the newest notes, which need not be the running version's own (a patch
+        // with no notes must not skip them).
+        .slice(0, known ? MAX_RELEASES : 1);
     return shown.length ? { open: true, releases: shown, stamp: null } : none(running);
 }
 

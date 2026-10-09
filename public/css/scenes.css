@@ -35,6 +35,9 @@ body[data-k-layout="rails"] {
     --k-scene-gap: clamp(12px, 1.2vw, 18px);
     --k-scene-tile-min: 148px;
     --k-scene-tile-h: 212px;
+    /* The fade under each cast tile's name in the scene studio. Keep it the opposite of
+       --k-text-strong: a light theme fades to its surface, since its --k-scrim is a dark dim. */
+    --k-scene-tile-shade: color-mix(in srgb, var(--k-scrim) 88%, transparent);
 
     --k-scene-title-size: clamp(26px, 2.6vw, 38px);
     --k-scene-label-size: 11px;
@@ -314,7 +317,7 @@ body[data-k-layout="rails"] .k-scene-tile-initials {
 body[data-k-layout="rails"] .k-scene-tile-shade {
     position: absolute;
     inset: 0;
-    background: linear-gradient(transparent 48%, color-mix(in srgb, var(--k-scrim) 88%, transparent));
+    background: linear-gradient(transparent 48%, var(--k-scene-tile-shade));
     pointer-events: none;
 }
 
@@ -1149,6 +1152,8 @@ body[data-k-layout="rails"] .k-stage-menu {
     background: var(--k-panel-fill);
     box-shadow: var(--k-elev-3, 0 18px 40px color-mix(in srgb, var(--k-shadow) 45%, transparent));
     animation: k-pop-up var(--k-t2) var(--k-ease-out);
+    /* The strip is nowrap and every menu inherits it; hints are sentences, so they wrap here. */
+    white-space: normal;
 }
 
 body[data-k-layout="rails"] .k-stage-menu--style {
@@ -1186,17 +1191,13 @@ body[data-k-layout="rails"] .k-stage-menu-copy b {
 body[data-k-layout="rails"] .k-stage-menu-copy small,
 body[data-k-layout="rails"] .k-stage-item small {
     font-size: 11.5px;
+    line-height: 1.35;
     color: var(--k-text-dim);
 }
 
 /* The narrator's facts line is a sentence; it wraps inside the menu instead of running past it. */
 body[data-k-layout="rails"] .k-stage-menu-copy {
     flex: 1 1 auto;
-}
-
-body[data-k-layout="rails"] .k-stage-menu-copy small {
-    white-space: normal;
-    line-height: 1.35;
 }
 
 body[data-k-layout="rails"] .k-stage-item {

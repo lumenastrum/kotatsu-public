@@ -28,6 +28,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { RELEASES, WIKI_BASE } from '../public/kotatsu/whats-new/releases.js';
+import { latestRelease } from '../public/kotatsu/whats-new/state.js';
 
 const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIRROR_DEFAULT = 'https://github.com/lumenastrum/kotatsu-public.git';
@@ -308,13 +309,17 @@ function main() {
 /**
  * The release's own notes, from the entry What's New shows in the app
  * (`public/kotatsu/whats-new/releases.js`), so the release page and the app never disagree.
+ * A fix-up release with no entry of its own carries the newest notes below it, said so, since
+ * `releases/latest` is the page people are linked to.
  * @param {string} tag e.g. `v0.5.0`
- * @returns {string[]} Markdown lines; empty when the release has no notes.
+ * @returns {string[]} Markdown lines; empty when no release at or below it has notes.
  */
 function releaseNotesFor(tag) {
-    const entry = RELEASES.find((release) => `v${release.version}` === tag);
+    const entry = latestRelease(tag, RELEASES);
     if (!entry) return [];
+    const own = `v${entry.version}` === tag;
     return [
+        ...(own ? [] : [`_Fixes only. The notes below came with v${entry.version}._`, '']),
         `## ${entry.title}`,
         '',
         ...entry.cards.flatMap((card) => [
@@ -322,7 +327,7 @@ function releaseNotesFor(tag) {
             card.wiki ? `${card.body} [Read more](${WIKI_BASE}${card.wiki})` : card.body,
             '',
         ]),
-        ...(entry.notes?.length ? ['**Also in this release**', ...entry.notes.map((note) => `- ${note}`), ''] : []),
+        ...(entry.notes?.length ? [own ? '**Also in this release**' : `**Also in v${entry.version}**`, ...entry.notes.map((note) => `- ${note}`), ''] : []),
     ];
 }
 
