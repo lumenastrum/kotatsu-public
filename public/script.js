@@ -311,6 +311,7 @@ import {
 } from './scripts/message-rows.js';
 import { normalizeUsage, usageFromResponse } from './scripts/usage-capture.js';
 import { notifyMessageDeleted, notifyMessagesSwapped, notifyMessagesTruncated } from './scripts/message-index-hooks.js';
+import { isNarratorCard } from './scripts/group-nudge.js';
 import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
@@ -3141,8 +3142,10 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
             /** @type {string[]} */
             const disabledMembers = groups.find(x => x.id === selected_group)?.disabled_members ?? [];
             const isMuted = x => includeMuted ? true : !disabledMembers.includes(x);
+            // KOTATSU-PATCH 2026-10-08: a scene's narrator seat is not a person in the room
+            // (group-nudge.js isNarratorCard, docs/group-chat-v0.md §13).
             const names = Array.isArray(members)
-                ? members.filter(isMuted).map(m => characters.find(c => c.avatar === m)?.name).filter(Boolean).join(', ')
+                ? members.filter(isMuted).map(m => characters.find(c => c.avatar === m)).filter(c => c && !isNarratorCard(c)).map(c => c.name).filter(Boolean).join(', ')
                 : '';
             return names;
         } else {
@@ -3167,7 +3170,9 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
         }
 
         const memberNames = members
-            .map(m => characters.find(c => c.avatar === m)?.name)
+            .map(m => characters.find(c => c.avatar === m))
+            .filter(c => c && !isNarratorCard(c)) // KOTATSU-PATCH 2026-10-08: the narrator seat is not in the room
+            .map(c => c.name)
             .filter(Boolean); // Filter out any null/undefined names
 
         // Filter out the current speaker and add the user
@@ -9508,12 +9513,18 @@ export async function setCharacterSettingsOverrides() {
         pendingChanges.system_prompt = '';
     });
 
-    // Wait for popup close/confirm.
-    await callGenericPopup($template, POPUP_TYPE.TEXT, '', {
+    // Save commits; Cancel, Escape and the close button discard (Kotatsu docs/group-chat-v0.md
+    // S9 — a TEXT popup committed on ANY close, so there was no way to back out of an edit).
+    const result = await callGenericPopup($template, POPUP_TYPE.TEXT, '', {
         wide: true,
         large: true,
         allowVerticalScrolling: true,
+        okButton: t`Save`,
+        cancelButton: t`Cancel`,
     });
+    if (result !== POPUP_RESULT.AFFIRMATIVE) {
+        return;
+    }
 
     chat_metadata.scenario = pendingChanges.scenario;
     chat_metadata.mes_example = pendingChanges.examples;

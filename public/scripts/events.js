@@ -59,6 +59,8 @@ export const event_types = {
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     GROUP_WRAPPER_STARTED: 'group_wrapper_started',
     GROUP_WRAPPER_FINISHED: 'group_wrapper_finished',
+    // Kotatsu: auto mode turned on or off, by anyone (payload: boolean).
+    GROUP_AUTO_MODE_CHANGED: 'group_auto_mode_changed',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
     CHAT_COMPLETION_SETTINGS_READY: 'chat_completion_settings_ready',

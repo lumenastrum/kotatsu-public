@@ -107,6 +107,7 @@
          have to already be in the cascade for the sheet's sizing overrides to land on top of
          them. Rails-only and gated the same way. See the sheet's header. -->
     <link rel="stylesheet" type="text/css" href="css/studio.css">
+    <link rel="stylesheet" type="text/css" href="css/scenes.css">
     <!-- Browse Characters (docs/character-marketplace-v0.md §9). After css/library.css for the
          same reason as the studio: the view reuses the gallery's `.k-lib-*` rules and only
          adds to them. Rails-only and gated the same way. See the sheet's header. -->
@@ -125,6 +126,9 @@
          under settings and the studio; touches no stock control, so its place in the chain only
          has to be before mobile-styles.css. Rails-gated like its neighbours. -->
     <link rel="stylesheet" type="text/css" href="css/onboarding.css">
+    <!-- What's New (whats-new/k-whats-new.js): the release notes sheet, the tour's sibling and one
+         rung under it. Rails-gated, touches no stock control. -->
+    <link rel="stylesheet" type="text/css" href="css/whats-new.css">
     <!-- Rechrome v0 (docs/rechrome-v0.md): stock control primitives in the house language.
          Four sheets, one per slice, in slice order — AFTER studio.css so the studio keeps
          field authority (slice B caps specificity with :where() against exactly this), and
@@ -5669,6 +5673,10 @@
                                 <label class="checkbox_label" for="show_group_chat_queue" title="In group chat, highlight the character(s) that are currently queued to generate responses and the order in which they will respond." data-i18n="[title]In group chat, highlight the character(s) that are currently queued to generate responses and the order in which they will respond.">
                                     <input id="show_group_chat_queue" type="checkbox" />
                                     <small data-i18n="Show group chat queue">Show group chat queue</small>
+                                </label>
+                                <label id="kotatsu_scene_nudge_row" class="checkbox_label" for="kotatsu_scene_nudge" title="When the preset has no group nudge of its own (or only the stock one-liner), each scene turn ends with Kotatsu's: the speaker writes only their own words, actions and thoughts, and everyone else answers in their own turn. A nudge a preset author wrote is always used as written." data-i18n="[title]When the preset has no group nudge of its own (or only the stock one-liner), each scene turn ends with Kotatsu's: the speaker writes only their own words, actions and thoughts, and everyone else answers in their own turn. A nudge a preset author wrote is always used as written.">
+                                    <input id="kotatsu_scene_nudge" type="checkbox" checked />
+                                    <small data-i18n="Keep each character to their own turn">Keep each character to their own turn</small>
                                 </label>
                                 <label class="checkbox_label" for="pin_styles" title="Always render style tags from greetings, even if the message is unloaded due to lazy loading." data-i18n="[title]Always render style tags from greetings, even if the message is unloaded due to lazy loading.">
                                     <input id="pin_styles" type="checkbox" />

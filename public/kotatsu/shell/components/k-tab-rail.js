@@ -84,6 +84,10 @@
 
 import { LitElement, html } from '../lit.js';
 import { glideIndicator } from '../glide-indicator.js';
+import { event_types, eventSource } from '../../../scripts/events.js';
+import { selected_group } from '../../../scripts/group-chats.js';
+// Side-effect import: defines <k-cast-panel>, the Cast tab's view (group chat v0 G4).
+import '../../groups/k-cast-panel.js';
 
 /**
  * What a docked `.drawer-content` wears while it lives in the rail.
@@ -122,6 +126,14 @@ const icons = {
              stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
              aria-hidden="true" focusable="false">
             <path d="M6 2.5h3.5v2a1.5 1.5 0 1 0 2 0h2v3.5h-2a1.5 1.5 0 1 0 0 2h2V13.5H9.5v-2a1.5 1.5 0 1 0-2 0v2H4V10h2a1.5 1.5 0 1 0 0-2H4V4.5h2z" />
+        </svg>`,
+    /** Two heads — the cast of a scene. */
+    cast: html`
+        <svg class="k-tr-icon" viewBox="0 0 16 16" width="14" height="14" fill="none"
+             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <circle cx="6" cy="5.5" r="2.4" /><path d="M1.75 13a4.25 4.25 0 0 1 8.5 0" />
+            <path d="M10.5 3.4a2.4 2.4 0 0 1 0 4.2" /><path d="M11.4 9.1a4.25 4.25 0 0 1 2.85 3.9" />
         </svg>`,
     /** Quiet-state bullet, matching the left rail's stub rows. */
     dot: html`
@@ -213,6 +225,24 @@ const TABS = [
 ];
 
 /**
+ * The Cast tab (group chat v0 G4, `docs/group-chat-v0.md`). Present only while a scene is open.
+ *
+ * Its PAGE is appended after every dock page, never before: dock pages are static template
+ * elements matched by position, and a page inserted ahead of them would shift a docked drawer
+ * into a different template and destroy it. Only the stateless tab BUTTONS show Cast first.
+ * @type {TabSpec}
+ */
+const CAST_TAB = {
+    id: 'cast',
+    label: 'Cast',
+    icon: icons.cast,
+    view: () => html`<k-cast-panel variant="rail"></k-cast-panel>`,
+};
+
+/** Core events after which "is a scene open?" may have changed. */
+const SCENE_EVENTS = ['APP_READY', 'CHAT_CHANGED', 'GROUP_UPDATED'];
+
+/**
  * What has to be undone to put one docked wrapper back.
  * @typedef {object} DockRecord
  * @property {Element} wrapper The relocated `.drawer`.
@@ -249,6 +279,7 @@ export class KTabRail extends LitElement {
         variant: { type: String, reflect: true },
         _active: { state: true },
         _foreign: { state: true },
+        _inScene: { state: true },
     };
 
     /**
@@ -273,6 +304,20 @@ export class KTabRail extends LitElement {
         this._active = DEFAULT_TAB;
         /** @type {TabSpec[]} Third-party drawers found in the holder, in discovery order. */
         this._foreign = [];
+        /** @type {boolean} A scene (group chat) is open, so the Cast tab exists. */
+        this._inScene = false;
+        /**
+         * Entering a scene brings Cast forward; leaving one while Cast is showing goes back to
+         * the default tab. Anything the user picked inside a scene is left alone.
+         * @type {() => void}
+         */
+        this._onSceneChange = () => {
+            const inScene = Boolean(selected_group);
+            if (inScene === this._inScene) return;
+            this._inScene = inScene;
+            if (inScene) this._active = CAST_TAB.id;
+            else if (this._active === CAST_TAB.id) this._active = DEFAULT_TAB;
+        };
         /**
          * Core's welcome screen offers `.drawer-opener` buttons that target a drawer
          * by wrapper id (`templates/welcome.html:11, :22, :49`). When that drawer is
@@ -304,12 +349,21 @@ export class KTabRail extends LitElement {
             this.setAttribute('variant', this.variant);
         }
         document.addEventListener('click', this._onDrawerOpener);
+        for (const key of SCENE_EVENTS) {
+            const name = event_types[key];
+            if (typeof name === 'string') eventSource.on(name, this._onSceneChange);
+        }
+        this._onSceneChange();
         this.#watchHolder();
         void this.#dockWhenRendered();
     }
 
     disconnectedCallback() {
         document.removeEventListener('click', this._onDrawerOpener);
+        for (const key of SCENE_EVENTS) {
+            const name = event_types[key];
+            if (typeof name === 'string') eventSource.removeListener(name, this._onSceneChange);
+        }
         this.#holderWatch?.disconnect();
         this.#holderWatch = null;
         // Synchronous, and deliberately before super: rails.js clears #k-rail-right
@@ -320,9 +374,18 @@ export class KTabRail extends LitElement {
         super.disconnectedCallback();
     }
 
-    /** @returns {TabSpec[]} Every tab in strip order: the spec's, then the foreign ones. */
+    /**
+     * Every tab in PAGE order: the spec's, the foreign ones, then Cast when a scene is open.
+     * Page order must only ever grow at the end (see {@link CAST_TAB}).
+     * @returns {TabSpec[]}
+     */
     #allTabs() {
-        return [...TABS, ...this._foreign];
+        return this._inScene ? [...TABS, ...this._foreign, CAST_TAB] : [...TABS, ...this._foreign];
+    }
+
+    /** @returns {TabSpec[]} Every tab in STRIP order: Cast first in a scene, then the rest. */
+    #stripTabs() {
+        return this._inScene ? [CAST_TAB, ...TABS, ...this._foreign] : [...TABS, ...this._foreign];
     }
 
     /**
@@ -510,7 +573,7 @@ export class KTabRail extends LitElement {
      * @returns {void}
      */
     #onTabKeydown(event, index) {
-        const tabs = this.#allTabs();
+        const tabs = this.#stripTabs();
         /** @type {number | null} */
         let next = null;
         switch (event.key) {
@@ -702,7 +765,7 @@ export class KTabRail extends LitElement {
     render() {
         return html`
             <div class="k-tr-strip" role="tablist" aria-label="Right rail panels">
-                ${this.#allTabs().map((tab, index) => this.#tab(tab, index))}
+                ${this.#stripTabs().map((tab, index) => this.#tab(tab, index))}
             </div>
             <div class="k-tr-pages">
                 ${this.#allTabs().map(tab => this.#page(tab))}

@@ -175,6 +175,9 @@ router.post('/create', (request, response) => {
         auto_mode_delay: request.body.auto_mode_delay ?? 5,
         generation_mode_join_prefix: request.body.generation_mode_join_prefix ?? '',
         generation_mode_join_suffix: request.body.generation_mode_join_suffix ?? '',
+        // The client has always sent it (group-chats.js createGroup); the whitelist dropped it,
+        // so "Hide muted sprites" set during creation never reached the file.
+        hideMutedSprites: !!request.body.hideMutedSprites,
     };
     const pathToFile = path.join(request.user.directories.groups, sanitize(`${id}.json`));
     const fileData = JSON.stringify(groupMetadata, null, 4);

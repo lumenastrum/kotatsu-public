@@ -1311,7 +1311,7 @@ export function rebaseSheetUrls(css, assetBase) {
  * pack's folder when the pack resolves.
  *
  * Control characters are checked before anything else. Line breaks and tabs are plain whitespace
- * to CSS outside quotes, so older packs that wrap a long value across lines keep working (Andres,
+ * to CSS outside quotes, so older packs that wrap a long value across lines keep working (a maintainer decision,
  * 2026-10-06). Inside a quoted string a raw line break ENDS the string in CSS, so a value scanned
  * as "one quoted string" here could be several tokens to the browser: refused there. Every other
  * control character is refused anywhere.

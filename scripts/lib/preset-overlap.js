@@ -28,8 +28,20 @@ export const STOPWORDS = new Set([
  */
 
 /**
- * Every prompt's content string, enabled or not. Prompts with no string content (markers) are skipped.
- * @param {PresetLike} preset
+ * The utility prompts a preset carries outside `prompts[]` — the group nudge, the new-chat lines,
+ * the impersonation and continue nudges, the formats. They are prose a model reads like any other,
+ * and a reference preset's own wording often lives there (Sola V2's group nudge does), so the gate
+ * compares them too (group chat v0 §10).
+ */
+export const UTILITY_PROMPT_FIELDS = Object.freeze([
+    'group_nudge_prompt', 'new_group_chat_prompt', 'new_chat_prompt', 'new_example_chat_prompt',
+    'continue_nudge_prompt', 'impersonation_prompt', 'scenario_format', 'personality_format', 'wi_format',
+]);
+
+/**
+ * Every prompt's content string, enabled or not, then every non-empty utility prompt. Prompts with
+ * no string content (markers) are skipped.
+ * @param {PresetLike & Record<string, unknown>} preset
  * @returns {PromptText[]}
  */
 export function extractTexts(preset) {
@@ -39,6 +51,10 @@ export function extractTexts(preset) {
     for (const p of prompts) {
         if (typeof p?.content !== 'string' || p.content.trim() === '') continue;
         out.push({ name: String(p.name ?? p.identifier ?? '(unnamed)'), content: p.content });
+    }
+    for (const field of UTILITY_PROMPT_FIELDS) {
+        const value = preset?.[field];
+        if (typeof value === 'string' && value.trim() !== '') out.push({ name: field, content: value });
     }
     return out;
 }

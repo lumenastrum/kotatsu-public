@@ -32,6 +32,7 @@
  */
 
 import { getEntitiesList, getThumbnailUrl } from '../../script.js';
+import { isNarratorCard } from '../../scripts/group-nudge.js';
 import { power_user, sortEntitiesList } from '../../scripts/power-user.js';
 import { getTagKeyForEntity, getTagsList } from '../../scripts/tags.js';
 import { timestampToMoment } from '../../scripts/utils.js';
@@ -235,13 +236,15 @@ export function buildRows() {
         /** @type {Map<string, any>} */
         const byAvatar = new Map();
         for (const entity of entities) {
-            if (entity?.type === 'character' && typeof entity.item?.avatar === 'string') {
+            // A scene's narrator seat is a card, not a character: no poster, no face in a scene's
+            // stack, no count (docs/group-chat-v0.md §13).
+            if (entity?.type === 'character' && typeof entity.item?.avatar === 'string' && !isNarratorCard(entity.item)) {
                 byAvatar.set(entity.item.avatar, entity.item);
             }
         }
         for (const entity of entities) {
             // Tag folders are entities too; v0 has no folder tree (doc §4 non-goals).
-            if (entity?.type === 'character') {
+            if (entity?.type === 'character' && !isNarratorCard(entity.item)) {
                 rows.push(characterRow(entity, assistantAvatar));
             } else if (entity?.type === 'group') {
                 rows.push(groupRow(entity, byAvatar));

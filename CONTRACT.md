@@ -10,7 +10,7 @@ extensions + 4 local (per-user) extensions, 125 `.js` files scanned.
 15 core module paths · 8 `/api/extensions/*` routes + the server-plugin router contract.
 
 **NemoPresetExt demotion (2026-08-23).** NemoPresetExt was dropped by decision on 2026-08-23
-(unused lately; recorded in `../st-fork/SPEC.md` §5) and will not be installed in Kotatsu, so
+(unused lately; recorded in the internal design notes) and will not be installed in Kotatsu, so
 surface that existed *only* because Nemo touched it is not frozen: 33 DOM IDs and 4 module paths
 moved to Appendix A, which keeps them documented and watched rather than promised. Anything Nemo
 shared with another installed extension stays frozen on that other extension's account.
@@ -679,7 +679,7 @@ Two corollaries:
 
 All commands are read-only and run from the repo root. Third-party extension paths assume the
 installed set is present at `public/scripts/extensions/third-party/` and
-`data/default-user/extensions/`; against a bare clone, point them at the live install (read-only).
+`data/default-user/extensions/`; against a bare clone, point them at a stock SillyTavern install that has the same extensions (read-only).
 
 **Every extension-side grep excludes `NemoPresetExt`** — it is dropped (see the preamble and
 Appendix A). Re-including it re-derives the pre-demotion figures in the derivation notes, which is
@@ -745,7 +745,7 @@ still called by something.
 ## Appendix A — Watched, not frozen (NemoPresetExt — dropped 2026-08-23)
 
 NemoPresetExt was dropped by decision on **2026-08-23** (unused lately; recorded in
-`../st-fork/SPEC.md` §5). It will not be installed in Kotatsu. Everything in this appendix was
+the internal design notes). It will not be installed in Kotatsu. Everything in this appendix was
 load-bearing **for Nemo and nothing else**, so the fork does not promise it — but it is recorded
 here with its attribution intact rather than deleted, for three reasons:
 
@@ -755,7 +755,7 @@ here with its attribution intact rather than deleted, for three reasons:
    surface — precisely the region Kotatsu intends to rebuild. Knowing what *used* to be contract
    there is useful when writing the replacement.
 3. **Honest bookkeeping.** The pre-demotion numbers (59 IDs, 19 modules) appear throughout
-   `../st-fork/maps/`. Without this appendix, the gap between those figures and the frozen totals
+   the internal design notes. Without this appendix, the gap between those figures and the frozen totals
    looks like an error instead of a decision.
 
 **Status of everything below: free to rename, move, restructure, or delete.** No spec change
@@ -861,10 +861,10 @@ re-exports.
 
 | Version | Baseline | Notes |
 |---|---|---|
-| v1 | ST staging `1ca70787f` (1.18.0) | Initial freeze, **NemoPresetExt already excluded** (dropped 2026-08-23, `../st-fork/SPEC.md` §5). Frozen: **26 DOM IDs**, **146 `getContext()` keys**, **104 event keys** (103 distinct values), **15 core module paths**, 8 `/api/extensions` routes + the plugin router contract. Demoted to Appendix A: 33 DOM IDs, 4 module paths, and the Nemo-only named exports on still-frozen paths. |
+| v1 | ST staging `1ca70787f` (1.18.0) | Initial freeze, **NemoPresetExt already excluded** (dropped 2026-08-23, per the internal design notes). Frozen: **26 DOM IDs**, **146 `getContext()` keys**, **104 event keys** (103 distinct values), **15 core module paths**, 8 `/api/extensions` routes + the plugin router contract. Demoted to Appendix A: 33 DOM IDs, 4 module paths, and the Nemo-only named exports on still-frozen paths. |
 | v2 | same | **§1.7 message DOM shape added** (2026-08-24, renderer v0 slice 0) — freezes the `.mes` subtree surface with named consumers ahead of the SPEC target-3 renderer strangle; derivation in `docs/renderer-v0-recon-abi.md` §2. §6's markup/CSS/rendering-strategy bullets amended with the §1.7 carve-outs. No change to the §1–§5 counts. |
 
-**Pre-demotion figures, for reconciliation against `../st-fork/maps/`:** with Nemo included the
+**Pre-demotion figures, for reconciliation against the internal design notes:** with Nemo included the
 same derivations give 59 DOM IDs (matching `engine-review.md:349` exactly), 19 core module paths,
 and 120 core import edges of which 94 come from the global tier (matching `engine-review.md:362`'s
 "~94" exactly). `getContext()` (146) and `event_types` (104) reproduced exactly and are unaffected

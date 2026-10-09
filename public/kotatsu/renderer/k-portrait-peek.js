@@ -26,6 +26,7 @@ import {
     characters,
     getCurrentChatId,
     getPastCharacterChats,
+    getThumbnailUrl,
     openCharacterChat,
     selectCharacterById,
     this_chid,
@@ -415,6 +416,31 @@ function openPortrait(avatar, row, img) {
         : (row.querySelector('.name_text')?.textContent ?? '').trim();
     document.body.appendChild(peek);
     peek.source = avatar;
+}
+
+/**
+ * Opens the peek for a character by card filename, from anywhere — the scene stage's member
+ * menu (`docs/group-chat-v0.md` G3) has a seat, not a chat row. Same sheet, same mode rules.
+ * @param {string} file Card filename (`characters[i].avatar`).
+ * @param {HTMLElement|null} [source] The control that asked, ringed while the peek is open.
+ * @returns {boolean} False when there is no such card.
+ */
+export function openCharacterPeek(file, source = null) {
+    const charIndex = Array.isArray(characters) ? characters.findIndex(c => c?.avatar === file) : -1;
+    if (charIndex < 0) {
+        return false;
+    }
+    document.querySelector('k-portrait-peek')?.remove();
+    const peek = /** @type {KPortraitPeek} */ (document.createElement('k-portrait-peek'));
+    peek.setAttribute('variant', 'sheet');
+    peek.mode = 'peek';
+    peek.charIndex = charIndex;
+    peek.artUrl = characterArtUrl(file);
+    peek.thumbUrl = getThumbnailUrl('avatar', file);
+    peek.artName = cardFacts(characters[charIndex]).name;
+    document.body.appendChild(peek);
+    if (source) peek.source = source;
+    return true;
 }
 
 /**

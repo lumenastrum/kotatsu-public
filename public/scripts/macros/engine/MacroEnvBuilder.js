@@ -1,5 +1,6 @@
 import { name1, name2, characters, getCharacterCardFieldsLazy, getGeneratingModel } from '../../../script.js';
 import { groups, selected_group } from '../../../scripts/group-chats.js';
+import { isNarratorCard } from '../../group-nudge.js';
 import { logMacroGeneralError } from './MacroDiagnostics.js';
 import { getStringHash } from '/scripts/utils.js';
 /**
@@ -202,6 +203,9 @@ function getGroupValue(ctx, { currentChar = null, includeMuted = false, filterOu
             .filter(((id) => includeMuted ? true : !disabledMembers.includes(id)))
             .map(m => Array.isArray(characters) ? characters.find(c => c && c.avatar === m) : null)
             .filter(c => !!c && typeof c.name === 'string')
+            // KOTATSU-PATCH 2026-10-08: a scene's narrator seat is not a person in the room
+            // (docs/group-chat-v0.md §13) — "Present: …, Narrator" told every speaker it was.
+            .filter(c => !isNarratorCard(c))
             .filter(c => !filterOutChar || c.name !== currentChar)
             .map(c => c.name)
             .join(', ')

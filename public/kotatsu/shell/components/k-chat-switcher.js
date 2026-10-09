@@ -27,8 +27,13 @@
  *     a row badge counts a chat's direct children. The chip dispatches
  *     `k-open-branch-map`, the same door the top bar and rail use.
  *
- * Everything degrades by absence: groups render the plain title (no fake list
- * is invented for a surface `getPastCharacterChats()` does not serve), a
+ * Scenes (group chats, `docs/group-chat-v0.md` G1) get the same popover: the
+ * list is `/api/chats/search` with `group_id` (`groups/scene-chats.js`, the
+ * endpoint core's manage dialog uses for groups) and switching is core's
+ * `openGroupChat()`. No branch chip or badges there — branches are a
+ * single-character feature in v0.
+ *
+ * Everything degrades by absence: a
  * missing options-menu item hides its row, an empty tree means no chip and no
  * badges. The filter field only renders once the card has 8+ chats — a search
  * over three rows is furniture.
@@ -49,10 +54,11 @@ import {
     this_chid,
 } from '../../../script.js';
 import { event_types, eventSource } from '../../../scripts/events.js';
-import { selected_group } from '../../../scripts/group-chats.js';
+import { groups, selected_group } from '../../../scripts/group-chats.js';
 import { timestampToMoment } from '../../../scripts/utils.js';
 import { branchStore } from '../../branches/store.js';
 import { chatLabelText } from '../chat-label.js';
+import { loadSceneChats, openSceneChat } from '../../groups/scene-chats.js';
 
 /** The popover's DOM id, for `aria-controls`. */
 const POP_ID = 'k-chat-switcher-pop';
@@ -72,6 +78,8 @@ const REFRESH_EVENTS = [
     'CHAT_RENAMED',
     'CHARACTER_RENAMED',
     'GROUP_UPDATED',
+    'GROUP_CHAT_CREATED',
+    'GROUP_CHAT_DELETED',
 ];
 
 /**
@@ -110,6 +118,15 @@ function activeCharacterIndex() {
 function activeCharacterName() {
     const index = activeCharacterIndex();
     return index >= 0 && Array.isArray(characters) ? String(characters[index]?.name ?? '').trim() : '';
+}
+
+/** @returns {string} The open scene's name, or '' outside a group chat. */
+function activeSceneName() {
+    if (!selected_group || !Array.isArray(groups)) {
+        return '';
+    }
+    const group = groups.find((g) => String(g.id) === String(selected_group));
+    return String(group?.name ?? '').trim();
 }
 
 /**
@@ -347,6 +364,10 @@ export class KChatSwitcher extends LitElement {
      * @returns {Promise<void>}
      */
     async _loadChats() {
+        if (selected_group) {
+            await this._loadSceneChats(String(selected_group));
+            return;
+        }
         const chid = activeCharacterIndex();
         if (chid < 0 || !Array.isArray(characters) || !characters[chid]) {
             this._rows = [];
@@ -394,6 +415,38 @@ export class KChatSwitcher extends LitElement {
                 this._rows = [];
             }
             console.error('[k-chat-switcher] chat list read failed', error);
+        } finally {
+            if (token === this._fetchToken) {
+                this._pending = false;
+            }
+        }
+    }
+
+    /**
+     * The open scene's chats (`groups/scene-chats.js`) — one request, newest first.
+     * @param {string} groupId Group id.
+     * @returns {Promise<void>}
+     */
+    async _loadSceneChats(groupId) {
+        const token = ++this._fetchToken;
+        this._pending = true;
+        try {
+            const raw = await loadSceneChats(groupId);
+            if (token !== this._fetchToken) {
+                return;
+            }
+            this._rows = raw.map((row) => ({
+                id: row.id,
+                count: row.count,
+                micro: [row.count === null ? '' : `${row.count} msg`, toRelative(row.lastMs)].filter(Boolean).join(' · '),
+                branchCount: 0,
+                lastMs: row.lastMs,
+            }));
+        } catch (error) {
+            if (token === this._fetchToken) {
+                this._rows = [];
+            }
+            console.error('[k-chat-switcher] scene chat list read failed', error);
         } finally {
             if (token === this._fetchToken) {
                 this._pending = false;
@@ -460,7 +513,7 @@ export class KChatSwitcher extends LitElement {
             return;
         }
         this._close({ restoreFocus: false });
-        void openCharacterChat(fileId);
+        void (selected_group ? openSceneChat(fileId) : openCharacterChat(fileId));
     }
 
     /**
@@ -501,9 +554,8 @@ export class KChatSwitcher extends LitElement {
         if (!this._chatId) {
             return nothing;
         }
-        // Groups: no chat list exists on the character-chats endpoint, so the
-        // title stays plain text — no dead button, no fake list.
-        if (activeCharacterIndex() < 0) {
+        // Nothing selected at all (an assistant chat): plain text, no dead button.
+        if (activeCharacterIndex() < 0 && !selected_group) {
             return html`<span class="k-cs__plain" title=${this._chatId}>${chatLabelText(this._chatId)}</span>`;
         }
         return html`
@@ -532,6 +584,7 @@ export class KChatSwitcher extends LitElement {
     _renderPopover() {
         const query = this._query.trim().toLowerCase();
         const characterName = activeCharacterName();
+        const ownerName = characterName || activeSceneName();
         // The filter answers to both: the id someone remembers and the date the row prints.
         const rows = query
             ? this._rows.filter((row) => row.id.toLowerCase().includes(query)
@@ -544,7 +597,7 @@ export class KChatSwitcher extends LitElement {
                 @keydown=${this._onKeyDown}>
                 <div class="k-cs__label">
                     <span>Chats</span>
-                    ${characterName ? html`<span class="k-cs__label-char">${characterName}</span>` : nothing}
+                    ${ownerName ? html`<span class="k-cs__label-char">${ownerName}</span>` : nothing}
                 </div>
                 ${this._rows.length >= FILTER_MIN_CHATS ? html`
                     <div class="k-cs__filter">

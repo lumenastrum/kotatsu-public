@@ -24,6 +24,7 @@ import {
 import { branchStore, initBranchStore } from '../branches/store.js';
 import { initMetrics } from '../metrics/index.js';
 import { initMarketSettings } from '../market/settings.js';
+import { initSceneNudgeSetting } from '../groups/scene-nudge-setting.js';
 import {
     closeLibrary,
     installLandingPicker,
@@ -34,6 +35,7 @@ import {
 import { initKotatsuPromptList } from '../prompts/k-prompt-list.js';
 import { initReceiptTracker } from '../prompts/k-receipt-tracker.js';
 import { closeStudio, openStudio, studioState } from '../studio/k-card-studio.js';
+import { closeSceneStudio, openSceneStudio, sceneStudioState } from '../groups/k-scene-studio.js';
 import { closeSettings, openSettings, settingsState } from '../settings/k-settings-modal.js';
 import { initPromptReceipts } from '../prompts/receipts.js';
 import { initMetadataReveal } from '../renderer/metadata-reveal.js';
@@ -58,6 +60,7 @@ import { mountConnectionMore } from '../connections/k-connection-more.js';
 import { installPresetBinding } from '../connections/preset-binding.js';
 import { installComposerReason } from '../connections/composer-reason.js';
 import { installOnboarding } from '../onboarding/k-onboarding.js';
+import { installWhatsNew } from '../whats-new/k-whats-new.js';
 import { applyLayout, currentLayout, defineLayout, hasLayout } from './registry.js';
 
 export { setLayout } from './persistence.js';
@@ -190,11 +193,17 @@ export async function initKotatsuShell() {
     // Characters checkboxes. Binding only; `<k-market>` is still imported on the first switch
     // to Browse and never before, so a gallery that never browses never loads it.
     initMarketSettings();
+    // Group chat v0 §10: the scene nudge toggle (power_user.kotatsu_scene_nudge).
+    initSceneNudgeSetting();
 
     // Onboarding v0 slice O1 (docs/onboarding-v0.md): Mikan-chan's welcome tour. Registration
     // only — it opens at APP_READY when core's first-run gate (or a mid-tour reload) left
     // `power_user.kotatsu_onboarding` asking for it, and answers Settings → System's replay door.
     installOnboarding();
+
+    // What's New: the release notes, once per update (whats-new/state.js decides). Registration
+    // only — it reads the running version at APP_READY and answers Settings → System's door.
+    installWhatsNew();
 
     const requested = readStoredLayout();
     const target = hasLayout(requested) ? requested : DEFAULT_LAYOUT;
@@ -275,6 +284,14 @@ export async function initKotatsuShell() {
         close: closeStudio,
         get state() {
             return studioState();
+        },
+    };
+    // Group chat v0 G2: the scene studio door — `open('create')` / `open(groupId)`.
+    targetWindow.kotatsu.scenes = {
+        open: (/** @type {'create'|string} */ target = 'create') => openSceneStudio(target),
+        close: closeSceneStudio,
+        get state() {
+            return sceneStudioState();
         },
     };
     // Renderer v0 §2.5: the message-variant door, now one of three axes (variant-wardrobe v0

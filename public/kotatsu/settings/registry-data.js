@@ -108,7 +108,7 @@
  * within keep their own stock bindings, their own stock lanes — including DIE lanes — and get
  * no registry entries of their own, which is what keeps the "zero DIE-lane keys" assertion
  * honest rather than merely narrow.
- * @typedef {'select'|'checkbox'|'range'|'number'|'textarea'|'color'|'buttongroup'|'button'|'block'|'kotatsu-layout'|'kotatsu-rails'|'kotatsu-tour'|'kotatsu-phone'} ControlKind
+ * @typedef {'select'|'checkbox'|'range'|'number'|'textarea'|'color'|'buttongroup'|'button'|'block'|'kotatsu-layout'|'kotatsu-rails'|'kotatsu-tour'|'kotatsu-whats-new'|'kotatsu-phone'} ControlKind
  */
 
 /** @typedef {import('./registry.js').Entry} Entry */
@@ -161,7 +161,7 @@ export const AFFECTS = Object.freeze([
 /** Every legal `control` value. */
 export const CONTROLS = Object.freeze([
     'select', 'checkbox', 'range', 'number', 'textarea', 'color', 'buttongroup', 'button',
-    'block', 'kotatsu-layout', 'kotatsu-rails', 'kotatsu-tour', 'kotatsu-phone',
+    'block', 'kotatsu-layout', 'kotatsu-rails', 'kotatsu-tour', 'kotatsu-whats-new', 'kotatsu-phone',
 ]);
 
 /** Every legal `store` value. See the `EntryStore` typedef in `registry.js` for the lane rules. */
@@ -1481,6 +1481,22 @@ export const ENTRIES = Object.freeze([
         surface: 'modal',
     },
     {
+        // Group chat v0 §10: Kotatsu-native, beside the stock group chat rows. Stored as the
+        // string enum 'on'/'off', unset means ON (groups/scene-nudge-setting.js resolves that).
+        id: 'kotatsu_scene_nudge',
+        keys: ['kotatsu_scene_nudge'],
+        label: 'Keep each character to their own turn',
+        section: 'chat',
+        group: 'Group Chats',
+        control: 'checkbox',
+        binding: { by: 'id', ref: 'kotatsu_scene_nudge' },
+        affects: ['prompt'],
+        keywords: ['group', 'scene', 'nudge', 'speak for', 'agency', 'bleed', 'group chat', 'kotatsu_scene_nudge'],
+        tier: 'advanced',
+        store: 'power_user',
+        surface: 'modal',
+    },
+    {
         id: 'disable_group_trimming',
         keys: ['disable_group_trimming'],
         label: 'Relax Message Trim in Groups',
@@ -2308,6 +2324,23 @@ export const ENTRIES = Object.freeze([
         affects: ['startup'],
         keywords: ['welcome', 'tour', 'onboarding', 'tutorial', 'mikan-chan', 'kotatsu-chan', 'mascot', 'first run', 'setup', 'kotatsu_onboarding'],
         // An affordance, not a measured setting: advanced, like every other action row.
+        tier: 'advanced',
+        store: 'power_user',
+        surface: 'modal',
+    },
+    {
+        id: 'k-whats-new-replay',
+        keys: ['kotatsu_whats_new_seen'],
+        label: 'What’s New',
+        section: 'system',
+        group: 'Startup',
+        control: 'kotatsu-whats-new',
+        // What's New (whats-new/k-whats-new.js): drawn by the modal (`#renderWhatsNewReplay`), no
+        // stock node. It closes settings and dispatches `k-open-whats-new`; the sheet writes
+        // `kotatsu_whats_new_seen` when it closes.
+        binding: { by: 'id', ref: 'k-whats-new-replay', runtime: true },
+        affects: ['startup'],
+        keywords: ['what\'s new', 'whats new', 'release notes', 'changelog', 'changes', 'update', 'new features', 'version', 'kotatsu_whats_new_seen'],
         tier: 'advanced',
         store: 'power_user',
         surface: 'modal',

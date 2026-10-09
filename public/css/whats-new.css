@@ -1,0 +1,395 @@
+/*
+ * whats-new.css — the release notes sheet, <k-whats-new> (whats-new/k-whats-new.js).
+ *
+ * A sibling of the welcome tour (onboarding.css): the same sheet, bubble, dots and buttons, in one
+ * column so the clip can be wide. Same discipline:
+ * - Every rule is gated on `body[data-k-layout="rails"]`; classic never builds the element.
+ * - Colours, radii, shadows and motion come from `--k-*` only; slice parameters live in the
+ *   `--k-wn-*` namespace up top, never in tokens.css.
+ * - Every `:hover` has a `:focus-visible` twin. Type floor 11px.
+ *
+ * Stacking: scrim 4070 / sheet 4071, mirroring WHATS_NEW_Z: one rung under the tour (4080), settings
+ * (4090) and the card studio (4100). While one of those is up the element carries `covered` and
+ * paints nothing.
+ */
+
+body[data-k-layout="rails"] {
+    --k-wn-z-scrim: 4070;
+    --k-wn-z-sheet: 4071;
+    --k-wn-width: min(640px, calc(100vw - 32px));
+    --k-wn-height: min(800px, calc(100dvh - 32px));
+    --k-wn-pad: 24px;
+}
+
+body[data-k-layout="rails"] k-whats-new {
+    display: contents;
+}
+
+body[data-k-layout="rails"] k-whats-new[covered] .k-wn-scrim,
+body[data-k-layout="rails"] k-whats-new[covered] .k-wn-sheet {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-wn-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: var(--k-wn-z-scrim);
+    background: var(--k-scrim);
+}
+
+/* Centred with inset + margin, never a transform: see settings-modal.css "Centring". */
+body[data-k-layout="rails"] .k-wn-sheet {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    z-index: var(--k-wn-z-sheet);
+    box-sizing: border-box;
+    width: var(--k-wn-width);
+    height: fit-content;
+    max-height: var(--k-wn-height);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: var(--k-wn-pad);
+    overflow: hidden;
+    background: var(--k-surface);
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-xl);
+    box-shadow: var(--k-elev-4);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    animation: k-wn-rise var(--k-dur-3) var(--k-ease-out) both;
+}
+
+/* ── Head ────────────────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-wn-head {
+    flex: none;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+body[data-k-layout="rails"] .k-wn-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-wn-eyebrow {
+    color: var(--k-text-muted);
+    font-family: var(--k-font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+body[data-k-layout="rails"] .k-wn-title {
+    margin: 0;
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: 26px;
+    line-height: 1.15;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-wn-close {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-round);
+    background: none;
+    color: var(--k-text-muted);
+    cursor: pointer;
+    transition: color var(--k-dur-1) var(--k-ease-out), border-color var(--k-dur-1) var(--k-ease-out);
+}
+
+body[data-k-layout="rails"] .k-wn-close:hover,
+body[data-k-layout="rails"] .k-wn-close:focus-visible {
+    color: var(--k-text-strong);
+    border-color: var(--k-accent);
+}
+
+/* ── Body: the one scroller, so the footer stays on screen ───────────────────────── */
+
+body[data-k-layout="rails"] .k-wn-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    /* The pad keeps focus rings inside the scroller's clip. */
+    padding: 2px;
+    margin: -2px;
+}
+
+/* More below the fold: the bottom edge fades (k-whats-new.js `#checkOverflow`). */
+body[data-k-layout="rails"] .k-wn-body[data-more] {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent);
+}
+
+body[data-k-layout="rails"] .k-wn-clip {
+    flex: none;
+    margin: 0;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-surface-sunken);
+}
+
+body[data-k-layout="rails"] .k-wn-video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Mikan-chan's bust beside her bubble; the tail points back at her. */
+body[data-k-layout="rails"] .k-wn-guide {
+    display: var(--k-mascot-display, flex);
+    align-items: flex-start;
+    gap: 14px;
+}
+
+body[data-k-layout="rails"] .k-wn-mascot {
+    flex: none;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--k-radius-round);
+    background: radial-gradient(circle at 50% 70%, var(--k-glow-rose), transparent 70%), var(--k-surface-sunken);
+    border: 1px solid var(--k-border);
+    object-fit: cover;
+    user-select: none;
+}
+
+body[data-k-layout="rails"] .k-wn-bubble {
+    position: relative;
+    flex: 1 1 auto;
+    margin: 0;
+    padding: 12px 14px;
+    background: var(--k-surface-2);
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-lg);
+    color: var(--k-text-prose);
+    font-family: var(--k-font-prose);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-wn-bubble::before {
+    content: "";
+    position: absolute;
+    top: 22px;
+    left: -7px;
+    width: 12px;
+    height: 12px;
+    background: inherit;
+    border-left: 1px solid var(--k-border);
+    border-bottom: 1px solid var(--k-border);
+    transform: rotate(45deg);
+}
+
+body[data-k-layout="rails"] .k-wn-speaker {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--k-rose);
+    font-family: var(--k-font-label, var(--k-font-ui));
+    font-size: calc(11px * var(--k-label-scale, 1));
+    font-weight: var(--k-label-weight, 700);
+    letter-spacing: var(--k-label-tracking, 0.11em);
+    text-transform: var(--k-label-case, uppercase);
+}
+
+/* ── The card's own words ────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-wn-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-wn-card-title {
+    margin: 0;
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: 19px;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-wn-card-body {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-wn-wiki {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+    color: var(--k-accent-bright);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: var(--k-radius-sm);
+}
+
+body[data-k-layout="rails"] .k-wn-wiki:hover,
+body[data-k-layout="rails"] .k-wn-wiki:focus-visible {
+    text-decoration: underline;
+}
+
+body[data-k-layout="rails"] .k-wn-notes {
+    margin-top: 6px;
+    padding: 12px 14px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-sunken);
+}
+
+body[data-k-layout="rails"] .k-wn-notes-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--k-text-muted);
+    font-family: var(--k-font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+body[data-k-layout="rails"] .k-wn-notes ul {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--k-text-dim);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-wn-foot {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid var(--k-border);
+}
+
+body[data-k-layout="rails"] .k-wn-dots {
+    display: flex;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-wn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--k-radius-round);
+    background: var(--k-border);
+    transition: background var(--k-dur-2) var(--k-ease-out), width var(--k-dur-2) var(--k-ease-glide);
+}
+
+body[data-k-layout="rails"] .k-wn-dot[data-state="past"] {
+    background: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-wn-dot[data-state="now"] {
+    width: 20px;
+    background: var(--k-rose);
+}
+
+body[data-k-layout="rails"] .k-wn-actions {
+    display: flex;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-wn-button {
+    padding: 8px 18px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-pill);
+    background: none;
+    color: var(--k-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--k-dur-1) var(--k-ease-out), border-color var(--k-dur-1) var(--k-ease-out);
+}
+
+body[data-k-layout="rails"] .k-wn-button:hover,
+body[data-k-layout="rails"] .k-wn-button:focus-visible {
+    border-color: var(--k-accent);
+    background: var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] .k-wn-button[data-kind="primary"] {
+    border-color: var(--k-accent);
+    background: var(--k-accent);
+    color: var(--k-ground);
+}
+
+body[data-k-layout="rails"] .k-wn-button[data-kind="primary"]:hover,
+body[data-k-layout="rails"] .k-wn-button[data-kind="primary"]:focus-visible {
+    border-color: var(--k-accent-bright);
+    background: var(--k-accent-bright);
+}
+
+body[data-k-layout="rails"] :is(.k-wn-button, .k-wn-close, .k-wn-wiki):focus-visible {
+    outline: 2px solid var(--k-rose);
+    outline-offset: 2px;
+}
+
+/* ── Narrow: the sheet takes the screen, the bust shrinks ────────────────────────── */
+
+@media (max-width: 640px) {
+    body[data-k-layout="rails"] {
+        --k-wn-width: calc(100vw - 16px);
+        --k-wn-height: calc(100dvh - 16px);
+        --k-wn-pad: 16px;
+    }
+
+    body[data-k-layout="rails"] .k-wn-title {
+        font-size: 22px;
+    }
+
+    body[data-k-layout="rails"] .k-wn-mascot {
+        width: 48px;
+        height: 48px;
+    }
+
+    body[data-k-layout="rails"] .k-wn-bubble {
+        font-size: 14px;
+    }
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────────────── */
+
+@keyframes k-wn-rise {
+    from { opacity: 0; translate: 0 12px; }
+    to { opacity: 1; translate: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"] .k-wn-sheet {
+        animation: none;
+    }
+
+    body[data-k-layout="rails"] .k-wn-dot {
+        transition: none;
+    }
+}

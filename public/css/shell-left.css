@@ -432,6 +432,45 @@ body[data-k-layout="rails"] .k-rl-row--more:focus-visible {
     color: var(--k-accent-bright);
 }
 
+/* ── Scenes (docs/group-chat-v0.md G1) ─────────────────────────────────────────
+   A scene row is a character row whose chip is two faces stacked, the second
+   overlapping the first by --k-rl-face-overlap. The ring around each face is the
+   rail's own fill, so the overlap reads as a cut, not a smudge. */
+
+body[data-k-layout="rails"] k-rail-left {
+    --k-rl-face-overlap: 10px;
+}
+
+body[data-k-layout="rails"] .k-rl-row--scene {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+body[data-k-layout="rails"] .k-rl-faces {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    /* Two faces or one: the column keeps the same width so names line up. */
+    width: calc(var(--k-rl-chip-size) * 2 - var(--k-rl-face-overlap));
+}
+
+body[data-k-layout="rails"] .k-rl-face {
+    width: var(--k-rl-chip-size);
+    height: var(--k-rl-chip-size);
+    border-radius: var(--k-radius-round);
+    object-fit: cover;
+    object-position: 50% 18%;
+    background: var(--k-inset-fill);
+    box-shadow: 0 0 0 2px var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] .k-rl-face + .k-rl-face {
+    margin-left: calc(var(--k-rl-face-overlap) * -1);
+}
+
+body[data-k-layout="rails"] .k-rl-row--scene.is-active .k-rl-face {
+    box-shadow: 0 0 0 2px var(--k-surface-2), 0 0 0 3px var(--k-rose);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    BRANCHES — the open chat's lineage, its children, the door to the map.
    (branch panel v0 slice C, docs/branch-panel-v0.md §"The rail section")

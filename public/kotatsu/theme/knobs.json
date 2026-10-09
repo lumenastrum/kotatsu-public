@@ -3928,6 +3928,17 @@
     }
    ]
   },
+  "--k-rl-face-overlap": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "10px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-rail-left",
+     "at": []
+    }
+   ]
+  },
   "--k-rl-gap": {
    "group": "Left rail",
    "file": "css/shell-left.css",
@@ -4087,6 +4098,365 @@
    "group": "Left rail",
    "file": "css/shell-left.css",
    "default": "500",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-banner-fill": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "linear-gradient(90deg, color-mix(in srgb, var(--k-accent) 10%, transparent), color-mix(in srgb, var(--k-rose) 6%, transparent))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-banner-w": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "760px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-face": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "30px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-stage-menu-head .k-stage-face",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-stage-mentions .k-stage-face",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-stage-seat .k-stage-face",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    }
+   ]
+  },
+  "--k-scene-field-fill": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "var(--k-ground-deep)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-gap": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "clamp(12px, 1.2vw, 18px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-hairline": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-height": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "min(820px, calc(100dvh - 48px))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    }
+   ]
+  },
+  "--k-scene-hue-l": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "76%",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-hue-s": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "58%",
+   "note": "Identity colour band. Blue Hour wants pastel, legible on the dark ground.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-label-size": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-label-track": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "0.14em",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-menu-w": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "256px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-menu-z": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "40",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-narrator": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "color-mix(in srgb, var(--k-text-dim) 78%, var(--k-accent))",
+   "note": "The narrator seat (§13) wears no identity hue: a quiet ink with a little lantern warmth, so the world's voice never reads as one more person.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-option-fill": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "color-mix(in srgb, var(--k-surface-2) 70%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-option-on": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "color-mix(in srgb, var(--k-accent) 12%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-option-on-border": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "color-mix(in srgb, var(--k-accent) 60%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-pad": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "clamp(16px, 1.8vw, 28px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-panel-w": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "420px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-scrim-fill": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 74%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-sheet-fill": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "linear-gradient(180deg, var(--k-surface), var(--k-ground-deep))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-stage-fill": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "color-mix(in srgb, var(--k-surface) 80%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-stage-radius": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "16px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-tile-h": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "212px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    }
+   ]
+  },
+  "--k-scene-tile-min": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "148px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    }
+   ]
+  },
+  "--k-scene-title-size": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "clamp(26px, 2.6vw, 38px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-width": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "min(1180px, calc(100vw - 48px))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
+    }
+   ]
+  },
+  "--k-scene-z-scrim": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "4100",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-scene-z-sheet": {
+   "group": "css/scenes.css",
+   "file": "css/scenes.css",
+   "default": "4101",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5449,6 +5819,79 @@
    "group": "Right rail",
    "file": "css/shell-right.css",
    "default": "500",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-wn-height": {
+   "group": "css/whats-new.css",
+   "file": "css/whats-new.css",
+   "default": "min(800px, calc(100dvh - 32px))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 640px)"
+     ]
+    }
+   ]
+  },
+  "--k-wn-pad": {
+   "group": "css/whats-new.css",
+   "file": "css/whats-new.css",
+   "default": "24px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 640px)"
+     ]
+    }
+   ]
+  },
+  "--k-wn-width": {
+   "group": "css/whats-new.css",
+   "file": "css/whats-new.css",
+   "default": "min(640px, calc(100vw - 32px))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 640px)"
+     ]
+    }
+   ]
+  },
+  "--k-wn-z-scrim": {
+   "group": "css/whats-new.css",
+   "file": "css/whats-new.css",
+   "default": "4070",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-wn-z-sheet": {
+   "group": "css/whats-new.css",
+   "file": "css/whats-new.css",
+   "default": "4071",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",

@@ -27,6 +27,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { RELEASES, WIKI_BASE } from '../public/kotatsu/whats-new/releases.js';
+
 const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIRROR_DEFAULT = 'https://github.com/lumenastrum/kotatsu-public.git';
 const MIRROR_BRANCH = 'main';
@@ -248,6 +250,7 @@ function main() {
     console.log(JSON.stringify(summary, null, 2));
 
     if (args.dryRun) {
+        console.log(`\nRelease notes for ${tag}:\n${releaseBody(tag, '<sha>', branch)}\n`);
         console.log('Dry run: mirror untouched. Export left at', exportDir);
         return;
     }
@@ -303,6 +306,44 @@ function main() {
 }
 
 /**
+ * The release's own notes, from the entry What's New shows in the app
+ * (`public/kotatsu/whats-new/releases.js`), so the release page and the app never disagree.
+ * @param {string} tag e.g. `v0.5.0`
+ * @returns {string[]} Markdown lines; empty when the release has no notes.
+ */
+function releaseNotesFor(tag) {
+    const entry = RELEASES.find((release) => `v${release.version}` === tag);
+    if (!entry) return [];
+    return [
+        `## ${entry.title}`,
+        '',
+        ...entry.cards.flatMap((card) => [
+            `**${card.title}**`,
+            card.wiki ? `${card.body} [Read more](${WIKI_BASE}${card.wiki})` : card.body,
+            '',
+        ]),
+        ...(entry.notes?.length ? ['**Also in this release**', ...entry.notes.map((note) => `- ${note}`), ''] : []),
+    ];
+}
+
+/**
+ * The GitHub Release body: the notes, then where it was built from and how to install it.
+ * @param {string} tag
+ * @param {string} shortSha
+ * @param {string} branch
+ * @returns {string}
+ */
+function releaseBody(tag, shortSha, branch) {
+    return [
+        ...releaseNotesFor(tag),
+        `Built from the private source repo at \`${shortSha}\` (${branch}).`,
+        '',
+        `**Install (Windows):** download \`${INSTALLER_ASSET}\` below and double-click it.`,
+        '**Update an existing install:** click the pill in the header, or run `Update.bat`.',
+    ].join('\n');
+}
+
+/**
  * Best effort: a GitHub Release object so the tag has a page, with the installer attached.
  * Needs `gh` logged in; skipped otherwise.
  * @param {string} installerPath The mirror worktree's installer (CRLF, already asserted)
@@ -327,12 +368,7 @@ function createGithubRelease(mirror, tag, shortSha, branch, installerPath) {
         // not there yet — create it
     }
     if (!exists) {
-        const notes = [
-            `Built from the private source repo at \`${shortSha}\` (${branch}).`,
-            '',
-            `**Install (Windows):** download \`${INSTALLER_ASSET}\` below and double-click it.`,
-            '**Update an existing install:** click the pill in the header, or run `Update.bat`.',
-        ].join('\n');
+        const notes = releaseBody(tag, shortSha, branch);
         try {
             run(['release', 'create', tag, '-R', repo, '--title', `Kotatsu ${tag}`, '--notes', notes, '--latest']);
             console.log(`GitHub Release created: https://github.com/${repo}/releases/tag/${tag}`);

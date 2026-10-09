@@ -94,6 +94,22 @@ export const LINES = Object.freeze({
         '{device} found us. That code is spent now, so nobody else gets in on it. I\'m thorough like that.',
         'Look who followed you to the table. {device} can come in; I checked.',
     ]),
+    // What's New (whats-new/releases.js): one line per card, beside the card's own plain copy.
+    whatsNewRooms: Object.freeze([
+        'Big news: the kotatsu seats more than two now. Pull a few friends under the blanket and see who talks first.',
+    ]),
+    whatsNewMentions: Object.freeze([
+        'Want someone in particular? Put an @ in front of their name. They line up politely. Mostly.',
+    ]),
+    whatsNewTalk: Object.freeze([
+        'Or sit back and let them chat. I do it all the time. It\'s very educational.',
+    ]),
+    whatsNewNarrator: Object.freeze([
+        'Somebody has to describe the snow. The narrator takes the world, so your cast can stay in character.',
+    ]),
+    whatsNewAgain: Object.freeze([
+        'Missed something? Here\'s the latest again. I saved you a mikan.',
+    ]),
 });
 
 /**

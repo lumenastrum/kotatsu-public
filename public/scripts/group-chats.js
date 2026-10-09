@@ -137,7 +137,26 @@ export const DEFAULT_AUTO_MODE_DELAY = 5;
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, debounce_timeout.quick));
 export const groupMembersFilter = new FilterHelper(debounce(printGroupMembers, debounce_timeout.quick));
 let autoModeWorker = null;
-const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), debounce_timeout.relaxed);
+/**
+ * One debouncer per group id. A single shared debouncer kept only the LAST group edited inside
+ * the window: edit A, then B within a second, and A's change never reached disk
+ * (Kotatsu docs/group-chat-v0.md S1).
+ * @type {Map<string, (group: Group, reload: boolean) => void>}
+ */
+const groupSaveDebouncers = new Map();
+
+/**
+ * @param {Group} group Group to save.
+ * @param {boolean} reload Whether to reload the groups after saving.
+ */
+function saveGroupDebounced(group, reload) {
+    let save = groupSaveDebouncers.get(group.id);
+    if (!save) {
+        save = debounce(async (/** @type {Group} */ g, /** @type {boolean} */ r) => await _save(g, r), debounce_timeout.relaxed);
+        groupSaveDebouncers.set(group.id, save);
+    }
+    save(group, reload);
+}
 /** @type {Map<string, number>} */
 let groupChatQueueOrder = new Map();
 
@@ -166,6 +185,8 @@ async function _save(group, reload = true) {
 // Group chats
 async function regenerateGroup() {
     let generationId = getLastMessageGenerationId();
+    /** @type {string[]} Speakers of the batch being regenerated, newest first. */
+    const speakers = [];
 
     while (chat.length > 0) {
         const lastMes = chat[chat.length - 1];
@@ -179,12 +200,28 @@ async function regenerateGroup() {
             break;
         }
 
+        if (typeof lastMes.original_avatar === 'string' && lastMes.original_avatar) {
+            speakers.push(lastMes.original_avatar);
+        }
         await deleteLastMessage();
     }
 
+    // Regenerate re-drafts the SAME speakers in the same order. It used to re-run the
+    // activation strategy, so a reroll could hand the turn to different characters and the
+    // replies being regenerated were simply gone (Kotatsu docs/group-chat-v0.md S6). Members
+    // who have since left the group are dropped; nobody left means the strategy decides.
+    const group = groups.find(x => x.id === selected_group);
+    const forceChids = speakers.reverse()
+        .filter(avatar => group?.members?.includes(avatar))
+        .map(avatar => characters.findIndex(x => x.avatar === avatar))
+        .filter(chid => chid !== -1);
+
     const abortController = new AbortController();
     setExternalAbortController(abortController);
-    return generateGroupWrapper(false, 'normal', { signal: abortController.signal });
+    return generateGroupWrapper(false, 'normal', {
+        signal: abortController.signal,
+        ...(forceChids.length ? { force_chids: forceChids } : {}),
+    });
 }
 
 /**
@@ -451,7 +488,9 @@ export function getGroupDepthPrompts(groupId, characterId) {
             continue;
         }
 
-        if (group.disabled_members.includes(member) && characterId !== index) {
+        // "Join (include muted)" joins muted members' cards, so their depth prompts come too —
+        // they were the one part left out (Kotatsu docs/group-chat-v0.md S8).
+        if (group.disabled_members.includes(member) && characterId !== index && group.generation_mode !== group_generation_mode.APPEND_DISABLED) {
             console.debug(`Skipping disabled group member: ${member}`);
             continue;
         }
@@ -959,8 +998,10 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
         return Promise.resolve();
     }
 
-    // Auto-navigate back to group menu
-    if (menu_type !== 'group_edit') {
+    // Auto-navigate back to group menu — but never out of a group being CREATED: that wiped the
+    // half-built form (its members live only in newGroupMembers) on every reply, auto-mode tick
+    // and extension quiet prompt (Kotatsu docs/group-chat-v0.md S5).
+    if (menu_type !== 'group_edit' && menu_type !== 'group_create') {
         select_group_chats(selected_group, false);
         await delay(1);
     }
@@ -1003,7 +1044,10 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
         const enabledMembers = group.members.filter(x => !group.disabled_members.includes(x));
         let activatedMembers = [];
 
-        if (params && typeof params.force_chid == 'number') {
+        if (params && Array.isArray(params.force_chids) && params.force_chids.some(x => typeof x === 'number' && characters[x])) {
+            // An exact speaking order (regenerate's replay). Muting is not consulted, as with force_chid.
+            activatedMembers = params.force_chids.filter(x => typeof x === 'number' && characters[x]);
+        } else if (params && typeof params.force_chid == 'number') {
             activatedMembers = [params.force_chid];
         } else if (type === 'quiet') {
             activatedMembers = activateSwipe(group.members, { allowSystem: true }).slice(0, 1);
@@ -1019,7 +1063,9 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
                 throw new Error('Deleted group member swiped');
             }
         } else if (type === 'impersonate') {
-            activatedMembers = activateImpersonate(group.members);
+            // A muted member is not in the conversation; impersonation borrows an active one's
+            // context when there is one (Kotatsu docs/group-chat-v0.md S8).
+            activatedMembers = activateImpersonate(enabledMembers.length ? enabledMembers : group.members);
         } else if (activationStrategy === group_activation_strategy.NATURAL) {
             activatedMembers = activateNaturalOrder(enabledMembers, activationText, lastMessage, group.allow_self_responses, isUserInput);
         } else if (activationStrategy === group_activation_strategy.LIST) {
@@ -1046,7 +1092,10 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
                 groupChatQueueOrder.set(characters[activatedMembers[i]].avatar, i + 1);
             }
         }
-        await eventSource.emit(event_types.GROUP_WRAPPER_STARTED, { selected_group, type });
+        // `queue`: the drafted members' avatars in speaking order, so a UI can show who is next
+        // without reading the panel-only queue map (Kotatsu docs/group-chat-v0.md G3).
+        const queue = activatedMembers.map(chId => characters[chId]?.avatar).filter(Boolean);
+        await eventSource.emit(event_types.GROUP_WRAPPER_STARTED, { selected_group, type, queue });
         // now the real generation begins: cycle through every activated character
         for (const chId of activatedMembers) {
             throwIfAborted();
@@ -1239,6 +1288,12 @@ function activatePooledOrder(members, lastMessage, isUserInput) {
  * @param {boolean} isUserInput If the generation was triggered by user input
  * @returns {number[]} Array of character ids
  */
+/**
+ * Words in a name that never call its owner by themselves: "the" in "The Narrator" activated
+ * that member on almost every message (Kotatsu docs/group-chat-v0.md S11).
+ */
+const NAME_FILLER_WORDS = new Set(['the', 'a', 'an', 'of', 'and', 'de', 'del', 'la', 'le', 'el', 'von', 'van', 'der', 'den', 'du', 'mr', 'mrs', 'ms', 'miss', 'sir', 'dr']);
+
 function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, isUserInput) {
     let activatedMembers = [];
 
@@ -1260,7 +1315,7 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
                     continue;
                 }
 
-                if (extractAllWords(character.name).includes(inputWord)) {
+                if (extractAllWords(character.name).filter(word => !NAME_FILLER_WORDS.has(word)).includes(inputWord)) {
                     activatedMembers.push(member);
                     break;
                 }
@@ -1935,7 +1990,7 @@ async function uploadGroupAvatar(event) {
 }
 
 async function restoreGroupAvatar() {
-    const confirm = await Popup.show.confirm('Are you sure you want to restore the group avatar?', 'Your custom image will be deleted, and a collage will be used instead.');
+    const confirm = await Popup.show.confirm('Are you sure you want to restore the group avatar?', 'The members\' collage will be used instead. The picture itself stays in your images.');
     if (!confirm) {
         return;
     }
@@ -2037,6 +2092,10 @@ export async function openGroupById(groupId) {
             await clearChat({ clearData: true });
             cancelTtsPlay();
             selected_group = groupId;
+            // select_group_chats() above armed the auto-mode worker while selected_group still
+            // named the PREVIOUS group, so its delay was the previous group's (Kotatsu
+            // docs/group-chat-v0.md S3). Re-arm now that the right group is selected.
+            setAutoModeWorker();
             setEditedMessageId(undefined);
             updateChatMetadata({}, true);
             await getGroupChat(groupId);
@@ -2394,12 +2453,45 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId, chat
     }
 }
 
-function onSendTextareaInput() {
-    if (is_group_automode_enabled) {
+/**
+ * A person typing takes the floor back. Only TRUSTED input counts: Generate() clears the composer
+ * with a synthetic input event on every turn (script.js), and once this listener moved from keyup
+ * to input (S4) that synthetic event switched auto mode off after its first reply.
+ * @param {JQuery.TriggeredEvent} event
+ */
+function onSendTextareaInput(event) {
+    const native = /** @type {Event|undefined} */ (event?.originalEvent ?? event);
+    if (is_group_automode_enabled && native?.isTrusted) {
         // Wait for current automode generation to finish
-        is_group_automode_enabled = false;
-        $('#rm_group_automode').prop('checked', false);
+        setGroupAutoMode(false);
     }
+}
+
+/**
+ * Turns group auto mode on or off — the one path the stock checkbox and any other surface use.
+ * The stop listener is registered once per enable instead of once per toggle, so toggling no
+ * longer piles up `GENERATION_STOPPED` listeners (Kotatsu docs/group-chat-v0.md S4).
+ * @param {boolean} value Whether auto mode should run.
+ */
+export function setGroupAutoMode(value) {
+    const enabled = Boolean(value);
+    const changed = enabled !== is_group_automode_enabled;
+    is_group_automode_enabled = enabled;
+    $('#rm_group_automode').prop('checked', enabled);
+    if (changed) {
+        eventSource.emit(event_types.GROUP_AUTO_MODE_CHANGED, enabled);
+    }
+    // A named handler, not `once()`: `once()` wraps the listener, so it could never be removed
+    // by name and every toggle added another.
+    eventSource.removeListener(event_types.GENERATION_STOPPED, onAutoModeGenerationStopped);
+    if (enabled) {
+        eventSource.on(event_types.GENERATION_STOPPED, onAutoModeGenerationStopped);
+    }
+}
+
+function onAutoModeGenerationStopped() {
+    eventSource.removeListener(event_types.GENERATION_STOPPED, onAutoModeGenerationStopped);
+    stopAutoModeGeneration();
 }
 
 function stopAutoModeGeneration() {
@@ -2407,8 +2499,8 @@ function stopAutoModeGeneration() {
         groupAutoModeAbortController.abort();
     }
 
-    is_group_automode_enabled = false;
-    $('#rm_group_automode').prop('checked', false);
+    // Through the one switch, so anything showing auto mode hears that it stopped.
+    setGroupAutoMode(false);
 }
 
 function doCurMemberListPopout() {
@@ -2465,16 +2557,16 @@ jQuery(() => {
     $('#rm_group_submit').on('click', createGroup);
     $('#rm_group_scenario').on('click', setCharacterSettingsOverrides);
     $('#rm_group_automode').on('input', function () {
-        const value = $(this).prop('checked');
-        is_group_automode_enabled = value;
-        eventSource.once(event_types.GENERATION_STOPPED, stopAutoModeGeneration);
+        setGroupAutoMode($(this).prop('checked'));
     });
     $('#rm_group_hidemutedsprites').on('input', function () {
         const value = $(this).prop('checked');
         hideMutedSprites = value;
         onHideMutedSpritesClick(value);
     });
-    $('#send_textarea').on('keyup', onSendTextareaInput);
+    // 'input', not 'keyup': arrow keys, Shift or Ctrl alone used to stop auto mode
+    // (Kotatsu docs/group-chat-v0.md S4).
+    $('#send_textarea').on('input', onSendTextareaInput);
     $('#groupCurrentMemberPopoutButton').on('click', doCurMemberListPopout);
     $('#rm_group_chat_name').on('input', onGroupNameInput);
     $('#rm_group_delete').off().on('click', onDeleteGroupClick);

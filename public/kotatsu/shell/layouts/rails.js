@@ -39,6 +39,10 @@ import {
 // path has to call `uninstallStudio()` SYNCHRONOUSLY, before `ctx.restoreAll()` — a module
 // handle captured from a dynamic import would not be guaranteed to exist by then.
 import { installStudio, uninstallStudio } from '../../studio/k-card-studio.js';
+import { installSceneStudio, uninstallSceneStudio } from '../../groups/k-scene-studio.js';
+import { installStage, uninstallStage } from '../../groups/k-stage.js';
+import { installSpeakerHues, uninstallSpeakerHues } from '../../groups/speaker-hues.js';
+import { installSceneBanner, uninstallSceneBanner } from '../../groups/k-scene-banner.js';
 
 /** Slots the layout clears on unmount. `#k-center` is not one: restoreAll() owns `#sheld`. */
 const COMPONENT_SLOT_IDS = ['k-topbar', 'k-rail-left', 'k-rail-right'];
@@ -230,6 +234,10 @@ export const railsLayout = {
         // core control is borrowed until someone asks for the studio.
         installStudio();
 
+        // Group chat v0 G2 (docs/group-chat-v0.md): the scene studio's document door. It edits
+        // core's group record directly (no borrowed controls), so its teardown order is free.
+        installSceneStudio();
+
         // Settings v0 slice B: the settings modal's document door — the gear's
         // `k-open-settings` listener. Listeners only, same as the studio: the
         // element is created on the first open request and removed on close, so
@@ -248,6 +256,14 @@ export const railsLayout = {
         // sheet / art lightbox instead of core's MovingUI zoom, which lands behind the left rail
         // under rails. One capture listener on #chat; unmount hands the click back to core.
         installPortraitPeek();
+
+        // Group chat v0 G3: the On-stage strip above the composer. Permanent while rails is up;
+        // it hides itself outside a scene.
+        installStage();
+        // G5: each cast member's rows wear their identity hue (an empty sheet outside scenes).
+        installSpeakerHues();
+        // G7: the scene banner, right after the chat header (hidden outside scenes).
+        installSceneBanner();
 
         // Rail collapse (variant wardrobe v0 slice C). Last, so the first apply()
         // describes rails whose components have already mounted — and so a
@@ -284,6 +300,7 @@ export const railsLayout = {
         // up would hand classic two frozen blocks with holes in them. Same ordering lesson as
         // the tab rail's dock (`k-tab-rail.js:241-248`), one layer further out.
         uninstallStudio();
+        uninstallSceneStudio();
         // SECOND, and for exactly the same reason: an open settings modal is
         // HOLDING that tab's controls out of the drawer rack, and
         // `uninstallSettingsModal()` closes it, which is what puts them back.
@@ -298,6 +315,9 @@ export const railsLayout = {
         uninstallExtDock();
         uninstallAnSheet();
         uninstallPortraitPeek();
+        uninstallStage();
+        uninstallSpeakerHues();
+        uninstallSceneBanner();
         // Before restoreAll(), like every other centre-column guest: the element's
         // disconnectedCallback is what unbinds its document listeners, so it has to run while
         // #sheld is still where the gallery expects it (the tab-rail ordering lesson).

@@ -33,7 +33,7 @@ import {
     system_message_types,
     this_chid,
 } from '../script.js';
-import { getGroupNames, selected_group } from './group-chats.js';
+import { getGroupNames, groups, selected_group } from './group-chats.js';
 
 import {
     chatCompletionDefaultPrompts,
@@ -44,6 +44,8 @@ import {
 } from './PromptManager.js';
 
 import { forceCharacterEditorTokenize, getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
+import { composeGroupNudge, isNarratorCard, resolveGroupNudge } from './group-nudge.js';
+import { isMimoFilterStop } from './mimo-filter.js';
 import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
 import { getEventSourceStream } from './sse-stream.js';
@@ -1350,6 +1352,27 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
 }
 
 /**
+ * KOTATSU-PATCH 2026-10-08: who the group nudge is for, when the open scene seats a narrator
+ * (group-nudge.js, docs/group-chat-v0.md §12–13). Members are unshallowed before every draft
+ * (group-chats.js `unshallowGroupMembers`), so their role flag is readable here.
+ * @returns {{ speakerIsNarrator: boolean, narratorSeated: boolean, castNames: string[] }}
+ */
+function sceneNarratorContext() {
+    const none = { speakerIsNarrator: false, narratorSeated: false, castNames: [] };
+    if (!selected_group) return none;
+    const group = groups.find(x => String(x.id) === String(selected_group));
+    if (!group || !Array.isArray(group.members)) return none;
+    const seated = group.members.map(avatar => characters.find(c => c?.avatar === avatar)).filter(Boolean);
+    const narratorSeated = seated.some(isNarratorCard);
+    if (!narratorSeated) return none;
+    return {
+        speakerIsNarrator: isNarratorCard(characters[this_chid]),
+        narratorSeated,
+        castNames: seated.filter(c => !isNarratorCard(c)).map(c => String(c.name ?? '')),
+    };
+}
+
+/**
  * Combines system prompts with prompt manager prompts
  *
  * @param {Object} options - An object with optional settings.
@@ -1370,7 +1393,14 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
 async function preparePromptsForChatCompletion({ scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride, type }) {
     const scenarioText = scenario && oai_settings.scenario_format ? substituteParams(oai_settings.scenario_format) : (scenario || '');
     const charPersonalityText = charPersonality && oai_settings.personality_format ? substituteParams(oai_settings.personality_format) : (charPersonality || '');
-    const groupNudge = substituteParams(oai_settings.group_nudge_prompt);
+    // A preset with no group nudge of its own (empty, or stock's unedited line) gets Kotatsu's
+    // scene nudge; an authored one is sent as written (group-nudge.js, docs/group-chat-v0.md §10).
+    // A seated narrator layers on top: its own turn gets its own nudge, and the cast's nudge says
+    // the extras are the narrator's (group-nudge.js, docs/group-chat-v0.md §12–13).
+    const groupNudge = substituteParams(composeGroupNudge(
+        resolveGroupNudge(oai_settings.group_nudge_prompt, { sceneNudge: power_user.kotatsu_scene_nudge }),
+        sceneNarratorContext(),
+    ));
     const impersonationPrompt = oai_settings.impersonation_prompt ? substituteParams(oai_settings.impersonation_prompt) : '';
 
     // Create entries for system prompts
@@ -3258,6 +3288,12 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         checkQuotaError(data);
         checkModerationError(data);
 
+        // KOTATSU-PATCH 2026-10-08: MiMo's safety filter arrives as content (mimo-filter.js).
+        if (oai_settings.chat_completion_source === chat_completion_sources.XIAOMI && isMimoFilterStop(data) && data.choices[0].message) {
+            toastr.warning(t`MiMo's safety filter stopped this reply.`, t`Reply stopped`);
+            data.choices[0].message.content = '';
+        }
+
         if (data.error) {
             const message = getChatCompletionErrorMessage(data, response);
             toastr.error(message, t`API returned an error`);
@@ -3352,6 +3388,11 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
     } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS, chat_completion_sources.XIAOMI].includes(chat_completion_source)) {
+        // KOTATSU-PATCH 2026-10-08: MiMo's safety filter arrives as content (mimo-filter.js).
+        if (chat_completion_source === chat_completion_sources.XIAOMI && isMimoFilterStop(data)) {
+            toastr.warning(t`MiMo's safety filter stopped this reply. The text before it is kept.`, t`Reply stopped`);
+            return '';
+        }
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??

@@ -6,13 +6,17 @@
  * engine. `scripts/build-kotatsu-nabe.mjs` turns this into the preset JSON; never edit the JSON.
  *
  * Clean-room (§6): nothing here was drafted from another preset's text. Stock slots and their
- * identifiers are SillyTavern's own (default/content/presets/openai/Default.json).
+ * identifiers are SillyTavern's own (default/content/presets/openai/Default.json). The scene
+ * nudge is Kotatsu's own, imported from the one place core reads it (docs/group-chat-v0.md §10);
+ * the overlap gate compares utility prompts too.
  */
+
+import { SCENE_NUDGE } from '../../public/scripts/group-nudge.js';
 
 export const NAME = 'Kotatsu Nabe';
 
 /** Bumped with every change to the prose; recorded inside the preset, never in its name. */
-export const VERSION = '0.3';
+export const VERSION = '0.4';
 
 /**
  * @typedef {object} Module
@@ -203,7 +207,9 @@ export const LAYOUT = [
                 id: 'jailbreak',
                 name: 'Last word',
                 on: true,
-                content: '{{user}}\'s last message has already happened, and everyone in the scene heard and saw it. Begin the reply with what comes next: a reaction, a consequence, a new line or action from someone else. Now write the next reply, keeping to the choices above.',
+                // 0.4: "from someone else" is gone. In a scene this is the last instruction the
+                // speaker reads (after the group nudge), and it asked for another member's line.
+                content: '{{user}}\'s last message has already happened, and everyone in the scene heard and saw it. Begin the reply with what comes next: a reaction, a consequence, a new line or action. Now write the next reply, keeping to the choices above.',
             },
         ],
     },
@@ -214,4 +220,8 @@ export const SETTINGS = {
     openai_max_tokens: 8192,
     squash_system_messages: true,
     show_thoughts: true,
+    // Scenes (group chats, docs/group-chat-v0.md §10). Carried explicitly so the preset works the
+    // same in a SillyTavern without Kotatsu's fallback.
+    group_nudge_prompt: SCENE_NUDGE,
+    new_group_chat_prompt: '[A new scene opens. Present: {{group}}. Begin inside a moment that is already underway, with each of them somewhere in the room, and let whoever speaks first open it with something they do or say.]',
 };

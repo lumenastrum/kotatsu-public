@@ -389,6 +389,9 @@ const toShallow = (character) => {
             extensions: {
                 fav: _.get(character, 'data.extensions.fav', false),
                 world: _.get(character, 'data.extensions.world', ''),
+                // KOTATSU-PATCH 2026-10-08: the narrator seat's role flag must survive lazy
+                // loading, or Kotatsu shows the narrator as a character (docs/group-chat-v0.md §13).
+                ...(_.has(character, 'data.extensions.kotatsu') ? { kotatsu: _.get(character, 'data.extensions.kotatsu') } : {}),
             },
         },
     };

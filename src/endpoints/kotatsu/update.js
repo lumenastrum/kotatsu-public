@@ -362,6 +362,12 @@ function trimLog(parts) {
         : joined;
 }
 
+// The running version alone, for What's New: no git, no network, so it answers on every install
+// (a dev clone, an offline machine) and never waits on /check's remote lookup.
+router.get('/version', (request, response) => {
+    return response.json({ kotatsuVersion: readKotatsuVersion() });
+});
+
 router.get('/check', async (request, response) => {
     try {
         const force = request.query.force === '1' || request.query.force === 'true';

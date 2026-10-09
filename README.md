@@ -93,6 +93,19 @@ Pyrxpia gave permission to ship Ember and Flame, including the regex scripts emb
 
 You can browse and import character cards from [Chub](https://chub.ai) without leaving Kotatsu. It's in the library's Browse view, in the tour's First card step, and on the empty library. Opening a card shows a preview sheet with the whole first message, every alternate greeting, the description, the creator's note and a few facts (token counts, lorebook entries). So you can read a card properly before you bring it home. The first time you open it, a line tells you Chub is an 18+ site and links to its terms, and it isn't shown again. Mature cards are behind an off-by-default switch, and their thumbnails stay blurred until you hover. Whether Chub serves mature cards depends on Chub's own rules for where you are, and Kotatsu tells you when it isn't getting any.
 
+## Scenes: more than two at the table
+
+<p align="center"><img src=".github/screenshots/scenes.webp" alt="A scene called Last Train Home: four characters on a snowy station platform, each answering in their own colour, with the On stage strip and the Cast tab beside them" width="720"></p>
+
+A scene puts several characters in one chat. **New scene** in the library opens the studio: seat your cast (the numbers are the order they speak in when they take turns), name the scene, and set it in a line or two.
+
+- **You choose who answers.** Write `@Hana and @Pip` and they answer in that order, or tap a face on the stage and pick **Speak now**.
+- **Let them talk.** The cast carries the scene on its own, one reply after another, and the stage shows who is writing and who is next. Type, or press it again, to take the floor back.
+- **A narrator for the world.** Seat a narrator and it voices the place, the weather and anyone outside the cast. It never speaks for your characters.
+- **Every speaker wears their colour**, on the stage, in the Cast tab and in the transcript.
+
+On disk a scene is an ordinary SillyTavern group chat, so stock SillyTavern still opens it. The [wiki](https://github.com/lumenastrum/kotatsu-public/wiki/Scenes) has the details.
+
 ## Everything SillyTavern let you shape
 
 <img align="right" width="128" src="public/kotatsu/brand/mascot/card-bust.webp" alt="Mikan-chan presenting a blank card">
@@ -120,7 +133,7 @@ Still open: two extensions that dock panels into the same right margin can overl
 Copy your user data, and leave SillyTavern's code and `config.yaml` where they are. Kotatsu has its own.
 
 **Make it look like yours.**
-- **Themes are data.** A theme pack is a folder of colors, fonts, layout choices and art, with no code inside. Blue Hour and Sparkle ship in the box.
+- **Themes are data.** A theme pack is a folder of colors, fonts, layout choices and art, with no code inside. Four ship in the box: Blue Hour, Sparkle, Natsumikan and Midnight Kissaten.
 - **Message styles.** Card, flat, bubble, script, split bubbles, portrait, portrait column and broadcast, plus a reading-size setting that keeps lines a comfortable length on any screen.
 - **One settings window,** with tabs and search, instead of a dozen drawers.
 
@@ -242,4 +255,4 @@ AGPL-3.0, same as upstream. Kotatsu exists because SillyTavern built something w
 
 ---
 
-Built by Andres & Clio, 2026. She picked the name. He picked lavender. 💅
+Built with care, 2026.

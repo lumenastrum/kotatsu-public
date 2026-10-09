@@ -51,7 +51,9 @@ import {
     system_avatar,
 } from '../../script.js';
 import { event_types, eventSource } from '../../scripts/events.js';
-import { groups, openGroupById, openGroupChat } from '../../scripts/group-chats.js';
+import { editGroup, groups, openGroupById, openGroupChat } from '../../scripts/group-chats.js';
+import { OPEN_SCENE_STUDIO_EVENT } from '../groups/doors.js';
+import { isNarratorCard } from '../groups/narrator.js';
 import { power_user } from '../../scripts/power-user.js';
 import { timestampToMoment } from '../../scripts/utils.js';
 import { favsToHotswap } from '../../scripts/RossAscends-mods.js';
@@ -315,7 +317,7 @@ export { toRelative } from '../shell/relative-time.js';
  * @property {(row: LibraryRow, event: Event) => unknown} [onFav] Heart click; already stopped.
  * @property {(row: LibraryRow, event: Event) => unknown} [onEdit] "Edit card" click; already
  *   stopped. Omitted (and the affordance not drawn) when there is nowhere to send it — the
- *   studio is rails-only, and groups have no card studio in v0.
+ *   studio is rails-only. A group's Edit opens the scene studio (`docs/group-chat-v0.md` G2).
  * @property {boolean} [interactive] Default true. `false` renders a STATIC poster: no
  *   handlers, no tab stop, nothing announced as a control. That is the mode slice D's live
  *   preview uses.
@@ -370,15 +372,15 @@ export function renderCard(row, handlers = {}) {
         ? html`<span class="k-lib-card-badge" title="Welcome page assistant" aria-label="Welcome page assistant">${icons.assistant}</span>`
         : nothing;
 
-    // Slice D's way in. Drawn only when a handler exists AND the row is a character: groups
-    // are edited through the stock group panel, and the static preview poster (`interactive:
-    // false`) is a picture of a card, not a control surface.
-    const editButton = interactive && handlers.onEdit && !isGroup
+    // Slice D's way in. Drawn only when a handler exists: a character opens the card studio,
+    // a group (a scene) the scene studio. The static preview poster (`interactive: false`) is
+    // a picture of a card, not a control surface.
+    const editButton = interactive && handlers.onEdit
         ? html`
             <button
                 type="button"
                 class="k-lib-card-edit"
-                title="Edit card"
+                title=${isGroup ? 'Edit scene' : 'Edit card'}
                 aria-label=${`Edit ${row.name}`}
                 @click=${editClick}
             >${icons.edit}</button>`
@@ -396,7 +398,7 @@ export function renderCard(row, handlers = {}) {
         : nothing;
 
     const bodyText = isGroup
-        ? `${row.memberCount} ${row.memberCount === 1 ? 'member' : 'members'}`
+        ? `${row.memberCount} in the cast`
         : row.body;
 
     return html`
@@ -438,7 +440,7 @@ export function renderCard(row, handlers = {}) {
                         ${count}
                         ${relative ? html`<span class="k-lib-card-when">${relative}</span>` : nothing}
                     </span>
-                    <span class="k-lib-card-open">Open chat${icons.arrow}</span>
+                    <span class="k-lib-card-open">${isGroup ? 'Open scene' : 'Open chat'}${icons.arrow}</span>
                 </div>
             </div>
         </article>`;
@@ -883,6 +885,13 @@ export class KLibrary extends LitElement {
                         relative: moment?.isValid() ? toRelative(moment.valueOf()) : '',
                         chat_name: String(entry.file_name ?? '').replace('.jsonl', ''),
                         char_thumbnail: character ? getThumbnailUrl('avatar', character.avatar) : system_avatar,
+                        // A scene wears its first two members' faces (the rail's stack), not the
+                        // system avatar; members whose card is gone are skipped, and so is a
+                        // narrator seat (docs/group-chat-v0.md §13).
+                        faces: group && !character ? (Array.isArray(group.members) ? group.members : [])
+                            .filter(avatar => characters.some(x => x.avatar === avatar && !isNarratorCard(x)))
+                            .slice(0, 2)
+                            .map(avatar => getThumbnailUrl('avatar', avatar)) : [],
                         is_group: Boolean(group),
                         avatar: entry.avatar || '',
                         group: entry.group || '',
@@ -984,6 +993,15 @@ export class KLibrary extends LitElement {
         }));
     }
 
+    /** New scene — the scene studio in create mode (`docs/group-chat-v0.md` G2). */
+    #onCreateScene() {
+        this.dispatchEvent(new CustomEvent(OPEN_SCENE_STUDIO_EVENT, {
+            bubbles: true,
+            composed: true,
+            detail: { target: 'create', source: 'k-library' },
+        }));
+    }
+
     /**
      * Edit card — the studio in edit mode.
      *
@@ -998,6 +1016,14 @@ export class KLibrary extends LitElement {
      * @returns {void}
      */
     #onEditRow(row) {
+        if (row.type === 'group') {
+            this.dispatchEvent(new CustomEvent(OPEN_SCENE_STUDIO_EVENT, {
+                bubbles: true,
+                composed: true,
+                detail: { target: String(row.id), source: 'k-library' },
+            }));
+            return;
+        }
         if (row.type !== 'character') {
             return;
         }
@@ -1036,14 +1062,18 @@ export class KLibrary extends LitElement {
      * both in one request, and `/edit-attribute` refuses any field the file does not already
      * carry — which is exactly the never-favourited card.
      *
-     * Groups are display-only in v0: a group's flag lives in its own JSON and is written by
-     * `editGroup()`, a different path with its own reload semantics. Chip, not a half-toggle.
+     * A group (scene) keeps its flag in its own JSON (`fav`, `group-chats.js:1752`), written
+     * through core's `editGroup()` — immediately, never the debounced path, whose one timer is
+     * shared by every group (`docs/group-chat-v0.md` S1).
      * @param {LibraryRow} row Card row.
      * @returns {Promise<void>}
      */
     async #onToggleFav(row) {
+        if (row.type === 'group') {
+            await this.#toggleSceneFav(String(row.id), !row.fav);
+            return;
+        }
         if (row.type !== 'character') {
-            toastr.info('Favouriting a group lives in the group editor for now.', 'Kotatsu');
             return;
         }
         const index = Number(row.id);
@@ -1078,6 +1108,31 @@ export class KLibrary extends LitElement {
         }
         await favsToHotswap();
         // Keeps the stock list in agreement; its CHARACTER_PAGE_LOADED also refreshes us.
+        printCharactersDebounced();
+        this.#refresh();
+    }
+
+    /**
+     * @param {string} id Group id.
+     * @param {boolean} next The new flag.
+     * @returns {Promise<void>}
+     */
+    async #toggleSceneFav(id, next) {
+        const group = groups.find(x => String(x.id) === id);
+        if (!group) {
+            return;
+        }
+        const previous = group.fav;
+        group.fav = next;
+        try {
+            await editGroup(group.id, true, false);
+        } catch (error) {
+            group.fav = previous;
+            console.error('[k-library] scene favourite write failed', error);
+            toastr.error('Could not save the favourite. See the console.', 'Kotatsu');
+            return;
+        }
+        await favsToHotswap();
         printCharactersDebounced();
         this.#refresh();
     }
@@ -1263,6 +1318,12 @@ export class KLibrary extends LitElement {
                     >${icons.link}<span>Import from URL</span></button>
                     <button
                         type="button"
+                        class="k-lib-btn k-lib-btn--ghost"
+                        title="Put two or more characters in one chat"
+                        @click=${() => this.#onCreateScene()}
+                    >${icons.cast}<span>New scene</span></button>
+                    <button
+                        type="button"
                         class="k-lib-btn k-lib-btn--primary"
                         @click=${() => this.#onCreateCharacter()}
                     >${icons.plus}<span>Create character</span></button>
@@ -1286,7 +1347,7 @@ export class KLibrary extends LitElement {
                             title=${`${recent.char_name} — ${recent.chat_name}${recent.date_long ? ` (${recent.date_long})` : ''}`}
                             @click=${() => this.#onOpenRecent(recent)}
                         >
-                            <img class="k-lib-recent-face" src=${recent.char_thumbnail} alt="" loading="lazy" decoding="async" />
+                            ${recent.faces.length ? html`<span class="k-lib-recent-faces" aria-hidden="true">${recent.faces.map(face => html`<img class="k-lib-recent-face" src=${face} alt="" loading="lazy" decoding="async" />`)}</span>` : html`<img class="k-lib-recent-face" src=${recent.char_thumbnail} alt="" loading="lazy" decoding="async" />`}
                             <span class="k-lib-recent-copy">
                                 <span class="k-lib-recent-name">${recent.char_name}</span>
                                 <span class="k-lib-recent-chat">${chatLabelText(recent.chat_name, recent.char_name)}</span>

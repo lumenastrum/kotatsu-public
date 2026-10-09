@@ -2,9 +2,9 @@
 
 The on-disk `data/` compatibility contract. **An existing SillyTavern `data/default-user/` must drop into Kotatsu unchanged, forever, and must remain openable by stock SillyTavern afterwards.** Round-trip is bidirectional: Kotatsu may add, never rename, never restructure, never drop.
 
-Companion to `CONTRACT.md` (the frozen extension ABI). Neither may be broken without a spec change (`../st-fork/SPEC.md`).
+Companion to `CONTRACT.md` (the frozen extension ABI). Neither may be broken without a spec change (internal design notes).
 
-Baseline: SillyTavern 1.18.0, staging `1ca70787f`. Every `file:line` below was read in **this clone**, not in the upstream map and not in the live install. Where the source map (`../st-fork/maps/extensions-and-data.md`) and the code disagree, the code wins; the disagreements are logged in §9.
+Baseline: SillyTavern 1.18.0, staging `1ca70787f`. Every `file:line` below was read in **this clone**, not in the upstream map and not in an earlier install. Where the source map (internal design notes) and the code disagree, the code wins; the disagreements are logged in §9.
 
 **Verification rule.** Any change touching a path in this document must be proven against a real profile — record counts, byte-diffs, a stock-ST reopen — not against unit tests alone.
 
@@ -60,7 +60,7 @@ Baseline: SillyTavern 1.18.0, staging `1ca70787f`. Every `file:line` below was r
 
 **Case hazard.** Six names carry spaces or non-lowercase characters: `User Avatars`, `group chats`, `NovelAI Settings`, `KoboldAI Settings`, `OpenAI Settings`, `TextGen Settings`, plus `QuickReplies`. A rename is invisible on Windows/macOS and catastrophic the moment the profile is copied to Linux or into a Docker image. Treat the template as frozen data, not as code.
 
-**`.gitignore`d dev data.** Kotatsu's own `data/` in this clone is dev-only. A live user profile is never the dev target (`CLAUDE.md`, hard rules).
+**`.gitignore`d dev data.** Kotatsu's own `data/` in this clone is dev-only. A real user profile is never the dev target.
 
 ---
 
@@ -376,12 +376,12 @@ Reserved identifiers: `main`, `nsfw`, `jailbreak`, `enhanceDefinitions`, plus th
 
 ### 4.5 Acceptance fixtures
 
-Two presets are the regression gate for the prompt pipeline (per `CLAUDE.md`). The canonical
+Two presets are the regression gate for the prompt pipeline. The canonical
 copies are tracked in **`tests/fixtures/presets/`** (moved 2026-10-01 out of the gitignored
 `data/default-user/OpenAI Settings/`, where dev use had silently replaced one). Both carry empty
 `reverse_proxy` / `proxy_password`, and a test keeps it that way:
 
-- **`Clio's Sparkle Sauce v1.json`** — 94 prompts; `prompt_order` = `100000`/11 + `100001`/93.
+- **The Sparkle Sauce acceptance preset** — 94 prompts; `prompt_order` = `100000`/11 + `100001`/93.
 - **`Marinara's Spaghetti Recipe 10.json`** — 80 prompts; `prompt_order` = `100000`/11 + `100001`/79.
 
 **Acceptance criterion:** both must load, drive a generation, and re-save **byte-identically
@@ -560,7 +560,7 @@ Server: `src/endpoints/moving-ui.js:8-19`. Body built at `power-user.js:2604-260
 
 Live state lives in `power_user.movingUI`, `power_user.movingUIState`, `power_user.movingUIPreset` (`power-user.js:173-175`).
 
-> **The MovingUI *feature* is scheduled for removal in Kotatsu** (`CLAUDE.md`). **Its data is not.** The `movingUI/` folder, the `/api/moving-ui/*` routes, and the three `power_user` keys stay in the contract and **pass through untouched**: read them, round-trip them, write them back unchanged, do not migrate them, do not delete the files. A profile that visits Kotatsu and returns to stock ST must find its panel layouts intact. Removing the feature means removing the *UI that edits them* and the drag runtime — not the bytes.
+> **The MovingUI *feature* is scheduled for removal in Kotatsu**. **Its data is not.** The `movingUI/` folder, the `/api/moving-ui/*` routes, and the three `power_user` keys stay in the contract and **pass through untouched**: read them, round-trip them, write them back unchanged, do not migrate them, do not delete the files. A profile that visits Kotatsu and returns to stock ST must find its panel layouts intact. Removing the feature means removing the *UI that edits them* and the drag runtime — not the bytes.
 >
 > Same posture applies to `movingUIPresets` in the boot envelope (`settings.js:280`): keep serving the array even when nothing consumes it, or stock ST's own hydration breaks on a shared profile.
 
@@ -610,7 +610,7 @@ Every dotfolder must ship a rebuild path, and the rebuild must be exercised, not
 - No renaming or reformatting of any file listed in §1.
 - No server-side validation added to `/api/settings/save` (§5.2).
 - No `.jsonl` writes that bypass `trySaveChat` and its `integrity` check (§2.4).
-- No writes into `data/` of the live install (`CLAUDE.md`, hard rules).
+- No writes into the `data/` folder of any real user profile or other SillyTavern install.
 
 ---
 
@@ -702,7 +702,7 @@ Recorded so the next reader does not re-derive them. In every case **the clone's
 | # | Map claim | Code | Impact |
 |---|---|---|---|
 | 1 | "`USER_DIRECTORY_TEMPLATE` — all **30 keys**" | **31 keys**, 30 of which name a subdirectory; `root: ''` is the 31st (`src/constants.js:16-48`) | Cosmetic, but a template-completeness test written to "30" would pass while missing a key |
-| 2 | A freshly-saved preset has **100 keys** | **103 keys** in `settingsToUpdate` (`openai.js:303-407`), counted programmatically | Material. Any preset round-trip test hard-coding 100 fails. The map was written against the live install, which is not this commit |
+| 2 | A freshly-saved preset has **100 keys** | **103 keys** in `settingsToUpdate` (`openai.js:303-407`), counted programmatically | Material. Any preset round-trip test hard-coding 100 fails. The map was written against an earlier install, which is not this commit |
 | 3 | Branch = "**file copy** + `chat_metadata.main_chat` + `extra.branches[]`" | **No file copy.** `createBranch` (`bookmarks.js:186-243`) builds `structuredClone(chat.slice(0, mesId+1))` via `getBranchChatSnapshot` (`:171-183`) and writes a new file through `saveChat({chatData})` (`:232`). Metadata is `{...chat_metadata, ...{main_chat}}` (`script.js:7380`), so `integrity` is inherited too | Material. A "copy the file" implementation would preserve bytes a real branch does not, and would miss the swipe-selection step (`syncSwipeToMes`, `:177`) |
 | 4 | Chat line-0 rule stated flatly as "header only if it has `chat_metadata`" | True for the group reader (`group-chats.js:272`) and both server heuristics (`chats.js:394-396`, `:764`) — **false for the character-chat reader**, which shifts unconditionally (`script.js:7630-7631`) | Material and dangerous. This is the mechanism by which a headerless character chat loses its first message permanently. §2.2 |
 | 5 | QuickReplies file = "`JSON.stringify(this)` — the file *is* the class's own-enumerable fields"; `scope`/`isDeleted` "absent from this file" | `toJSON()` (`QuickReplySet.js:362-373`) is an explicit **9-key whitelist**. `scope` and `isDeleted` are excluded by construction, not absent by accident | Material. Explains *why* QR does not pass unknown fields through, and warns that a new field needs a `toJSON` edit |

@@ -9,7 +9,7 @@
  *   was last picked; change the model or source by hand and its check mark stays put (the drift
  *   §0.7 names). `profileMatches()` compares a profile to the live connection — API, server URL,
  *   model — so a profile is in use only while the settings actually are its settings.
- * - **Plain names.** `describeProfile()` turns `custom · claude-sonnet-4-6 · Clio's Sparkle Sauce
+ * - **Plain names.** `describeProfile()` turns `custom · claude-sonnet-4-6 · Sparkle Sauce
  *   v1` into "Claude Code · Sonnet 4.6": the bridge by its listener, first-party providers by
  *   name, everything else by the label core's own select gives it.
  *

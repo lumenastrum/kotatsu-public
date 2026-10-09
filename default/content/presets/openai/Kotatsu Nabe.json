@@ -36,7 +36,7 @@
     "send_if_empty": "",
     "impersonation_prompt": "[Write your next reply from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system. Don't describe actions of {{char}}.]",
     "new_chat_prompt": "[Start a new Chat]",
-    "new_group_chat_prompt": "[Start a new group chat. Group members: {{group}}]",
+    "new_group_chat_prompt": "[A new scene opens. Present: {{group}}. Begin inside a moment that is already underway, with each of them somewhere in the room, and let whoever speaks first open it with something they do or say.]",
     "new_example_chat_prompt": "[Example Chat]",
     "continue_nudge_prompt": "[Continue your last message without repeating its original content.]",
     "bias_preset_selected": "Default (none)",
@@ -46,7 +46,7 @@
     "wi_format": "{0}",
     "scenario_format": "{{scenario}}",
     "personality_format": "{{personality}}",
-    "group_nudge_prompt": "[Write the next reply only as {{char}}.]",
+    "group_nudge_prompt": "[Scene turn: {{char}} only.\n{{char}} shares this scene with {{notChar}}. Write {{char}}'s words, movements, thoughts and choices, and nobody else's. {{char}} can see the others' faces and whatever they are already doing; anything they say or do next is theirs to write in their own turn, so don't skip ahead past them or sum up what they would say. {{char}} may speak to, tease, argue with or turn toward any of them, not just {{user}}. End where someone else would naturally answer.]",
     "stream_openai": true,
     "prompts": [
         {
@@ -410,7 +410,7 @@
             "system_prompt": true,
             "marker": false,
             "role": "system",
-            "content": "{{user}}'s last message has already happened, and everyone in the scene heard and saw it. Begin the reply with what comes next: a reaction, a consequence, a new line or action from someone else. Now write the next reply, keeping to the choices above.",
+            "content": "{{user}}'s last message has already happened, and everyone in the scene heard and saw it. Begin the reply with what comes next: a reaction, a consequence, a new line or action. Now write the next reply, keeping to the choices above.",
             "injection_position": 0,
             "injection_depth": 4,
             "injection_order": 100,
@@ -710,7 +710,7 @@
         "kotatsu": {
             "preset": {
                 "name": "Kotatsu Nabe",
-                "version": "0.3"
+                "version": "0.4"
             },
             "sections": {
                 "version": 1,

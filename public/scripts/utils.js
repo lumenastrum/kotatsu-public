@@ -1360,7 +1360,9 @@ export function extractAllWords(value) {
         return words;
     }
 
-    const matches = value.matchAll(/\b\w+\b/gim);
+    // Letters and digits of any script: `\w` is ASCII-only, so CJK names never matched and
+    // "Zoë" split into "zo" (Kotatsu docs/group-chat-v0.md S11).
+    const matches = value.matchAll(/[\p{L}\p{M}\p{N}_]+/gu);
     for (let match of matches) {
         words.push(match[0].toLowerCase());
     }

@@ -86,6 +86,7 @@ import { glideIndicator } from '../shell/glide-indicator.js';
 import { getEntries, getSections, searchEntries } from './registry.js';
 import { regionsFor } from './region-plan.js';
 import { OPEN_TOUR_EVENT } from '../onboarding/k-onboarding.js';
+import { OPEN_WHATS_NEW_EVENT } from '../whats-new/k-whats-new.js';
 import '../phone/k-phone-card.js';
 
 /** @typedef {import('./registry.js').Entry} Entry */
@@ -1217,6 +1218,9 @@ export class KSettingsModal extends LitElement {
         if (entry.control === 'kotatsu-tour') {
             return this.#renderTourReplay(entry.binding.ref);
         }
+        if (entry.control === 'kotatsu-whats-new') {
+            return this.#renderWhatsNewReplay(entry.binding.ref);
+        }
         if (entry.control === 'kotatsu-phone') {
             return html`<k-phone-card id=${entry.binding.ref} variant="settings"></k-phone-card>`;
         }
@@ -1239,6 +1243,20 @@ export class KSettingsModal extends LitElement {
         // No hint span: inside a control cell it wraps into a ladder (settings-modal.css, pixel QA
         // defect 3), and the button's own words say what it does.
         return html`<button id=${buttonId} type="button" class="menu_button" @click=${replay}>Take the welcome tour</button>`;
+    }
+
+    /**
+     * What's New's "show again" door. Settings closes first, for the same reason as the tour's:
+     * the sheet sits under this one and steps aside while it is up.
+     * @param {string} buttonId The entry's `binding.ref`.
+     * @returns {unknown} A Lit template.
+     */
+    #renderWhatsNewReplay(buttonId) {
+        const replay = () => {
+            this.close();
+            window.dispatchEvent(new CustomEvent(OPEN_WHATS_NEW_EVENT));
+        };
+        return html`<button id=${buttonId} type="button" class="menu_button" @click=${replay}>Show what’s new</button>`;
     }
 
     /**

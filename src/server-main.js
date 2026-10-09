@@ -69,6 +69,7 @@ import { UPLOADS_DIRECTORY } from './constants.js';
 import { router as usersPublicRouter } from './endpoints/users-public.js';
 import { init as statsInit, onExit as statsOnExit } from './endpoints/stats.js';
 import { checkForNewContent } from './endpoints/content-manager.js';
+import { migrateNabePresets } from './endpoints/kotatsu/nabe-migration.js';
 import { init as settingsInit } from './endpoints/settings.js';
 import { ServerStartup, setupPrivateEndpoints } from './server-startup.js';
 import { diskCache } from './endpoints/characters.js';
@@ -310,6 +311,8 @@ async function preSetupTasks() {
     const directories = await getUserDirectoriesList();
     await migrateGroupChatsMetadataFormat(directories);
     await checkForNewContent(directories);
+    // Untouched Kotatsu Nabe 0.3 → 0.4 for scenes (docs/group-chat-v0.md §10). Before any request.
+    migrateNabePresets(directories);
     await diskCache.verify(directories);
     migrateFlatSecrets(directories);
     await startClaudeBridge({ directories });

@@ -1,9 +1,9 @@
 # Provider patches — provenance & maintenance
 
-**Scope.** Everything Kotatsu carries on top of upstream SillyTavern in the provider/model layer: what each hunk does, why it exists, and how to extend it. This document is the permanent replacement for two retired mechanisms (`VOIDLIT-PATCHES.md` and `clio-patches/*.mjs`) — see §5.
+**Scope.** Everything Kotatsu carries on top of upstream SillyTavern in the provider/model layer: what each hunk does, why it exists, and how to extend it. This document is the permanent replacement for two retired mechanisms (`VOIDLIT-PATCHES.md` and a set of local patch scripts) — see §5.
 
 **Base.** SillyTavern 1.18.0, branch `staging`, upstream HEAD `1ca70787f` (2026-05-20, "Add gemini-3.5-flash to Google AI Studio and Vertex model lists (#5675)").
-**Carrier commit.** `a4c64666c` — `feat(providers): carry local provider patches (VOIDLIT + CLIO)`, **4 files, +69 / −11, 16 hunks**.
+**Carrier commit.** `a4c64666c` — the commit that carried the two local provider patch families (VOIDLIT and the local patch scripts) into the repo, **4 files, +69 / −11, 16 hunks**.
 **Ground truth.** `git show a4c64666c`. Where this document and any retired doc disagree, the diff wins.
 
 All line numbers below are **this clone, post-`a4c64666c`**, verified by grep. They shift on every upstream merge — re-verify before trusting one.
@@ -43,7 +43,7 @@ Upstream has no provider abstraction. `src/endpoints/backends/chat-completions.j
 
 Model *capability* is expressed as **regex tests against the model ID string**, scattered across frontend and backend. Consequence: a new model that upstream has not shipped yet needs edits in three-to-five separate places, none of which are a registry. That is what every hunk below is.
 
-Upstream ships these edits eventually — provider/model maintenance is **13.6% of upstream churn** (`../st-fork/maps/engine-review.md:553`) and it is free value. Our patches are the gap between "model launched" and "upstream shipped it." They are written to **collide cleanly** with the upstream version when it lands, not to replace it. See §4.
+Upstream ships these edits eventually — provider/model maintenance is **13.6% of upstream churn** (internal design notes) and it is free value. Our patches are the gap between "model launched" and "upstream shipped it." They are written to **collide cleanly** with the upstream version when it lands, not to replace it. See §4.
 
 Two dead-weight facts that shape the file and will confuse you if you don't know them:
 - `cometapi` was a **dead provider** (threw `'This provider is temporarily disabled.'` in both its `/status` and `/generate` branches). **Removed in the dead-weight hygiene slice (2026-08-23)** per SPEC §3 — backend branches, constants, secret key, and all frontend surfaces. If an upstream merge ever reintroduces or revives it, resolving in upstream's favor is fine; re-delete only if it is still dead.
@@ -79,7 +79,7 @@ grep -c "|sonnet-5|opus-5|fable-5)" src/endpoints/backends/chat-completions.js p
 
 ### 1.A VOIDLIT family
 
-Provenance: hand-applied edits in the live install, documented (partially — see §5) by `VOIDLIT-PATCHES.md` → `data/default-user/extensions/voidlit-echoes/PATCHES.md`.
+Provenance: hand-applied edits in an earlier SillyTavern install, documented (partially — see §5) by `VOIDLIT-PATCHES.md` and an extension's own notes.
 
 #### A1 — Claude: preserve `usage` on non-streaming replies
 **File:** `src/endpoints/backends/chat-completions.js:406-410`, in `sendClaudeRequest` (`:215`).
@@ -88,7 +88,7 @@ Provenance: hand-applied edits in the live install, documented (partially — se
 // VOIDLIT-PATCH: preserve upstream `usage` so the Voidlit Echoes metrics
 // bar can read cache/token telemetry on NON-streaming Claude. ST drops it
 // by default. Re-apply after SillyTavern updates.
-// See data/default-user/extensions/voidlit-echoes/PATCHES.md
+// See the Voidlit Echoes extension's own notes
 const reply = { choices: [{ 'message': { 'content': responseText } }], content: generateResponseJson.content, usage: generateResponseJson.usage };
 ```
 
@@ -167,7 +167,7 @@ Inside the `CHAT_COMPLETION_SOURCES.CUSTOM` block, immediately before `excludeKe
 
 ### 1.B KOTATSU family — Z.AI / GLM
 
-Provenance: `clio-patches/add-models-2026-08-14.mjs` and `clio-patches/fix-gemini36-glm53-2026-08-14.mjs` (both idempotent, both retired here).
+Provenance: two retired local patch scripts, `add-models-2026-08-14.mjs` and `fix-gemini36-glm53-2026-08-14.mjs` (both idempotent, both retired here).
 
 #### B1 — glm-5.3 / glm-5.2 dropdown options
 **File:** `public/index.html:3964-3965`, inside `<select id="model_zai_select">` (`:3961`). Inserted above `glm-5.1`. Unmarked (HTML carries no comments in this file's style).
@@ -243,7 +243,7 @@ Full field notes: **§2.2**.
 
 ### 1.D KOTATSU family — Claude (opus-5 + 5-family vision)
 
-Provenance: `clio-patches/add-opus5-2026-08-16.mjs`. This script *extended* the hand-applied VOIDLIT 5-family work (A2) rather than duplicating it — its guard asserted it found exactly six occurrences of the pre-existing tail `|sonnet-5|fable-5)` before rewriting them to `|sonnet-5|opus-5|fable-5)`.
+Provenance: the retired local patch script `add-opus5-2026-08-16.mjs`. This script *extended* the hand-applied VOIDLIT 5-family work (A2) rather than duplicating it — its guard asserted it found exactly six occurrences of the pre-existing tail `|sonnet-5|fable-5)` before rewriting them to `|sonnet-5|opus-5|fable-5)`.
 
 #### D1 — Claude dropdown options
 **File:** `public/index.html:3179-3181` and `:3186`, inside `<select id="model_claude_select">` (`:3177`). One diff hunk, two insertion points:
@@ -336,7 +336,7 @@ The `auto`/unset case falling through to omission is deliberate: sending nothing
 
 glm-5.3 returned 1220 on this account at patch time. **glm-5.2 works on both endpoints** and is the fallback. The two endpoints are `API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4'` (`chat-completions.js:91`) and `API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4'` (`:92`), selected by `request.body.zai_endpoint === ZAI_ENDPOINT.CODING` at `:2466` (`ZAI_ENDPOINT` at `src/constants.js:559`). A coding-plan `glm-5.3[1m]` suffixed ID exists in Z.AI's docs and is **deliberately not added** to the dropdown.
 
-**Probing the Z.AI edge.** Z.AI's edge drops bare `curl` probes. Probe with a small Node `fetch` script instead — same request, but it presents a normal runtime TLS/HTTP fingerprint and gets through. *(Provenance note: this is operator field knowledge from the 5.3 session; an exhaustive grep across `clio-patches/`, both VOIDLIT docs, and all of `../st-fork/` found **no** written source for it, so it is carried here on operator recall alone. Re-confirm with a live probe before relying on it in a diagnosis. (The 1210/1220 distinction above, by contrast, *is* documented — `clio-patches/README.md` ledger and the `fix-gemini36-glm53-2026-08-14.mjs` header.))*
+**Probing the Z.AI edge.** Z.AI's edge drops bare `curl` probes. Probe with a small Node `fetch` script instead — same request, but it presents a normal runtime TLS/HTTP fingerprint and gets through. *(Provenance note: this is operator field knowledge from the 5.3 session; an exhaustive search across the retired patch scripts, both VOIDLIT docs, and the internal design notes found **no** written source for it, so it is carried here on operator recall alone. Re-confirm with a live probe before relying on it in a diagnosis. (The 1210/1220 distinction above, by contrast, *is* documented — the retired patch ledger and the `fix-gemini36-glm53-2026-08-14.mjs` header.))*
 
 ### 2.2 Gemini ≥3.6 model-turn prefill rejection
 
@@ -427,6 +427,8 @@ OpenAI-compatible at `https://api.xiaomimimo.com/v1`, Bearer key. Measured again
 - **Images:** `image_url` data URIs work on every v2.6 id (incl. pro-ultraspeed); `mimo-v2.5-pro` → 404 "No endpoints found that support image input".
 - **Usage:** standard shape, `prompt_tokens_details.cached_tokens`; `stream_options.include_usage` emits a final usage chunk.
 - Consecutive same-role turns and a trailing assistant turn are accepted (no prefill semantics).
+- **Safety filter (2026-10-08):** a filtered turn is **HTTP 200** with the refusal as ordinary assistant content, `finish_reason: "content_filter"`, text `The request was rejected because it was considered high risk`. Streamed, it is the last delta, so it can land **mid-reply**: a scene smoke on `mimo-v2.6-pro` saved "…and under it, salt. Not theThe request was rejected…" as a character's words, on a harmless lighthouse scene. `public/scripts/mimo-filter.js` (`isMimoFilterStop`) recognises the frame; `getStreamingReply` drops it for `xiaomi` (what streamed before it stays) and the non-streamed path blanks the content, each with a "Reply stopped" toast. Probe: `playwright-rig/scripts/kotatsu-mimo-filter-probe.mjs` (real parser + one live filtered turn).
+- **2026-10-08 `/models`:** adds `mimo-v2.6-flash` / `mimo-v2.6-pro` / `mimo-v2.6-pro-ultraspeed` alongside `mimo-v2.5` / `mimo-v2.5-pro` (+ the audio ids).
 
 A new MiMo model needs **nothing** for the picker (it comes from `/models`); check only whether it reads images (the vision rule in `isImageInliningSupported`) and its context (the 1M rule in `onModelChange`).
 
@@ -502,7 +504,7 @@ Four sites, all keyed on the same shared regex `/(?:^|\/)grok-4\.5(?:$|[-:])/`: 
 
 `src/endpoints/backends/chat-completions.js` (2,929 LOC, twelve copy-pasted `sendXRequest` functions and a 360-line `else if` ladder) is genuinely bad code, and a provider-adapter interface would be the single highest-leverage refactor available. **Do not do it.**
 
-The reason is arithmetic, not taste (`../st-fork/SPEC.md:17,59`, `../st-fork/maps/engine-review.md:553-599`): **13.6% of upstream commits are provider/model maintenance** — new models, changed vendor wire formats, cache-control semantics, thinking-budget rules — landing in a small set of well-tested, mostly-pure files (`openai.js`, `chat-completions.js`, `prompt-converters.js`, `textgen-settings.js`), guarded by 144 unit tests. That is permanent free value with **zero UX opinion**, i.e. nothing Kotatsu exists to overrule.
+The reason is arithmetic, not taste (internal design notes): **13.6% of upstream commits are provider/model maintenance** — new models, changed vendor wire formats, cache-control semantics, thinking-budget rules — landing in a small set of well-tested, mostly-pure files (`openai.js`, `chat-completions.js`, `prompt-converters.js`, `textgen-settings.js`), guarded by 144 unit tests. That is permanent free value with **zero UX opinion**, i.e. nothing Kotatsu exists to overrule.
 
 A refactor converts that stream from *merge* to *re-implement, forever*. So: **the provider registry stays structurally unrefactored on purpose.** Carry our patches as real commits, rebase them over upstream, and keep conflicts confined to regex lines and dropdown entries — which is exactly what `a4c64666c` is built to do.
 
@@ -529,35 +531,35 @@ grep -n "grok-4\.5" src/endpoints/backends/chat-completions.js public/scripts/op
 1. **Identify which family the conflicting hunk belongs to.** Use §1's inventory — remember §1.0: **half our hunks carry no marker**, so a conflict in the Grok blocks or the Claude regex block will look like unattributed local churn. It isn't.
 2. **If upstream shipped the same model we patched in** — the common case — **take upstream's version wholesale and drop ours.** That is the merge lane paying out. Verify the capability lists still cover our IDs, then delete the now-redundant local edit. Prefer upstream's exact spelling even if ours was equivalent; it minimizes the *next* conflict.
 3. **If upstream refactored around our hunk**, re-apply ours in upstream's new idiom rather than restoring our old lines. Our Grok CUSTOM passthrough (A5) was deliberately written to mirror upstream's adjacent `koboldcpp/` block for exactly this reason — copy the local idiom, always.
-4. **Never `git checkout --theirs`/`--ours` this whole file.** The retired `clio-patches/README.md` carried this warning and it survives verbatim: `chat-completions.js` holds **both** families, so a blanket reset silently drops the other one. Resolve hunk by hunk.
+4. **Never `git checkout --theirs`/`--ours` this whole file.** The retired local patch ledger carried this warning and it survives verbatim: `chat-completions.js` holds **both** families, so a blanket reset silently drops the other one. Resolve hunk by hunk.
 5. **Re-run the three greps above** and diff the counts against the pre-merge snapshot. A count that dropped is a patch you lost.
 6. `npm run lint` + Jest + a live boot, per §3.
 
-**Ordering hazard.** Patch B3 (glm dialect) works by **overwriting** the `bodyParams` object upstream assigns immediately above it (`chat-completions.js:2472-2476` → `:2480`). If a merge moves either block, the overwrite can end up ordered *before* the assignment and silently stop working — the request just goes back to upstream's broken shape. After any merge touching the ZAI branch, confirm the CLIO block still sits **after** the `bodyParams = { thinking: ... }` literal.
+**Ordering hazard.** Patch B3 (glm dialect) works by **overwriting** the `bodyParams` object upstream assigns immediately above it (`chat-completions.js:2472-2476` → `:2480`). If a merge moves either block, the overwrite can end up ordered *before* the assignment and silently stop working — the request just goes back to upstream's broken shape. After any merge touching the ZAI branch, confirm the B3 block still sits **after** the `bodyParams = { thinking: ... }` literal.
 
 ---
 
 ## 5. Retired mechanisms
 
-Two mechanisms previously maintained these patches. **Neither is part of this repo.** Both may still exist in an older live install and are still correct *there* — such an install remains an update-and-re-apply workflow.
+Two mechanisms previously maintained these patches. **Neither is part of this repo.** Both may still exist in an older pre-fork install and are still correct *there* — such an install remains an update-and-re-apply workflow.
 
-| Retired | Lived at (live install) | Superseded here by |
+| Retired | Lived at (pre-fork install) | Superseded here by |
 |---|---|---|
-| `VOIDLIT-PATCHES.md` (277 B) + `data/default-user/extensions/voidlit-echoes/PATCHES.md` | repo root + extension dir | §1.A, §2 |
-| `clio-patches/*.mjs` (idempotent re-apply scripts) + its `README.md` ledger | `clio-patches/` (untracked, survived `git pull`) | §1.B–D, §3 |
+| `VOIDLIT-PATCHES.md` (277 B) + an extension's own notes file | repo root + extension dir | §1.A, §2 |
+| Local patch scripts (idempotent re-apply scripts) + their `README.md` ledger | a dedicated untracked folder (survived `git pull`) | §1.B–D, §3 |
 
-> ⚠️ **An older live install (a separate stock SillyTavern checkout) may be in daily use. Never develop in it; never point Kotatsu at its `data/`.** Its copies of these files are read-only reference material for this document.
+> ⚠️ **An older pre-fork install (a separate stock SillyTavern checkout) may be in daily use. Never develop in it; never point Kotatsu at its `data/`.** Its copies of these files are read-only reference material for this document.
 
 **Why they were retired.** Both existed to solve one problem: *ST updates overwrite untracked edits to tracked files.* Kotatsu solves that structurally — the patches are **real commits on a real fork with a real `upstream` remote**, so an update is a rebase, not a re-application. Idempotent repair scripts become unnecessary the moment the edits are version-controlled.
 
 **What was carried forward, and what was not:**
 - **Carried:** every field note in §2 (the 1210/1220 distinction, the live-verified 3.5-vs-3.6 probe, the regex sparing behavior, the `usage`/streaming scope note, the unpatched `:747` sibling, the "don't blanket-reset `chat-completions.js`" warning).
-- **Not carried:** `apply-claude-code-rp.mjs` and `clio-patches/claude-code-rp/`. That is a **server plugin** (a bearer-protected loopback OpenAI API at `127.0.0.1:5107/v1` plus a Connection Manager profile), owns no tracked core file, and is out of scope for the provider layer. It stays live-install-only.
+- **Not carried:** the `apply-claude-code-rp.mjs` script and its `claude-code-rp/` folder. That is a **server plugin** (a bearer-protected loopback OpenAI API at `127.0.0.1:5107/v1` plus a Connection Manager profile), owns no tracked core file, and is out of scope for the provider layer. It stays in the pre-fork install only.
 
 **Gaps in the retired mechanism, recorded so they are not repeated.** These are real discrepancies found while writing this document:
 
 1. **`VOIDLIT-PATCHES.md` documented only one of its three patch groups.** Both VOIDLIT docs cover *only* the `usage` preservation patch (A1). The **Claude 5-family capability regexes (A2)** and **all four Grok 4.5 hunks (A3–A6)** — attributed to the VOIDLIT family by `a4c64666c`'s own commit message — appear in **no** retired document, carry **no** in-code marker, and had **no** re-apply script. They were hand-applied and undocumented. An ST update would have wiped them with nothing to detect the loss. **This document is their first written provenance.**
-2. **The `clio-patches/README.md` ledger omitted `add-opus5-2026-08-16.mjs` entirely** — no table row — and its "after every SillyTavern update, re-apply everything" instruction listed only **two** of the four scripts (`add-models` and `apply-claude-code-rp`), silently omitting `fix-gemini36-glm53` and `add-opus5`. Following the documented procedure would have restored roughly half the patches.
+2. **The retired patch ledger omitted `add-opus5-2026-08-16.mjs` entirely** — no table row — and its "after every SillyTavern update, re-apply everything" instruction listed only **two** of the four scripts (`add-models` and `apply-claude-code-rp`), silently omitting `fix-gemini36-glm53` and `add-opus5`. Following the documented procedure would have restored roughly half the patches.
 3. **The `grep -rn "KOTATSU-PATCH" public/scripts/openai.js` liveness check was structurally incomplete** — it covers 5 of 16 hunks. §1.0 replaces it with an honest inventory plus counted assertions.
 
 Together these are the argument for this document existing: the retired mechanisms tracked *scripts*, and anything applied by hand fell through. A commit tracks everything, and the inventory in §1 is auditable against `git show`.
@@ -597,4 +599,4 @@ Together these are the argument for this document existing: the retired mechanis
 | Gemini `thinkingConfig` | `/^gemini-3[.\d]*-(flash\|pro)/` | `chat-completions.js:498` |
 | Claude `isLimitedSampling` | `/^claude-(opus-4-1\|sonnet-4-5\|haiku-4-5\|opus-4-5\|opus-4-6\|sonnet-4-6)/` | `chat-completions.js:238` |
 
-**Remotes:** `upstream` = `github.com/SillyTavern/SillyTavern` · `origin` = the private development remote · `local-st` = the live install (historical; never push).
+**Remotes:** `upstream` = `github.com/SillyTavern/SillyTavern` · `origin` = the private development remote · `local-st` = an earlier SillyTavern install (historical; never push).

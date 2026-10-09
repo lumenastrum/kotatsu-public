@@ -2,9 +2,11 @@
  * `<k-rail-left>` — the rails-layout left rail (shell v0 slice B; the Branches
  * section is branch panel v0 slice C).
  *
- * Three sections, per `docs/shell-v0.md` §"The target":
+ * Four sections, per `docs/shell-v0.md` §"The target" and `docs/group-chat-v0.md` G1:
+ *   0. Scenes     — groups, newest first (stacked faces · name · recency). Drawn above
+ *                   Characters once one exists; below them, as a quiet invitation, before.
  *   1. Characters — roster rows (initials chip · name · last-chat recency).
- *   2. Chats      — the selected character's chat files (title · message count).
+ *   2. Chats      — the selected character's or open scene's chat files (title · count).
  *   3. Branches   — the open chat's lineage, its children, and the map door
  *                   (`docs/branch-panel-v0.md` §"The rail section").
  *
@@ -70,8 +72,12 @@ import {
 import { EMPTY_TREE, branchStore } from '../../branches/store.js';
 import { OPEN_STUDIO_EVENT } from '../../studio/manifest.js';
 import { event_types, eventSource } from '../../../scripts/events.js';
-import { selected_group } from '../../../scripts/group-chats.js';
+import { groups, openGroupById, selected_group } from '../../../scripts/group-chats.js';
 import { timestampToMoment } from '../../../scripts/utils.js';
+import { sceneRows } from '../../groups/scene-model.js';
+import { isNarratorCard } from '../../groups/narrator.js';
+import { loadSceneChats, openSceneChat, renameSceneChat } from '../../groups/scene-chats.js';
+import { OPEN_SCENE_STUDIO_EVENT } from '../../groups/doors.js';
 // Side-effect import: defines <k-persona-menu>, rendered in the footer below.
 import './k-persona-menu.js';
 import { chatLabelText } from '../chat-label.js';
@@ -85,6 +91,9 @@ const ROSTER_VISIBLE_MAX = 8;
 
 /** Visible chat rows before the list collapses into a "+N more" row. */
 const CHATS_VISIBLE_MAX = 6;
+
+/** Visible scene rows before the list hands over to the gallery (`docs/group-chat-v0.md` G1). */
+const SCENES_VISIBLE_MAX = 4;
 
 /**
  * Lineage rows drawn before the chain elides its middle. The worst real
@@ -119,6 +128,8 @@ const REFRESH_EVENTS = [
     event_types.CHARACTER_DUPLICATED,
     event_types.CHARACTER_RENAMED,
     event_types.GROUP_UPDATED,
+    event_types.GROUP_CHAT_CREATED,
+    event_types.GROUP_CHAT_DELETED,
 ];
 
 /**
@@ -134,6 +145,10 @@ const CHAT_LIFECYCLE_EVENTS = new Set([
     event_types.CHAT_RENAMED,
     event_types.CHARACTER_DELETED,
     event_types.CHARACTER_RENAMED,
+    // A scene's chat list moves on these too (core emits them from group-chats.js:319,
+    // :1334, :2269, :2308); GROUP_UPDATED alone is a settings change and reuses the fetch.
+    event_types.GROUP_CHAT_CREATED,
+    event_types.GROUP_CHAT_DELETED,
 ]);
 
 /**
@@ -419,6 +434,8 @@ export class KRailLeft extends LitElement {
         _chatsPending: { state: true },
         _rosterReady: { state: true },
         _groupActive: { state: true },
+        _scenes: { state: true },
+        _activeSceneId: { state: true },
         _tree: { state: true },
         _renamingChatId: { state: true },
     };
@@ -476,6 +493,10 @@ export class KRailLeft extends LitElement {
         this._rosterReady = false;
         /** @type {boolean} */
         this._groupActive = false;
+        /** @type {import('../../groups/scene-model.js').SceneRow[]} */
+        this._scenes = [];
+        /** @type {string} */
+        this._activeSceneId = '';
         /**
          * The active character's branch forest. `null` means "not read yet" —
          * the loading state; `EMPTY_TREE` (by identity) means the store had
@@ -589,7 +610,9 @@ export class KRailLeft extends LitElement {
                     ? character.avatar
                     : '',
                 lastChat: Number(character?.date_last_chat) || 0,
-            }));
+            // A scene's narrator seat is a card, not a character (docs/group-chat-v0.md §13).
+            // Filtered after the map so `id` stays core's character index.
+            })).filter(row => !isNarratorCard(list[row.id]));
             if (rows.some(row => row.lastChat > 0)) {
                 rows.sort((a, b) => b.lastChat - a.lastChat);
             }
@@ -607,6 +630,13 @@ export class KRailLeft extends LitElement {
         // here, next to `_activeChid`, so the two can never disagree about the
         // same core snapshot.
         this._groupActive = Boolean(selected_group);
+        this._activeSceneId = selected_group ? String(selected_group) : '';
+        try {
+            this._scenes = sceneRows(groups, characters);
+        } catch (error) {
+            console.error('[k-rail-left] scene read failed', error);
+            this._scenes = [];
+        }
     }
 
     /**
@@ -620,6 +650,11 @@ export class KRailLeft extends LitElement {
     async #loadChats() {
         const chid = activeCharacterIndex();
         this._activeChatId = this.#readActiveChatId();
+
+        if (selected_group) {
+            await this.#loadSceneChats(String(selected_group));
+            return;
+        }
 
         if (chid < 0 || !Array.isArray(characters) || !characters[chid]) {
             this.#chatsToken++;
@@ -663,6 +698,43 @@ export class KRailLeft extends LitElement {
                 this.#forceChats = true;
             }
             console.error('[k-rail-left] chat list read failed', error);
+        } finally {
+            if (token === this.#chatsToken) {
+                this._chatsPending = false;
+            }
+        }
+    }
+
+    /**
+     * The open scene's chat files (`docs/group-chat-v0.md` G1). Same token/key discipline as
+     * the character branch above; the key is prefixed so a scene and a character can never
+     * share a cached fetch.
+     * @param {string} groupId Group id.
+     * @returns {Promise<void>}
+     */
+    async #loadSceneChats(groupId) {
+        const key = `group:${groupId} ${this._activeChatId}`;
+        if (!this.#forceChats && key === this.#chatsKey) {
+            return;
+        }
+        this.#forceChats = false;
+        const token = ++this.#chatsToken;
+        this._chatsPending = true;
+        try {
+            const rows = await loadSceneChats(groupId);
+            if (token !== this.#chatsToken) {
+                return;
+            }
+            this._chats = rows.map(({ id, title, count, lastMs }) => ({ id, title, count, lastMs }));
+            this._activeChatId = this.#readActiveChatId();
+            this.#chatsKey = `group:${groupId} ${this._activeChatId}`;
+        } catch (error) {
+            if (token === this.#chatsToken) {
+                this._chats = [];
+                this.#chatsKey = '';
+                this.#forceChats = true;
+            }
+            console.error('[k-rail-left] scene chat list read failed', error);
         } finally {
             if (token === this.#chatsToken) {
                 this._chatsPending = false;
@@ -837,6 +909,14 @@ export class KRailLeft extends LitElement {
      * @returns {Promise<void>}
      */
     async #onOpenChat(fileId) {
+        if (selected_group) {
+            try {
+                await openSceneChat(fileId);
+            } catch (error) {
+                console.error('[k-rail-left] scene chat open failed', error);
+            }
+            return;
+        }
         if (!fileId || activeCharacterIndex() < 0) {
             return;
         }
@@ -889,6 +969,17 @@ export class KRailLeft extends LitElement {
         const requested = input.value.trim();
         this._renamingChatId = '';
         if (!requested || requested === fileId) {
+            return;
+        }
+        if (selected_group) {
+            // Scenes have no branch forest to heal; core's rename is the whole job there
+            // (it moves the id inside the record and emits CHAT_RENAMED).
+            try {
+                await renameSceneChat(fileId, requested);
+            } catch (error) {
+                console.error('[k-rail-left] scene chat rename failed', error);
+                toastr.warning('Rename failed — the name may already be taken.', 'Kotatsu');
+            }
             return;
         }
         const finalName = await branchStore.rename(fileId, requested);
@@ -1126,6 +1217,110 @@ export class KRailLeft extends LitElement {
             </button>`);
     }
 
+    /**
+     * Asks for the scene studio (`groups/doors.js`). Inert until something listens.
+     * @param {'create'|string} target `'create'` or a group id.
+     * @returns {void}
+     */
+    #requestSceneStudio(target) {
+        this.dispatchEvent(new CustomEvent(OPEN_SCENE_STUDIO_EVENT, {
+            bubbles: true,
+            composed: true,
+            detail: { target, source: 'k-rail-left' },
+        }));
+    }
+
+    /**
+     * Opens a scene through core's own path — the same pair the library's recents take
+     * (`openGroupById`, which refuses while a chat saves or a reply is generating).
+     * @param {string} id Group id.
+     * @returns {Promise<void>}
+     */
+    async #onOpenScene(id) {
+        if (!id || String(selected_group ?? '') === id) {
+            return;
+        }
+        try {
+            await openGroupById(id);
+        } catch (error) {
+            console.error('[k-rail-left] scene open failed', error);
+        }
+    }
+
+    /**
+     * @param {import('../../groups/scene-model.js').SceneRow} row Scene entry.
+     * @returns {unknown} One scene row: stacked faces, name, recency.
+     */
+    #sceneRow(row) {
+        const active = row.id === this._activeSceneId;
+        const relative = toRelative(row.lastMs);
+        const faces = row.faces.filter(avatar => !this.#thumbFailed.has(avatar)).slice(0, 2);
+        const art = faces.length
+            ? faces.map(avatar => html`
+                <img class="k-rl-face" alt="" loading="lazy" src=${getThumbnailUrl('avatar', avatar)}
+                    @error=${() => { this.#thumbFailed.add(avatar); this.requestUpdate(); }}>`)
+            : html`<span class="k-rl-chip">${toInitials(row.name)}</span>`;
+        return html`
+            <button
+                type="button"
+                class="k-rl-row k-rl-row--scene${active ? ' is-active' : ''}"
+                aria-current=${active ? 'true' : 'false'}
+                title=${`${row.name} — ${row.cast.map(member => member.name).join(', ')}`}
+                @click=${() => this.#onOpenScene(row.id)}
+            >
+                <span class="k-rl-faces" data-count=${faces.length} aria-hidden="true">${art}</span>
+                <span class="k-rl-name">${row.name}</span>
+                ${relative ? html`<span class="k-rl-meta">${relative}</span>` : nothing}
+            </button>`;
+    }
+
+    /**
+     * The Scenes section (`docs/group-chat-v0.md` G1, board A). Newest first; past the cap the
+     * gallery holds the rest, the same grammar as Characters. With no scenes at all the section
+     * still shows, as one quiet invitation — a reader who has never made one should learn the
+     * word exists.
+     * @returns {unknown}
+     */
+    #renderScenes() {
+        const action = html`
+            <button
+                type="button"
+                class="k-rl-head-action"
+                title="New scene"
+                aria-label="New scene"
+                @click=${() => this.#requestSceneStudio('create')}
+            >${icons.plus}</button>`;
+        if (this._scenes.length === 0) {
+            return this.#section('Scenes', action, html`
+                <button
+                    type="button"
+                    class="k-rl-row k-rl-row--more"
+                    title="Put two or more characters in one chat"
+                    @click=${() => this.#requestSceneStudio('create')}
+                >
+                    <span class="k-rl-name">Bring characters together…</span>
+                </button>`);
+        }
+        // The open scene always shows, even when it is older than the cap.
+        let visible = this._scenes.slice(0, SCENES_VISIBLE_MAX);
+        const open = this._scenes.find(row => row.id === this._activeSceneId);
+        if (open && !visible.includes(open)) {
+            visible = [...visible.slice(0, SCENES_VISIBLE_MAX - 1), open];
+        }
+        const hidden = this._scenes.length - visible.length;
+        return this.#section('Scenes', action, html`
+            ${visible.map(row => this.#sceneRow(row))}
+            ${hidden > 0 ? html`
+                <button
+                    type="button"
+                    class="k-rl-row k-rl-row--more"
+                    title="See every scene in the gallery"
+                    @click=${() => this.#goToGallery()}
+                >
+                    <span class="k-rl-name">All scenes (+${hidden} more)</span>
+                </button>` : nothing}`);
+    }
+
     /** @returns {unknown} The Chats section. */
     #renderChats() {
         // The header "+" is offered in all three branches — "no chats yet" is
@@ -1150,7 +1345,7 @@ export class KRailLeft extends LitElement {
                 @click=${() => this.#onNewChat()}
             >${icons.plus}</button>`;
 
-        if (this._activeChid < 0) {
+        if (this._activeChid < 0 && !this._groupActive) {
             return this.#section('Chats', action, this.#quietRow('No character selected', icons.dot));
         }
         if (this._chats.length === 0) {
@@ -1442,7 +1637,9 @@ export class KRailLeft extends LitElement {
     render() {
         return html`
             <div class="k-rl-scroll">
+                ${this._scenes.length ? this.#renderScenes() : nothing}
                 ${this.#renderCharacters()}
+                ${this._scenes.length ? nothing : this.#renderScenes()}
                 ${this.#renderChats()}
                 ${this.#renderBranches()}
             </div>

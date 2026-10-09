@@ -395,6 +395,24 @@ body[data-k-layout="rails"] .k-lib-recent--group .k-lib-recent-face {
     border-radius: var(--k-radius-round);
 }
 
+/* A scene's recent wears two faces, the second cut into the first (docs/group-chat-v0.md G1).
+   The pair keeps the single face's 34px column plus the overlap, so names still line up. */
+body[data-k-layout="rails"] .k-lib-recent-faces {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+}
+
+body[data-k-layout="rails"] .k-lib-recent-faces .k-lib-recent-face {
+    width: 30px;
+    height: 30px;
+    box-shadow: 0 0 0 2px var(--k-surface);
+}
+
+body[data-k-layout="rails"] .k-lib-recent-faces .k-lib-recent-face + .k-lib-recent-face {
+    margin-left: -12px;
+}
+
 body[data-k-layout="rails"] .k-lib-recent-copy {
     display: flex;
     flex-direction: column;
