@@ -1,0 +1,23 @@
+services:
+  kotatsu:
+    build:
+      # The Dockerfile pulls the source from GitHub itself; this folder only holds the Dockerfile.
+      context: .
+      args:
+        REF: main   # or a tag / commit
+    container_name: kotatsu
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - kotatsu-data:/app/data
+      - kotatsu-config:/app/config
+      - kotatsu-claude:/home/node/.claude
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "gateway.docker.internal:host-gateway"
+
+volumes:
+  kotatsu-data:
+  kotatsu-config:
+  kotatsu-claude:
