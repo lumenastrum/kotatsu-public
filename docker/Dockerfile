@@ -4,6 +4,11 @@
 #   docker build -t kotatsu --build-arg REF=v0.X.0 - < Dockerfile
 #
 #   docker run -d --name kotatsu -p 8000:8000 \
+#     --add-host=host.docker.internal:host-gateway \
+#     --add-host=gateway.docker.internal:host-gateway \
+#     -v kotatsu-data:/app/data \
+#     -v kotatsu-config:/app/config \
+#     -v kotatsu-claude:/home/node/.claude \
 #     kotatsu
 #
 #   The --add-host lines let the IP whitelist admit your host (Linux needs them;

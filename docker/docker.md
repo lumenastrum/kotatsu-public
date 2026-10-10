@@ -15,7 +15,7 @@ Then open <http://localhost:8000>.
 Kotatsu keeps SillyTavern's **IP whitelist**, and it's on by default. Only localhost is allowed, plus the Docker host when the container can resolve `host.docker.internal`.
 
 - **Docker Desktop (macOS / Windows):** those names resolve automatically, so it should just work.
-- **Linux:** they don't resolve unless you add them. `compose.yaml` already does this. With plain `docker run`, add:
+- **Linux:** they don't resolve unless you add them. `docker-compose.yml` already does this. With plain `docker run`, add:
 
   ```sh
   --add-host=host.docker.internal:host-gateway \
@@ -50,6 +50,10 @@ Claude Code prints a URL. Open it on any machine, approve, and paste the code ba
 - The login is saved in the `kotatsu-claude` volume (`CLAUDE_CONFIG_DIR=/home/node/.claude`), so it survives restarts and rebuilds.
 - If the Connect step in Kotatsu still says Claude Code isn't signed in, run `docker restart kotatsu`.
 
+### ChatGPT bridge: not supported in Docker yet
+
+ChatGPT's sign-in redirects your browser to 127.0.0.1:5108 and expects Kotatsu to answer there. Inside a container, Kotatsu isn't at that address, so the sign-in can't finish. In Docker, use an API key, a local model, or the Claude bridge instead.
+
 ## Volumes
 
 | Volume           | Path in container     | Holds                                   |
@@ -66,4 +70,4 @@ The in-app updater is disabled in the image because it does `git pull` inside th
 docker compose build --no-cache && docker compose up -d
 ```
 
-To pin a version, set `REF` to a tag or commit in `compose.yaml`, or pass `--build-arg REF=...`.
+To pin a version, set `REF` to a tag or commit in `docker-compose.yml`, or pass `--build-arg REF=...`.

@@ -13,6 +13,9 @@ services:
       - kotatsu-data:/app/data
       - kotatsu-config:/app/config
       - kotatsu-claude:/home/node/.claude
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "gateway.docker.internal:host-gateway"
 
 volumes:
   kotatsu-data:
