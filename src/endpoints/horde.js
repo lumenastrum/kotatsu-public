@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import express from 'express';
-import { AIHorde, ModelGenerationInputStableSamplers, ModelInterrogationFormTypes, HordeAsyncRequestStates } from '@zeldafan0225/ai_horde';
+import { AIHorde, ModelInterrogationFormTypes, HordeAsyncRequestStates } from '@zeldafan0225/ai_horde';
 import { getVersion, delay, Cache } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 
@@ -26,33 +26,6 @@ async function getHordeClient() {
     return new AIHorde({
         client_agent: await getClientAgent(),
     });
-}
-
-/**
- * Removes dirty no-no words from the prompt.
- * Taken verbatim from KAI Lite's implementation (AGPLv3).
- * https://github.com/LostRuins/lite.koboldai.net/blob/main/index.html#L7786C2-L7811C1
- * @param {string} prompt Prompt to sanitize
- * @returns {string} Sanitized prompt
- */
-function sanitizeHordeImagePrompt(prompt) {
-    if (!prompt) {
-        return '';
-    }
-
-    //to avoid flagging from some image models, always swap these words
-    prompt = prompt.replace(/\b(girl)\b/gmi, 'woman');
-    prompt = prompt.replace(/\b(boy)\b/gmi, 'man');
-    prompt = prompt.replace(/\b(girls)\b/gmi, 'women');
-    prompt = prompt.replace(/\b(boys)\b/gmi, 'men');
-    //always remove these high risk words from prompt, as they add little value to image gen while increasing the risk the prompt gets flagged
-    prompt = prompt.replace(/\b(under.age|under.aged|underage|underaged|loli|pedo|pedophile|(\w+).year.old|(\w+).years.old|minor|prepubescent|minors|shota)\b/gmi, '');
-    //replace risky subject nouns with person
-    prompt = prompt.replace(/\b(youngster|infant|baby|toddler|child|teen|kid|kiddie|kiddo|teenager|student|preteen|pre.teen)\b/gmi, 'person');
-    //remove risky adjectives and related words
-    prompt = prompt.replace(/\b(young|younger|youthful|youth|small|smaller|smallest|girly|boyish|lil|tiny|teenaged|lit[tl]le|school.aged|school|highschool|kindergarten|teens|children|kids)\b/gmi, '');
-
-    return prompt;
 }
 
 router.post('/text-workers', async (request, response) => {
@@ -211,27 +184,6 @@ router.post('/generate-text', async (request, response) => {
     }
 });
 
-router.post('/sd-samplers', async (_, response) => {
-    try {
-        const samplers = Object.values(ModelGenerationInputStableSamplers);
-        response.send(samplers);
-    } catch (error) {
-        console.error(error);
-        response.sendStatus(500);
-    }
-});
-
-router.post('/sd-models', async (_, response) => {
-    try {
-        const ai_horde = await getHordeClient();
-        const models = await ai_horde.getModels();
-        response.send(models);
-    } catch (error) {
-        console.error(error);
-        response.sendStatus(500);
-    }
-});
-
 router.post('/caption-image', async (request, response) => {
     try {
         const api_key_horde = readSecret(request.user.directories, SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
@@ -300,107 +252,6 @@ router.post('/user-info', async (request, response) => {
         })();
         const user = await ai_horde.findUser({ token: api_key_horde });
         return response.send({ user, sharedKey, anonymous: false });
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-router.post('/generate-image', async (request, response) => {
-    if (!request.body.prompt) {
-        return response.sendStatus(400);
-    }
-
-    const MAX_ATTEMPTS = 200;
-    const CHECK_INTERVAL = 3000;
-    const PROMPT_THRESHOLD = 5000;
-
-    try {
-        const maxLength = PROMPT_THRESHOLD - String(request.body.negative_prompt).length - 5;
-        if (String(request.body.prompt).length > maxLength) {
-            console.warn('Stable Horde prompt is too long, truncating...');
-            request.body.prompt = String(request.body.prompt).substring(0, maxLength);
-        }
-
-        // Sanitize prompt if requested
-        if (request.body.sanitize) {
-            const sanitized = sanitizeHordeImagePrompt(request.body.prompt);
-
-            if (request.body.prompt !== sanitized) {
-                console.info('Stable Horde prompt was sanitized.');
-            }
-
-            request.body.prompt = sanitized;
-        }
-
-        const api_key_horde = readSecret(request.user.directories, SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
-        console.debug('Stable Horde request:', request.body);
-
-        const ai_horde = await getHordeClient();
-        // noinspection JSCheckFunctionSignatures -- see @ts-ignore - use_gfpgan
-        const generation = await ai_horde.postAsyncImageGenerate(
-            {
-                prompt: `${request.body.prompt} ### ${request.body.negative_prompt}`,
-                params:
-                {
-                    sampler_name: request.body.sampler,
-                    hires_fix: request.body.enable_hr,
-                    // @ts-ignore - use_gfpgan param is not in the type definition, need to update to new ai_horde @ https://github.com/ZeldaFan0225/ai_horde/blob/main/index.ts
-                    use_gfpgan: request.body.restore_faces,
-                    cfg_scale: request.body.scale,
-                    steps: request.body.steps,
-                    width: request.body.width,
-                    height: request.body.height,
-                    karras: Boolean(request.body.karras),
-                    clip_skip: request.body.clip_skip,
-                    seed: request.body.seed >= 0 ? String(request.body.seed) : undefined,
-                    n: 1,
-                },
-                r2: false,
-                nsfw: request.body.nfsw,
-                models: [request.body.model],
-            },
-            { token: api_key_horde });
-
-        if (!generation.id) {
-            console.warn('Image generation request is not satisfyable:', generation.message || 'unknown error');
-            return response.sendStatus(400);
-        }
-
-        console.info('Horde image generation request:', generation);
-
-        const controller = new AbortController();
-        request.socket.removeAllListeners('close');
-        request.socket.on('close', function () {
-            console.warn('Horde image generation request aborted.');
-            controller.abort();
-            if (generation.id) ai_horde.deleteImageGenerationRequest(generation.id);
-        });
-
-        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-            controller.signal.throwIfAborted();
-            await delay(CHECK_INTERVAL);
-            const check = await ai_horde.getImageGenerationCheck(generation.id);
-            console.info(check);
-
-            if (check.done) {
-                const result = await ai_horde.getImageGenerationStatus(generation.id);
-                if (result.generations === undefined) return response.sendStatus(500);
-                return response.send(result.generations[0].img);
-            }
-
-            /*
-            if (!check.is_possible) {
-                return response.sendStatus(503);
-            }
-            */
-
-            if (check.faulted) {
-                return response.sendStatus(500);
-            }
-        }
-
-        return response.sendStatus(504);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);

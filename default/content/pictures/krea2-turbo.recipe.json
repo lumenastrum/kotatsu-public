@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "revision": 1,
+    "name": "KREA 2 Turbo",
+    "tongue": "prose",
+    "needs": ["CLIPLoader", "CLIPTextEncode", "ConditioningZeroOut", "EmptyLatentImage", "KSampler", "SaveImage", "UNETLoader", "VAEDecode", "VAELoader"],
+    "slots": { "unet": ["1", "unet_name"], "clip": ["2", "clip_name"], "vae": ["3", "vae_name"] },
+    "bind": { "prompt": ["4", "text"], "negative": null, "seed": ["7", "seed"], "width": ["6", "width"], "height": ["6", "height"], "reference": null },
+    "outputs": ["9"],
+    "variants": { "hires": "krea2-turbo-hires" },
+    "sizes": ["1024x1024", "832x1216", "1216x832", "768x1344", "1344x768"],
+    "hints": { "unet": "krea2_turbo_fp8_scaled.safetensors", "clip": "qwen3vl_4b_fp8_scaled.safetensors", "vae": "qwen_image_vae.safetensors" },
+    "family": "krea2",
+    "pipeline": "plain",
+    "choices": {}
+}

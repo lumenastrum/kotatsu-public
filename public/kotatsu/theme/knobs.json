@@ -2342,6 +2342,435 @@
     }
    ]
   },
+  "--k-pic-caption-color": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "var(--k-text-dim)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-chip-on": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "color-mix(in srgb, var(--k-accent) 22%, var(--k-surface))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-danger": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "var(--k-danger)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-field-fill": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "color-mix(in srgb, var(--k-surface-2) 85%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-frame-fill": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "color-mix(in srgb, var(--k-surface-2) 70%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-frame-h": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "200px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-hairline": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "color-mix(in srgb, var(--k-border) 60%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-menu-fill": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "var(--k-surface)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-pad": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "24px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-ring-arc": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "var(--k-accent-bright)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-ring-track": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "color-mix(in srgb, var(--k-border) 70%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-scrim-fill": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "color-mix(in srgb, var(--k-scrim) 45%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-sheet-base": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "var(--k-ground)",
+   "note": "Under the fill, as in the portrait peek: some themes' surface is translucent.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-sheet-fill": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "var(--k-surface)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-tile-btn-fill": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "color-mix(in srgb, var(--k-surface-2) 80%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-tile-lift": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "44px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-top": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "44px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-warn": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "var(--k-warning)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-width": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "460px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-z-menu": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "4065",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-z-scrim": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "4070",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-z-sheet": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "4071",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-card-bg": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "var(--k-surface)",
+   "note": "A recipe card, and the panel's quiet surfaces.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-card-border": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "color-mix(in srgb, var(--k-chrome-border) 55%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-chip-bg": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "color-mix(in srgb, var(--k-accent) 16%, transparent)",
+   "note": "The tongue chip on a recipe card.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-chip-text": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "var(--k-text)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-error": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "var(--k-danger)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-gap": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "18px",
+   "note": "Gap between the panel's groups.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-label-w": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "132px",
+   "note": "The label column of a field row.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-ok": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "var(--k-success)",
+   "note": "The Check result's two tones and the \"Needs\" line.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-radius": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "var(--k-radius-lg)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-seg-active-bg": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "color-mix(in srgb, var(--k-rose) 22%, var(--k-surface))",
+   "note": "The lane switch's chosen option.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-seg-active-text": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "var(--k-text-strong)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
+  "--k-pics-warn": {
+   "group": "Pictures settings and the studio Look",
+   "file": "css/pictures-settings.css",
+   "default": "var(--k-warning)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
+     "at": []
+    }
+   ]
+  },
   "--k-pl-chip-size": {
    "group": "Prompt list",
    "file": "css/prompt-list.css",

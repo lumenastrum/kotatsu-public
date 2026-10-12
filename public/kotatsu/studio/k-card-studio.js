@@ -63,6 +63,10 @@ import { debounce_timeout } from '../../scripts/constants.js';
 import { buildEpithet } from '../library/epithet.js';
 import { renderCard } from '../library/k-library.js';
 import { accentHue, previewRow } from '../library/view-model.js';
+import { TONGUES } from '../pictures/contract.js';
+import { cardArtUrl, defaultLookFor, getLook, normalizeLook, saveLook } from '../pictures/look.js';
+import { listLoras } from '../pictures/jobs-client.js';
+import { LORA_BASE_NAMES, MAX_LORAS, normalizeLoras } from '../pictures/picture-model.js';
 import {
     FOOTER_SLOTS,
     OPEN_STUDIO_EVENT,
@@ -240,7 +244,18 @@ export class KCardStudio extends LitElement {
         _tab: { state: true },
         _preview: { state: true },
         _ready: { state: true },
+        _look: { state: true },
+        _lookError: { state: true },
+        _loraList: { state: true },
+        _loraError: { state: true },
     };
+
+    /**
+     * The look as it stood when the studio opened, serialized; the save path writes the look only
+     * when the fields differ from it, so a bare open/close (the byte gates' cycle) writes nothing.
+     * @type {string}
+     */
+    #lookAtOpen = '';
 
     /** @type {Relocator} */
     #relocator = new Relocator();
@@ -278,7 +293,17 @@ export class KCardStudio extends LitElement {
         this._preview = previewRow({});
         /** @type {{ filled: number, total: number, missing: string[] }} */
         this._ready = readiness({});
-        this.#onFormInput = () => {
+        /** @type {ReturnType<typeof normalizeLook>} */
+        this._look = normalizeLook(null);
+        /** @type {string} */
+        this._lookError = '';
+        /** @type {import('../pictures/picture-model.js').LoraInfo[]|null} */
+        this._loraList = null;
+        this._loraError = '';
+        this.#onFormInput = (event) => {
+            // The Look group is Kotatsu's own and outside the card form: its keystrokes neither
+            // repaint the poster nor re-count the card's tokens.
+            if (event?.target instanceof Element && event.target.closest('.k-studio-look')) return;
             this.#schedulePreview();
             this.#countTokens?.();
         };
@@ -365,6 +390,7 @@ export class KCardStudio extends LitElement {
         this.#place();
         this.#observe();
         this.#refreshPreview();
+        this.#loadLook();
         this.#focusFirstField();
     }
 
@@ -592,12 +618,21 @@ export class KCardStudio extends LitElement {
      *
      * The one case that does NOT close: a create with an empty name. Core rejects it with a
      * toast (`script.js:10116`) and the reader needs the sheet still in front of them.
-     * @returns {void}
+     *
+     * The Look group (Pictures v0, Kotatsu-owned, outside the form) saves FIRST, and only when
+     * it changed: `saveLook()` writes the card through `/merge-attributes` and refreshes
+     * `#character_json_data`, so the stock submit that follows carries the new look in its
+     * `json_data` instead of writing the old one back. A failed look save keeps the sheet open
+     * with the reason and does not submit, so nothing typed is lost.
+     * @returns {Promise<void>}
      */
-    #onSave() {
+    async #onSave() {
         const button = document.getElementById('create_button');
         if (!button) {
             console.warn('[k-card-studio] #create_button is missing; the save path is unavailable.');
+            return;
+        }
+        if (!(await this.#saveLookIfChanged())) {
             return;
         }
         const nameless = this.mode === 'create' && readValue('#character_name_pole').trim().length === 0;
@@ -606,6 +641,233 @@ export class KCardStudio extends LitElement {
             return;
         }
         this.close();
+    }
+
+    /* ── the Look group (Pictures v0, docs/pictures-v0.md §4) ───────────────── */
+
+    /** @returns {any|null} The card being edited, or null in create mode. */
+    #editedCard() {
+        if (this.mode !== 'edit' || this_chid === undefined) return null;
+        return characters?.[Number(this_chid)] ?? null;
+    }
+
+    /** Reads the card's look into the group, or a blank one that points at the card's art. */
+    #loadLook() {
+        const card = this.#editedCard();
+        this._look = normalizeLook(card ? (getLook(card) ?? defaultLookFor(card)) : null);
+        this.#lookAtOpen = JSON.stringify(this._look);
+        this._lookError = '';
+        if (card) void this.#loadLoraList();
+    }
+
+    /**
+     * @param {'positive'|'negative'|'tongue'} field
+     * @param {string} value
+     */
+    #editLook(field, value) {
+        this._look = { ...this._look, [field]: value };
+        this._lookError = '';
+    }
+
+    /** @param {boolean} useArt Whether the look's reference is the card's own art. */
+    #useCardArt(useArt) {
+        const card = this.#editedCard();
+        const art = card ? cardArtUrl(card) : '';
+        const atOpen = /** @type {{ reference?: string }} */ (JSON.parse(this.#lookAtOpen || '{}'));
+        // Unticking falls back to whatever other picture the look already named, else none.
+        const other = atOpen.reference && atOpen.reference !== art ? atOpen.reference : '';
+        this._look = { ...this._look, reference: useArt ? art : other };
+        this._lookError = '';
+    }
+
+    /**
+     * Saves the look when it changed since the studio opened.
+     * @returns {Promise<boolean>} False when the save failed (the reason is on screen).
+     */
+    async #saveLookIfChanged() {
+        const card = this.#editedCard();
+        if (!card || JSON.stringify(this._look) === this.#lookAtOpen) return true;
+        try {
+            const saved = await saveLook(card, this._look);
+            this._look = normalizeLook(saved);
+            this.#lookAtOpen = JSON.stringify(this._look);
+            return true;
+        } catch (error) {
+            console.error('[k-card-studio] the look could not be saved', error);
+            this._lookError = error instanceof Error ? error.message : 'The look could not be saved.';
+            this._tab = 'card';
+            return false;
+        }
+    }
+
+    /**
+     * Kotatsu's own group at the foot of Card data. NOT part of `#form_create`: no `name=`, no
+     * `form=`, so the borrowed form's wire format and the byte gates never see it.
+     * @returns {unknown} A Lit template.
+     */
+    #renderLook() {
+        const card = this.#editedCard();
+        if (!card) {
+            return html`
+                <section class="k-studio-look" aria-label="Look">
+                    <h3 class="k-studio-look__head">Look</h3>
+                    <p class="k-studio-look__lead">Once the card is created, its look for pictures can be set here.</p>
+                </section>`;
+        }
+        const look = this._look;
+        const art = cardArtUrl(card);
+        const usesArt = Boolean(art) && look.reference === art;
+        const shown = look.reference || '';
+        return html`
+            <section class="k-studio-look" aria-label="Look" data-k-studio-look>
+                <h3 class="k-studio-look__head">Look</h3>
+                <p class="k-studio-look__lead">How pictures draw this character. It travels with the card when you share it.</p>
+                <div class="k-studio-field k-studio-field--field">
+                    <div class="k-studio-labelrow">
+                        <label class="k-studio-label" for="k-studio-look-positive">Always include</label>
+                        <span class="k-studio-hint">Put in front of every picture of them</span>
+                    </div>
+                    <div class="k-studio-control">
+                        <textarea id="k-studio-look-positive" rows="3" spellcheck="false" data-k-look="positive"
+                            placeholder="1girl, long silver hair, green eyes, black coat"
+                            .value=${look.positive}
+                            @input=${(/** @type {Event} */ e) => this.#editLook('positive', /** @type {HTMLTextAreaElement} */ (e.target).value)}></textarea>
+                    </div>
+                </div>
+                <div class="k-studio-field k-studio-field--field">
+                    <div class="k-studio-labelrow">
+                        <label class="k-studio-label" for="k-studio-look-negative">Never include</label>
+                        <span class="k-studio-hint">Where the recipe takes a negative</span>
+                    </div>
+                    <div class="k-studio-control">
+                        <textarea id="k-studio-look-negative" rows="2" spellcheck="false" data-k-look="negative"
+                            placeholder="extra fingers, blurry"
+                            .value=${look.negative}
+                            @input=${(/** @type {Event} */ e) => this.#editLook('negative', /** @type {HTMLTextAreaElement} */ (e.target).value)}></textarea>
+                    </div>
+                </div>
+                <div class="k-studio-field k-studio-field--field is-half">
+                    <div class="k-studio-labelrow">
+                        <label class="k-studio-label" for="k-studio-look-tongue">Written as</label>
+                    </div>
+                    <div class="k-studio-control">
+                        <select id="k-studio-look-tongue" data-k-look="tongue"
+                            @change=${(/** @type {Event} */ e) => this.#editLook('tongue', /** @type {HTMLSelectElement} */ (e.target).value)}>
+                            <option value="" ?selected=${!look.tongue}>Whatever the recipe wants</option>
+                            <option value=${TONGUES.TAGS} ?selected=${look.tongue === TONGUES.TAGS}>Tags</option>
+                            <option value=${TONGUES.PROSE} ?selected=${look.tongue === TONGUES.PROSE}>Prose</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="k-studio-field k-studio-field--field">
+                    <div class="k-studio-labelrow">
+                        <span class="k-studio-label">Reference</span>
+                        <span class="k-studio-hint">Recipes with a reference slot draw from it</span>
+                    </div>
+                    <div class="k-studio-control k-studio-look__reference">
+                        ${shown
+        ? html`<img class="k-studio-look__thumb" src=${shown} alt="The reference picture" loading="lazy" decoding="async">`
+        : html`<span class="k-studio-look__thumb" aria-hidden="true"></span>`}
+                        <label class="k-studio-look__check">
+                            <input type="checkbox" data-k-look="use-card-art" .checked=${usesArt} ?disabled=${!art}
+                                @change=${(/** @type {Event} */ e) => this.#useCardArt(/** @type {HTMLInputElement} */ (e.target).checked)}>
+                            <span>Use card art</span>
+                        </label>
+                    </div>
+                </div>
+                ${this.#renderLookLoras()}
+                ${this._lookError ? html`<p class="k-studio-look__error" role="alert">${this._lookError}</p>` : nothing}
+            </section>`;
+    }
+
+    /**
+     * The card's LoRAs (ComfyUI pictures, 2026-10-10): they ride every picture of this character,
+     * their trigger words go into the prompt. The picker lists the server's LoRAs by model family.
+     * @returns {unknown} A Lit template.
+     */
+    #renderLookLoras() {
+        const loras = this._look.loras ?? [];
+        const list = this._loraList;
+        const infoOf = (/** @type {string} */ file) => list?.find(l => l.file === file);
+        const free = (list ?? []).filter(l => !loras.some(a => a.file === l.file));
+        /** @type {Map<string, import('../pictures/picture-model.js').LoraInfo[]>} */
+        const byBase = new Map();
+        for (const info of free) {
+            const key = info.base ?? '';
+            byBase.set(key, [...(byBase.get(key) ?? []), info]);
+        }
+        const families = [...byBase.keys()].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || a.localeCompare(b));
+        return html`
+            <div class="k-studio-field k-studio-field--field" data-k-look="loras">
+                <div class="k-studio-labelrow">
+                    <span class="k-studio-label">LoRAs</span>
+                    <span class="k-studio-hint">For ComfyUI recipes; their trigger words go into the prompt</span>
+                </div>
+                <div class="k-studio-control k-studio-look__loras">
+                    ${loras.map(lora => {
+        const title = infoOf(lora.file)?.title ?? lora.file.replace(/\.(safetensors|ckpt|pt)$/i, '');
+        return html`
+                        <div class="k-studio-look__lora" data-k-look-lora=${lora.file}>
+                            <span class="k-studio-look__lora-name" title=${lora.file}>${title}</span>
+                            <input type="number" step="0.05" min="-10" max="10" inputmode="decimal" aria-label=${`Strength of ${title}`}
+                                .value=${String(lora.strength)}
+                                @change=${(/** @type {Event} */ e) => this.#editLora(lora.file, { strength: Number(/** @type {HTMLInputElement} */ (e.target).value) })}>
+                            <input type="text" spellcheck="false" aria-label=${`Trigger words for ${title}`} placeholder="Trigger words"
+                                .value=${lora.trigger}
+                                @input=${(/** @type {Event} */ e) => this.#editLora(lora.file, { trigger: /** @type {HTMLInputElement} */ (e.target).value })}>
+                            <button type="button" class="k-studio-look__lora-remove" aria-label=${`Remove ${title}`} title="Remove"
+                                @click=${() => this.#editLora(lora.file, null)}>
+                                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8" /><path d="M12 4l-8 8" /></svg>
+                            </button>
+                        </div>`;
+    })}
+                    ${list === null ? html`<span class="k-studio-hint">Reading your ComfyUI's LoRAs…</span>` : nothing}
+                    ${this._loraError ? html`<span class="k-studio-hint">Couldn’t read the LoRAs: ${this._loraError}</span>` : nothing}
+                    ${free.length && loras.length < MAX_LORAS ? html`
+                        <select aria-label="Add a LoRA" data-k-look="lora-add" @change=${this.#onAddLookLora}>
+                            <option value="" selected>Add a LoRA…</option>
+                            ${families.map(base => html`
+                                <optgroup label=${base ? `For ${LORA_BASE_NAMES[base] ?? base}` : 'Base unknown'}>
+                                    ${(byBase.get(base) ?? []).map(info => html`<option value=${info.file}>${info.title}</option>`)}
+                                </optgroup>`)}
+                        </select>` : nothing}
+                </div>
+            </div>`;
+    }
+
+    /** @param {Event} event The picker's change */
+    #onAddLookLora = (event) => {
+        const select = /** @type {HTMLSelectElement} */ (event.target);
+        const info = this._loraList?.find(l => l.file === select.value);
+        select.value = '';
+        if (!info) return;
+        this._look = { ...this._look, loras: normalizeLoras([...(this._look.loras ?? []), { file: info.file, strength: 1, trigger: info.triggers.join(', ') }]) };
+        this._lookError = '';
+    };
+
+    /**
+     * @param {string} file
+     * @param {{strength?: number, trigger?: string}|null} change null removes it
+     */
+    #editLora(file, change) {
+        const loras = this._look.loras ?? [];
+        const next = change === null ? loras.filter(l => l.file !== file) : loras.map(l => (l.file === file ? { ...l, ...change } : l));
+        this._look = { ...this._look, loras: normalizeLoras(next) };
+        this._lookError = '';
+    }
+
+    /** Lists the server's LoRAs for the picker (once per open). */
+    async #loadLoraList() {
+        this._loraList = null;
+        this._loraError = '';
+        try {
+            const answer = await listLoras();
+            this._loraList = answer?.ok && Array.isArray(answer.loras) ? answer.loras : [];
+            if (!answer?.ok) this._loraError = answer?.message || 'The picture server did not answer.';
+        } catch (error) {
+            this._loraList = [];
+            this._loraError = error instanceof Error ? error.message : String(error);
+        }
     }
 
     /* ── render ─────────────────────────────────────────────────────────────── */
@@ -723,7 +985,7 @@ export class KCardStudio extends LitElement {
                 role="tabpanel"
                 aria-labelledby=${`k-studio-tab-${tab.id}`}
                 ?hidden=${!active}
-            >${tab.fields.map(field => this.#renderField(field))}</div>`;
+            >${tab.fields.map(field => this.#renderField(field))}${tab.id === 'card' ? this.#renderLook() : nothing}</div>`;
     }
 
     /**

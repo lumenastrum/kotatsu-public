@@ -208,6 +208,10 @@ npm start
 
 Then open `http://localhost:8000` (or whatever port your `config.yaml` says).
 
+### Docker
+
+There's a Dockerfile and a compose file in [`docker/`](docker/docker.md), contributed by [siestamode](https://github.com/siestamode). The image builds from the public repo, keeps your data and config in volumes, and the Claude bridge signs in with one `docker exec`. The ChatGPT bridge isn't supported in Docker yet. `docker/docker.md` has the details.
+
 ## The Claude bridge
 
 Kotatsu runs a small OpenAI-compatible listener on `127.0.0.1` that answers through the [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk), using the Claude Code login of the account running Kotatsu. Nothing leaves your machine except the request to Anthropic. The listener refuses any host but loopback, and a per-install token guards it. Rate limits are your subscription's. It's configured under `kotatsu.claudeBridge` in `config.yaml`, and from the Claude Code card in the Connection tab.

@@ -24,12 +24,18 @@
  *    `body[data-k-bridge]`, which the sheet's B3 hides key on, moved to kotatsu/connections/
  *    bridge.js with the rest of what the frontend knows about the Claude Code bridge.)
  *
+ * Plus one migration that rides the same seam (2026-10-09): stock's image-generation extension left
+ * in Pictures slice 0, and `pictures/migrate.js` carries what it saved (`extension_settings.sd`)
+ * into Pictures once — see the APP_READY hook below.
+ *
  * Hide, never delete: no key is removed. One-way imports: kotatsu → core.
  */
 
 import { main_api, saveSettingsDebounced } from '../../script.js';
 import { event_types, eventSource } from '../../scripts/events.js';
 import { extension_settings } from '../../scripts/extensions.js';
+import { runPicturesMigration } from '../pictures/migrate.js';
+import { installPicturesSettings } from '../pictures/settings.js';
 
 /**
  * Rewrites every saved Extras value. Pure over the object it is given; returns what changed, so
@@ -129,15 +135,6 @@ function pruneExtrasOptions() {
             if (option.value === value) option.remove();
         }
     }
-    const sd = document.querySelector('#sd_source');
-    if (sd instanceof HTMLSelectElement && !Array.from(sd.options).some(option => option.value === '')) {
-        const placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = 'Choose a source…';
-        placeholder.disabled = true;
-        sd.prepend(placeholder);
-        if (!extension_settings.sd?.source) sd.value = '';
-    }
 }
 
 let installed = false;
@@ -166,6 +163,15 @@ export function installBaggage() {
         if (autoConnect instanceof HTMLInputElement) autoConnect.checked = Boolean(extension_settings.autoConnect);
         console.info(`[Kotatsu baggage] Extras API retired: ${changes.join('; ')}`);
         saveSettingsDebounced();
+    });
+
+    // Pictures v0 (docs/pictures-v0.md §9): the old image extension's settings move to the
+    // Pictures leaf once, and its per-character prompts into the matching cards. APP_READY,
+    // not EXTENSIONS_FIRST_LOAD like the Extras rewrite above: the card half needs the roster,
+    // which `getCharacters()` loads after settings. Reads `extension_settings.sd`, never writes it.
+    installPicturesSettings();
+    eventSource.on(event_types.APP_READY, () => {
+        runPicturesMigration().catch(error => console.error('[Kotatsu baggage] the Pictures migration failed', error));
     });
 
     eventSource.on(event_types.APP_READY, () => {

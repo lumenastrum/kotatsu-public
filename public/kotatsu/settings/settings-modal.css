@@ -296,6 +296,13 @@ body[data-k-layout="rails"] .k-set-search-input {
     outline: none;
 }
 
+/* The pill's `:focus-within` border is the focus ring. rechrome-fields.css rings
+   `.k-set-search-input:focus-visible` at the same specificity as the rule above and loads later,
+   which painted a second, field-radius ring inside the pill. */
+body[data-k-layout="rails"] .k-set-search-input:focus-visible {
+    outline: none;
+}
+
 body[data-k-layout="rails"] .k-set-search-input::placeholder {
     color: var(--k-text-faint);
 }

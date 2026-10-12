@@ -43,6 +43,9 @@ export const CONTENT_TYPES = {
     AVATAR: 'avatar',
     THEME: 'theme',
     WORKFLOW: 'workflow',
+    // Kotatsu Pictures recipes (docs/pictures-v0.md §3.3): an API graph + its `.recipe.json`
+    // sidecar, seeded into the same `user/workflows` folder stock workflows use.
+    PICTURE_RECIPE: 'picture_recipe',
     KOBOLD_PRESET: 'kobold_preset',
     OPENAI_PRESET: 'openai_preset',
     NOVEL_PRESET: 'novel_preset',
@@ -340,6 +343,7 @@ export function getUserTargetByType(type, directories) {
         case CONTENT_TYPES.THEME:
             return directories.themes;
         case CONTENT_TYPES.WORKFLOW:
+        case CONTENT_TYPES.PICTURE_RECIPE:
             return directories.comfyWorkflows;
         case CONTENT_TYPES.KOBOLD_PRESET:
             return directories.koboldAI_Settings;

@@ -1,0 +1,646 @@
+/*
+ * pictures-settings.css — `<k-pictures-settings>` (kotatsu/pictures/k-pictures-settings.js,
+ * docs/pictures-v0.md §9) and the card studio's Look group (studio/k-card-studio.js).
+ *
+ * Lives inside the settings modal's Pictures tab. Own `k-pics__*` classes; the plain `<select>`
+ * and `<input>` it uses are dressed by the modal's field rules (settings-modal.css §5) like every
+ * other row, so only layout and the panel's own chrome are here. Tokens only, through the
+ * `--k-pics-*` knobs below, so Blue Hour, Sparkle and the light packs all read.
+ */
+
+body[data-k-layout="rails"] k-pictures-settings,
+body[data-k-layout="rails"] .k-studio-look {
+    /* Gap between the panel's groups. */
+    --k-pics-gap: 18px;
+    /* A recipe card, and the panel's quiet surfaces. */
+    --k-pics-card-bg: var(--k-surface);
+    --k-pics-card-border: color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
+    --k-pics-radius: var(--k-radius-lg);
+    /* The lane switch's chosen option. */
+    --k-pics-seg-active-bg: color-mix(in srgb, var(--k-rose) 22%, var(--k-surface));
+    --k-pics-seg-active-text: var(--k-text-strong);
+    /* The Check result's two tones and the "Needs" line. */
+    --k-pics-ok: var(--k-success);
+    --k-pics-error: var(--k-danger);
+    --k-pics-warn: var(--k-warning);
+    /* The tongue chip on a recipe card. */
+    --k-pics-chip-bg: color-mix(in srgb, var(--k-accent) 16%, transparent);
+    --k-pics-chip-text: var(--k-text);
+    /* The label column of a field row. */
+    --k-pics-label-w: 132px;
+}
+
+/* The row the modal draws around the panel: full width, no label column (the panel names its own
+   groups; the registry label is what search reads), the phone card's recipe. */
+body[data-k-layout="rails"] .k-set-control:has(> k-pictures-settings) {
+    flex: 1 1 100%;
+    width: 100%;
+}
+
+body[data-k-layout="rails"] .k-set-row:has(k-pictures-settings) {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+}
+
+body[data-k-layout="rails"] .k-set-row:has(k-pictures-settings) > .k-set-labelrow {
+    display: none;
+}
+
+body:not([data-k-layout="rails"]) k-pictures-settings {
+    display: none;
+}
+
+body[data-k-layout="rails"] k-pictures-settings {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-pics {
+    display: flex;
+    flex-direction: column;
+    gap: var(--k-pics-gap);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-pics p {
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-pics__group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-pics__head {
+    margin: 0;
+    color: var(--k-text-strong);
+    font: 600 12px var(--k-font-ui);
+    letter-spacing: 0.02em;
+}
+
+body[data-k-layout="rails"] .k-pics__hint,
+body[data-k-layout="rails"] .k-pics__note {
+    color: var(--k-text-dim);
+    font-size: 12px;
+}
+
+/* ── Lane switch ──────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-pics__seg {
+    display: inline-flex;
+    align-self: flex-start;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--k-pics-card-border);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-surface-sunken);
+}
+
+body[data-k-layout="rails"] .k-pics__seg-option {
+    min-height: 28px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text-dim);
+    font: 500 12.5px var(--k-font-ui);
+    cursor: pointer;
+    transition: background-color var(--k-motion), color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-pics__seg-option[aria-checked="true"] {
+    background: var(--k-pics-seg-active-bg);
+    color: var(--k-pics-seg-active-text);
+}
+
+body[data-k-layout="rails"] .k-pics__seg-option:focus-visible,
+body[data-k-layout="rails"] .k-pics__button:focus-visible,
+body[data-k-layout="rails"] .k-pics__switch:focus-visible {
+    outline: 2px solid var(--k-accent);
+    outline-offset: 2px;
+}
+
+/* ── Field rows ───────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-pics__field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-pics__label {
+    flex: 0 0 var(--k-pics-label-w);
+    min-width: 0;
+    color: var(--k-text);
+    font-size: 12.5px;
+    overflow-wrap: anywhere;
+}
+
+body[data-k-layout="rails"] .k-pics__input,
+body[data-k-layout="rails"] .k-pics__select,
+body[data-k-layout="rails"] .k-pics__textarea {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+}
+
+/* The modal's field rules size text inputs but not password ones (settings-modal.css §5), so the
+   sign-in field would sit taller and in a larger face than the address above it. Both inputs carry
+   `.text_pole` for the house field look; this pins their metrics to the modal's. */
+body[data-k-layout="rails"] .k-set-control input.k-pics__input {
+    box-sizing: border-box;
+    height: var(--k-set-input-h);
+    margin: 0;
+    font-family: var(--k-font-ui);
+    font-size: var(--k-set-ui-size);
+}
+
+body[data-k-layout="rails"] .k-pics__button {
+    flex: 0 0 auto;
+    min-height: 28px;
+    padding: 0 14px;
+    border: 1px solid var(--k-pics-card-border);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-2);
+    color: var(--k-text-strong);
+    font: 500 12.5px var(--k-font-ui);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-pics__button:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+/* ── Check result ─────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-pics__result {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding-left: calc(var(--k-pics-label-w) + 10px);
+    color: var(--k-text-dim);
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-pics__result svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
+}
+
+body[data-k-layout="rails"] .k-pics__result[data-tone="ok"] svg {
+    color: var(--k-pics-ok);
+}
+
+body[data-k-layout="rails"] .k-pics__result[data-tone="error"] {
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-pics__result[data-tone="error"] svg {
+    color: var(--k-pics-error);
+}
+
+body[data-k-layout="rails"] .k-pics__result-detail {
+    color: var(--k-text-dim);
+}
+
+/* ── Setting up local pictures (§14.6): three self-ticking steps ─────────────────── */
+
+body[data-k-layout="rails"] .k-pics__steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+body[data-k-layout="rails"] .k-pics__step {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+}
+
+body[data-k-layout="rails"] .k-pics__step > svg {
+    margin-top: 1px;
+    color: var(--k-pics-ok);
+}
+
+body[data-k-layout="rails"] .k-pics__step-dot {
+    box-sizing: border-box;
+    width: 14px;
+    height: 14px;
+    margin: 3px 0 0 3px;
+    border: 1.5px solid var(--k-text-dim);
+    border-radius: 50%;
+}
+
+body[data-k-layout="rails"] .k-pics__step-lead {
+    margin: 0 0 4px;
+    color: var(--k-text-strong);
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] .k-pics__step[data-done="yes"] .k-pics__step-lead {
+    color: var(--k-text-dim);
+    font-weight: 500;
+}
+
+body[data-k-layout="rails"] .k-pics__step-sub {
+    margin: 10px 0 4px;
+    color: var(--k-text);
+    font-weight: 600;
+    font-size: 12.5px;
+}
+
+body[data-k-layout="rails"] .k-pics__needs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0 0 6px;
+    padding: 0;
+    list-style: none;
+}
+
+body[data-k-layout="rails"] .k-pics__need {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 2px 10px;
+    padding: 6px 10px;
+    border: 1px solid var(--k-pics-card-border);
+    border-radius: var(--k-radius-md);
+    background: var(--k-pics-card-bg);
+}
+
+body[data-k-layout="rails"] .k-pics__need .k-pics__hint {
+    grid-column: 1;
+}
+
+body[data-k-layout="rails"] .k-pics__need-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-mono);
+    font-size: 12.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-pics__need-file svg {
+    flex: 0 0 auto;
+    color: var(--k-pics-ok);
+}
+
+body[data-k-layout="rails"] .k-pics__need-get {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    color: var(--k-accent-bright);
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+/* ── Models (§14.5): one row per file — name + state, then family · preset · confirm ── */
+
+body[data-k-layout="rails"] .k-pics__models-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+}
+
+body[data-k-layout="rails"] .k-pics__check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--k-text-dim);
+    font-size: 12.5px;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-pics__models {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-pics__model {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid var(--k-pics-card-border);
+    border-radius: var(--k-pics-radius);
+    background: var(--k-pics-card-bg);
+}
+
+body[data-k-layout="rails"] .k-pics__model-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-pics__model-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-mono);
+    font-size: 12.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-pics__chip[data-state="suggested"] {
+    background: color-mix(in srgb, var(--k-accent-bright) 18%, transparent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-pics__chip[data-state="unknown"] {
+    background: transparent;
+    color: var(--k-text-dim);
+    outline: 1px dashed var(--k-pics-card-border);
+}
+
+body[data-k-layout="rails"] .k-pics__model-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+    align-items: center;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-pics__model[data-state="confirmed"] .k-pics__model-fields {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+}
+
+@media (max-width: 560px) {
+    body[data-k-layout="rails"] .k-pics__model-fields,
+    body[data-k-layout="rails"] .k-pics__model[data-state="confirmed"] .k-pics__model-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ── Recipe cards ─────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-pics__recipes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+body[data-k-layout="rails"] .k-pics__recipe {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--k-pics-card-border);
+    border-radius: var(--k-pics-radius);
+    background: var(--k-pics-card-bg);
+}
+
+body[data-k-layout="rails"] .k-pics__recipe-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-pics__recipe-name {
+    color: var(--k-text-strong);
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] .k-pics__chip {
+    padding: 1px 8px;
+    border-radius: var(--k-radius-pill);
+    background: var(--k-pics-chip-bg);
+    color: var(--k-pics-chip-text);
+    font-size: 11px;
+}
+
+body[data-k-layout="rails"] .k-pics__needs,
+body[data-k-layout="rails"] .k-pics__privacy {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-pics__needs {
+    color: var(--k-pics-warn);
+}
+
+body[data-k-layout="rails"] .k-pics__privacy {
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-pics__needs svg,
+body[data-k-layout="rails"] .k-pics__privacy svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
+}
+
+/* ── Switches (the phone card's recipe, own classes) ──────────────────────────── */
+
+body[data-k-layout="rails"] .k-pics__switchrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+}
+
+body[data-k-layout="rails"] .k-pics__switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 30px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--k-text);
+    font: 400 12.5px var(--k-font-ui);
+    text-align: left;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-pics__switch:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
+body[data-k-layout="rails"] .k-pics__track {
+    position: relative;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 18px;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 70%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-ground-deep);
+    transition: background-color var(--k-motion), border-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-pics__thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--k-text-dim);
+    transition: transform var(--k-motion), background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-pics__switch[aria-checked="true"] .k-pics__track {
+    border-color: var(--k-rose);
+    background: color-mix(in srgb, var(--k-rose) 28%, var(--k-ground-deep));
+}
+
+body[data-k-layout="rails"] .k-pics__switch[aria-checked="true"] .k-pics__thumb {
+    background: var(--k-rose);
+    transform: translateX(14px);
+}
+
+/* ── The card studio's Look group (Card data tab) ─────────────────────────────── */
+
+body[data-k-layout="rails"] .k-studio-look {
+    /* A grid item of the studio's two-column panel: it spans both, like a full-width field. */
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+    padding: 14px 16px;
+    border: 1px solid var(--k-pics-card-border);
+    border-radius: var(--k-pics-radius);
+    background: var(--k-pics-card-bg);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    font-size: 13px;
+}
+
+body[data-k-layout="rails"] .k-studio-look__head {
+    margin: 0;
+    color: var(--k-text-strong);
+    font: 600 13px var(--k-font-ui);
+    letter-spacing: 0.02em;
+}
+
+body[data-k-layout="rails"] .k-studio-look p {
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-studio-look__error {
+    color: var(--k-pics-error);
+    font-size: 12.5px;
+}
+
+body[data-k-layout="rails"] .k-studio-look__lead {
+    color: var(--k-text-dim);
+    font-size: 12.5px;
+}
+
+body[data-k-layout="rails"] .k-studio-look .k-studio-control.k-studio-look__reference {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+}
+
+body[data-k-layout="rails"] .k-studio-look__thumb {
+    flex: 0 0 auto;
+    width: 56px;
+    height: 74px;
+    border: 1px solid var(--k-pics-card-border);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-sunken);
+    object-fit: cover;
+}
+
+/* The card's LoRAs: name · strength · trigger words · remove, then the picker. */
+body[data-k-layout="rails"] .k-studio-look .k-studio-control.k-studio-look__loras {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-studio-look__lora {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1.4fr) 32px;
+    align-items: center;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-studio-look__lora-name {
+    overflow: hidden;
+    color: var(--k-text);
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-studio-look__lora-remove {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--k-radius-md);
+    background: transparent;
+    color: var(--k-text-dim);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-studio-look__lora-remove:hover,
+body[data-k-layout="rails"] .k-studio-look__lora-remove:focus-visible {
+    color: var(--k-text);
+    background: color-mix(in srgb, var(--k-text) 8%, transparent);
+}
+
+@media (max-width: 560px) {
+    body[data-k-layout="rails"] .k-studio-look__lora {
+        grid-template-columns: minmax(0, 1fr) 76px 32px;
+    }
+
+    body[data-k-layout="rails"] .k-studio-look__lora input[type="text"] {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+}
+
+body[data-k-layout="rails"] .k-studio-look__check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--k-text);
+    font-size: 12.5px;
+    cursor: pointer;
+}
+
+@media (max-width: 600px) {
+    body[data-k-layout="rails"] .k-pics__field {
+        flex-wrap: wrap;
+    }
+
+    body[data-k-layout="rails"] .k-pics__label {
+        flex-basis: 100%;
+    }
+
+    body[data-k-layout="rails"] .k-pics__result {
+        padding-left: 0;
+    }
+}

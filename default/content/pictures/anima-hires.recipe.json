@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "revision": 1,
+    "name": "Anima · hires",
+    "tongue": "tags",
+    "needs": ["CLIPLoader", "CLIPTextEncode", "EmptyLatentImage", "ImageScaleBy", "ImageUpscaleWithModel", "KSampler", "SaveImage", "UNETLoader", "UpscaleModelLoader", "VAEDecode", "VAEEncode", "VAELoader"],
+    "slots": { "unet": ["1", "unet_name"], "clip": ["2", "clip_name"], "vae": ["3", "vae_name"], "upscaler": ["10", "model_name"] },
+    "bind": { "prompt": ["4", "text"], "negative": ["5", "text"], "seed": ["7", "seed"], "width": ["6", "width"], "height": ["6", "height"], "reference": null },
+    "outputs": ["16"],
+    "variants": {},
+    "sizes": ["1024x1024", "832x1216", "1216x832", "768x1344", "1344x768"],
+    "hints": { "unet": "anima-base-v1.0.safetensors", "clip": "qwen_3_06b_base.safetensors", "vae": "qwen_image_vae.safetensors", "upscaler": "RealESRGAN_x4plus_anime_6B.pth" },
+    "family": "anima",
+    "pipeline": "bigger",
+    "negative": "worst quality, low quality, score_1, score_2, score_3, artist name, blurry, jpeg artifacts, chromatic aberration",
+    "choices": {}
+}

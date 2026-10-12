@@ -30,7 +30,8 @@
  *   the modal relocates as one unit; each declares `keys: []` and an `adopt` selector, and the
  *   controls inside get no entries of their own.
  *
- * **134 entries.** The arithmetic is asserted in `tests/settings-registry.test.js`.
+ * **134 entries** at slice E; **142** since Pictures slice C (each later addition is receipted in
+ * the test's `NON_CENSUS_IDS`). The arithmetic is asserted in `tests/settings-registry.test.js`.
  *
  * ── Blocks, and the one control that folds into one ───────────────────────────────────────
  * The four v0.1 tabs are made of blocks and nothing else — recon verdicts §1.8, §2.6, §3.7 and
@@ -108,7 +109,7 @@
  * within keep their own stock bindings, their own stock lanes — including DIE lanes — and get
  * no registry entries of their own, which is what keeps the "zero DIE-lane keys" assertion
  * honest rather than merely narrow.
- * @typedef {'select'|'checkbox'|'range'|'number'|'textarea'|'color'|'buttongroup'|'button'|'block'|'kotatsu-layout'|'kotatsu-rails'|'kotatsu-tour'|'kotatsu-whats-new'|'kotatsu-phone'} ControlKind
+ * @typedef {'select'|'checkbox'|'range'|'number'|'textarea'|'color'|'buttongroup'|'button'|'block'|'kotatsu-layout'|'kotatsu-rails'|'kotatsu-tour'|'kotatsu-whats-new'|'kotatsu-phone'|'kotatsu-pictures'} ControlKind
  */
 
 /** @typedef {import('./registry.js').Entry} Entry */
@@ -162,6 +163,7 @@ export const AFFECTS = Object.freeze([
 export const CONTROLS = Object.freeze([
     'select', 'checkbox', 'range', 'number', 'textarea', 'color', 'buttongroup', 'button',
     'block', 'kotatsu-layout', 'kotatsu-rails', 'kotatsu-tour', 'kotatsu-whats-new', 'kotatsu-phone',
+    'kotatsu-pictures',
 ]);
 
 /** Every legal `store` value. See the `EntryStore` typedef in `registry.js` for the lane rules. */
@@ -171,9 +173,10 @@ export const STORES = Object.freeze(['power_user', 'settings', 'localStorage', '
 export const TIERS = Object.freeze(['simple', 'advanced']);
 
 /**
- * The nine tabs — `settings-v0.md` §3 (the original five) and §10 (the four v0.1 additions,
+ * The ten tabs — `settings-v0.md` §3 (the original five), §10 (the four v0.1 additions,
  * in the canvas-v2 order: Connection · Personas · Appearance · Chat & Messages · Streaming &
- * Input · World Info · Extensions · Scripting & Tools · System).
+ * Input · World Info · Extensions · Scripting & Tools · System), and Pictures after Extensions
+ * (`docs/pictures-v0.md` §9, 2026-10-09).
  *
  * The four new tabs are the modal becoming **the configuration home** (§9): Connection adopts
  * the API drawer whole and retires the settings overlay's last surviving job; Personas adopts
@@ -217,6 +220,13 @@ export const SECTIONS = Object.freeze([
         id: 'extensions',
         label: 'Extensions',
         blurb: 'Installed extensions and the panels they render for themselves.',
+    },
+    {
+        // Pictures v0 slice C (`docs/pictures-v0.md` §9, 2026-10-09): the tenth tab. After
+        // Extensions because it replaces what used to be an extension's panel there.
+        id: 'pictures',
+        label: 'Pictures',
+        blurb: 'Drawing pictures in the chat: your ComfyUI, or a key you already have.',
     },
     {
         id: 'scripting',
@@ -1433,31 +1443,13 @@ export const ENTRIES = Object.freeze([
         surface: 'modal',
     },
     {
-        id: 'image_overswipe',
-        keys: ['image_overswipe'],
-        label: 'Image Swipe Behavior',
-        section: 'chat',
-        group: 'Images & Gestures',
-        control: 'select',
-        binding: { by: 'id', ref: 'image_overswipe' },
-        // `index.html:5489-5499`, same `<label for=>` shape as the block above but on an
-        // unnamed `<div>`.
-        adopt: 'div:has(> #image_overswipe)',
-        affects: ['media', 'message-row'],
-        keywords: ['image', 'swipe', 'overswipe', 'gallery', 'stable diffusion', 'image_overswipe'],
-        // Census §1.4 DEAD-CANDIDATE for core: the only read site is the bundled
-        // stable-diffusion extension (`extensions/stable-diffusion/index.js:5350`). Kept
-        // visible — an extension consumer is a consumer, and it is not on any kill list.
-        tier: 'advanced',
-        store: 'power_user',
-        surface: 'modal',
-    },
-    {
         id: 'gestures-checkbox',
         keys: ['gestures'],
         label: 'Gestures',
         section: 'chat',
-        group: 'Images & Gestures',
+        // Was "Images & Gestures" until `image_overswipe` moved to the Pictures tab
+        // (2026-10-09, Pictures slice C).
+        group: 'Gestures',
         control: 'checkbox',
         binding: { by: 'id', ref: 'gestures-checkbox' },
         affects: ['message-row', 'composer'],
@@ -2004,6 +1996,53 @@ export const ENTRIES = Object.freeze([
         tier: 'advanced',
         // Vacuous — `keys: []`. Extension state lives in `extension_settings`, a SURVIVE lane
         // stock already owns end to end; the registry describes the surface, not the lane.
+        store: 'power_user',
+        surface: 'modal',
+    },
+
+    // ─── Pictures ────────────────────────────────────────────────────────────────────────
+    // `docs/pictures-v0.md` §9 (slice C, 2026-10-09): one native panel that owns the whole
+    // `power_user.kotatsu_pictures` leaf, plus the one stock row that is about pictures.
+    {
+        id: 'k-pictures-settings',
+        keys: ['kotatsu_pictures'],
+        label: 'Drawing pictures',
+        section: 'pictures',
+        group: 'Drawing',
+        control: 'kotatsu-pictures',
+        // Drawn by the modal (`#renderNative` → `<k-pictures-settings variant="panel">`), no
+        // stock node. ONE entry for the whole panel, like the phone card: the leaf is one object
+        // (arrays inside are whole leaves, repo CLAUDE.md), and its sub-controls are the panel's
+        // business. The keywords are what modal search reaches the tab through.
+        binding: { by: 'id', ref: 'k-pictures-settings', runtime: true },
+        affects: ['media', 'message-row'],
+        keywords: [
+            'pictures', 'images', 'comfyui', 'image generation', 'gpt-image', 'nano banana', 'gemini',
+            'picture', 'image', 'draw', 'drawing', 'generate image', 'openai images', 'recipe', 'recipes',
+            'workflow', 'checkpoint', 'model slots', 'style', 'stable diffusion', 'kotatsu_pictures',
+        ],
+        tier: 'advanced',
+        store: 'power_user',
+        surface: 'modal',
+    },
+    {
+        id: 'image_overswipe',
+        keys: ['image_overswipe'],
+        label: 'Image Swipe Behavior',
+        section: 'pictures',
+        group: 'Picture swipes',
+        control: 'select',
+        binding: { by: 'id', ref: 'image_overswipe' },
+        // `index.html:5489-5499`, same `<label for=>` shape as the block above but on an
+        // unnamed `<div>`.
+        adopt: 'div:has(> #image_overswipe)',
+        affects: ['media', 'message-row'],
+        keywords: ['image', 'swipe', 'overswipe', 'gallery', 'stable diffusion', 'image_overswipe'],
+        // Its only reader, the bundled stable-diffusion extension, left 2026-10-09 (Pictures
+        // slice 0). Kept: Pictures reads it again for generated-picture swipes
+        // (`docs/pictures-v0.md` §2.3). Moved from Chat & Messages to Pictures the same day
+        // (slice C, §9: "The `image_overswipe` entry moves under it").
+        tier: 'advanced',
         store: 'power_user',
         surface: 'modal',
     },

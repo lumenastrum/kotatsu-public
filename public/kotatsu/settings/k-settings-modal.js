@@ -88,6 +88,7 @@ import { regionsFor } from './region-plan.js';
 import { OPEN_TOUR_EVENT } from '../onboarding/k-onboarding.js';
 import { OPEN_WHATS_NEW_EVENT } from '../whats-new/k-whats-new.js';
 import '../phone/k-phone-card.js';
+import '../pictures/k-pictures-settings.js';
 
 /** @typedef {import('./registry.js').Entry} Entry */
 /** @typedef {import('./registry.js').Section} Section */
@@ -244,6 +245,13 @@ const TAB_ICONS = Object.freeze({
              stroke="currentColor" stroke-width="1.4" aria-hidden="true" focusable="false">
             <rect x="2.4" y="2.4" width="4.6" height="4.6" rx="1.1" /><rect x="9" y="2.4" width="4.6" height="4.6" rx="1.1" />
             <rect x="2.4" y="9" width="4.6" height="4.6" rx="1.1" /><rect x="9" y="9" width="4.6" height="4.6" rx="1.1" />
+        </svg>`,
+    pictures: html`
+        <svg class="k-set-tab-icon" viewBox="0 0 16 16" width="13" height="13" fill="none"
+             stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <rect x="2.2" y="3" width="11.6" height="10" rx="1.4" /><circle cx="6" cy="6.6" r="1.1" />
+            <path d="m2.6 11.6 3.4-3 2.6 2.2 1.8-1.5 3 2.4" />
         </svg>`,
     scripting: html`
         <svg class="k-set-tab-icon" viewBox="0 0 16 16" width="13" height="13" fill="none"
@@ -1223,6 +1231,10 @@ export class KSettingsModal extends LitElement {
         }
         if (entry.control === 'kotatsu-phone') {
             return html`<k-phone-card id=${entry.binding.ref} variant="settings"></k-phone-card>`;
+        }
+        if (entry.control === 'kotatsu-pictures') {
+            // Pictures v0 slice C (docs/pictures-v0.md §9): the whole `kotatsu_pictures` leaf.
+            return html`<k-pictures-settings id=${entry.binding.ref} variant="panel"></k-pictures-settings>`;
         }
         console.warn(`[k-settings-modal] "${entry.control}" is not a native control kind this modal can draw.`);
         return nothing;

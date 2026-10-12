@@ -107,6 +107,12 @@ export const LINES = Object.freeze({
     whatsNewNarrator: Object.freeze([
         'Somebody has to describe the snow. The narrator takes the world, so your cast can stay in character.',
     ]),
+    whatsNewDraw: Object.freeze([
+        'I learned to paint! Ask for a picture and I\'ll fetch my brush. No peeking until I\'m done. Okay, a little peeking.',
+    ]),
+    whatsNewComfy: Object.freeze([
+        'Got a ComfyUI at home? Tell me where it lives and I\'ll tell you which paints are missing. I\'m very organized about paint.',
+    ]),
     whatsNewAgain: Object.freeze([
         'Missed something? Here\'s the latest again. I saved you a mikan.',
     ]),

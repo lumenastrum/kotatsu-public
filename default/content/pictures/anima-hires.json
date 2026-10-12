@@ -1,0 +1,91 @@
+{
+    "1": {
+        "class_type": "UNETLoader",
+        "inputs": { "unet_name": "", "weight_dtype": "default" },
+        "_meta": { "title": "Load Anima" }
+    },
+    "2": {
+        "class_type": "CLIPLoader",
+        "inputs": { "clip_name": "", "type": "stable_diffusion", "device": "default" },
+        "_meta": { "title": "Load Qwen3 0.6B text encoder" }
+    },
+    "3": {
+        "class_type": "VAELoader",
+        "inputs": { "vae_name": "" },
+        "_meta": { "title": "Load Qwen-Image VAE" }
+    },
+    "4": {
+        "class_type": "CLIPTextEncode",
+        "inputs": { "clip": ["2", 0], "text": "" },
+        "_meta": { "title": "Prompt" }
+    },
+    "5": {
+        "class_type": "CLIPTextEncode",
+        "inputs": { "clip": ["2", 0], "text": "" },
+        "_meta": { "title": "Negative" }
+    },
+    "6": {
+        "class_type": "EmptyLatentImage",
+        "inputs": { "width": 1024, "height": 1024, "batch_size": 1 }
+    },
+    "7": {
+        "class_type": "KSampler",
+        "inputs": {
+            "model": ["1", 0],
+            "positive": ["4", 0],
+            "negative": ["5", 0],
+            "latent_image": ["6", 0],
+            "seed": 0,
+            "steps": 30,
+            "cfg": 4,
+            "sampler_name": "er_sde",
+            "scheduler": "simple",
+            "denoise": 1
+        }
+    },
+    "8": {
+        "class_type": "VAEDecode",
+        "inputs": { "samples": ["7", 0], "vae": ["3", 0] }
+    },
+    "10": {
+        "class_type": "UpscaleModelLoader",
+        "inputs": { "model_name": "" },
+        "_meta": { "title": "Load upscaler (RealESRGAN x4 anime)" }
+    },
+    "11": {
+        "class_type": "ImageUpscaleWithModel",
+        "inputs": { "upscale_model": ["10", 0], "image": ["8", 0] }
+    },
+    "12": {
+        "class_type": "ImageScaleBy",
+        "inputs": { "image": ["11", 0], "upscale_method": "lanczos", "scale_by": 0.375 }
+    },
+    "13": {
+        "class_type": "VAEEncode",
+        "inputs": { "pixels": ["12", 0], "vae": ["3", 0] }
+    },
+    "14": {
+        "class_type": "KSampler",
+        "inputs": {
+            "model": ["1", 0],
+            "positive": ["4", 0],
+            "negative": ["5", 0],
+            "latent_image": ["13", 0],
+            "seed": 1,
+            "steps": 20,
+            "cfg": 4,
+            "sampler_name": "er_sde",
+            "scheduler": "simple",
+            "denoise": 0.35
+        },
+        "_meta": { "title": "Refine" }
+    },
+    "15": {
+        "class_type": "VAEDecode",
+        "inputs": { "samples": ["14", 0], "vae": ["3", 0] }
+    },
+    "16": {
+        "class_type": "SaveImage",
+        "inputs": { "images": ["15", 0], "filename_prefix": "Kotatsu/anima-hires" }
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "revision": 1,
+    "name": "SDXL / checkpoint",
+    "tongue": "tags",
+    "needs": ["CLIPTextEncode", "CheckpointLoaderSimple", "EmptyLatentImage", "KSampler", "SaveImage", "VAEDecode"],
+    "slots": { "checkpoint": ["1", "ckpt_name"] },
+    "bind": { "prompt": ["2", "text"], "negative": ["3", "text"], "seed": ["5", "seed"], "width": ["4", "width"], "height": ["4", "height"], "reference": null },
+    "outputs": ["7"],
+    "variants": {},
+    "sizes": ["1024x1024", "832x1216", "1216x832", "768x1344", "1344x768"],
+    "hints": {},
+    "family": "sdxl",
+    "pipeline": "plain",
+    "choices": {}
+}

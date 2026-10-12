@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "revision": 1,
+    "name": "Sprite",
+    "tongue": "tags",
+    "needs": ["CLIPTextEncode", "CheckpointLoaderSimple", "ImageScale", "InvertMask", "JoinImageWithAlpha", "KSampler", "LoadBackgroundRemovalModel", "LoadImage", "RemoveBackground", "SaveImage", "VAEDecode", "VAEEncode"],
+    "slots": { "checkpoint": ["1", "ckpt_name"], "remover": ["9", "bg_removal_name"] },
+    "bind": { "prompt": ["2", "text"], "negative": ["3", "text"], "seed": ["7", "seed"], "width": ["5", "width"], "height": ["5", "height"], "reference": ["4", "image"] },
+    "outputs": ["11"],
+    "variants": {},
+    "sizes": ["832x1216"],
+    "hints": { "remover": "birefnet.safetensors" },
+    "family": "sdxl",
+    "pipeline": "sprite",
+    "choices": {}
+}

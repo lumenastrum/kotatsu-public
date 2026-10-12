@@ -288,7 +288,9 @@ export function resetRowConditionals(el) {
     // `k-mes-metrics` (metrics native v0) joins them for the same reason and one more: the bar
     // is mounted ON DEMAND, only for messages that carry usage, so a reused row must never wear
     // the previous message's numbers. The metrics module puts it back on its own paint drivers.
-    for (const conditional of el.querySelectorAll('.timestamp-icon, .thinking-icon, k-mes-metrics')) conditional.remove();
+    // `k-picture-menu` (pictures v0 slice B) is the same kind of guest: mounted only on messages
+    // Pictures drew, repainted by its own drivers, never carried over to another message.
+    for (const conditional of el.querySelectorAll('.timestamp-icon, .thinking-icon, k-mes-metrics, k-picture-menu')) conditional.remove();
 }
 
 /**

@@ -18,6 +18,7 @@
 
 import { installAnSheet, uninstallAnSheet } from '../an-sheet.js';
 import { installPortraitPeek, uninstallPortraitPeek } from '../../renderer/k-portrait-peek.js';
+import { installPictureSurfaces, uninstallPictureSurfaces } from '../../pictures/surfaces.js';
 import { installDocScrollPin, uninstallDocScrollPin } from '../doc-scroll-pin.js';
 import { installExtDock, uninstallExtDock } from '../ext-dock.js';
 import { installExtGuard, uninstallExtGuard } from '../ext-guard.js';
@@ -257,6 +258,11 @@ export const railsLayout = {
         // under rails. One capture listener on #chat; unmount hands the click back to core.
         installPortraitPeek();
 
+        // Pictures v0 slice B (docs/pictures-v0.md §2.3): the paintbrush's delegated click, the
+        // wand's "Draw a picture", /imagine, the tile menu's paint drivers and the pending rows'
+        // chat door. Unmount takes it all back; classic keeps none of it.
+        installPictureSurfaces();
+
         // Group chat v0 G3: the On-stage strip above the composer. Permanent while rails is up;
         // it hides itself outside a scene.
         installStage();
@@ -315,6 +321,7 @@ export const railsLayout = {
         uninstallExtDock();
         uninstallAnSheet();
         uninstallPortraitPeek();
+        uninstallPictureSurfaces();
         uninstallStage();
         uninstallSpeakerHues();
         uninstallSceneBanner();

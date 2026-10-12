@@ -1,0 +1,9 @@
+{
+ "frames": 62,
+ "cols": 8,
+ "rows": 8,
+ "width": 277,
+ "height": 300,
+ "fps": 12.0,
+ "source": "MiniMax H3 FL2VA, clio-imagegen/kotatsu-chan/h3 (see docs/design/mascot/prompts.md)"
+}

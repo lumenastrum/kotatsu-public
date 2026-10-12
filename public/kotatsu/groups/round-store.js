@@ -8,6 +8,10 @@
  * - `GROUP_WRAPPER_FINISHED` / `GENERATION_STOPPED` → idle
  * - the cue queue → `cued`
  *
+ * A quiet run (`type: 'quiet'`: the picture writer's draft, a summary, any extension's quiet
+ * prompt) also goes through the group wrapper, which drafts a member to borrow their card. Nobody
+ * is speaking, so the round ignores it from start to finish.
+ *
  * Reference-counted install: the first surface to mount binds, the last to unmount unbinds.
  */
 
@@ -27,6 +31,9 @@ let users = 0;
 /** @type {(() => void)|null} */
 let offCue = null;
 
+/** True between the start and finish of a quiet run. */
+let quietRun = false;
+
 function changed() {
     for (const listener of listeners) {
         try {
@@ -39,6 +46,8 @@ function changed() {
 
 /** @param {any} payload */
 function onStarted(payload) {
+    quietRun = payload?.type === 'quiet';
+    if (quietRun) return;
     const queue = Array.isArray(payload?.queue) ? payload.queue.filter((/** @type {unknown} */ a) => typeof a === 'string') : [];
     round = { ...round, queue, writing: '' };
     changed();
@@ -46,12 +55,18 @@ function onStarted(payload) {
 
 /** @param {unknown} chid */
 function onDrafted(chid) {
+    if (quietRun) return;
     const avatar = characters?.[Number(chid)]?.avatar ?? '';
     round = { ...round, writing: String(avatar) };
     changed();
 }
 
-function onFinished() {
+/** @param {any} [payload] */
+function onFinished(payload) {
+    if (quietRun || payload?.type === 'quiet') {
+        quietRun = false;
+        return;
+    }
     round = { ...idleRound(), cued: cueQueue.items };
     changed();
 }
@@ -95,6 +110,7 @@ export const roundStore = {
         eventSource.removeListener(event_types.GENERATION_STOPPED, onFinished);
         offCue?.();
         offCue = null;
+        quietRun = false;
         round = idleRound();
     },
 };

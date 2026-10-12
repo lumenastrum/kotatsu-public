@@ -115,6 +115,11 @@
     <!-- Portrait peek v0 (docs/portrait-peek-v0.md): what a click on a row portrait opens under
          rails. Owns its own classes only; rails-gated, so classic keeps core's zoomed avatar. -->
     <link rel="stylesheet" type="text/css" href="css/portrait-peek.css">
+    <!-- Pictures v0 slice B (docs/pictures-v0.md §2.3): the Picture sheet, the pending row, the
+         tile menu and the paintbrush. Right after the portrait peek, whose sheet it copies, and
+         after the shell-center family it sits over. Rails-gated; classic only hides the
+         paintbrush node that #message_template carries. -->
+    <link rel="stylesheet" type="text/css" href="css/pictures.css">
     <!-- Settings v0 slice B (docs/settings-v0.md §2). The one Kotatsu sheet that lives beside
          its module rather than in css/, because the settings surface is a module folder that
          also holds the control registry. Rails-only and gated the same way as the studio; it
@@ -122,6 +127,9 @@
          primitives the modal borrows. See the sheet's header. -->
     <link rel="stylesheet" type="text/css" href="kotatsu/settings/settings-modal.css">
     <link rel="stylesheet" type="text/css" href="css/phone-card.css">
+    <!-- Pictures v0 slice C (docs/pictures-v0.md §9): the Settings → Pictures panel and the card
+         studio's Look group. Rails-gated, own classes; beside the phone card for the same reason. -->
+    <link rel="stylesheet" type="text/css" href="css/pictures-settings.css">
     <!-- Onboarding v0 (docs/onboarding-v0.md): Mikan-chan's welcome tour. Its own rung just
          under settings and the studio; touches no stock control, so its place in the chain only
          has to be before mobile-styles.css. Rails-gated like its neighbours. -->
@@ -5979,7 +5987,6 @@
                         <div id="assets_container" class="extension_container"></div>
                         <div id="typing_indicator_container" class="extension_container"></div>
                         <div id="expressions_container" class="extension_container"></div>
-                        <div id="sd_container" class="extension_container"></div>
                         <div id="tts_container" class="extension_container"></div>
                         <div id="rvc_container" class="extension_container"></div>
                         <div id="stt_container" class="extension_container"></div>
@@ -7673,7 +7680,7 @@
                             <div title="Message Actions" class="mes_button extraMesButtonsHint fa-solid fa-ellipsis" data-i18n="[title]Message Actions"></div>
                             <div class="extraMesButtons">
                                 <div title="Translate message" class="mes_button mes_translate fa-solid fa-language" data-i18n="[title]Translate message"></div>
-                                <div title="Generate Image" class="mes_button sd_message_gen fa-solid fa-paintbrush" data-i18n="[title]Generate Image"></div>
+                                <div title="Draw a picture" class="mes_button k-picture-gen" data-i18n="[title]Draw a picture"><svg class="k-pic-gen-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.5 9v3a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 12V4A1.5 1.5 0 0 1 4 2.5h3"/><path d="M2.5 11l3-3 2.5 2.5"/><path d="M14 2l-4.5 4.5-1 2.5 2.5-1L15.5 3.5z"/></svg></div>
                                 <div title="Narrate" class="mes_button mes_narrate fa-solid fa-bullhorn" data-i18n="[title]Narrate"></div>
                                 <div title="Prompt" class="mes_button mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt" style="display: none;"></div>
                                 <div title="Exclude message from prompts" class="mes_button mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>

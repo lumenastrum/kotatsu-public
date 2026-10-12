@@ -116,14 +116,6 @@
         "type": "avatar"
     },
     {
-        "filename": "Default_Comfy_Workflow.json",
-        "type": "workflow"
-    },
-    {
-        "filename": "Char_Avatar_Comfy_Workflow.json",
-        "type": "workflow"
-    },
-    {
         "filename": "presets/kobold/Deterministic.json",
         "type": "kobold_preset"
     },
@@ -674,5 +666,53 @@
     {
         "filename": "errors/url-not-found.html",
         "type": "error_page"
+    },
+    {
+        "filename": "pictures/krea2-turbo.json",
+        "type": "picture_recipe"
+    },
+    {
+        "filename": "pictures/krea2-turbo.recipe.json",
+        "type": "picture_recipe"
+    },
+    {
+        "filename": "pictures/krea2-turbo-hires.json",
+        "type": "picture_recipe"
+    },
+    {
+        "filename": "pictures/krea2-turbo-hires.recipe.json",
+        "type": "picture_recipe"
+    },
+    {
+        "filename": "pictures/anima.json",
+        "type": "picture_recipe"
+    },
+    {
+        "filename": "pictures/anima.recipe.json",
+        "type": "picture_recipe"
+    },
+    {
+        "filename": "pictures/anima-hires.json",
+        "type": "picture_recipe"
+    },
+    {
+        "filename": "pictures/anima-hires.recipe.json",
+        "type": "picture_recipe"
+    },
+    {
+        "filename": "pictures/checkpoint.json",
+        "type": "picture_recipe"
+    },
+    {
+        "filename": "pictures/checkpoint.recipe.json",
+        "type": "picture_recipe"
+    },
+    {
+        "filename": "pictures/sprite.json",
+        "type": "picture_recipe"
+    },
+    {
+        "filename": "pictures/sprite.recipe.json",
+        "type": "picture_recipe"
     }
 ]

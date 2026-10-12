@@ -15,6 +15,31 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
     Object.freeze({
+        version: '0.6.0',
+        title: 'Pictures',
+        cards: [
+            {
+                id: 'draw',
+                title: 'Draw the moment',
+                body: 'Choose the paintbrush on a message, or Draw a picture in the wand menu. The writer drafts a prompt from the scene; change what you like, then Draw. Mikan-chan paints while you wait.',
+                line: 'whatsNewDraw',
+                wiki: 'Pictures#drawing-in-the-chat',
+            },
+            {
+                id: 'comfy',
+                title: 'Your own ComfyUI',
+                body: 'Point Settings → Pictures at your ComfyUI. The setup guide names any model that is missing, with a link to download it. Pick a model and preset in the sheet, and give a card its LoRAs.',
+                line: 'whatsNewComfy',
+                wiki: 'Pictures#local-comfyui',
+            },
+        ],
+        notes: [
+            'No GPU? Pictures can also draw with your own OpenAI or Google AI Studio key, the one you added under Connection.',
+            'The old Image Generation extension is gone. Your settings from it carry over to Pictures.',
+            'Kotatsu runs in Docker: see docker/ in the repository. Thank you, @siestamode, for the first outside contribution.',
+        ],
+    }),
+    Object.freeze({
         version: '0.5.0',
         title: 'Scenes',
         cards: [

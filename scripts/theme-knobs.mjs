@@ -71,6 +71,7 @@ const GROUPS = {
     'css/kotatsu-motion.css': 'Motion',
     'css/kotatsu-phone.css': 'Phone',
     'css/phone-card.css': 'Phone card',
+    'css/pictures-settings.css': 'Pictures settings and the studio Look',
     'kotatsu/settings/settings-modal.css': 'Settings',
 };
 

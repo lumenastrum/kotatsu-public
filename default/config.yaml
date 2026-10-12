@@ -386,10 +386,6 @@ gemini:
   # (e.g {{random}} macro or lorebooks not as in-chat injections).
   # Otherwise, you'll just waste money on cache misses.
   enableSystemPromptCache: false
-  # https://ai.google.dev/gemini-api/docs/imagen#imagen-configuration
-  image:
-    # Leave empty to use the API-default value.
-    personGeneration: 'allow_adult'
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
 # Attempt to automatically update server plugins on startup
