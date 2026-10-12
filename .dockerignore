@@ -1,0 +1,18 @@
+# Build context for docker/Dockerfile. Keep personal data, git history and dev-only trees out.
+.git
+.github
+.claude
+node_modules
+data
+backups
+config.yaml
+secrets.json
+*.jsonl
+tests
+docs
+!docs/data-contract.md
+!docs/providers.md
+plugins/*
+!plugins/.gitkeep
+!plugins/package.json
+public/scripts/extensions/third-party

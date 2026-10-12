@@ -1,0 +1,174 @@
+# Kotatsu's official container image: ghcr.io/lumenastrum/kotatsu
+#
+# - Every change to the Docker files: build for amd64 and run the smoke test.
+# - Every published release on the public repo: smoke test, then build amd64 + arm64 and push
+#   <version>, <major>.<minor> and latest, then prove an anonymous pull works.
+# - Manual run: rebuild and republish an existing release tag.
+name: Docker image
+
+on:
+  push:
+    paths:
+      - docker/**
+      - .dockerignore
+      - .github/workflows/docker.yml
+  pull_request:
+    paths:
+      - docker/**
+      - .dockerignore
+      - .github/workflows/docker.yml
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to (re)publish, e.g. v0.6.1
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/lumenastrum/kotatsu
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || '' }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build (amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          load: true
+          tags: kotatsu:smoke
+          build-args: |
+            VERSION=smoke
+            REVISION=${{ github.sha }}
+
+      - name: Smoke test
+        run: |
+          set -eu
+          fail() { echo "::error::$*"; docker logs k1 2>&1 | tail -80 || true; exit 1; }
+          wait_healthy() {
+            for i in $(seq 1 60); do
+              s="$(docker inspect -f '{{.State.Running}} {{.State.Health.Status}}' "$1" 2>/dev/null || echo gone)"
+              [ "$s" = "true healthy" ] && return 0
+              case "$s" in gone|false*) echo "container $1 exited"; return 1 ;; esac
+              sleep 3
+            done
+            return 1
+          }
+
+          echo "== 1. bind mount, arbitrary uid, read-only root, /tmp on tmpfs"
+          mkdir -p "$RUNNER_TEMP/kotatsu"
+          docker run -d --name k1 \
+            --user "$(id -u):$(id -g)" \
+            --read-only --tmpfs /tmp \
+            --add-host=host.docker.internal:host-gateway \
+            --add-host=gateway.docker.internal:host-gateway \
+            -p 8000:8000 \
+            -v "$RUNNER_TEMP/kotatsu:/config" \
+            kotatsu:smoke
+          wait_healthy k1 || fail "container never became healthy"
+
+          code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/)"
+          [ "$code" = 200 ] || fail "GET / returned $code"
+          token="$(curl -sf http://localhost:8000/csrf-token)" || fail "GET /csrf-token failed"
+          echo "$token" | grep -q '"token"' || fail "unexpected /csrf-token reply: $token"
+          echo "$token" | grep -q '"disabled"' && fail "CSRF protection is off"
+
+          [ "$(docker exec k1 id -u)" = "$(id -u)" ] || fail "not running as the requested uid"
+          [ -f "$RUNNER_TEMP/kotatsu/config.yaml" ] || fail "config.yaml was not written under /config"
+          [ -d "$RUNNER_TEMP/kotatsu/data/default-user" ] || fail "user data was not written under /config/data"
+          [ "$(docker exec k1 printenv SILLYTAVERN_KOTATSU_UPDATE_ENABLED)" = false ] || fail "in-app updater is not disabled"
+          docker exec k1 claude --version >/dev/null || fail "claude binary missing from PATH"
+
+          docker stop -t 30 k1
+          [ "$(docker inspect -f '{{.State.ExitCode}}' k1)" = 0 ] || fail "server did not shut down cleanly on SIGTERM"
+          docker logs k1 2>&1 | grep -E 'EROFS|EACCES' && fail "something tried to write outside /config"
+          docker rm k1 >/dev/null
+
+          echo "== 2. named volume, default user"
+          docker run -d --name k2 --read-only --tmpfs /tmp -v kotatsu-smoke:/config kotatsu:smoke
+          wait_healthy k2 || { docker logs k2 2>&1 | tail -80; fail "named-volume container never became healthy"; }
+          [ "$(docker exec k2 id -u)" = 1000 ] || fail "default user is not uid 1000"
+          docker stop -t 30 k2 >/dev/null
+          docker rm k2 >/dev/null
+
+          echo "== 3. unwritable /config gives a clear error"
+          mkdir -p "$RUNNER_TEMP/locked" && chmod 0555 "$RUNNER_TEMP/locked"
+          if docker run --rm --user 4242:4242 -v "$RUNNER_TEMP/locked:/config" kotatsu:smoke > out.txt 2>&1; then
+            fail "started with an unwritable /config"
+          fi
+          grep -q "can't write to /config" out.txt || { cat out.txt; fail "missing the ownership hint"; }
+
+          echo "All smoke checks passed."
+
+  publish:
+    needs: smoke
+    if: github.repository == 'lumenastrum/kotatsu-public' && (github.event_name == 'release' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Resolve version
+        id: ver
+        run: |
+          tag="${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}"
+          version="${tag#v}"
+          echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$' || { echo "::error::not a release tag: $tag"; exit 1; }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "minor=$(echo "$version" | cut -d. -f1-2)" >> "$GITHUB_OUTPUT"
+          case "$version" in *-*) echo "stable=false" >> "$GITHUB_OUTPUT" ;; *) echo "stable=true" >> "$GITHUB_OUTPUT" ;; esac
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ver.outputs.tag }}
+
+      - name: Source revision
+        id: src
+        run: |
+          echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (amd64 + arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.ver.outputs.version }}
+            ${{ steps.ver.outputs.stable == 'true' && format('{0}:{1}', env.IMAGE, steps.ver.outputs.minor) || '' }}
+            ${{ steps.ver.outputs.stable == 'true' && format('{0}:latest', env.IMAGE) || '' }}
+          build-args: |
+            VERSION=${{ steps.ver.outputs.version }}
+            REVISION=${{ steps.src.outputs.revision }}
+            CREATED=${{ steps.src.outputs.created }}
+
+      - name: Anonymous pull works
+        run: |
+          docker logout ghcr.io || true
+          if ! docker buildx imagetools inspect "$IMAGE:${{ steps.ver.outputs.version }}"; then
+            echo "::error::The image was pushed but can't be pulled anonymously. Set the package to Public: https://github.com/users/lumenastrum/packages/container/kotatsu/settings"
+            exit 1
+          fi

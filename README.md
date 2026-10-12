@@ -210,7 +210,7 @@ Then open `http://localhost:8000` (or whatever port your `config.yaml` says).
 
 ### Docker
 
-There's a Dockerfile and a compose file in [`docker/`](docker/docker.md), contributed by [siestamode](https://github.com/siestamode). The image builds from the public repo, keeps your data and config in volumes, and the Claude bridge signs in with one `docker exec`. The ChatGPT bridge isn't supported in Docker yet. `docker/docker.md` has the details.
+There's an official image, `ghcr.io/lumenastrum/kotatsu`, for amd64 and arm64. It keeps everything in one folder mounted at `/config`, runs as a regular user, and the Claude bridge signs in with one `docker exec`. The ChatGPT bridge isn't supported in Docker yet. [`docker/docker.md`](docker/docker.md) has the compose file, security and reverse-proxy notes, and backups. The Docker setup was first contributed by [siestamode](https://github.com/siestamode).
 
 ## The Claude bridge
 

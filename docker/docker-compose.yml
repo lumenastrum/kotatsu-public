@@ -1,23 +1,19 @@
 services:
   kotatsu:
-    build:
-      # The Dockerfile pulls the source from GitHub itself; this folder only holds the Dockerfile.
-      context: .
-      args:
-        REF: main   # or a tag / commit
+    image: ghcr.io/lumenastrum/kotatsu:latest   # or pin a release: ghcr.io/lumenastrum/kotatsu:0.6.1
     container_name: kotatsu
     restart: unless-stopped
+    # Run as the owner of ./kotatsu on the host. Find yours with `id -u` and `id -g`.
+    user: "1000:1000"
     ports:
       - "8000:8000"
     volumes:
-      - kotatsu-data:/app/data
-      - kotatsu-config:/app/config
-      - kotatsu-claude:/home/node/.claude
+      - ./kotatsu:/config          # everything Kotatsu keeps; back up this one folder
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
     extra_hosts:
+      # Lets the IP whitelist recognize your host. Linux needs these; Docker Desktop resolves them itself.
       - "host.docker.internal:host-gateway"
       - "gateway.docker.internal:host-gateway"
-
-volumes:
-  kotatsu-data:
-  kotatsu-config:
-  kotatsu-claude:
