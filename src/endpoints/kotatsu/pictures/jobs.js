@@ -107,6 +107,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
  * @property {number|null} unreachableSince
  * @property {number} lostChecks
  * @property {string} [model]               key lanes: the provider model id
+ * @property {string} [previewMethod]       ComfyUI lane: this prompt's live preview method (asked for when previews are shown)
  * @property {AbortController} [controller] key lanes: aborts the provider call
  */
 
@@ -598,7 +599,7 @@ export function createJobManager({
             if (isTerminal(job)) return;
             const promptId = randomUUID();
             register(job, promptId);
-            const reply = await client.queuePrompt(job.graph, promptId);
+            const reply = await client.queuePrompt(job.graph, promptId, { previewMethod: job.previewMethod });
             if (reply?.prompt_id && reply.prompt_id !== promptId) {
                 // A build that mints its own ids.
                 byPrompt.delete(promptId);
@@ -666,6 +667,7 @@ export function createJobManager({
          * @param {string} [params.owner] Handle of the requesting user
          * @param {string[]} [params.outputsOrder] The recipe's output node ids, first in the result
          * @param {Job['reference']} [params.reference] Reference image to upload first
+         * @param {string} [params.previewMethod] Ask ComfyUI for live preview frames this way (`auto`)
          * @returns {Job} The job
          */
         /**
@@ -757,7 +759,7 @@ export function createJobManager({
             return job;
         },
 
-        create({ client, graph, graphSha, seed, recipe, purpose, character, userImages, owner = '', outputsOrder = [], reference = null }) {
+        create({ client, graph, graphSha, seed, recipe, purpose, character, userImages, owner = '', outputsOrder = [], reference = null, previewMethod = undefined }) {
             prune();
             /** @type {Job} */
             const job = {
@@ -787,6 +789,7 @@ export function createJobManager({
                 outputsOrder,
                 userImages,
                 reference,
+                previewMethod,
                 finalizing: false,
                 released: false,
                 unreachableSince: null,

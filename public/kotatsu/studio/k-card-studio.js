@@ -77,7 +77,25 @@ import {
     readiness,
 } from './manifest.js';
 
+// Defines <k-sprite-studio> (the Sprites tab's body).
+import '../sprites/k-sprite-studio.js';
+
 export { OPEN_STUDIO_EVENT } from './manifest.js';
+
+/**
+ * Kotatsu's own tab (Pictures slice F step 4): the character's sprites and framing. Not in the manifest, whose
+ * tabs each BORROW core fields (a test holds that line); this one is all Kotatsu markup, like the Look group.
+ * @type {import('./manifest.js').StudioTab}
+ */
+const SPRITES_TAB = Object.freeze({
+    id: 'sprites',
+    label: 'Sprites',
+    blurb: 'How they look on the stage: one picture per feeling, and where they stand.',
+    fields: Object.freeze([]),
+});
+
+/** Every tab the studio shows, in strip order. */
+const ALL_TABS = Object.freeze([...TABS, SPRITES_TAB]);
 
 /**
  * Stacking rungs, declared here and consumed by `--k-studio-z-*` in `public/css/studio.css`.
@@ -593,6 +611,9 @@ export class KCardStudio extends LitElement {
         // The branch map paints at 30000, above this sheet. If it is up, it is what the reader
         // is looking at.
         if (document.querySelector('k-branch-map')) return;
+        // The Sprites tab's sheets (Touch-up, Generate) open over us and close on their own Escape; this listener is
+        // installed first, so without the stand-down one press closed the sheet's whole studio.
+        if (document.querySelector('k-sprite-touchup[open], k-sprite-generate[open]')) return;
         // An open `<select>` swallows Escape itself; a Kotatsu tab button never should.
         event.stopImmediatePropagation();
         event.preventDefault();
@@ -698,6 +719,22 @@ export class KCardStudio extends LitElement {
             this._tab = 'card';
             return false;
         }
+    }
+
+    /**
+     * The Sprites tab's body (`<k-sprite-studio>`). Edit mode only: a card that does not exist yet has no sprite
+     * folder. Uploads and knobs save on their own; the borrowed form never sees them.
+     * @returns {unknown} A Lit template.
+     */
+    #renderSprites() {
+        const card = this.#editedCard();
+        if (!card) {
+            return html`<section class="k-studio-look" aria-label="Sprites">
+                <h3 class="k-studio-look__head">Sprites</h3>
+                <p class="k-studio-look__lead">Once the card is created, its sprites can be added here.</p>
+            </section>`;
+        }
+        return html`<k-sprite-studio variant="tab" .character=${card}></k-sprite-studio>`;
     }
 
     /**
@@ -873,7 +910,7 @@ export class KCardStudio extends LitElement {
     /* ── render ─────────────────────────────────────────────────────────────── */
 
     render() {
-        const tab = TABS.find(entry => entry.id === this._tab) ?? TABS[0];
+        const tab = ALL_TABS.find(entry => entry.id === this._tab) ?? ALL_TABS[0];
         return html`
             <div class="k-studio-scrim" @click=${() => this.close()}></div>
             <div class="k-studio-sheet" role="dialog" aria-modal="true" aria-label=${this.#title()}>
@@ -884,7 +921,7 @@ export class KCardStudio extends LitElement {
                         ${this.#renderTabStrip()}
                         <p class="k-studio-blurb">${tab.blurb}</p>
                         <div class="k-studio-panels">
-                            ${TABS.map(entry => this.#renderPanel(entry))}
+                            ${ALL_TABS.map(entry => this.#renderPanel(entry))}
                         </div>
                     </section>
                 </div>
@@ -946,11 +983,11 @@ export class KCardStudio extends LitElement {
             </aside>`;
     }
 
-    /** @returns {unknown} The four tab buttons. */
+    /** @returns {unknown} The tab buttons: the manifest's four and Kotatsu's own. */
     #renderTabStrip() {
         return html`
             <div class="k-studio-tabs" role="tablist" aria-label="Card sections">
-                ${TABS.map(tab => html`
+                ${ALL_TABS.map(tab => html`
                     <button
                         type="button"
                         role="tab"
@@ -985,7 +1022,7 @@ export class KCardStudio extends LitElement {
                 role="tabpanel"
                 aria-labelledby=${`k-studio-tab-${tab.id}`}
                 ?hidden=${!active}
-            >${tab.fields.map(field => this.#renderField(field))}${tab.id === 'card' ? this.#renderLook() : nothing}</div>`;
+            >${tab.fields.map(field => this.#renderField(field))}${tab.id === 'card' ? this.#renderLook() : nothing}${tab.id === SPRITES_TAB.id ? this.#renderSprites() : nothing}</div>`;
     }
 
     /**

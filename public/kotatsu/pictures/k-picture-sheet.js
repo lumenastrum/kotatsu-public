@@ -7,6 +7,14 @@
  * size, seed (random or pinned, the number visible), the reference switch when the recipe has a
  * reference slot, and Draw. It remembers the last choices through the settings leaf.
  *
+ * Two steps (issue #10): **Set up** (subject, model, pipeline, preset, LoRAs, size, seed; nothing is
+ * written yet, the button reads Write scene) → **Write and draw** (the writer is called ONCE, with the
+ * subject and the pipeline's tongue; the prompt shows up editable and the button becomes Draw). A
+ * subject change after that offers a rewrite instead of firing one. Free, a sheet without a writer, and
+ * a prefilled prompt (Edit prompt) open on the second step. Models: the sheet opens on the last model
+ * used (`openingPick`), a model only ever draws with a pipeline of its own family, and a family with no
+ * pipeline here is a state ("No KREA 2 pipeline installed"), never a blank select.
+ *
  * On a key lane (OpenAI, Gemini; slice E) there is no recipe, seed or negative: the sheet names the
  * lane, model and what leaves the machine, offers the lane's own shapes, drafts in prose, and
  * always offers the reference.
@@ -25,9 +33,9 @@ import { LANES, PURPOSES } from './contract.js';
 import { draftPrompt, getPendingReference, hasWriter, lookOf, picturesSettings, setPendingReference, storedKeyLane, updatePicturesSettings } from './doors.js';
 import { listLoras, listModels, listRecipes } from './jobs-client.js';
 import {
-    LORA_BASE_NAMES, MAX_LORAS, PURPOSE_LABELS, cardLorasFor, groupLoras, isKeyLane, isPurpose, joinNegatives, keyLaneRequest, keyLaneShapes, loraRequest,
-    confirmedByFamily, needsLine, normalizeLoras, parseSize, pickRecipe, pipelineLabel, pipelinesFor, recipeBase, shapeLabel, sizesFor,
-    startingModel, withName, withTriggers, withoutTrigger,
+    LORA_BASE_NAMES, MAX_LORAS, PURPOSE_LABELS, SHEET_STEPS, cardLorasFor, groupLoras, isKeyLane, isPurpose, joinNegatives, keyLaneRequest, keyLaneShapes, loraRequest,
+    confirmedByFamily, familyName, needsLine, normalizeLoras, openingPick, openingStep, pairsWith, parseSize, pickRecipe, pipelineFor, pipelineLabel, pipelinesFor,
+    recipeBase, shapeLabel, sizesFor, stepOnSubject, withName, withTriggers, withoutTrigger,
 } from './picture-model.js';
 import { PRIVACY_LINES, serverKey } from './settings-model.js';
 
@@ -98,6 +106,8 @@ export class KPictureSheet extends LitElement {
         _loraList: { state: true },
         _loraError: { state: true },
         _showAllLoras: { state: true },
+        _step: { state: true },
+        _rewriteOffer: { state: true },
     };
 
     /** @type {number|undefined} Message the picture is about (This moment). */
@@ -125,6 +135,8 @@ export class KPictureSheet extends LitElement {
     #draftNegative = '';
     /** The tongue the prompt in the box was drafted in ('' = typed, or nothing drafted yet). */
     #draftTongue = '';
+    /** The subject the prompt in the box was written (or opened, or typed) for; '' = nothing in it yet. */
+    #madeFor = '';
     #onKeydown = (/** @type {KeyboardEvent} */ event) => this.#handleKeydown(event);
 
     constructor() {
@@ -160,6 +172,10 @@ export class KPictureSheet extends LitElement {
         this._families = {};
         /** @type {{file: string, family: string, preset: string}|null} The model picked for a family pipeline; null = recipe mode or an own workflow. */
         this._model = null;
+        /** @type {'setup'|'write'} Set up, or write and draw (issue #10). */
+        this._step = SHEET_STEPS.SETUP;
+        /** Whether to offer a rewrite: the subject changed after the prompt was written. */
+        this._rewriteOffer = false;
     }
 
     /** Light DOM: `public/css/pictures.css` owns every rule. */
@@ -219,9 +235,15 @@ export class KPictureSheet extends LitElement {
             this._negative = prefill.negative ?? '';
             this.#negativeEdited = typeof prefill.negative === 'string';
             this.#dirty = true;
-        } else if (typeof prefill.free === 'string') {
+            this.#madeFor = this.purpose;
+        } else if (typeof prefill.free === 'string' && (this.purpose === PURPOSES.FREE || !writer)) {
+            // With a writer, on another subject, the free words go to it with Write scene (`#draft`), not into the box.
             this._prompt = prefill.free;
+            this.#madeFor = this.purpose;
         }
+        // Nothing is written on open (issue #10): set up first, unless the prompt is already there or the
+        // person writes it themselves.
+        this._step = openingStep({ prefillPrompt: typeof prefill.prompt === 'string', purpose: this.purpose, writer });
 
         try {
             this._recipes = await listRecipes({ fresh: true });
@@ -243,7 +265,6 @@ export class KPictureSheet extends LitElement {
 
         if (!this.#keyLane) await this.#loadModelPick(settings, prefill);
         if (!this.#keyLane) await this.#loadLoras(settings, prefill);
-        if (typeof prefill.prompt !== 'string' && this.purpose !== PURPOSES.FREE) void this.#draft();
     }
 
     /** @returns {string} This sheet's server key (models are set up per server). */
@@ -257,9 +278,9 @@ export class KPictureSheet extends LitElement {
     }
 
     /**
-     * Model mode starts on: the picture's own model (Edit prompt), else an own workflow when the
-     * purpose's recipe is one, else the recipe family's last-used or first set-up model, else any
-     * family's. With no model set up anywhere the sheet stays in recipe mode.
+     * Model mode starts where `openingPick` says (issue #10): the picture's own model (Edit prompt), else the last
+     * model used on this server with its pipeline and preset, else the purpose recipe's family. With no model set up
+     * anywhere the sheet stays in recipe mode. A model only ever gets a recipe of its own family, or none (a state).
      * @param {import('./contract.js').PicturesSettings} settings
      * @param {SheetPrefill} prefill
      */
@@ -273,36 +294,22 @@ export class KPictureSheet extends LitElement {
         } catch {
             return;
         }
-        const recipes = this._recipes ?? [];
-        const recipe = this.#recipe;
-        const last = settings.lastModel?.[this.#server];
-        /** @type {{file: string, family: string, preset: string}|null} */
-        let pick = null;
-        const record = prefill.model ? saved?.[prefill.model] : null;
-        if (prefill.model && record) {
-            pick = { file: prefill.model, family: record.family, preset: prefill.preset && this._families[record.family]?.presets[prefill.preset] ? prefill.preset : record.preset };
-        } else if (recipe && !recipe.family) {
-            return; // an own workflow: drawn as it is
-        } else {
-            const defaultOf = (/** @type {string|null|undefined} */ f) => (f ? this._families[f]?.defaultPreset : undefined);
-            const lastFamily = last?.file ? saved?.[last.file]?.family : null;
-            const firstFamily = confirmedByFamily(saved, this._families)[0]?.family.id ?? null;
-            pick = startingModel(recipe?.family, saved, last, defaultOf(recipe?.family))
-                ?? startingModel(lastFamily, saved, last, defaultOf(lastFamily))
-                ?? startingModel(firstFamily, saved, last, defaultOf(firstFamily));
-        }
-        if (!pick) return;
-        this._model = pick;
-        if (this.#recipe?.family !== pick.family) {
-            const pipelines = pipelinesFor(recipes, pick.family);
-            const next = pipelines.find(p => p.id === last?.pipeline) ?? pipelines.find(p => p.pipeline === this.#recipe?.pipeline) ?? pipelines[0];
-            if (next) this.#chooseRecipe(next.id);
-        }
+        const pick = openingPick({
+            prefill: { model: prefill.model, preset: prefill.preset, recipe: prefill.recipe },
+            purposeRecipe: this.#recipe,
+            recipes: this._recipes ?? [],
+            saved,
+            families: this._families,
+            last: settings.lastModel?.[this.#server],
+        });
+        this._model = pick.model;
+        if (pick.recipe !== this._recipeId) this.#chooseRecipe(pick.recipe);
         this.#syncNegative();
     }
 
     /**
-     * "Draw with": a set-up model (`model:<file>`) or an own workflow (`recipe:<id>`).
+     * "Draw with": a set-up model (`model:<file>`) or an own workflow (`recipe:<id>`). A model takes a pipeline of
+     * its own family (the current one when it is, then the last one used, then the same kind), or none.
      * @param {string} value
      */
     #chooseDrawWith(value) {
@@ -315,11 +322,9 @@ export class KPictureSheet extends LitElement {
         const record = this._settings?.models?.[this.#server]?.[file];
         if (!record) return;
         this._model = { file, family: record.family, preset: record.preset };
-        const pipelines = pipelinesFor(this._recipes ?? [], record.family);
-        const next = (this.#recipe?.family === record.family ? this.#recipe : null)
-            ?? pipelines.find(p => p.pipeline === this.#recipe?.pipeline) ?? pipelines[0];
-        if (next) this.#chooseRecipe(next.id);
-        else this.#syncNegative();
+        const last = this._settings?.lastModel?.[this.#server];
+        const next = pipelineFor(this._recipes ?? [], record.family, { prefer: [this._recipeId, last?.pipeline], kind: this.#recipe?.pipeline ?? '' });
+        this.#chooseRecipe(next?.id ?? '');
     }
 
     /** @returns {boolean} Whether ComfyUI did not answer when the sheet asked for its LoRAs (§14.6). */
@@ -411,7 +416,7 @@ export class KPictureSheet extends LitElement {
         });
     }
 
-    /** Every active LoRA's trigger goes into the prompt (Andres, 2026-10-10: on their own, visible). */
+    /** Every active LoRA's trigger goes into the prompt (product call, 2026-10-10: on their own, visible). */
     #applyTriggers() {
         if (this.#keyLane) return;
         const triggers = this._loras.map(l => l.trigger).filter(Boolean);
@@ -473,12 +478,13 @@ export class KPictureSheet extends LitElement {
         const ticket = ++this.#draftTicket;
         this._drafting = true;
         this._draftError = '';
+        const purpose = this.purpose;
         try {
             const look = await lookOf(this.character);
-            const free = this.purpose === PURPOSES.FREE ? this._prompt : (this.prefill?.free ?? '');
+            const free = purpose === PURPOSES.FREE ? this._prompt : (this.prefill?.free ?? '');
             const tongue = this.#tongue;
             const result = await draftPrompt({
-                purpose: this.purpose,
+                purpose,
                 tongue,
                 messageIndex: this.messageIndex,
                 free,
@@ -494,6 +500,8 @@ export class KPictureSheet extends LitElement {
                 this.#draftNegative = result.negative;
                 this.#syncNegative();
                 this.#dirty = false;
+                this.#madeFor = purpose;
+                this._rewriteOffer = this.purpose !== purpose;
             }
         } catch (error) {
             if (ticket !== this.#draftTicket) return;
@@ -526,6 +534,7 @@ export class KPictureSheet extends LitElement {
             this.#draftTongue = '';
             this._retongue = '';
             this.#draftNegative = '';
+            this.#madeFor = '';
             this.#syncNegative();
             void this.updateComplete.then(() => /** @type {HTMLElement|null} */ (this.querySelector('.k-pic-prompt'))?.focus({ preventScroll: true }));
         }
@@ -533,7 +542,24 @@ export class KPictureSheet extends LitElement {
         const target = (this._recipes ?? []).find(r => r.id === byPurpose);
         // In model mode a purpose's recipe only switches the pipeline within the picked model's family.
         if (target && (!this.#modelMode || (this._model ? target.family === this._model.family : !target.family))) this.#chooseRecipe(target.id);
-        if (purpose !== PURPOSES.FREE) void this.#draft();
+        // Never a writer call here (issue #10): on set up nothing is written yet; a written prompt stays and a
+        // rewrite is offered; Free is the person's own page.
+        const next = stepOnSubject({ step: this._step, purpose, writer: this._writer, prompt: this._prompt, madeFor: this.#madeFor });
+        this._step = next.step;
+        this._rewriteOffer = next.offerRewrite;
+        if (next.step === SHEET_STEPS.SETUP) this._draftError = '';
+    }
+
+    /**
+     * Write scene: the writer, once, for the chosen subject in the chosen pipeline's tongue. The sheet moves to the
+     * writing step at once (the prompt box shows "Writing a prompt…"), so a writer that fails leaves a box to type in.
+     */
+    async #write() {
+        if (this.#setupBlocker || this._drafting) return;
+        this._step = SHEET_STEPS.WRITE;
+        this._rewriteOffer = false;
+        void this.updateComplete.then(() => /** @type {HTMLElement|null} */ (this.querySelector('.k-pic-prompt'))?.focus({ preventScroll: true }));
+        await this.#draft({ force: true });
     }
 
     /** @param {string} id */
@@ -566,6 +592,7 @@ export class KPictureSheet extends LitElement {
     #onPromptInput(event) {
         this._prompt = /** @type {HTMLTextAreaElement} */ (event.currentTarget).value;
         this.#dirty = true;
+        if (!this.#madeFor) this.#madeFor = this.purpose;
     }
 
     #pinSeed() {
@@ -578,20 +605,25 @@ export class KPictureSheet extends LitElement {
         if (Number.isSafeInteger(value) && value >= 0) this._seed = value;
     }
 
-    /** @returns {string} Why Draw is off, or '' when it is on. */
-    get #blocker() {
+    /**
+     * Why the set-up is not drawable (Write scene and Draw both stop here), or ''. A model with no pipeline of its
+     * own family is a stop, never a fall-back to another family's recipe (issue #10).
+     * @returns {string}
+     */
+    get #setupBlocker() {
         if (this._settings === null) return 'loading';
-        if (this.#keyLane) {
-            if (!this._prompt.trim()) return 'prompt';
-            if (!keyLaneShapes(this._settings).shapes.includes(this._size)) return 'size';
-            return '';
-        }
+        if (this.#keyLane) return keyLaneShapes(this._settings).shapes.includes(this._size) ? '' : 'size';
         if (this._recipes === null) return 'loading';
+        if (this._model && !pairsWith(this._model, this.#recipe)) return 'pipeline';
         if (!this.#recipe) return 'recipe';
         if (needsLine(this.#recipe)) return 'needs';
-        if (!this._prompt.trim()) return 'prompt';
         if (!parseSize(this._size)) return 'size';
         return '';
+    }
+
+    /** @returns {string} Why Draw is off, or '' when it is on. */
+    get #blocker() {
+        return this.#setupBlocker || (this._prompt.trim() ? '' : 'prompt');
     }
 
     /** The reference this job would send, '' for none. */
@@ -633,6 +665,7 @@ export class KPictureSheet extends LitElement {
             return;
         }
         const recipe = /** @type {import('./contract.js').Recipe} */ (this.#recipe);
+        if (!pairsWith(this._model, recipe)) return; // the blocker says so too; a pairing like this never leaves
         const size = /** @type {{width: number, height: number}} */ (parseSize(this._size));
         /** @type {import('./contract.js').PictureRequest} */
         const request = {
@@ -665,7 +698,11 @@ export class KPictureSheet extends LitElement {
                 seedPinned: this._seedPinned,
                 useReference: this._useReference,
             },
-            ...(this._model ? { lastModel: { [this.#server]: { file: this._model.file, preset: this._model.preset, pipeline: recipe.id } } } : {}),
+            // The last model, with a pipeline of its own family (the blocker guarantees it); an own workflow drawn in
+            // model mode is remembered as "no model, this workflow", so the next sheet opens on it.
+            ...(this._model
+                ? { lastModel: { [this.#server]: { file: this._model.file, preset: this._model.preset, pipeline: recipe.id } } }
+                : this.#modelMode ? { lastModel: { [this.#server]: { file: '', preset: '', pipeline: recipe.id } } } : {}),
         });
         this.close();
         this.onDraw(request);
@@ -681,9 +718,10 @@ export class KPictureSheet extends LitElement {
                     <h2 class="k-pic-title">${this.heading}</h2>
                     <button type="button" class="k-pic-close" aria-label="Close" @click=${() => this.close()}>${icons.close}</button>
                 </header>
-                <div class="k-pic-body">
+                ${this.#renderSteps()}
+                <div class="k-pic-body" data-step=${this._step}>
                     ${this.#renderPurposes()}
-                    ${this.#renderPrompt()}
+                    ${this._step === SHEET_STEPS.WRITE ? this.#renderPrompt() : this.#renderSetupNote()}
                     ${this.#unreachable ? this.#renderUnreachable() : nothing}
                     ${settings && this.#keyLane ? this.#renderLaneNote(settings) : this.#modelMode ? this.#renderDrawWith() : this.#renderRecipe()}
                     ${settings && !this.#keyLane ? this.#renderLoras() : nothing}
@@ -692,10 +730,42 @@ export class KPictureSheet extends LitElement {
                 </div>
                 <footer class="k-pic-actions">
                     ${this.#renderBlockerLine()}
-                    <button type="button" class="k-pic-btn k-pic-btn--primary k-pic-draw"
-                            ?disabled=${!!this.#blocker} @click=${() => this.#draw()}>Draw</button>
+                    ${this.#renderPrimary()}
                 </footer>
             </aside>`;
+    }
+
+    /** The step's one button: Write scene (set up) or Draw (write and draw). */
+    #renderPrimary() {
+        if (this._step === SHEET_STEPS.WRITE) {
+            return html`<button type="button" class="k-pic-btn k-pic-btn--primary k-pic-draw"
+                ?disabled=${!!this.#blocker} @click=${() => this.#draw()}>Draw</button>`;
+        }
+        return html`<button type="button" class="k-pic-btn k-pic-btn--primary k-pic-write"
+            ?disabled=${!!this.#setupBlocker || this._drafting} @click=${() => void this.#write()}>Write scene</button>`;
+    }
+
+    /** The two steps, under the title: where the sheet is. */
+    #renderSteps() {
+        const steps = /** @type {const} */ ([[SHEET_STEPS.SETUP, 'Set up'], [SHEET_STEPS.WRITE, 'Write and draw']]);
+        return html`
+            <ol class="k-pic-steps" aria-label="Steps">
+                ${steps.map(([step, label], i) => html`
+                    <li class="k-pic-step${step === this._step ? ' is-on' : ''}" data-step=${step} aria-current=${step === this._step ? 'step' : nothing}>
+                        <span class="k-pic-step-n" aria-hidden="true">${i + 1}</span><span>${label}</span>
+                    </li>`)}
+            </ol>`;
+    }
+
+    /** Set up: no prompt yet; what Write scene will do, in the words of the chosen pipeline's tongue. */
+    #renderSetupNote() {
+        const tags = this.#tongue === 'tags';
+        const subject = withName(PURPOSE_LABELS[/** @type {keyof typeof PURPOSE_LABELS} */ (this.purpose)] ?? '', this.characterName);
+        return html`
+            <p class="k-pic-hint k-pic-setup-note">
+                Choose what to draw and how. <b>Write scene</b> drafts the prompt for <b>${subject}</b> in
+                ${tags ? 'tags' : 'plain description'}, the way this ${this.#keyLane ? 'lane' : 'pipeline'} reads; you can edit it before you draw.
+            </p>`;
     }
 
     #renderPurposes() {
@@ -719,7 +789,7 @@ export class KPictureSheet extends LitElement {
             <section class="k-pic-field">
                 <div class="k-pic-label-row">
                     <label class="k-pic-label" for="k-pic-prompt">Prompt</label>
-                    ${this._writer ? html`
+                    ${this._writer && !free ? html`
                         <button type="button" class="k-pic-link" ?disabled=${this._drafting}
                                 @click=${() => this.#draft({ force: true })}>${icons.redo}<span>Write it again</span></button>` : nothing}
                 </div>
@@ -728,6 +798,7 @@ export class KPictureSheet extends LitElement {
                           aria-busy=${this._drafting ? 'true' : 'false'}
                           .value=${this._prompt} @input=${this.#onPromptInput}></textarea>
                 ${hint ? html`<p class="k-pic-hint" aria-live="polite">${hint}</p>` : nothing}
+                ${this._rewriteOffer && !this._drafting && !free ? this.#renderRewriteOffer() : nothing}
                 ${this._retongue && !this._drafting ? this.#renderRetongue() : nothing}
                 ${this.#ignoresNegative ? html`<p class="k-pic-hint k-pic-no-negative">This preset ignores a negative prompt (CFG 1).</p>` : nothing}
                 ${this.#keyLane || this.#ignoresNegative ? nothing : html`<details class="k-pic-negative" ?open=${!!this._negative}>
@@ -737,6 +808,19 @@ export class KPictureSheet extends LitElement {
                               @input=${(/** @type {Event} */ e) => { this._negative = /** @type {HTMLTextAreaElement} */ (e.currentTarget).value; this.#negativeEdited = true; }}></textarea>
                 </details>`}
             </section>`;
+    }
+
+    /** The offer after the subject changed on the writing step: rewrite for the new one, or keep the prompt. */
+    #renderRewriteOffer() {
+        const label = (/** @type {string} */ p) => withName(PURPOSE_LABELS[/** @type {keyof typeof PURPOSE_LABELS} */ (p)] ?? p, this.characterName);
+        return html`
+            <p class="k-pic-retongue k-pic-rewrite-offer" role="status">
+                <span>This prompt was written for ${label(this.#madeFor)}.</span>
+                <button type="button" class="k-pic-link" data-k-pic-rewrite="rewrite"
+                        @click=${() => { this._rewriteOffer = false; void this.#draft({ force: true }); }}>${icons.redo}<span>Write it for ${label(this.purpose)}${this.#dirty ? ' (replaces your edits)' : ''}</span></button>
+                <button type="button" class="k-pic-link" data-k-pic-rewrite="keep"
+                        @click=${() => { this._rewriteOffer = false; this.#madeFor = this.purpose; }}>Keep</button>
+            </p>`;
     }
 
     /** The offer after a switch to a recipe that reads the other tongue (prose ↔ tags). */
@@ -811,12 +895,17 @@ export class KPictureSheet extends LitElement {
             </section>
             ${family ? html`
                 <div class="k-pic-pair">
-                    <section class="k-pic-field">
-                        <label class="k-pic-label" for="k-pic-pipeline">Pipeline</label>
-                        <select id="k-pic-pipeline" class="k-pic-select k-pic-pipeline" @change=${(/** @type {Event} */ e) => this.#chooseRecipe(/** @type {HTMLSelectElement} */ (e.currentTarget).value)}>
-                            ${pipelines.map(p => html`<option value=${p.id} ?selected=${p.id === this._recipeId}>${pipelineLabel(p)}${needsLine(p) ? ' (needs a node)' : ''}</option>`)}
-                        </select>
-                    </section>
+                    ${pipelines.length ? html`
+                        <section class="k-pic-field">
+                            <label class="k-pic-label" for="k-pic-pipeline">Pipeline</label>
+                            <select id="k-pic-pipeline" class="k-pic-select k-pic-pipeline" @change=${(/** @type {Event} */ e) => this.#chooseRecipe(/** @type {HTMLSelectElement} */ (e.currentTarget).value)}>
+                                ${pipelines.map(p => html`<option value=${p.id} ?selected=${p.id === this._recipeId}>${pipelineLabel(p)}${needsLine(p) ? ' (needs a node)' : ''}</option>`)}
+                            </select>
+                        </section>` : html`
+                        <section class="k-pic-field">
+                            <span class="k-pic-label">Pipeline</span>
+                            <p class="k-pic-no-pipeline" role="status" data-family=${family.id}>No ${family.name} pipeline installed</p>
+                        </section>`}
                     <section class="k-pic-field">
                         <label class="k-pic-label" for="k-pic-preset">Preset</label>
                         <select id="k-pic-preset" class="k-pic-select k-pic-preset" @change=${(/** @type {Event} */ e) => this.#choosePreset(/** @type {HTMLSelectElement} */ (e.currentTarget).value)}>
@@ -824,6 +913,11 @@ export class KPictureSheet extends LitElement {
                         </select>
                     </section>
                 </div>` : nothing}
+            ${family && !pipelines.length ? html`
+                <p class="k-pic-hint k-pic-hint--warn k-pic-no-pipeline-why">
+                    <span>${family.name} models draw through a ${family.name} recipe, and this install has none. Pick another model, or add one in Settings → Pictures.</span>
+                    <button type="button" class="k-pic-link" @click=${() => { openSettings({ tab: 'pictures' }); }}>Open Settings</button>
+                </p>` : nothing}
             ${needs ? html`<p class="k-pic-hint k-pic-hint--warn k-pic-needs">${needs}</p>` : nothing}`;
     }
 
@@ -856,7 +950,7 @@ export class KPictureSheet extends LitElement {
     /**
      * The LoRA stack (ComfyUI lane): each active LoRA with its strength and a remove button, then
      * a picker listing the ones made for this recipe's model first, unknown ones after, and the
-     * rest only on "Show all" (Andres, 2026-10-10).
+     * rest only on "Show all" (product call, 2026-10-10).
      */
     #renderLoras() {
         const base = recipeBase(this.#recipe);
@@ -976,12 +1070,13 @@ export class KPictureSheet extends LitElement {
     }
 
     #renderBlockerLine() {
-        const blocker = this.#blocker;
+        const blocker = this._step === SHEET_STEPS.WRITE ? this.#blocker : this.#setupBlocker;
         /** @type {Record<string, string>} */
         const lines = {
             needs: 'This recipe needs a node the server does not have.',
             recipe: this._recipes && this._recipes.length === 0 ? '' : 'Choose a recipe.',
             prompt: this._drafting ? '' : 'Write a prompt first.',
+            pipeline: `No ${familyName(this._families, this._model?.family)} pipeline installed, so this model can't draw here yet.`,
         };
         const line = blocker ? lines[blocker] ?? '' : '';
         return line ? html`<p class="k-pic-blocker">${line}</p>` : nothing;

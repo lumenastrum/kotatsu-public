@@ -37,9 +37,9 @@ It's built around three promises:
 
 ### What Kotatsu isn't
 
-Kotatsu isn't trying to be a game engine. It has no dice, no inventory screens and no visual-novel stage. Those are great, and other front-ends do them well. Kotatsu spends every pixel and millisecond on the page you're writing and the preset shaping it.
+Kotatsu isn't trying to be a game engine. It has no dice and no inventory screens. Those are great, and other front-ends do them well. Your cast can stand on a stage beside the chat if you like, but Kotatsu spends every pixel and millisecond on the page you're writing and the preset shaping it.
 
-> No dice, no inventory, no stage. Just you, a story, and a very good table.
+> No dice, no inventory. Just you, a story, and a very good table.
 >
 > — *Mikan-chan*
 
@@ -134,7 +134,7 @@ Copy your user data, and leave SillyTavern's code and `config.yaml` where they a
 
 **Make it look like yours.**
 - **Themes are data.** A theme pack is a folder of colors, fonts, layout choices and art, with no code inside. Four ship in the box: Blue Hour, Sparkle, Natsumikan and Midnight Kissaten.
-- **Message styles.** Card, flat, bubble, script, split bubbles, portrait, portrait column and broadcast, plus a reading-size setting that keeps lines a comfortable length on any screen.
+- **Message styles.** Card, flat, bubble, script, split bubbles, portrait, portrait column and broadcast, plus a reading-size setting that keeps lines a comfortable length on any screen. Or **Sprites**: the cast stands on a stage beside the chat and each reply wears the face that fits it, from sprite sets you bring or Kotatsu draws for you.
 - **One settings window,** with tabs and search, instead of a dozen drawers.
 
 **Branches as a real tree.** Fork a chat at any message, jump between branches, rename without breaking links, and see the whole tree on a map (`Ctrl+Shift+B`).

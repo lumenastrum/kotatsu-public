@@ -45,7 +45,7 @@ export const PURPOSES = Object.freeze({
 });
 
 /**
- * Portraits are one-shots, not story events (Andres, 2026-10-10): the writer drafts them from the
+ * Portraits are one-shots, not story events (product call, 2026-10-10): the writer drafts them from the
  * card or persona alone, never the chat, and the picture message stays out of the chat model's
  * context (`is_system`). Found live: a "Me" portrait set Willam on a village road, and the next
  * "The place" drew that road as where the story was.
@@ -152,6 +152,8 @@ export const SERVER_KEY_RULE = 'origin + path, no trailing slash';
  * @property {string} [aspect]        gemini `W:H`
  * @property {boolean} [transparent]  sprites
  * @property {{file: string, strength: number}[]} [loras]   comfy lane: chained after the model loader, in order
+ * @property {boolean} [previews]     comfy lane: the tile shows the model's own frames, so the prompt asks ComfyUI
+ *   for them (`extra_data.preview_method: auto`); absent = ComfyUI's own default (none on a stock install)
  * @property {{url: string, auth?: string}} [comfy]   comfy lane: the server to draw on (the client sends
  *   its `comfy` settings); absent = the saved `power_user.kotatsu_pictures.comfy`, then the default address
  */

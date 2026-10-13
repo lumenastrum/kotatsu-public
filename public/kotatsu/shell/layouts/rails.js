@@ -19,6 +19,9 @@
 import { installAnSheet, uninstallAnSheet } from '../an-sheet.js';
 import { installPortraitPeek, uninstallPortraitPeek } from '../../renderer/k-portrait-peek.js';
 import { installPictureSurfaces, uninstallPictureSurfaces } from '../../pictures/surfaces.js';
+import { installExpressions, uninstallExpressions } from '../../sprites/expressions.js';
+import { installSpriteStage, uninstallSpriteStage } from '../../sprites/k-sprite-stage.js';
+import { installRowFaces, uninstallRowFaces } from '../../sprites/row-faces.js';
 import { installDocScrollPin, uninstallDocScrollPin } from '../doc-scroll-pin.js';
 import { installExtDock, uninstallExtDock } from '../ext-dock.js';
 import { installExtGuard, uninstallExtGuard } from '../ext-guard.js';
@@ -262,6 +265,13 @@ export const railsLayout = {
         // wand's "Draw a picture", /imagine, the tile menu's paint drivers and the pending rows'
         // chat door. Unmount takes it all back; classic keeps none of it.
         installPictureSurfaces();
+        // Pictures slice F: one expression per finished character message (stock's local
+        // classifier), for characters that have a sprite set. Unmount stops classifying.
+        installExpressions();
+        // The Sprite look: the stage behind the reading column, and each row's own face. Both
+        // draw nothing unless #chat wears `sprite`.
+        installSpriteStage();
+        installRowFaces();
 
         // Group chat v0 G3: the On-stage strip above the composer. Permanent while rails is up;
         // it hides itself outside a scene.
@@ -322,6 +332,9 @@ export const railsLayout = {
         uninstallAnSheet();
         uninstallPortraitPeek();
         uninstallPictureSurfaces();
+        uninstallExpressions();
+        uninstallRowFaces();
+        uninstallSpriteStage();
         uninstallStage();
         uninstallSpeakerHues();
         uninstallSceneBanner();

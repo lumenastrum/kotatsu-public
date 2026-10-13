@@ -106,10 +106,15 @@ export const FILE_SOURCES = Object.freeze({
     'RealESRGAN_x4plus_anime_6B.pth': { url: 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth', folder: 'models/upscale_models', bytes: 17_938_799, list: 'upscalers' },
 });
 
-/** Where a newcomer gets ComfyUI itself (each answered 200 on 2026-10-10). */
+/**
+ * Where a newcomer gets ComfyUI itself (each answered 200 on 2026-10-10; the macOS and Linux guides on 2026-10-12,
+ * the Linux one = Comfy Desktop's AppImage). The client keeps a copy for when ComfyUI is down (no `/models` answer).
+ */
 export const COMFY_INSTALL = Object.freeze({
     desktop: 'https://comfy.org/download',
     desktopDocs: 'https://docs.comfy.org/installation/desktop/windows',
+    desktopDocsMac: 'https://docs.comfy.org/installation/desktop/macos',
+    desktopDocsLinux: 'https://docs.comfy.org/installation/desktop/linux',
     portableDocs: 'https://docs.comfy.org/installation/comfyui_portable_windows',
 });
 

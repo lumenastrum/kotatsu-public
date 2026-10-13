@@ -113,6 +113,15 @@ export const LINES = Object.freeze({
     whatsNewComfy: Object.freeze([
         'Got a ComfyUI at home? Tell me where it lives and I\'ll tell you which paints are missing. I\'m very organized about paint.',
     ]),
+    whatsNewStage: Object.freeze([
+        'Everyone gets a spot by the kotatsu now, and they make faces! Say something nice and watch.',
+    ]),
+    whatsNewGenerate: Object.freeze([
+        'One good drawing is all I need. I paint the frowns and the blushes; you pick the best take.',
+    ]),
+    whatsNewTouchup: Object.freeze([
+        'A little green left on someone’s shoes? Hand me the wand. One tap, and it’s gone from the whole set.',
+    ]),
     whatsNewAgain: Object.freeze([
         'Missed something? Here\'s the latest again. I saved you a mikan.',
     ]),

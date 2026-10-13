@@ -366,7 +366,15 @@ export class KPicturesSettings extends LitElement {
         const steps = setupSteps({ reachable, setup: models.setup, confirmed });
         if (models.state === 'loading' || models.state === 'idle' || steps.every(s => s.done)) return nothing;
         const done = (/** @type {string} */ id) => steps.find(s => s.id === id)?.done;
-        const install = { desktop: 'https://comfy.org/download', desktopDocs: 'https://docs.comfy.org/installation/desktop/windows', ...models.install };
+        // A copy of the server's COMFY_INSTALL: ComfyUI being down is exactly when `/models` has no answer to carry it.
+        const install = {
+            desktop: 'https://comfy.org/download',
+            desktopDocs: 'https://docs.comfy.org/installation/desktop/windows',
+            desktopDocsMac: 'https://docs.comfy.org/installation/desktop/macos',
+            desktopDocsLinux: 'https://docs.comfy.org/installation/desktop/linux',
+            ...models.install,
+        };
+        const guide = (/** @type {string} */ href, /** @type {string} */ label) => html`<a href=${href} target="_blank" rel="noopener noreferrer">${label}</a>`;
         const tick = (/** @type {boolean|undefined} */ ok) => (ok ? icons.check : html`<span class="k-pics__step-dot" aria-hidden="true"></span>`);
         return html`
             <section class="k-pics__group k-pics__setup" aria-labelledby="k-pics-setup-head" data-k-pics="setup">
@@ -377,7 +385,7 @@ export class KPicturesSettings extends LitElement {
                         <div>
                             <p class="k-pics__step-lead">Install ComfyUI and start it</p>
                             ${done('install') ? html`<p class="k-pics__hint">ComfyUI answers at ${this._settings.comfy.url}.</p>` : html`
-                                <p class="k-pics__hint">ComfyUI draws the pictures on your own computer. Get <a href=${install.desktop} target="_blank" rel="noopener noreferrer">ComfyUI Desktop</a> (<a href=${install.desktopDocs} target="_blank" rel="noopener noreferrer">install guide</a>), start it, then press Check above. It usually answers at http://127.0.0.1:8188.</p>
+                                <p class="k-pics__hint">ComfyUI draws the pictures on your own computer. Get <a href=${install.desktop} target="_blank" rel="noopener noreferrer">ComfyUI Desktop</a> (install guide: ${guide(install.desktopDocs, 'Windows')} · ${guide(install.desktopDocsMac, 'macOS')} · ${guide(install.desktopDocsLinux, 'Linux')}), start it, then press Check above. It usually answers at http://127.0.0.1:8188.</p>
                                 <p class="k-pics__hint">No GPU for it? An OpenAI or Google key draws too: switch the lane above.</p>`}
                         </div>
                     </li>

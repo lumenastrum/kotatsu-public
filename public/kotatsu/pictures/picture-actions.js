@@ -54,6 +54,7 @@ import {
 import { cancelJob, listModels, listRecipes, startPicture, watchJob } from './jobs-client.js';
 import { serverKey } from './settings-model.js';
 import { PENDING_EVENTS } from './k-picture-pending.js';
+import { mascotHidden } from './k-mikan-painter.js';
 import './k-picture-sheet.js';
 import {
     PENDING_LINES,
@@ -74,7 +75,9 @@ import {
     removeCandidate,
     rerollRequest,
     sizesFor,
-    startingModel,
+    familyName,
+    openingPick,
+    pairsWith,
     variantId,
     withName,
     withTriggers,
@@ -276,7 +279,12 @@ async function run(job) {
         console.warn('[Pictures] a prompt-processing listener threw; drawing with the prompt as it was', error);
     }
     try {
-        const started = await startPicture(job.request);
+        // A stock ComfyUI sends no preview frames unless a prompt asks (its default method is none). Ask only when
+        // this tile will show them (the model's live preview in Settings, or a theme without the mascot): Mikan-chan
+        // paints from the step count alone, so frames she would hide are not drawn for nothing.
+        const settings = await picturesSettings();
+        const previews = (job.request.lane ?? LANES.COMFY) === LANES.COMFY && (settings.rawPreview === true || mascotHidden());
+        const started = await startPicture(previews ? { ...job.request, previews: true } : job.request);
         job.jobId = started.jobId;
         job.seed = typeof started.seed === 'number' ? started.seed : undefined;
         job.row.jobId = started.jobId;
@@ -285,6 +293,9 @@ async function run(job) {
             // §14.6: say what ComfyUI is and offer a way forward, not a dead end.
             const settings = await picturesSettings();
             job.row.fail(`ComfyUI isn’t answering at ${settings.comfy?.url || 'its address'}. It draws pictures on your own computer: start it, or set it up in Settings → Pictures.`, { setup: true, keyLane: storedKeyLane() });
+        } else if (/** @type {any} */ (error)?.code === 'no_family') {
+            // Issue #10: a model picked for a recipe with no model family is refused, never drawn with the recipe's own model.
+            job.row.fail(`${messageOf(error).replace(/\.?$/, '.')} Pick a pipeline made for that model in the sheet, or draw with the recipe as it is.`);
         } else {
             job.row.fail(`The picture server did not take it: ${messageOf(error)}`);
         }
@@ -492,7 +503,30 @@ export async function quickPicture({ purpose, free = '' }) {
     }
     const recipes = await listRecipes();
     const recipeId = pickRecipe(recipes, { purpose, recipeByPurpose: settings.recipeByPurpose, last: settings.lastSheet?.recipe });
-    const recipe = recipes.find(r => r.id === recipeId);
+    let recipe = recipes.find(r => r.id === recipeId);
+    // With models set up, the sheet's rule (issue #10): the last model used, with its pipeline and preset; a model
+    // only ever draws with a pipeline of its own family, and a family with none here stops with words.
+    const server = serverKey(settings.comfy?.url ?? '');
+    const saved = settings.models?.[server];
+    /** @type {Record<string, import('./picture-model.js').FamilyInfo>} */
+    let families = {};
+    /** @type {{file: string, family: string, preset: string}|null} */
+    let model = null;
+    if (Object.values(saved ?? {}).some(Boolean)) {
+        try {
+            families = (await listModels({ url: settings.comfy?.url, auth: settings.comfy?.auth })).families ?? {};
+        } catch {
+            // without the families the recipe draws with its own slot choice
+        }
+        if (Object.keys(families).length) {
+            const pick = openingPick({ purposeRecipe: recipe, recipes, saved, families, last: settings.lastModel?.[server] });
+            if (pick.model && !pick.recipe) {
+                throw new Error(`No ${familyName(families, pick.model.family)} pipeline installed, so ${pick.model.file} can't draw here yet.`);
+            }
+            model = pick.model;
+            recipe = recipes.find(r => r.id === pick.recipe) ?? recipe;
+        }
+    }
     if (!recipe) throw new Error('There is no recipe to draw with yet.');
     const needs = needsLine(recipe);
     if (needs) throw new Error(`${recipe.name || recipe.id}: ${needs}`);
@@ -517,24 +551,14 @@ export async function quickPicture({ purpose, free = '' }) {
         character: imagesFolder(),
     };
     if (loras.length) request.loras = loraRequest(loras);
-    // A family pipeline draws the family's last-used (or first) set-up model with its preset (§14).
-    const server = serverKey(settings.comfy?.url ?? '');
-    if (recipe.family && Object.values(settings.models?.[server] ?? {}).some(Boolean)) {
-        /** @type {Record<string, import('./picture-model.js').FamilyInfo>} */
-        let families = {};
-        try {
-            families = (await listModels({ url: settings.comfy?.url, auth: settings.comfy?.auth })).families ?? {};
-        } catch {
-            // without the families the recipe draws with its own slot choice
-        }
-        const pick = startingModel(recipe.family, settings.models?.[server], settings.lastModel?.[server], families[recipe.family]?.defaultPreset);
-        const preset = pick ? families[pick.family]?.presets?.[pick.preset] : null;
-        if (pick && preset) {
-            request.model = pick.file;
-            request.family = pick.family;
-            request.preset = pick.preset;
-            request.negative = preset.negative === null ? '' : joinNegatives(draft.negative, preset.negative);
-        }
+    if (model && pairsWith(model, recipe)) {
+        const family = families[model.family];
+        const presetId = family?.presets?.[model.preset] ? model.preset : family?.defaultPreset ?? model.preset;
+        const preset = family?.presets?.[presetId] ?? null;
+        request.model = model.file;
+        request.family = model.family;
+        request.preset = presetId;
+        if (preset) request.negative = preset.negative === null ? '' : joinNegatives(draft.negative, preset.negative);
     }
     return drawPicture(request, { initiator: INITIATORS.COMMAND });
 }

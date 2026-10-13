@@ -218,6 +218,72 @@ body[data-k-layout="rails"] .k-pic-blocker {
     color: var(--k-text-dim);
 }
 
+/* The two steps (issue #10): Set up → Write and draw, a quiet line under the title. */
+body[data-k-layout="rails"] .k-pic-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin: 0;
+    padding: 2px var(--k-pic-pad) 4px;
+    list-style: none;
+    color: var(--k-text-dim);
+    font-size: 13px;
+}
+
+body[data-k-layout="rails"] .k-pic-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-pic-step-n {
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-round);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+body[data-k-layout="rails"] .k-pic-step.is-on {
+    color: var(--k-text-strong);
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] .k-pic-step.is-on .k-pic-step-n {
+    border-color: transparent;
+    background: var(--k-accent-bright);
+    color: var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] .k-pic-setup-note b {
+    color: var(--k-text);
+    font-weight: 600;
+}
+
+/* A model whose family has no pipeline here: a state where the select would be, never an empty select. */
+body[data-k-layout="rails"] .k-pic-no-pipeline {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    margin: 0;
+    padding: 0 12px;
+    border: 1px dashed var(--k-pic-warn);
+    border-radius: var(--k-radius-md);
+    color: var(--k-pic-warn);
+    font-size: 13px;
+}
+
+body[data-k-layout="rails"] .k-pic-no-pipeline-why {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+}
+
 /* 4. SHEET FIELDS ──────────────────────────────────────────────────────────── */
 body[data-k-layout="rails"] .k-pic-chips {
     display: flex;
@@ -895,6 +961,7 @@ body[data-k-layout="rails"] #chat .mes_block:has(> k-picture-menu) > .mes_text.i
     }
 
     body[data-k-layout="rails"] .k-pic-head,
+    body[data-k-layout="rails"] .k-pic-steps,
     body[data-k-layout="rails"] .k-pic-body,
     body[data-k-layout="rails"] .k-pic-actions {
         padding-left: 18px;

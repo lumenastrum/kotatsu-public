@@ -70,11 +70,25 @@ export function isBridgeUrl(url, listener) {
     }
 }
 
+/** `power_user` key: the ids of notices the person turned off with "Don't show again". */
+export const QUIET_NOTICES_KEY = 'kotatsu_quiet_notices';
+/** The "Claude Code isn't installed" notice's id. */
+export const QUIET_CLI_MISSING = 'claude-cli-missing';
+
+/**
+ * Whether a notice was turned off. Pure.
+ * @param {unknown} list `power_user[QUIET_NOTICES_KEY]`
+ * @param {string|undefined} id
+ */
+export function isQuietNotice(list, id) {
+    return !!id && Array.isArray(list) && list.includes(id);
+}
+
 /**
  * What one `/doctor` report means for the person at the keyboard: a toast to show, or null.
- * Pure, so the wording is tested without a server.
+ * Pure, so the wording is tested without a server. `quiet` = the notice can be turned off for good.
  * @param {any} doctor `/api/kotatsu/claude-bridge/doctor` JSON
- * @returns {{ level: 'warning'|'info'|'error', title: string, message: string } | null}
+ * @returns {{ level: 'warning'|'info'|'error', title: string, message: string, quiet?: string } | null}
  */
 export function describeDoctor(doctor) {
     if (!doctor || typeof doctor !== 'object') return null;
@@ -82,7 +96,15 @@ export function describeDoctor(doctor) {
         return { level: 'error', title: 'Claude Code bridge isn’t running', message: String(doctor.standingDown) };
     }
     if (doctor.claudeCli && doctor.claudeCli.available === false) {
-        return { level: 'warning', title: 'Claude Code isn’t installed', message: 'Kotatsu talks to Claude through the Claude Code app on this computer. Install it, run “claude auth login” in a terminal, then reload Kotatsu.' };
+        // Kotatsu never needs Claude Code (an API key, a ChatGPT plan or a local model work just as well), so this
+        // one says so and can be turned off for good: a fresh install starts on the bridge, and a nag on every boot
+        // read as the opposite of that promise.
+        return {
+            level: 'warning',
+            title: 'Claude Code isn’t installed',
+            message: 'You don’t need it: an API key, a ChatGPT plan or a local model work just as well. Pick one under Connection. To use your Claude plan instead, install Claude Code, run “claude auth login” in a terminal, then reload Kotatsu.',
+            quiet: QUIET_CLI_MISSING,
+        };
     }
     if (doctor.claudeAuth && doctor.claudeAuth.available !== false && doctor.claudeAuth.loggedIn === false) {
         return { level: 'warning', title: 'Claude Code isn’t signed in', message: 'Run “claude auth login” in a terminal on this computer, then send again.' };
@@ -517,8 +539,28 @@ function render() {
     }
 }
 
+/** @param {string} text @returns {string} */
+const escapeText = text => text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' })[c] ?? c);
+
+let quietWired = false;
+/** One delegated listener: "Don't show again" in any toast turns that notice off for good. */
+function wireQuietButtons() {
+    if (quietWired) return;
+    quietWired = true;
+    document.addEventListener('click', (event) => {
+        const button = event.target instanceof Element ? event.target.closest('[data-k-quiet]') : null;
+        const id = button?.getAttribute('data-k-quiet');
+        if (!button || !id) return;
+        const list = Array.isArray(power_user[QUIET_NOTICES_KEY]) ? power_user[QUIET_NOTICES_KEY] : [];
+        if (!list.includes(id)) power_user[QUIET_NOTICES_KEY] = [...list, id];
+        saveSettingsDebounced();
+        // The toast closes on the click anyway (tapToDismiss); clear it now so it can't linger on hover.
+        /** @type {any} */ (globalThis).toastr?.clear(/** @type {any} */ (globalThis).$?.(button.closest('.toast')));
+    });
+}
+
 /**
- * @param {{ level: 'warning'|'info'|'error', title: string, message: string }} note
+ * @param {{ level: 'warning'|'info'|'error', title: string, message: string, quiet?: string }} note
  * @returns {void}
  */
 function toast(note) {
@@ -527,7 +569,15 @@ function toast(note) {
     // The welcome tour's Connect step shows the doctor's findings itself, and a toast at 999999
     // would paint over the tour (onboarding v0 O2). A class, not an import: kotatsu → core only.
     if (document.body.classList.contains('k-onboarding-open')) return;
-    t[note.level](note.message, note.title, { timeOut: 15000, extendedTimeOut: 10000, preventDuplicates: true });
+    if (note.quiet && isQuietNotice(power_user[QUIET_NOTICES_KEY], note.quiet)) return;
+    const options = { timeOut: 15000, extendedTimeOut: 10000, preventDuplicates: true };
+    if (!note.quiet) {
+        t[note.level](note.message, note.title, options);
+        return;
+    }
+    wireQuietButtons();
+    const body = `${escapeText(note.message)}<div class="k-toast-actions"><button type="button" class="k-toast-quiet" data-k-quiet="${escapeText(note.quiet)}">Don’t show again</button></div>`;
+    t[note.level](body, escapeText(note.title), { ...options, escapeHtml: false });
 }
 
 /** Background `/doctor` check: one toast if something needs the person, else silence. */

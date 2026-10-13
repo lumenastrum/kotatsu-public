@@ -25,6 +25,7 @@ import {
 import { characterFolder } from './store.js';
 import { drawOpenAI } from './openai.js';
 import { drawGemini } from './gemini.js';
+import { SpriteRunError, createSpriteRuns } from './sprite-runs.js';
 
 /**
  * `/api/kotatsu/pictures/*` — Pictures v0 (docs/pictures-v0.md §13.2). The ComfyUI lane (slice A)
@@ -75,6 +76,9 @@ function handle(handler) {
             if (error instanceof RecipeError) {
                 return sendError(response, 400, error.message, { code: error.code, ...(error.slots ? { slots: error.slots } : {}) });
             }
+            if (error instanceof SpriteRunError) {
+                return sendError(response, error.status, error.message, error.extra);
+            }
             if (error instanceof ComfyError) {
                 return sendError(response, error.status, error.message, error.nodeErrors ? { nodeErrors: error.nodeErrors } : {});
             }
@@ -103,8 +107,9 @@ function handleOf(request) {
 /**
  * Pipelines the product doesn't offer yet. A recipe with one stays on disk, seeded and refreshed
  * like any shipped recipe, and still draws when a job names it; it just isn't listed, so neither
- * the sheet nor Settings shows it, and the setup guide doesn't ask for its files. `sprite` waits for
- * Sprite mode (docs/handoffs/pictures-slice-f.md): take it out of here when that ships.
+ * the sheet nor Settings shows it, and the setup guide doesn't ask for its files. `sprite` is the old
+ * one-picture sprite recipe; Sprite mode's generator (Card Studio → Sprites → Generate, `sprite-runs.js`)
+ * replaced it, so it stays hidden.
  * @type {ReadonlySet<string>}
  */
 export const HIDDEN_PIPELINES = new Set(['sprite']);
@@ -232,7 +237,10 @@ export function readLoras(value) {
  */
 export function readModelPick(body, recipe) {
     const family = recipe.family ? FAMILIES[recipe.family] : undefined;
-    if (!family || body.model === undefined || body.model === null || body.model === '') return null;
+    if (body.model === undefined || body.model === null || body.model === '') return null;
+    // A pick is never dropped in silence (issue #10: a Kroma pick on a family-less sidecar drew the recipe's own
+    // Anima hint). An own workflow takes no model pick; the client sends none for one.
+    if (!family) throw new RecipeError(`This recipe has no model family, so it can't draw ${String(body.model).slice(0, 255)}`, { code: 'no_family' });
     if (typeof body.model !== 'string' || body.model.length > 255 || /(^|[\\/])\.\.([\\/]|$)/.test(body.model)) throw new RecipeError('model must be a file name');
     if (body.family !== undefined && body.family !== family.id) {
         const named = FAMILIES[body.family]?.name ?? body.family;
@@ -271,6 +279,7 @@ export function readModelPick(body, recipe) {
  * @param {(directories: any, key: string) => Promise<string|undefined>|string|undefined} [options.readKey] Reads a stored API key
  * @param {typeof fetch} [options.fetchImpl] Fetch for the key lanes
  * @param {{openai?: string, gemini?: string}} [options.bases] Key-lane API bases (tests point them at a fake)
+ * @param {ReturnType<typeof createSpriteRuns>} [options.spriteRuns] Sprite generator runs
  * @returns {import('express').Router} The router
  */
 export function createPicturesRouter({
@@ -285,6 +294,7 @@ export function createPicturesRouter({
     readKey = readStoredKey,
     fetchImpl = fetch,
     bases = {},
+    spriteRuns = createSpriteRuns(),
 } = {}) {
     const router = express.Router();
     /** @type {Map<string, Set<string>>} user handle → class types of the server they last checked */
@@ -632,6 +642,8 @@ export function createPicturesRouter({
             owner: handleOf(request),
             outputsOrder: recipe.outputs,
             reference,
+            // The tile shows the model's own frames (`previews: true`): ask for them, else ComfyUI's default stands.
+            previewMethod: body.previews === true ? 'auto' : undefined,
         });
         return response.status(202).json({ jobId: job.id, seed });
     }));
@@ -693,6 +705,109 @@ export function createPicturesRouter({
     router.post('/jobs/:id/cancel', handle(async (request, response) => {
         if (!ownJob(request) || !jobs.cancel(request.params.id)) return sendError(response, 404, 'No such job');
         return response.sendStatus(204);
+    }));
+
+    // ── Sprite generator runs (sprite-runs.js) ──────────────────────────────────────────────────
+
+    /**
+     * The ComfyUI client for a sprite request: the body's server, else the saved one.
+     * @param {import('express').Request} request Request
+     */
+    const spriteClient = (request) => {
+        const saved = savedComfy(directoriesOf(request));
+        const comfy = request.body?.comfy && typeof request.body.comfy === 'object' ? request.body.comfy : {};
+        const server = normalizeServerUrl(comfy.url || saved?.url || DEFAULT_COMFY_URL);
+        const auth = typeof comfy.auth === 'string' ? comfy.auth : (typeof saved?.auth === 'string' ? saved.auth : '');
+        return clients.get(server, auth);
+    };
+    /**
+     * This user's run, with a client attached (a run read back from disk after a restart has none).
+     * @param {import('express').Request} request Request
+     */
+    const ownRun = (request) => {
+        const run = spriteRuns.get(handleOf(request), directoriesOf(request).userImages, request.params.id);
+        if (!run) throw new SpriteRunError('No such sprite run', 404);
+        if (!run.client) spriteRuns.attachClient(run, spriteClient(request));
+        return run;
+    };
+    /** @param {unknown} value base64 PNG (data URL or bare) @returns {Buffer | undefined} */
+    const pngBytes = (value) => {
+        if (value === undefined || value === null || value === '') return undefined;
+        if (typeof value !== 'string') throw new SpriteRunError('Images are sent as base64 PNG');
+        return Buffer.from(value.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+    };
+
+    router.post('/sprite-runs', handle(async (request, response) => {
+        const result = await spriteRuns.start({ owner: handleOf(request), userImages: directoriesOf(request).userImages, client: spriteClient(request), body: request.body ?? {} });
+        return response.status(202).json(result);
+    }));
+    router.get('/sprite-runs/:id', handle(async (request, response) => response.json({ run: spriteRuns.publicView(ownRun(request)) })));
+    router.get('/sprite-runs/:id/file', handle(async (request, response) => {
+        const target = spriteRuns.resolveFile(ownRun(request), String(request.query.path ?? ''));
+        if (!target) return sendError(response, 404, 'No such file in this run');
+        response.setHeader('Cache-Control', 'no-store');
+        return response.sendFile(target, { dotfiles: 'allow' });
+    }));
+    /** Accepted: the run as it stands now (the step continues in the background; follow `/events`). */
+    const accepted = (/** @type {import('express').Response} */ response, /** @type {any} */ run) => response.status(202).json({ run: spriteRuns.publicView(run) });
+    router.post('/sprite-runs/:id/more', handle(async (request, response) => {
+        const run = ownRun(request);
+        spriteRuns.more(run, request.body ?? {});
+        return accepted(response, run);
+    }));
+    router.post('/sprite-runs/:id/pick', handle(async (request, response) => {
+        const body = request.body ?? {};
+        const run = ownRun(request);
+        await spriteRuns.pick(run, { seed: body.seed, upload: pngBytes(body.upload), faceBox: body.faceBox });
+        return accepted(response, run);
+    }));
+    router.post('/sprite-runs/:id/face', handle(async (request, response) => {
+        const run = ownRun(request);
+        spriteRuns.face(run, request.body ?? {});
+        return accepted(response, run);
+    }));
+    router.post('/sprite-runs/:id/masks', handle(async (request, response) => {
+        const body = request.body ?? {};
+        const run = ownRun(request);
+        await spriteRuns.masks(run, { features: pngBytes(body.features), flush: pngBytes(body.flush), marks: body.marks, labels: body.labels });
+        return accepted(response, run);
+    }));
+    router.post('/sprite-runs/:id/reroll', handle(async (request, response) => {
+        const run = ownRun(request);
+        spriteRuns.reroll(run, request.body ?? {});
+        return accepted(response, run);
+    }));
+    router.post('/sprite-runs/:id/save', handle(async (request, response) => {
+        const run = ownRun(request);
+        const saved = spriteRuns.save(run, directoriesOf(request).characters, request.body?.folder);
+        return response.json({ run: spriteRuns.publicView(run), saved });
+    }));
+    router.post('/sprite-runs/:id/cancel', handle(async (request, response) => {
+        spriteRuns.cancel(ownRun(request));
+        return response.sendStatus(204);
+    }));
+    router.get('/sprite-runs/:id/events', handle(async (request, response) => {
+        const run = ownRun(request);
+        response.writeHead(200, {
+            'Content-Type': 'text/event-stream; charset=utf-8',
+            'Cache-Control': 'no-cache, no-transform',
+            Connection: 'keep-alive',
+            'X-Accel-Buffering': 'no',
+        });
+        const write = (/** @type {string} */ chunk) => {
+            if (response.writableEnded || response.destroyed) return;
+            response.write(chunk);
+            /** @type {any} */ (response).flush?.();
+        };
+        write(': connected\n\n');
+        const ping = setInterval(() => write(': ping\n\n'), pingMs);
+        ping.unref?.();
+        // The client going away ends the stream, never the run.
+        const unsubscribe = spriteRuns.subscribe(run, (event, data) => write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        response.on('close', () => {
+            clearInterval(ping);
+            unsubscribe();
+        });
     }));
 
     return router;

@@ -236,13 +236,29 @@ function isPhone() {
 }
 
 /**
- * Closes whichever rails are open as phone overlays. Goes through toggleRail so a
- * suppressed side writes its session override exactly as a handle tap would — no
- * preference is touched.
+ * Whether `#chat` wears the Sprite look (pictures slice F): rails are tools there, not layout.
+ * Both sides render collapsed by default and an opened rail floats OVER the stage instead of
+ * squeezing it (css/sprites.css), the phone's overlay regime at any width. Read off the
+ * attribute rather than imported, so the shell never loads the sprites modules.
+ * @returns {boolean}
+ */
+function isSpriteLook() {
+    return document.getElementById('chat')?.dataset.kMesVariant === 'sprite';
+}
+
+/** @returns {boolean} Whether an open rail is an overlay (phone, or the Sprite look). */
+function isOverlayRegime() {
+    return isPhone() || isSpriteLook();
+}
+
+/**
+ * Closes whichever rails are open as overlays (phone, or the Sprite look). Goes through
+ * toggleRail so a suppressed side writes its session override exactly as a handle tap
+ * would — no preference is touched.
  * @returns {void}
  */
 function closePhoneOverlays() {
-    if (!isPhone()) return;
+    if (!isOverlayRegime()) return;
     for (const side of RAIL_SIDES) {
         if (effectiveState(side) === 'open') toggleRail(side);
     }
@@ -353,6 +369,10 @@ function readProseColumnPx() {
  * @returns {{ left: boolean, right: boolean }}
  */
 function computeSuppression() {
+    // The Sprite look suppresses both sides whatever the width: the stage needs the wings, and
+    // a handle opens a rail as a session override that floats over it. Leaving the look changes
+    // the pair, which clears those overrides and hands the preference back untouched.
+    if (isSpriteLook()) return { left: true, right: true };
     const styles = getComputedStyle(document.documentElement);
     // The larger of the pack-raisable floor and the reading column itself: rails never
     // squeeze the prose. At reading size M that is 760px, so a 900-wide portrait yields

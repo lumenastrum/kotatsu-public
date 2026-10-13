@@ -1160,6 +1160,24 @@
     }
    ]
   },
+  "--k-gen-art": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "none",
+   "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
+   "contexts": []
+  },
+  "--k-gen-stage": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--k-accent) 10%, var(--k-surface)) 0%, var(--k-surface) 100%)",
+   "contexts": [
+    {
+     "selector": "k-sprite-generate .k-gen",
+     "at": []
+    }
+   ]
+  },
   "--k-ghost-hover": {
    "group": "Chrome: fills, backdrop, inset cards",
    "file": "css/kotatsu-chrome.css",
@@ -3608,6 +3626,28 @@
     }
    ]
   },
+  "--k-rail-open-left": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "var(--k-rail-left-width)",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
+  "--k-rail-open-right": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "var(--k-rail-right-width)",
+   "contexts": [
+    {
+     "selector": ":root",
+     "at": []
+    }
+   ]
+  },
   "--k-rc-btn-fill": {
    "group": "Controls",
    "file": "css/rechrome-controls.css",
@@ -5368,6 +5408,13 @@
     }
    ]
   },
+  "--k-speaker": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "var(--k-accent)",
+   "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
+   "contexts": []
+  },
   "--k-split-gap": {
    "group": "Message looks (wardrobe)",
    "file": "css/mes-variants.css",
@@ -5400,6 +5447,122 @@
      "at": []
     }
    ]
+  },
+  "--k-sprite-card-blur": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "6px",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"sprite\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-card-fill": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "color-mix(in srgb, var(--k-surface) 84%, transparent)",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"sprite\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-card-fill-user": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "color-mix(in srgb, var(--k-surface-2) 76%, transparent)",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"sprite\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-face-y": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "3%",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"sprite\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-face-zoom": {
+   "group": "Message looks (wardrobe)",
+   "file": "css/mes-variants.css",
+   "default": "300%",
+   "note": "The face crop: the sprite drawn at this multiple of the avatar's width, top-centred. Measured on the lab sets (full body in an 832 × 1216 canvas): head and shoulders.",
+   "contexts": [
+    {
+     "selector": "#chat[data-k-mes-variant=\"sprite\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-fade": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "min(250ms, var(--k-motion-gate, 250ms))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]:has(#chat[data-k-mes-variant=\"sprite\"]):not([data-k-view=\"home\"]) k-sprite-stage",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-fade-l": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "0%",
+   "note": "Bottom: fades into the composer. Sides: a sprite whose art runs off its canvas there (stage-model.js `cutSides`, data-cut-left/right) fades out instead of ending in a hard vertical line; uncut sides stay solid.",
+   "contexts": [
+    {
+     "selector": "k-sprite-stage .k-sprite-figure",
+     "at": []
+    },
+    {
+     "selector": "k-sprite-stage .k-sprite-figure[data-cut-left]",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-fade-r": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "0%",
+   "contexts": [
+    {
+     "selector": "k-sprite-stage .k-sprite-figure",
+     "at": []
+    },
+    {
+     "selector": "k-sprite-stage .k-sprite-figure[data-cut-right]",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-move": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "min(220ms, var(--k-motion-gate, 220ms))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]:has(#chat[data-k-mes-variant=\"sprite\"]):not([data-k-view=\"home\"]) k-sprite-stage",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-slot-art": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "none",
+   "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
+   "contexts": []
   },
   "--k-studio-area-min-h": {
    "group": "Card studio",

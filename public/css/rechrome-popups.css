@@ -520,6 +520,39 @@ body[data-k-layout="rails"] #toast-container .toast-progress {
     opacity: 0.35;
 }
 
+/* ── 5.8 A toast's own action ("Don't show again") ────────────────────────
+   Below the message, quiet until reached for. The layout part holds in classic too. */
+#toast-container .k-toast-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+#toast-container .k-toast-quiet {
+    padding: 4px 10px;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.9em;
+    cursor: pointer;
+    opacity: 0.85;
+}
+
+body[data-k-layout="rails"] #toast-container .k-toast-quiet {
+    border-color: var(--k-border);
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] #toast-container .k-toast-quiet:hover,
+body[data-k-layout="rails"] #toast-container .k-toast-quiet:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+    opacity: 1;
+    outline: none;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    6. MOTION
    ───────────────────────────────────────────────────────────────────────────

@@ -26,7 +26,7 @@
 import { characters, chat, generateQuietPrompt, generateRaw, getCharacterCardFields, name1, online_status, substituteParams, this_chid } from '../../script.js';
 import { eventSource, event_types } from '../../scripts/events.js';
 import { removeReasoningFromString } from '../../scripts/reasoning.js';
-import { CAPTION_LINE_PATTERN, stripCaptionLines } from './picture-model.js';
+import { CAPTION_LINE_PATTERN, stripCaptionMessages } from './picture-model.js';
 import { PORTRAIT_PURPOSES, PURPOSES, TONGUES } from './contract.js';
 import { cardArtUrl, getLook } from './look.js';
 import { templateFor } from './templates.js';
@@ -57,14 +57,8 @@ let captionFilterInstalled = false;
 /** @param {{chat?: any[], dryRun?: boolean}} data CHAT_COMPLETION_PROMPT_READY payload */
 function stripCaptionsFromMessages(data) {
     if (!writerRequest || data?.dryRun || !Array.isArray(data?.chat)) return;
-    for (let i = data.chat.length - 1; i >= 0; i--) {
-        const message = data.chat[i];
-        if (typeof message?.content !== 'string' || !message.content.includes(' sends a picture that contains: ')) continue;
-        const kept = stripCaptionLines(message.content);
-        // "Holo: " alone is what a caption-only message leaves behind with names in content.
-        if (!kept || /^[^\n:]{1,60}:$/.test(kept)) data.chat.splice(i, 1);
-        else message.content = kept;
-    }
+    // String content and multimodal parts alike (a picture message goes out as parts on an image-capable source).
+    stripCaptionMessages(data.chat);
 }
 
 /** @param {{prompt?: string, dryRun?: boolean}} data GENERATE_AFTER_COMBINE_PROMPTS payload */
@@ -82,6 +76,33 @@ function installCaptionFilter() {
 
 /** Longest model error quoted back to the sheet. */
 const REASON_CHARS = 200;
+
+/** A connection that refused its sign-in (an expired login, a missing or wrong key). */
+const SIGN_IN_FAILED = /\b401\b|failed to authenticate|not (?:logged|signed) in|access token (?:has )?expired|invalid (?:api )?key|incorrect api key|claude auth login/i;
+
+/**
+ * What the sheet says when the chat model could not draft. A refused sign-in gets plain words and the next step
+ * (a fresh install's first Write scene found an expired Claude login and quoted the raw 401 cut off mid-word);
+ * anything else is quoted, cut at a word, never mid-word.
+ * @param {unknown} raw the error's message
+ * @returns {string}
+ */
+export function writerFailure(raw) {
+    const text = String(raw ?? '').replace(/\s+/g, ' ').trim();
+    const tail = 'Try again, or type the prompt yourself.';
+    if (SIGN_IN_FAILED.test(text)) {
+        return /claude code|claude subscription|claude auth/i.test(text)
+            ? `The model couldn't draft: the Claude sign-in has expired or isn't set up. Run "claude auth login" in a terminal, then ${tail.charAt(0).toLowerCase()}${tail.slice(1)}`
+            : `The model couldn't draft: the chat connection refused its sign-in. Check the key or login under Connection, then ${tail.charAt(0).toLowerCase()}${tail.slice(1)}`;
+    }
+    if (!text) return `The model couldn't draft. ${tail}`;
+    let reason = text;
+    if (reason.length > REASON_CHARS) {
+        const cut = reason.slice(0, REASON_CHARS);
+        reason = `${cut.slice(0, Math.max(cut.lastIndexOf(' '), REASON_CHARS / 2)).replace(/[,;:\s]+$/, '')}…`;
+    }
+    return `The model couldn't draft: ${reason.replace(/[.\s]+$/, '')}${reason.endsWith('…') ? '' : '.'} ${tail}`;
+}
 
 /** A `tags` draft keeps at most this many tags (the look and style are added after). */
 export const MAX_TAGS = 75;
@@ -352,8 +373,7 @@ export async function draft(args) {
             }
         }
     } catch (error) {
-        const reason = String(error instanceof Error ? error.message : error ?? '').trim().slice(0, REASON_CHARS);
-        throw new WriterError(`The model couldn't draft${reason ? `: ${reason.replace(/[.\s]+$/, '')}.` : '.'} Try again, or type the prompt yourself.`);
+        throw new WriterError(writerFailure(error instanceof Error ? error.message : error));
     }
     const drafted = postProcess(raw, tongue);
     if (!drafted) throw new WriterError('The writer came back empty. Try again, or type the prompt yourself.');

@@ -14,7 +14,7 @@
  *   recipe with few big steps still paints continuously.
  * - `finishing` (the picture arrived): she paints the rest of the canvas quickly, at FINISH_FPS,
  *   then raises `k-mikan-finished`. A lane with no step count (OpenAI, Gemini) keeps her on the
- *   palette loop until then, so this is where its canvas gets painted (Andres's pick, 2026-10-10:
+ *   palette loop until then, so this is where its canvas gets painted (product call, 2026-10-10:
  *   honest about not knowing how far along it is).
  * - Reduced motion: no palette loop, and the frame jumps straight to the progress.
  *

@@ -50,6 +50,39 @@ export function stripCaptionLines(text) {
 }
 
 /**
+ * Takes picture caption lines out of a chat-completion message list, in place (the writer must not read them: they
+ * anchor its draft on the last picture). A message's `content` is a string, or a list of parts (`{type: 'text', text}`
+ * and image parts) when it carries a picture; a message left with no words is dropped whole, its picture with it.
+ * "Holo: " alone is what a caption-only message leaves behind with names in content.
+ * @param {any[]} chat
+ * @returns {number} messages dropped or changed
+ */
+export function stripCaptionMessages(chat) {
+    if (!Array.isArray(chat)) return 0;
+    const empty = (/** @type {string} */ text) => !text || /^[^\n:]{1,60}:$/.test(text);
+    let touched = 0;
+    for (let i = chat.length - 1; i >= 0; i--) {
+        const message = chat[i];
+        const content = message?.content;
+        if (typeof content === 'string') {
+            if (!content.includes(' sends a picture that contains: ')) continue;
+            const kept = stripCaptionLines(content);
+            if (empty(kept)) chat.splice(i, 1);
+            else message.content = kept;
+            touched++;
+        } else if (Array.isArray(content) && content.some(p => typeof p?.text === 'string' && p.text.includes(' sends a picture that contains: '))) {
+            const parts = content
+                .map(p => (typeof p?.text === 'string' ? { ...p, text: stripCaptionLines(p.text) } : p))
+                .filter(p => typeof p?.text !== 'string' || !empty(p.text));
+            if (!parts.some(p => typeof p?.text === 'string')) chat.splice(i, 1);
+            else message.content = parts;
+            touched++;
+        }
+    }
+    return touched;
+}
+
+/**
  * @param {unknown} text A message's `mes`.
  * @returns {boolean} Whether it is only a picture caption line.
  */
@@ -608,7 +641,7 @@ export function recipeBase(recipe) {
  */
 
 /**
- * Splits the server's LoRAs for a recipe's family (Andres, 2026-10-10: hide mismatches): those made
+ * Splits the server's LoRAs for a recipe's family (product call, 2026-10-10: hide mismatches): those made
  * for it, those whose family is unknown, and those made for another (shown only on "Show all").
  * With no family for the recipe, everything is `unknown`.
  * @param {LoraInfo[]} loras
@@ -626,7 +659,7 @@ export function groupLoras(loras, base) {
     };
 }
 
-/** Purposes that draw the card's character, so its LoRAs ride along (Andres, 2026-10-10). Not Me: that is the persona. */
+/** Purposes that draw the card's character, so its LoRAs ride along (product call, 2026-10-10). Not Me: that is the persona. */
 export const CARD_LORA_PURPOSES = Object.freeze([PURPOSES.MOMENT, PURPOSES.CHAR]);
 
 /**
@@ -671,7 +704,7 @@ function commaItems(text) {
 
 /**
  * The prompt with each trigger in front unless it is already one of the prompt's comma items
- * (Andres, 2026-10-10: triggers go in on their own, visible and editable).
+ * (product call, 2026-10-10: triggers go in on their own, visible and editable).
  * @param {string} prompt
  * @param {string[]} triggers Each may itself hold several comma-separated words.
  * @returns {string}
@@ -858,6 +891,151 @@ export function startingModel(family, saved, last, defaultPreset) {
         .filter(([, r]) => r?.family === family)
         .sort(([a, ra], [b, rb]) => rank(ra) - rank(rb) || a.localeCompare(b, 'en', { sensitivity: 'base' }))[0];
     return first ? { file: first[0], family, preset: /** @type {{preset: string}} */ (first[1]).preset } : null;
+}
+
+/**
+ * A family's name for the person (`krea2` → `KREA 2`).
+ * @param {Record<string, FamilyInfo>|undefined} families
+ * @param {string|null|undefined} id
+ * @returns {string}
+ */
+export function familyName(families, id) {
+    if (!id) return '';
+    return families?.[id]?.name ?? LORA_BASE_NAMES[/** @type {keyof typeof LORA_BASE_NAMES} */ (id)] ?? id;
+}
+
+/**
+ * The last model drawn with on this server, while it is still set up (issue #10: the sheet opens on it). Its
+ * preset is the last one used when the family still has it, else the model's own.
+ * @param {Record<string, {family: string, preset: string}|null>|undefined} saved This server's `models` leaf
+ * @param {{file?: string, preset?: string, pipeline?: string}|null|undefined} last This server's `lastModel`
+ * @param {Record<string, FamilyInfo>|undefined} families
+ * @returns {{file: string, family: string, preset: string}|null}
+ */
+export function lastModelPick(saved, last, families) {
+    const file = typeof last?.file === 'string' ? last.file : '';
+    const record = file ? saved?.[file] : null;
+    const family = record ? families?.[record.family] : null;
+    if (!record || !family) return null;
+    const presets = family.presets ?? {};
+    const preset = last?.preset && presets[last.preset] ? last.preset
+        : presets[record.preset] ? record.preset : family.defaultPreset;
+    return presets[preset] ? { file, family: record.family, preset } : null;
+}
+
+/**
+ * The pipeline (a recipe of that family) a model draws with: the first `prefer` id that IS of the family, else the
+ * one of the same pipeline kind (`kind`: plain / bigger / sprite), else the family's first (Plain first). Never a
+ * recipe of another family: null when the family has no pipeline here, which the sheet shows as a state.
+ * @param {import('./contract.js').Recipe[]} recipes
+ * @param {string} family
+ * @param {{prefer?: (string|null|undefined)[], kind?: string|null}} [hints]
+ * @returns {import('./contract.js').Recipe|null}
+ */
+export function pipelineFor(recipes, family, { prefer = [], kind = '' } = {}) {
+    const pipelines = pipelinesFor(recipes, family);
+    for (const id of prefer) {
+        const hit = id ? pipelines.find(p => p.id === id) : null;
+        if (hit) return hit;
+    }
+    return (kind ? pipelines.find(p => p.pipeline === kind) : null) ?? pipelines[0] ?? null;
+}
+
+/**
+ * What a sheet (or a quick draw) starts on when models are set up on the server (§14, issue #10):
+ * 1. a prefill's model (Edit prompt: the picture's own), with its recipe when that is of the model's family;
+ * 2. a prefill's own workflow (a family-less recipe and no model): drawn as it is;
+ * 3. a prefill's family recipe without a model (a picture drawn before models were set up): that recipe, with the
+ *    family's starting model;
+ * 4. the LAST model used on this server, with its pipeline and preset (or the last own workflow, `last.file` '');
+ * 5. the purpose's recipe: an own workflow as it is, else its family's starting model;
+ * 6. the first set-up family's starting model.
+ * `recipe` is always of `model.family` when there is a model, or '' when that family has no pipeline here.
+ * @param {object} o
+ * @param {{model?: string, preset?: string, recipe?: string}} [o.prefill]
+ * @param {import('./contract.js').Recipe|null|undefined} [o.purposeRecipe] the purpose's (or last sheet's) recipe
+ * @param {import('./contract.js').Recipe[]} o.recipes
+ * @param {Record<string, {family: string, preset: string}|null>|undefined} o.saved This server's `models` leaf
+ * @param {Record<string, FamilyInfo>} o.families
+ * @param {{file?: string, preset?: string, pipeline?: string}|null|undefined} [o.last] This server's `lastModel`
+ * @returns {{model: {file: string, family: string, preset: string}|null, recipe: string}}
+ */
+export function openingPick({ prefill = {}, purposeRecipe = null, recipes, saved, families, last = null }) {
+    const list = Array.isArray(recipes) ? recipes : [];
+    const byId = (/** @type {string|undefined} */ id) => (id ? list.find(r => r.id === id) ?? null : null);
+    const withModel = (/** @type {{file: string, family: string, preset: string}} */ model, /** @type {(string|undefined)[]} */ prefer) => ({
+        model,
+        recipe: pipelineFor(list, model.family, { prefer, kind: purposeRecipe?.pipeline ?? '' })?.id ?? '',
+    });
+    const starting = (/** @type {string|null|undefined} */ family) => startingModel(family, saved, last ?? undefined, family ? families?.[family]?.defaultPreset : undefined);
+
+    const prefillRecipe = byId(prefill.recipe);
+    const prefillRecord = prefill.model ? saved?.[prefill.model] : null;
+    if (prefill.model && prefillRecord && families?.[prefillRecord.family]) {
+        const presets = families[prefillRecord.family].presets ?? {};
+        const preset = prefill.preset && presets[prefill.preset] ? prefill.preset : prefillRecord.preset;
+        return withModel({ file: prefill.model, family: prefillRecord.family, preset }, [prefill.recipe, last?.pipeline]);
+    }
+    if (prefillRecipe && !prefillRecipe.family) return { model: null, recipe: prefillRecipe.id };
+    if (prefillRecipe?.family) {
+        const model = starting(prefillRecipe.family);
+        if (model) return withModel(model, [prefillRecipe.id]);
+    }
+    const lastPick = lastModelPick(saved, last, families);
+    if (lastPick) return withModel(lastPick, [last?.pipeline]);
+    if (last && !last.file) {
+        const own = byId(last.pipeline);
+        if (own && !own.family) return { model: null, recipe: own.id };
+    }
+    if (purposeRecipe && !purposeRecipe.family) return { model: null, recipe: purposeRecipe.id };
+    const fromPurpose = starting(purposeRecipe?.family);
+    if (fromPurpose) return withModel(fromPurpose, [purposeRecipe?.id]);
+    const firstFamily = confirmedByFamily(saved, families)[0]?.family.id ?? null;
+    const first = starting(firstFamily);
+    if (first) return withModel(first, []);
+    return { model: null, recipe: purposeRecipe?.id ?? '' };
+}
+
+/**
+ * Whether a model and a recipe may draw together: no model (recipe mode, an own workflow), or a recipe of the
+ * model's family. A model never draws with another family's recipe (issue #10).
+ * @param {{family: string}|null|undefined} model
+ * @param {import('./contract.js').Recipe|null|undefined} recipe
+ * @returns {boolean}
+ */
+export function pairsWith(model, recipe) {
+    if (!recipe) return false;
+    return !model || recipe.family === model.family;
+}
+
+// ── the sheet's two steps (issue #10 part 3) ──────────────────────────────────────────────────
+
+/** Set up (subject, model, pipeline, preset, LoRAs) → write the scene and draw. */
+export const SHEET_STEPS = Object.freeze({ SETUP: 'setup', WRITE: 'write' });
+
+/**
+ * The step a sheet opens on: straight to writing when it already has a prompt (Edit prompt), on Free (the person
+ * writes it) or with no writer; else set up first, and nothing is written until "Write scene".
+ * @param {{prefillPrompt?: boolean, purpose: string, writer: boolean}} o
+ * @returns {'setup'|'write'}
+ */
+export function openingStep({ prefillPrompt = false, purpose, writer }) {
+    return prefillPrompt || purpose === PURPOSES.FREE || !writer ? SHEET_STEPS.WRITE : SHEET_STEPS.SETUP;
+}
+
+/**
+ * After the subject changes. Never a writer call: on set up nothing happens; with a prompt in the box it is
+ * kept and a rewrite is OFFERED when the box was written for another subject; an empty box goes back to set up.
+ * Free (and a sheet with no writer) is always the writing step.
+ * @param {{step: string, purpose: string, writer: boolean, prompt: string, madeFor: string}} o
+ *   `madeFor` = the subject the prompt in the box was written (or opened) for
+ * @returns {{step: 'setup'|'write', offerRewrite: boolean}}
+ */
+export function stepOnSubject({ step, purpose, writer, prompt, madeFor }) {
+    if (purpose === PURPOSES.FREE || !writer) return { step: SHEET_STEPS.WRITE, offerRewrite: false };
+    if (step !== SHEET_STEPS.WRITE) return { step: SHEET_STEPS.SETUP, offerRewrite: false };
+    if (!String(prompt ?? '').trim()) return { step: SHEET_STEPS.SETUP, offerRewrite: false };
+    return { step: SHEET_STEPS.WRITE, offerRewrite: madeFor !== purpose };
 }
 
 /**

@@ -281,13 +281,21 @@ export class ComfyClient extends EventEmitter {
      * `node_errors` verbatim (server.py :1139 replies `{error, node_errors}` with 400).
      * @param {object} graph API graph
      * @param {string} [promptId] A client-chosen prompt id (honoured by builds that accept it)
+     * @param {{previewMethod?: string}} [options] `previewMethod`: this prompt's live preview method
+     *   (`extra_data.preview_method`, execution.py `set_preview_method`). ComfyUI's own default is its
+     *   `--preview-method` flag, which is `none` unless set: without asking, a stock install sends no frames.
      * @returns {Promise<{prompt_id: string, number: number, node_errors: object}>} The queue entry
      */
-    async queuePrompt(graph, promptId) {
+    async queuePrompt(graph, promptId, { previewMethod } = {}) {
         try {
             return await this.request('/prompt', {
                 method: 'POST',
-                json: { prompt: graph, client_id: this.clientId, ...(promptId ? { prompt_id: promptId } : {}) },
+                json: {
+                    prompt: graph,
+                    client_id: this.clientId,
+                    ...(promptId ? { prompt_id: promptId } : {}),
+                    ...(previewMethod ? { extra_data: { preview_method: previewMethod } } : {}),
+                },
             });
         } catch (error) {
             if (error instanceof ComfyError && error.type) {

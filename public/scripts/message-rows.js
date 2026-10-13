@@ -18,9 +18,13 @@
  *    `#chat[data-k-mes-*]` enumerated settings (three orthogonal axes)
  */
 
-/** The fixed variant set (SPEC §13 layer 3, extended 2026-08-24). */
+/**
+ * The fixed variant set (SPEC §13 layer 3, extended 2026-08-24). `sprite` (Pictures slice F,
+ * 2026-10-10) is the visual-novel look: the reading column over a stage of expression sprites
+ * (`public/kotatsu/sprites/`), and the first look that changes rail behaviour.
+ */
 export const MESSAGE_VARIANTS = Object.freeze([
-    'card', 'flat', 'bubble', 'script', 'bubble-split', 'portrait', 'portrait-column', 'broadcast',
+    'card', 'flat', 'bubble', 'script', 'bubble-split', 'portrait', 'portrait-column', 'broadcast', 'sprite',
 ]);
 
 /** Where the name + timestamp row sits relative to the message surface. */
@@ -291,6 +295,12 @@ export function resetRowConditionals(el) {
     // `k-picture-menu` (pictures v0 slice B) is the same kind of guest: mounted only on messages
     // Pictures drew, repainted by its own drivers, never carried over to another message.
     for (const conditional of el.querySelectorAll('.timestamp-icon, .thinking-icon, k-mes-metrics, k-picture-menu')) conditional.remove();
+    // The sprite look's face (pictures slice F) is painted per message by its own drivers; a
+    // reused row must not wear the previous message's expression.
+    el.removeAttribute('data-k-sprite');
+    el.style.removeProperty('--k-mes-sprite');
+    el.style.removeProperty('--k-sprite-face-y');
+    el.style.removeProperty('--k-sprite-face-zoom');
 }
 
 /**

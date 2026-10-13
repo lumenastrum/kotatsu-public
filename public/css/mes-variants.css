@@ -935,6 +935,58 @@ body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within k-me
     pointer-events: auto;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. sprite — the visual-novel look (Pictures slice F)
+   ───────────────────────────────────────────────────────────────────────────
+   The reading column floats over a stage of expression sprites (<k-sprite-stage>,
+   css/sprites.css owns the stage and the floating rails). Here: the rows become
+   translucent cards so prose stays readable where a figure reaches the column, and
+   every character row wears ITS OWN face — a crop of that message's sprite,
+   painted by kotatsu/sprites/row-faces.js as `--k-mes-sprite` + `data-k-sprite`
+   — so the history keeps its expressions while the stage shows only now. A row
+   with no face keeps the card avatar untouched.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#chat[data-k-mes-variant="sprite"] {
+    --k-sprite-card-fill: color-mix(in srgb, var(--k-surface) 84%, transparent);
+    --k-sprite-card-fill-user: color-mix(in srgb, var(--k-surface-2) 76%, transparent);
+    --k-sprite-card-blur: 6px;
+    /* The face crop: the sprite drawn at this multiple of the avatar's width, top-centred.
+       Measured on the lab sets (full body in an 832 × 1216 canvas): head and shoulders. */
+    --k-sprite-face-zoom: 300%;
+    --k-sprite-face-y: 3%;
+}
+
+/* The rows stay the card look (shell-center lists `sprite` beside `card`, so the bubble, its
+   swipe pill and its anchors all apply); only the BUBBLE is frosted. A whole-row fill was
+   tried first and drew an empty dark slab beside every user bubble, hiding the stage for
+   nothing (eyes, 2026-10-10). */
+body #chat[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .mes_text:not(:empty) {
+    background-color: var(--k-sprite-card-fill);
+    -webkit-backdrop-filter: blur(var(--k-sprite-card-blur));
+    backdrop-filter: blur(var(--k-sprite-card-blur));
+}
+
+body #chat[data-k-mes-variant="sprite"] .mes[is_user="true"]:not(.smallSysMes) .mes_text:not(:empty) {
+    background-color: var(--k-sprite-card-fill-user);
+}
+
+/* The face. The `<img>` stays in the box (click target, a11y) and goes invisible, the
+   portrait-column trick (§6), so the sprite crop under it is what the eye gets. */
+body #chat[data-k-mes-variant="sprite"] .mes[data-k-sprite]:not(.smallSysMes) .avatar {
+    background-color: var(--k-surface);
+    background-image: var(--k-mes-sprite);
+    background-position: 50% var(--k-sprite-face-y);
+    background-repeat: no-repeat;
+    background-size: var(--k-sprite-face-zoom) auto;
+    border-radius: var(--k-radius-lg);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--k-speaker, var(--k-accent)) 55%, transparent);
+}
+
+body #chat[data-k-mes-variant="sprite"] .mes[data-k-sprite]:not(.smallSysMes) .avatar img {
+    opacity: 0;
+}
+
 /* Motion opt-out. The only animated properties in this sheet are the two opacity fades
    above and broadcast's dim, and all three are affordances, not information. */
 @media (prefers-reduced-motion: reduce) {

@@ -15,6 +15,39 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
     Object.freeze({
+        version: '0.7.0',
+        title: 'Sprites',
+        cards: [
+            {
+                id: 'stage',
+                title: 'Faces on the stage',
+                body: 'Set Messages to Sprites in Settings → Appearance, and your cast stands beside the chat. Each finished reply picks the face that fits it. In a scene, whoever speaks steps forward.',
+                line: 'whatsNewStage',
+                wiki: 'Sprites#on-the-stage',
+            },
+            {
+                id: 'generate',
+                title: 'A whole set from one drawing',
+                body: 'In the Card Studio, open Sprites and choose Generate. Pick the drawing you like best, and Kotatsu paints every expression from it, as a full body and as a bust. Your own ComfyUI does the drawing.',
+                line: 'whatsNewGenerate',
+                wiki: 'Sprites#generate-a-set',
+            },
+            {
+                id: 'touchup',
+                title: 'Touch up the edges',
+                body: 'A patch of background left behind? Touch-up’s wand clears it, and with Apply to matching sprites the fix lands on the whole set at once.',
+                line: 'whatsNewTouchup',
+                wiki: 'Sprites#touch-up',
+            },
+        ],
+        notes: [
+            'Already have sprites? Upload them one by one, or import a pack (.zip), in the Card Studio’s Sprites tab.',
+            'The Pictures sheet draws in two steps now: set up the scene, then Write scene. It opens on the model you used last.',
+            'Generate says up front when ComfyUI isn’t answering, with a button to set it up.',
+            'Claude Code is optional, and its notice now says so. Don’t show again turns it off.',
+        ],
+    }),
+    Object.freeze({
         version: '0.6.0',
         title: 'Pictures',
         cards: [

@@ -42,6 +42,7 @@ const AXIS_UI = Object.freeze({
             'portrait': 'Portrait',
             'portrait-column': 'Portrait column',
             'broadcast': 'Broadcast',
+            'sprite': 'Sprites (visual novel)',
         },
     },
     nameplate: {
