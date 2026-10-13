@@ -39,7 +39,7 @@ Then open <http://localhost:8000>. On Docker Desktop (macOS, Windows) you can le
 
 | Tag | What it is |
 | --- | --- |
-| `0.7.0` | exactly that release |
+| `0.7.1` | exactly that release |
 | `0.6` | the newest `0.6.x` patch |
 | `latest` | the newest release |
 
@@ -149,7 +149,7 @@ docker compose pull && docker compose up -d
 # or: docker pull ghcr.io/lumenastrum/kotatsu:latest, then remove and re-run the container
 ```
 
-To stay on one version, use a version tag such as `0.7.0` instead of `latest`.
+To stay on one version, use a version tag such as `0.7.1` instead of `latest`.
 
 ## Backup and restore
 
@@ -190,7 +190,7 @@ docker build -f docker/Dockerfile -t kotatsu .
 Or with no clone (BuildKit fetches the source):
 
 ```sh
-docker build -f docker/Dockerfile -t kotatsu https://github.com/lumenastrum/kotatsu-public.git#v0.7.0
+docker build -f docker/Dockerfile -t kotatsu https://github.com/lumenastrum/kotatsu-public.git#v0.7.1
 ```
 
 ## License

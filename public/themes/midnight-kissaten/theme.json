@@ -42,6 +42,14 @@
         "--k-danger": "#e38b7c",
 
         "--k-checkbox-tick": "var(--k-accent)",
+        "--k-select": "var(--k-accent)",
+        "--k-select-bright": "var(--k-accent-bright)",
+        "--k-control-on-strength": "28%",
+        "--k-control-on-text": "var(--k-text-strong)",
+        "--k-primary-bg": "initial",
+        "--k-primary-text": "initial",
+        "--k-primary-hover-bg": "initial",
+        "--k-primary-weight": "initial",
 
         "--k-glow-dawn": "#d8913f",
         "--k-glow-rose": "#c24a6e",

@@ -66,9 +66,11 @@ import {
     getPastCharacterChats,
     getThumbnailUrl,
     openCharacterChat,
+    saveSettingsDebounced,
     selectCharacterById,
     this_chid,
 } from '../../../script.js';
+import { power_user } from '../../../scripts/power-user.js';
 import { EMPTY_TREE, branchStore } from '../../branches/store.js';
 import { OPEN_STUDIO_EVENT } from '../../studio/manifest.js';
 import { event_types, eventSource } from '../../../scripts/events.js';
@@ -80,7 +82,21 @@ import { loadSceneChats, openSceneChat, renameSceneChat } from '../../groups/sce
 import { OPEN_SCENE_STUDIO_EVENT } from '../../groups/doors.js';
 // Side-effect import: defines <k-persona-menu>, rendered in the footer below.
 import './k-persona-menu.js';
-import { chatLabelText } from '../chat-label.js';
+import { chatLabel, chatLabelText } from '../chat-label.js';
+import { groupByRecency, previewText, rowTime } from '../chat-groups.js';
+import {
+    LOOSE_KEY,
+    branchLabel,
+    buildFolders,
+    defaultView,
+    folderKeysOf,
+    foldBranches,
+    pinsFor,
+    renamePin,
+    splitPins,
+    threadOf,
+    withPin,
+} from '../chat-tree.js';
 
 /** @typedef {import('../../branches/store.js').BranchTree} BranchTree */
 /** @typedef {import('../../branches/store.js').BranchTreeEdge} BranchTreeEdge */
@@ -89,8 +105,44 @@ import { chatLabelText } from '../chat-label.js';
 /** Visible roster rows before the list collapses into a "+N more" row. */
 const ROSTER_VISIBLE_MAX = 8;
 
-/** Visible chat rows before the list collapses into a "+N more" row. */
-const CHATS_VISIBLE_MAX = 6;
+/**
+ * Top-level rows the Recent view shows before it hands over to "All chats (N)". Folded branches and
+ * the pinned shelf do not count; the open chat (or the thread holding it) is always shown too.
+ */
+const CHATS_VISIBLE_MAX = 12;
+
+/**
+ * localStorage, per owner (a character's avatar file, or `group:<id>`): the Chats view the reader
+ * last picked, and which folders they left open. Per-browser conveniences, not settings: a phone and
+ * a desktop may well want different views of the same 800 chats.
+ */
+const CHAT_VIEW_KEY = 'kotatsu.rail.chats.view.';
+const CHAT_FOLDERS_KEY = 'kotatsu.rail.chats.folders.';
+
+/**
+ * @param {string} key
+ * @returns {string|null}
+ */
+function readLocal(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * @param {string} key
+ * @param {string} value
+ * @returns {void}
+ */
+function writeLocal(key, value) {
+    try {
+        localStorage.setItem(key, value);
+    } catch {
+        /* a private window or blocked storage: the choice just doesn't stick */
+    }
+}
 
 /** Visible scene rows before the list hands over to the gallery (`docs/group-chat-v0.md` G1). */
 const SCENES_VISIBLE_MAX = 4;
@@ -182,7 +234,30 @@ const COUNT_EVENTS = [
  * @property {string} title Row label. The chat file's own name; nothing derived.
  * @property {number|null} count `chat_items` when the endpoint supplied it.
  * @property {number} lastMs Timestamp of the last message, epoch ms, or 0.
+ * @property {string} [preview] The last message as one plain line (`chat-groups.js` `previewText`): what an
+ *   unnamed (stamped) chat is shown by.
  */
+
+/** @typedef {import('../chat-tree.js').Thread<ChatRow>} ChatThread */
+
+/**
+ * @typedef {object} ChatModel The Chats section's shape (`shell/chat-tree.js`).
+ * @property {ChatThread[]} threads Every top-level row, branches folded, newest activity first.
+ * @property {ChatThread[]} pinned The shelf.
+ * @property {ChatThread[]} rest Everything below the shelf.
+ * @property {Set<string>} pins Pinned chat ids (live ones only).
+ * @property {import('../chat-tree.js').FolderTree<ChatRow>|null} folders `rest` in folders; built on first use.
+ */
+
+/**
+ * The key pins and view choices are kept under for a character: its avatar file.
+ * @param {number} chid Character index.
+ * @returns {string} '' when there is no such character.
+ */
+function characterOwnerKey(chid) {
+    const avatar = chid >= 0 && Array.isArray(characters) ? characters[chid]?.avatar : '';
+    return typeof avatar === 'string' && avatar ? avatar : '';
+}
 
 /**
  * Two-letter chip text for a display name. Code-point safe (names carry emoji).
@@ -375,6 +450,33 @@ const icons = {
              aria-hidden="true" focusable="false">
             <path d="M11.1 2.4a1.6 1.6 0 0 1 2.26 2.26L5.75 12.3l-3 .75.75-3z" />
         </svg>`,
+    /** Pin / unpin a chat to the Chats shelf. */
+    pin: html`
+        <svg class="k-rl-icon" viewBox="0 0 16 16" width="12" height="12" fill="none"
+             stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <path d="M5.75 2.25h4.5" />
+            <path d="M6.6 2.25v3.9L4.25 9.25h7.5L9.4 6.15v-3.9" />
+            <path d="M8 9.25v4.5" />
+        </svg>`,
+    /** A folder's disclosure; turned a quarter by CSS when open. */
+    chevron: html`
+        <svg class="k-rl-icon k-rl-chev" viewBox="0 0 16 16" width="10" height="10" fill="none"
+             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <path d="M6 3.5 10.5 8 6 12.5" />
+        </svg>`,
+    /** The small branch mark beside a chat with folded branches. */
+    fork: html`
+        <svg class="k-rl-icon" viewBox="0 0 16 16" width="11" height="11" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <circle cx="4" cy="3" r="1.6" />
+            <circle cx="4" cy="13" r="1.6" />
+            <circle cx="12" cy="6" r="1.6" />
+            <path d="M4 4.6v6.8" />
+            <path d="M12 7.6c0 3-8 2-8 4" />
+        </svg>`,
     /** A chat that hangs off the row above it — the `via: "header"` link. */
     elbow: html`
         <svg class="k-rl-icon" viewBox="0 0 16 16" width="14" height="14" fill="none"
@@ -471,6 +573,32 @@ export class KRailLeft extends LitElement {
      * @type {Set<string>}
      */
     #thumbFailed = new Set();
+
+    /**
+     * Whose chats `_chats` holds: a character's avatar file or `group:<id>`, '' when none. Set when
+     * a fetch lands, so pins and view choices never get written against another owner's list
+     * while a switch is in flight.
+     */
+    #chatsOwner = '';
+
+    /** @type {Map<string, 'recent'|'folders'>} The view picked per owner, this session's cache. */
+    #chatViews = new Map();
+
+    /** @type {Map<string, Record<string, boolean>>} Folder open/closed per owner (localStorage-backed). */
+    #folderStates = new Map();
+
+    /** @type {Set<string>} `<owner>\0<parent id>` of the threads whose branches are shown. Session-lived. */
+    #openForks = new Set();
+
+    /** `<owner>\0<chat id>` the way to the open chat was last opened for. */
+    #autoOpened = '';
+
+    /**
+     * The folded/pinned shape of `_chats`, rebuilt only when its inputs change: the rail re-renders
+     * on every message count, and an 800-chat card should not refold on each one.
+     * @type {{ chats: ChatRow[]|null, tree: BranchTree|null, owner: string, pins: string, model: ChatModel|null }}
+     */
+    #modelCache = { chats: null, tree: null, owner: '', pins: '', model: null };
 
     /** @type {Array<{ type: string, handler: () => void }>} */
     #subscriptions = [];
@@ -660,6 +788,7 @@ export class KRailLeft extends LitElement {
             this.#chatsToken++;
             this.#chatsKey = '';
             this.#forceChats = true;
+            this.#chatsOwner = '';
             this._chats = [];
             this._chatsPending = false;
             return;
@@ -685,8 +814,10 @@ export class KRailLeft extends LitElement {
                     title: String(entry.file_id),
                     count: Number.isFinite(Number(entry.chat_items)) ? Number(entry.chat_items) : null,
                     lastMs: toEpochMs(entry.last_mes),
+                    preview: previewText(entry.mes),
                 }));
             rows.sort((a, b) => b.lastMs - a.lastMs);
+            this.#chatsOwner = characterOwnerKey(chid);
             this._chats = rows;
             this._activeChatId = this.#readActiveChatId();
             this.#chatsKey = `${chid} ${this._activeChatId}`;
@@ -725,7 +856,8 @@ export class KRailLeft extends LitElement {
             if (token !== this.#chatsToken) {
                 return;
             }
-            this._chats = rows.map(({ id, title, count, lastMs }) => ({ id, title, count, lastMs }));
+            this.#chatsOwner = `group:${groupId}`;
+            this._chats = rows.map(({ id, title, count, lastMs, preview }) => ({ id, title, count, lastMs, preview: previewText(preview) }));
             this._activeChatId = this.#readActiveChatId();
             this.#chatsKey = `group:${groupId} ${this._activeChatId}`;
         } catch (error) {
@@ -818,7 +950,10 @@ export class KRailLeft extends LitElement {
             return;
         }
         const next = this._chats.slice();
-        next[index] = { ...next[index], count, lastMs: Date.now() };
+        // The open chat just moved: it goes to the top (Today), wearing its newest line.
+        const last = chat[chat.length - 1];
+        next[index] = { ...next[index], count, lastMs: Date.now(), preview: last ? previewText(last.mes) : next[index].preview };
+        next.sort((a, b) => b.lastMs - a.lastMs);
         this._chats = next;
         this._activeChatId = activeId;
     }
@@ -974,20 +1109,196 @@ export class KRailLeft extends LitElement {
         if (selected_group) {
             // Scenes have no branch forest to heal; core's rename is the whole job there
             // (it moves the id inside the record and emits CHAT_RENAMED).
+            const owner = this.#chatsOwner;
             try {
                 await renameSceneChat(fileId, requested);
+                this.#movePin(owner, fileId, requested);
             } catch (error) {
                 console.error('[k-rail-left] scene chat rename failed', error);
                 toastr.warning('Rename failed — the name may already be taken.', 'Kotatsu');
             }
             return;
         }
+        const owner = this.#chatsOwner;
         const finalName = await branchStore.rename(fileId, requested);
         if (finalName === null) {
             // The store logged the cause; the reader just needs to know it
             // didn't take. toastr is ST's native surface for exactly this.
             toastr.warning('Rename failed — the name may already be taken.', 'Kotatsu');
+            return;
         }
+        this.#movePin(owner, fileId, finalName);
+    }
+
+    /**
+     * A renamed chat keeps its pin (`power_user.kotatsu_chat_pins`).
+     * @param {string} owner Whose chat it was when the rename started.
+     * @param {string} oldId
+     * @param {string} newId
+     * @returns {void}
+     */
+    #movePin(owner, oldId, newId) {
+        if (!owner) return;
+        const next = renamePin(power_user.kotatsu_chat_pins, owner, oldId, newId);
+        if (!next) return;
+        power_user.kotatsu_chat_pins = next;
+        saveSettingsDebounced();
+        this.requestUpdate();
+    }
+
+    /**
+     * Pins or unpins a chat. The owner's list is pruned of chats that are gone on the way, but only
+     * against a list known to be this owner's.
+     * @param {string} chatId
+     * @param {Event} event The pin click — must not bubble into row open.
+     * @returns {void}
+     */
+    #onTogglePin(chatId, event) {
+        event.stopPropagation();
+        const owner = this.#chatsOwner;
+        if (!owner || !chatId) return;
+        const current = pinsFor(power_user.kotatsu_chat_pins, owner);
+        const live = this._chats.map(row => row.id);
+        power_user.kotatsu_chat_pins = withPin(power_user.kotatsu_chat_pins, owner, chatId, !current.includes(chatId), live);
+        saveSettingsDebounced();
+        this.requestUpdate();
+    }
+
+    /**
+     * @param {string} parentId
+     * @param {Event} event The count click — must not bubble into row open.
+     * @returns {void}
+     */
+    #onToggleForks(parentId, event) {
+        event.stopPropagation();
+        const key = `${this.#chatsOwner}\0${parentId}`;
+        if (this.#openForks.has(key)) this.#openForks.delete(key);
+        else this.#openForks.add(key);
+        this.requestUpdate();
+    }
+
+    /**
+     * @param {string} owner
+     * @param {'recent'|'folders'} view
+     * @returns {void}
+     */
+    #onChatView(owner, view) {
+        this.#chatViews.set(owner, view);
+        writeLocal(CHAT_VIEW_KEY + owner, view);
+        this.requestUpdate();
+    }
+
+    /**
+     * The view an owner's chats open in: the one last picked here, else Folders from 30 chats up.
+     * @param {string} owner
+     * @param {number} count
+     * @returns {'recent'|'folders'}
+     */
+    #chatViewFor(owner, count) {
+        const cached = this.#chatViews.get(owner);
+        if (cached) return cached;
+        const stored = owner ? readLocal(CHAT_VIEW_KEY + owner) : null;
+        if (stored === 'recent' || stored === 'folders') {
+            this.#chatViews.set(owner, stored);
+            return stored;
+        }
+        return defaultView(count);
+    }
+
+    /**
+     * @param {string} owner
+     * @returns {Record<string, boolean>}
+     */
+    #folderState(owner) {
+        let state = this.#folderStates.get(owner);
+        if (state) return state;
+        state = {};
+        try {
+            const parsed = JSON.parse(readLocal(CHAT_FOLDERS_KEY + owner) ?? '{}');
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                for (const [key, value] of Object.entries(parsed)) {
+                    if (typeof value === 'boolean') state[key] = value;
+                }
+            }
+        } catch {
+            /* unreadable: every folder starts at its default */
+        }
+        this.#folderStates.set(owner, state);
+        return state;
+    }
+
+    /**
+     * @param {string} owner
+     * @param {string} key Folder key (`chat-tree.js`), or `LOOSE_KEY`.
+     * @param {boolean} open
+     * @returns {void}
+     */
+    #onToggleFolder(owner, key, open) {
+        const state = this.#folderState(owner);
+        state[key] = open;
+        if (owner) writeLocal(CHAT_FOLDERS_KEY + owner, JSON.stringify(state));
+        this.requestUpdate();
+    }
+
+    /**
+     * The section's shape, rebuilt only when the chats, the pins or the branch tree moved.
+     * @param {string} owner
+     * @returns {ChatModel}
+     */
+    #chatModel(owner) {
+        const pinIds = pinsFor(power_user.kotatsu_chat_pins, owner);
+        const pinsKey = pinIds.join('\0');
+        const tree = this._groupActive ? null : this._tree;
+        const cache = this.#modelCache;
+        if (cache.model && cache.chats === this._chats && cache.tree === tree && cache.owner === owner && cache.pins === pinsKey) {
+            return cache.model;
+        }
+        const live = new Set(this._chats.map(row => row.id));
+        const pins = new Set(pinIds.filter(id => live.has(id)));
+        // The branch tree's links name a branch's parent when the name alone can't (a renamed parent).
+        /** @type {Map<string, string>|undefined} */
+        let parentOf;
+        if (tree && tree !== EMPTY_TREE) {
+            parentOf = new Map();
+            for (const [child, edge] of edgesByChild(tree)) {
+                if (typeof edge.parent === 'string' && edge.parent) parentOf.set(child, edge.parent);
+            }
+        }
+        const threads = foldBranches(this._chats, { parentOf, keepTop: pins });
+        const { pinned, rest } = splitPins(threads, pins);
+        const model = { threads, pinned, rest, pins, folders: null };
+        this.#modelCache = { chats: this._chats, tree, owner, pins: pinsKey, model };
+        return model;
+    }
+
+    /**
+     * @param {ChatModel} model
+     * @returns {import('../chat-tree.js').FolderTree<ChatRow>}
+     */
+    #foldersOf(model) {
+        if (!model.folders) model.folders = buildFolders(model.rest);
+        return model.folders;
+    }
+
+    /**
+     * Opens the way to the open chat once per chat switch: the thread holding a branch shows its
+     * branches, and the folders holding it open. The reader can close them again after.
+     * @param {string} owner
+     * @param {ChatModel} model
+     * @returns {void}
+     */
+    #openWayToActive(owner, model) {
+        const active = this._activeChatId;
+        const key = `${owner}\0${active}`;
+        if (!active || key === this.#autoOpened) return;
+        const thread = threadOf(model.threads, active);
+        // Not in the list yet (a chat just made, before its fetch lands): try again on the next pass.
+        if (!thread) return;
+        this.#autoOpened = key;
+        if (thread.row.id !== active) this.#openForks.add(`${owner}\0${thread.row.id}`);
+        if (model.pins.has(thread.row.id)) return;
+        const state = this.#folderState(owner);
+        for (const folderKey of folderKeysOf(this.#foldersOf(model), active)) state[folderKey] = true;
     }
 
     /**
@@ -1138,47 +1449,134 @@ export class KRailLeft extends LitElement {
     }
 
     /**
+     * One chat row. Two looks: `thread` (Recent: a dot on the line, the name, then a quiet mono line
+     * of when · how many · branches) and `compact` (Folders: one line, the dot inline). The row's
+     * own button opens the chat; the branch count, pin and rename are buttons of their own beside it
+     * (a button cannot hold a button), so the row's fill lives on the wrapper.
      * @param {ChatRow} row Chat entry.
-     * @returns {unknown} One chat row.
+     * @param {object} options
+     * @param {'thread'|'compact'} options.look
+     * @param {Set<string>} options.pins Pinned ids.
+     * @param {string} [options.label] The name to print instead of the chat's own (inside a folder, or
+     *   an offshoot's "Branch #3").
+     * @param {boolean} [options.offshoot] A folded branch, shown under its parent.
+     * @param {number} [options.depth] Folder depth (compact look).
+     * @param {number} [options.forks] Folded branches under this row.
+     * @param {boolean} [options.forksOpen] Whether they are showing.
+     * @returns {unknown}
      */
-    #chatRow(row) {
+    #chatRow(row, { look, pins, label = '', offshoot = false, depth = 0, forks = 0, forksOpen = false }) {
         if (row.id === this._renamingChatId) {
-            return html`
-                <div class="k-rl-rowwrap k-rl-rowwrap--renaming">
-                    <input
-                        class="k-rl-rename-input"
-                        type="text"
-                        .value=${row.id}
-                        spellcheck="false"
-                        aria-label=${`Rename chat ${row.title}`}
-                        @keydown=${(/** @type {KeyboardEvent} */ event) => this.#onRenameKeydown(event, row.id)}
-                        @blur=${() => { this._renamingChatId = ''; }}
-                    />
-                </div>`;
+            return this.#renameRow(row);
         }
         const active = row.id === this._activeChatId;
-        // `chat_items` is the honest count; when a record lacks one, fall back to
-        // recency rather than printing a made-up number.
-        const meta = row.count === null ? toRelative(row.lastMs) : String(row.count);
+        const pinned = pins.has(row.id);
+        // An unnamed (stamped) chat is shown by its last line, quieter than a name someone chose. The
+        // file name and the message count ride the tooltip.
+        let name = label;
+        let byLine = false;
+        if (!name) {
+            const parsed = chatLabel(row.title, { characterName: activeCharacterName() });
+            byLine = parsed.stamped;
+            name = parsed.stamped && row.preview ? row.preview : parsed.text;
+        }
+        const count = row.count === null ? '' : `${row.count} message${row.count === 1 ? '' : 's'}`;
+        const time = rowTime(row.lastMs);
+        const tip = [row.title, count].filter(Boolean).join(' · ');
+        const classes = [
+            'k-rl-crow',
+            look === 'thread' ? 'k-rl-crow--thread' : 'k-rl-crow--compact',
+            offshoot ? 'k-rl-crow--offshoot' : '',
+            forks ? 'has-forks' : '',
+            pinned ? 'is-pinned' : '',
+            active ? 'is-active' : '',
+        ].filter(Boolean).join(' ');
+        const forkLabel = `${forks} branch${forks === 1 ? '' : 'es'}`;
+        /** @type {unknown} Recent: the quiet second line; Folders: the time at the right edge. */
+        let trailing = nothing;
+        if (look === 'thread') trailing = html`<span class="k-rl-crow-sub">${[time, count].filter(Boolean).join(' · ')}</span>`;
+        else if (time) trailing = html`<span class="k-rl-meta">${time}</span>`;
         return html`
-            <div class="k-rl-rowwrap">
+            <div class=${classes} style=${look === 'compact' ? `--k-rl-depth: ${depth}` : nothing}>
                 <button
                     type="button"
-                    class="k-rl-row k-rl-row--chat${active ? ' is-active' : ''}"
+                    class="k-rl-row k-rl-row--chat k-rl-crow-open"
                     aria-current=${active ? 'true' : 'false'}
-                    title=${row.title}
+                    title=${tip}
                     @click=${() => this.#onOpenChat(row.id)}
                 >
-                    <span class="k-rl-name">${chatLabelText(row.title, activeCharacterName())}</span>
-                    ${meta ? html`<span class="k-rl-meta">${meta}</span>` : nothing}
+                    <span class="k-rl-dot" aria-hidden="true"></span>
+                    <span class="k-rl-crow-name${byLine ? ' k-rl-crow-name--line' : ''}">${name}</span>
+                    ${trailing}
                 </button>
-                <button
-                    type="button"
-                    class="k-rl-act"
-                    title="Rename chat"
+                ${forks ? html`
+                    <button
+                        type="button"
+                        class="k-rl-forks"
+                        aria-expanded=${forksOpen ? 'true' : 'false'}
+                        aria-label=${`${forksOpen ? 'Hide' : 'Show'} ${forkLabel} of ${row.title}`}
+                        title=${forksOpen ? `Hide ${forkLabel}` : `Show ${forkLabel}`}
+                        @click=${(/** @type {Event} */ event) => this.#onToggleForks(row.id, event)}
+                    >${icons.fork}<span class="k-rl-forks-count">${forks}</span></button>` : nothing}
+                <span class="k-rl-crow-acts">
+                    <button
+                        type="button"
+                        class="k-rl-crow-act${pinned ? ' is-on' : ''}"
+                        title=${pinned ? 'Unpin chat' : 'Pin chat'}
+                        aria-label=${`${pinned ? 'Unpin' : 'Pin'} chat ${row.title}`}
+                        @click=${(/** @type {Event} */ event) => this.#onTogglePin(row.id, event)}
+                    >${icons.pin}</button>
+                    <button
+                        type="button"
+                        class="k-rl-crow-act"
+                        title="Rename chat"
+                        aria-label=${`Rename chat ${row.title}`}
+                        @click=${(/** @type {Event} */ event) => this.#onStartRename(row.id, event)}
+                    >${icons.pencil}</button>
+                </span>
+            </div>`;
+    }
+
+    /**
+     * A thread: the chat, and its folded branches as offshoots when they are showing.
+     * @param {ChatThread} thread
+     * @param {'thread'|'compact'} look
+     * @param {Set<string>} pins
+     * @param {{ label?: string, depth?: number }} [where]
+     * @returns {unknown}
+     */
+    #threadRows(thread, look, pins, { label = '', depth = 0 } = {}) {
+        const forks = thread.branches.length;
+        const forksOpen = forks > 0 && this.#openForks.has(`${this.#chatsOwner}\0${thread.row.id}`);
+        const offshoots = forksOpen ? thread.branches.map(branch => this.#chatRow(branch, {
+            look,
+            pins,
+            label: branchLabel(branch.title, thread.row.title),
+            offshoot: true,
+            depth: depth + 1,
+        })) : [];
+        return html`
+            ${this.#chatRow(thread.row, { look, pins, label, depth, forks, forksOpen })}
+            ${forksOpen ? html`
+                <div class="k-rl-offshoots" role="group" aria-label=${`Branches of ${thread.row.title}`}>${offshoots}</div>` : nothing}`;
+    }
+
+    /**
+     * @param {ChatRow} row The chat wearing the inline rename input.
+     * @returns {unknown}
+     */
+    #renameRow(row) {
+        return html`
+            <div class="k-rl-rowwrap k-rl-rowwrap--renaming">
+                <input
+                    class="k-rl-rename-input"
+                    type="text"
+                    .value=${row.id}
+                    spellcheck="false"
                     aria-label=${`Rename chat ${row.title}`}
-                    @click=${(/** @type {Event} */ event) => this.#onStartRename(row.id, event)}
-                >${icons.pencil}</button>
+                    @keydown=${(/** @type {KeyboardEvent} */ event) => this.#onRenameKeydown(event, row.id)}
+                    @blur=${() => { this._renamingChatId = ''; }}
+                />
             </div>`;
     }
 
@@ -1353,20 +1751,126 @@ export class KRailLeft extends LitElement {
             return this.#section('Chats', action, this.#quietRow(text, icons.dot));
         }
 
-        const visible = this._chats.slice(0, CHATS_VISIBLE_MAX);
-        const hidden = this._chats.length - visible.length;
+        const owner = this.#chatsOwner;
+        const model = this.#chatModel(owner);
+        this.#openWayToActive(owner, model);
+        const view = this.#chatViewFor(owner, this._chats.length);
 
         return this.#section('Chats', action, html`
-            ${visible.map(row => this.#chatRow(row))}
-            ${hidden > 0 ? html`
-                <button
-                    type="button"
-                    class="k-rl-row k-rl-row--more"
-                    title="Open the chat manager"
-                    @click=${() => this.#onBrowseChats()}
-                >
-                    <span class="k-rl-name">All chats (${this._chats.length})</span>
-                </button>` : nothing}`);
+            <div class="k-rl-switch" role="group" aria-label="Chat view">
+                ${/** @type {const} */ (['recent', 'folders']).map(option => html`
+                    <button
+                        type="button"
+                        class="k-rl-switch-btn"
+                        aria-pressed=${view === option ? 'true' : 'false'}
+                        @click=${() => this.#onChatView(owner, option)}
+                    >${option === 'recent' ? 'Recent' : 'Folders'}</button>`)}
+            </div>
+            ${view === 'folders' ? this.#renderChatFolders(owner, model) : this.#renderChatThread(model)}`);
+    }
+
+    /**
+     * Recent (sidebar C, "the thread"): a line down the section, recency groups as pills on it, one
+     * dot per chat. Twelve top-level rows before "All chats (N)"; the thread holding the open chat
+     * is always shown.
+     * @param {ChatModel} model
+     * @returns {unknown}
+     */
+    #renderChatThread(model) {
+        const visible = model.rest.slice(0, CHATS_VISIBLE_MAX);
+        const open = threadOf(model.rest, this._activeChatId);
+        if (open && !visible.includes(open)) visible.push(open);
+        const hidden = model.rest.length - visible.length;
+        return html`
+            <div class="k-rl-thread">
+                ${model.pinned.length ? html`
+                    <div class="k-rl-pill-row" role="presentation"><span class="k-rl-pill">${icons.pin}Pinned</span></div>
+                    ${model.pinned.map(thread => this.#threadRows(thread, 'thread', model.pins))}` : nothing}
+                ${groupByRecency(visible).map(group => html`
+                    <div class="k-rl-pill-row" role="presentation"><span class="k-rl-pill">${group.label}</span></div>
+                    ${group.rows.map(thread => this.#threadRows(thread, 'thread', model.pins))}`)}
+                ${hidden > 0 ? html`
+                    <button
+                        type="button"
+                        class="k-rl-row k-rl-row--more k-rl-thread-more"
+                        title="Open the chat manager"
+                        @click=${() => this.#onBrowseChats()}
+                    >
+                        <span class="k-rl-name">All chats (${this._chats.length})</span>
+                    </button>` : nothing}
+            </div>`;
+    }
+
+    /**
+     * Folders (sidebar D, "folders from names"): the pinned shelf, folders newest first, then the
+     * chats in no folder.
+     * @param {string} owner
+     * @param {ChatModel} model
+     * @returns {unknown}
+     */
+    #renderChatFolders(owner, model) {
+        const tree = this.#foldersOf(model);
+        const state = this.#folderState(owner);
+        const loose = {
+            key: LOOSE_KEY,
+            name: 'Not in a folder',
+            count: tree.loose.reduce((sum, thread) => sum + 1 + thread.branches.length, 0),
+            lastMs: tree.loose.reduce((max, thread) => Math.max(max, thread.lastMs), 0),
+        };
+        // With no folders at all, the chats in none are the whole list: open unless closed by hand.
+        const looseOpen = state[LOOSE_KEY] ?? tree.folders.length === 0;
+        return html`
+            ${model.pinned.length ? html`
+                <div class="k-rl-group k-rl-group--pinned" role="presentation">${icons.pin}<span>Pinned</span></div>
+                ${model.pinned.map(thread => this.#threadRows(thread, 'compact', model.pins))}` : nothing}
+            ${tree.folders.map(folder => this.#folderRows(owner, folder, 0, model.pins))}
+            ${tree.loose.length ? html`
+                ${this.#folderRow(owner, loose, 0, looseOpen, true)}
+                ${looseOpen ? tree.loose.map(thread => this.#threadRows(thread, 'compact', model.pins, { depth: 1 })) : nothing}` : nothing}`;
+    }
+
+    /**
+     * A folder and, when open, what is in it.
+     * @param {string} owner
+     * @param {import('../chat-tree.js').FolderNode<ChatRow>} folder
+     * @param {number} depth
+     * @param {Set<string>} pins
+     * @returns {unknown}
+     */
+    #folderRows(owner, folder, depth, pins) {
+        const open = this.#folderState(owner)[folder.key] === true;
+        const inside = open ? folder.items.map(item => (item.kind === 'folder'
+            ? this.#folderRows(owner, item.folder, depth + 1, pins)
+            : this.#threadRows(item.thread, 'compact', pins, { label: item.label, depth: depth + 1 }))) : [];
+        return html`
+            ${this.#folderRow(owner, folder, depth, open, false)}
+            ${inside}`;
+    }
+
+    /**
+     * @param {string} owner
+     * @param {{ key: string, name: string, count: number, lastMs: number, path?: string[] }} folder
+     * @param {number} depth
+     * @param {boolean} open
+     * @param {boolean} loose The "Not in a folder" group.
+     * @returns {unknown}
+     */
+    #folderRow(owner, folder, depth, open, loose) {
+        const time = rowTime(folder.lastMs);
+        const chats = `${folder.count} chat${folder.count === 1 ? '' : 's'}`;
+        return html`
+            <button
+                type="button"
+                class="k-rl-row k-rl-row--folder${loose ? ' k-rl-row--loose' : ''}${depth > 0 ? ' is-nested' : ''}"
+                style=${`--k-rl-depth: ${depth}`}
+                aria-expanded=${open ? 'true' : 'false'}
+                title=${[folder.path ? folder.path.join(' - ') : folder.name, chats].join(' · ')}
+                @click=${() => this.#onToggleFolder(owner, folder.key, !open)}
+            >
+                ${icons.chevron}
+                <span class="k-rl-name">${folder.name}</span>
+                <span class="k-rl-meta">${folder.count}${time ? ` · ${time}` : ''}</span>
+            </button>`;
     }
 
     /**

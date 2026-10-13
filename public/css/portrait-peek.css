@@ -272,16 +272,18 @@ body[data-k-layout="rails"] .k-pp-btn:focus-visible {
 
 body[data-k-layout="rails"] .k-pp-btn--primary {
     border-color: transparent;
-    background: var(--k-accent-bright);
-    color: var(--k-surface-2);
+    /* Primary tokens are Blue Hour's rose; a pack that sets them to `initial` keeps the accent
+       fill this button always had. */
+    background: var(--k-primary-bg, var(--k-accent-bright));
+    color: var(--k-primary-text, var(--k-surface-2));
     font-weight: 600;
 }
 
 body[data-k-layout="rails"] .k-pp-btn--primary:hover,
 body[data-k-layout="rails"] .k-pp-btn--primary:focus-visible {
     border-color: transparent;
-    background: var(--k-text-strong);
-    color: var(--k-surface-2);
+    background: var(--k-primary-hover-bg, var(--k-text-strong));
+    color: var(--k-primary-text, var(--k-surface-2));
 }
 
 body[data-k-layout="rails"] .k-pp-close {

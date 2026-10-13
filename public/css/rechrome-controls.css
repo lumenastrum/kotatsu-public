@@ -111,8 +111,8 @@ body[data-k-layout="rails"] {
     --k-rc-btn-fill: transparent;
 
     /* ── Danger ──────────────────────────────────────────────────────────────
-       `--k-danger` tinted the way `.k-lib-btn--primary` tints `--k-accent`
-       (css/library.css:321-331): 18%-ish fill, 55%-ish border, strong ink. The
+       `--k-danger` tinted the way `.k-lib-btn--primary` tinted `--k-accent` until
+       issue #12 made primary solid: 18%-ish fill, 55%-ish border, strong ink. The
        stock treatment was a flat opaque `--crimson70a` slab that went FULL
        `--fullred` on hover — a solid red brick in a sheet full of hairlines. */
     --k-rc-danger-fill: color-mix(in srgb, var(--k-danger) 16%, transparent);
@@ -278,9 +278,9 @@ body[data-k-layout="rails"] .menu_button.toggleable {
    `!important` at (0,1,0) / (0,2,0), so nothing but `!important` reaches them —
    which is the one case the contract allows. The VALUES were already
    token-derived (`--crimson70a` is `--k-danger-deep`, style.css:56); what moves
-   is the treatment: an opaque brick becomes the `.k-lib-btn--primary` tint
-   recipe in `--k-danger` instead of `--k-accent`, so a delete button reads as
-   the same object as every other button, only red.
+   is the treatment: an opaque brick becomes the tint recipe `.k-lib-btn--primary`
+   used before issue #12, in `--k-danger` instead of `--k-accent`, so a delete
+   button reads as a hairline button, only red, and never as the solid primary.
 
    Scoped to `.menu_button.*` on purpose. `.redWarningBG` also lands on
    `#labModeWarning` (index.html:156), a banner div that is not this slice's, and

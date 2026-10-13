@@ -5,16 +5,16 @@
        change those first, then re-copy here. Canon: docs/brand.md -->
   <defs>
     <radialGradient id="k-glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#dca9a4" stop-opacity="0.55"/>
-      <stop offset="100%" stop-color="#dca9a4" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#e2ae9f" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#e2ae9f" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="560" height="280" rx="28" fill="#0e1119"/>
+  <rect width="560" height="280" rx="28" fill="#11131a"/>
   <!-- bubble hearth -->
   <g transform="translate(222.4,28) scale(1.8)">
     <path d="M18 12 h28 a8 8 0 0 1 8 8 v20 a8 8 0 0 1 -8 8 h-20 l-10 8 v-8 a8 8 0 0 1 -6 -7.7 v-20.3 a8 8 0 0 1 8 -8z" fill="none" stroke="#9aa4d2" stroke-width="5" stroke-linejoin="round"/>
     <ellipse cx="32" cy="30" rx="12" ry="8" fill="url(#k-glow)"/>
-    <circle cx="32" cy="30" r="6.5" fill="#dca9a4"/>
+    <circle cx="32" cy="30" r="6.5" fill="#e2ae9f"/>
   </g>
   <!-- wordmark "k●tatsu" -->
   <g transform="translate(148.75,152) scale(1.25)">
@@ -28,6 +28,6 @@
       <path d="M178 30 v13 a9 9 0 0 0 18 0 v-13 M196 43 v9"/>
     </g>
     <ellipse cx="45" cy="42" rx="11" ry="9" fill="url(#k-glow)"/>
-    <circle cx="45" cy="42" r="7" fill="#dca9a4"/>
+    <circle cx="45" cy="42" r="7" fill="#e2ae9f"/>
   </g>
 </svg>

@@ -711,13 +711,13 @@ body[data-k-layout="rails"] .k-onb-switch-knob {
 }
 
 body[data-k-layout="rails"] .k-onb-switch[aria-checked="true"] .k-onb-switch-track {
-    background: color-mix(in srgb, var(--k-accent) 32%, transparent);
-    border-color: var(--k-accent);
+    background: color-mix(in srgb, var(--k-select) 32%, transparent);
+    border-color: var(--k-select);
 }
 
 body[data-k-layout="rails"] .k-onb-switch[aria-checked="true"] .k-onb-switch-knob {
     inset-inline-start: 16px;
-    background: var(--k-accent-bright);
+    background: var(--k-select-bright);
 }
 
 body[data-k-layout="rails"] .k-onb-sauce-title {

@@ -3,8 +3,8 @@
     "short_name": "Kotatsu",
     "start_url": "/",
     "display": "standalone",
-    "theme_color": "#0e1119",
-    "background_color": "#0e1119",
+    "theme_color": "#11131a",
+    "background_color": "#11131a",
     "icons": [
         {
             "src": "img/apple-icon-57x57.png",

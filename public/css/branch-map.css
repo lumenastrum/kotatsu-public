@@ -303,9 +303,9 @@ k-branch-map[variant="overlay"] .k-bm-row:focus-visible {
 }
 
 k-branch-map[variant="overlay"] .k-bm-row.is-selected {
-    background-color: color-mix(in srgb, var(--k-accent) 16%, transparent);
+    background-color: color-mix(in srgb, var(--k-select) 16%, transparent);
     color: var(--k-text-strong);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k-accent) 40%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k-select) 40%, transparent);
 }
 
 /* The active chat's ancestry, root → … → open chat. */
@@ -679,9 +679,22 @@ k-branch-map[variant="overlay"] .k-bm-action[disabled] {
     cursor: default;
 }
 
+/* Solid, with contrasting text (tokens.css § Control states): Blue Hour's look. A pack that sets
+   the primary tokens to `initial` gets this button's own, a ghost with an accent label. Restated
+   for hover so the ghost hover above cannot repaint the solid fill; its fallbacks are that ghost
+   hover, which is what a primary showed under the pointer before. */
 k-branch-map[variant="overlay"] .k-bm-action--primary {
-    border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
-    color: var(--k-accent-bright);
+    border-color: var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 45%, transparent));
+    background: var(--k-primary-bg, var(--k-inset-fill));
+    color: var(--k-primary-text, var(--k-accent-bright));
+    font-weight: var(--k-primary-weight, inherit);
+}
+
+k-branch-map[variant="overlay"] .k-bm-action--primary:hover,
+k-branch-map[variant="overlay"] .k-bm-action--primary:focus-visible {
+    border-color: var(--k-primary-hover-bg, color-mix(in srgb, var(--k-chrome-border) 45%, transparent));
+    background: var(--k-primary-hover-bg, var(--k-ghost-hover));
+    color: var(--k-primary-text, var(--k-text-strong));
 }
 
 k-branch-map[variant="overlay"] .k-bm-action--danger:hover,
@@ -771,8 +784,8 @@ k-branch-map[variant="overlay"] .k-bm-view:hover {
 }
 
 k-branch-map[variant="overlay"] .k-bm-view.is-on {
-    background: color-mix(in srgb, var(--k-accent) 24%, var(--k-surface));
-    color: var(--k-text-strong);
+    background: var(--k-control-on-bg);
+    color: var(--k-control-on-text);
 }
 
 k-branch-map[variant="overlay"] .k-bm-view:focus-visible {

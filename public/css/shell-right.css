@@ -170,7 +170,7 @@ body[data-k-layout="rails"] .k-tr-icon {
 }
 
 body[data-k-layout="rails"] .k-tr-tab.is-active .k-tr-icon {
-    color: var(--k-accent-bright);
+    color: var(--k-select-bright);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

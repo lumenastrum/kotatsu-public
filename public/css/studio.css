@@ -404,7 +404,7 @@ body[data-k-layout="rails"] .k-studio-tab:focus-visible {
 }
 
 body[data-k-layout="rails"] .k-studio-tab.is-active {
-    background: color-mix(in srgb, var(--k-accent) 20%, transparent);
+    background: color-mix(in srgb, var(--k-select) 20%, transparent);
     color: var(--k-text-strong);
 }
 

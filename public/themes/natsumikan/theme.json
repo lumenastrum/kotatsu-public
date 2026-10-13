@@ -38,6 +38,15 @@
         "--k-bot-mes": "#fffaf0",
         "--k-chat-tint": "#fbf1df",
 
+        "--k-select": "var(--k-accent)",
+        "--k-select-bright": "var(--k-accent-bright)",
+        "--k-control-on-strength": "28%",
+        "--k-control-on-text": "var(--k-text-strong)",
+        "--k-primary-bg": "initial",
+        "--k-primary-text": "initial",
+        "--k-primary-hover-bg": "initial",
+        "--k-primary-weight": "initial",
+
         "--k-success": "#3a7030",
         "--k-warning": "#8a5a00",
         "--k-danger": "#ae352e",

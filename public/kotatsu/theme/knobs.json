@@ -960,7 +960,7 @@
    "group": "Reading column",
    "file": "css/shell-center.css",
    "default": "color-mix(in srgb, var(--k-user-mes) 80%, transparent)",
-   "note": "The message tints, at core's own alpha stops (style.css:85-86) so a theme pack that retints `--k-user-mes` / `--k-bot-mes` (theme/loader.js:17-18) retints the bubbles with it. User is the raised stop, bot one step down — which is what those two tokens already encode (#202536 over #181d2a in Blue Hour).",
+   "note": "The message tints, at core's own alpha stops (style.css:85-86) so a theme pack that retints `--k-user-mes` / `--k-bot-mes` (theme/loader.js:17-18) retints the bubbles with it. User is the raised stop, bot one step down — which is what those two tokens already encode (#232633 over #1d2029 in Blue Hour).",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -2374,7 +2374,7 @@
   "--k-pic-chip-on": {
    "group": "css/pictures.css",
    "file": "css/pictures.css",
-   "default": "color-mix(in srgb, var(--k-accent) 22%, var(--k-surface))",
+   "default": "var(--k-control-on-bg)",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -3879,7 +3879,7 @@
    "group": "Controls",
    "file": "css/rechrome-controls.css",
    "default": "color-mix(in srgb, var(--k-danger) 16%, transparent)",
-   "note": "Danger `--k-danger` tinted the way `.k-lib-btn--primary` tints `--k-accent` (css/library.css:321-331): 18%-ish fill, 55%-ish border, strong ink. The stock treatment was a flat opaque `--crimson70a` slab that went FULL `--fullred` on hover — a solid red brick in a sheet full of hairlines.",
+   "note": "Danger `--k-danger` tinted the way `.k-lib-btn--primary` tinted `--k-accent` until issue #12 made primary solid: 18%-ish fill, 55%-ish border, strong ink. The stock treatment was a flat opaque `--crimson70a` slab that went FULL `--fullred` on hover — a solid red brick in a sheet full of hairlines.",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -4364,10 +4364,33 @@
     }
    ]
   },
+  "--k-rl-chat-name-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "12.5px",
+   "note": "Chats v2 (sidebar canvas C + D). A chat's name and its quiet mono line; the Recent thread's hairline x, the dot on it and where a row's text starts past the dot; an offshoot's step in; the Folders view's one-line row, its inline dot, and one indent step per folder level.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-rl-chat-size": {
    "group": "Left rail",
    "file": "css/shell-left.css",
    "default": "11.5px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-chat-sub-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "10.5px",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -4397,6 +4420,46 @@
     }
    ]
   },
+  "--k-rl-compact-height": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "30px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-depth": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "0",
+   "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
+   "contexts": []
+  },
+  "--k-rl-dot-size": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "9px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-dot-size-compact": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "7px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-rl-face-overlap": {
    "group": "Left rail",
    "file": "css/shell-left.css",
@@ -4404,6 +4467,17 @@
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"] k-rail-left",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-folder-indent": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
      "at": []
     }
    ]
@@ -4496,6 +4570,17 @@
     }
    ]
   },
+  "--k-rl-offshoot-indent": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "18px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-rl-quiet-size": {
    "group": "Left rail",
    "file": "css/shell-left.css",
@@ -4534,6 +4619,28 @@
    "group": "Left rail",
    "file": "css/shell-left.css",
    "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-thread-pad": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "26px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rl-thread-x": {
+   "group": "Left rail",
+   "file": "css/shell-left.css",
+   "default": "15px",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5003,7 +5110,8 @@
   "--k-set-active-fill": {
    "group": "Settings",
    "file": "kotatsu/settings/settings-modal.css",
-   "default": "color-mix(in srgb, var(--k-rose) 12%, transparent)",
+   "default": "color-mix(in srgb, var(--k-select) 12%, transparent)",
+   "note": "The selected tab: the pack's colour of choosing (tokens.css § Control states).",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",

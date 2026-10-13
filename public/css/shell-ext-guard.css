@@ -79,10 +79,21 @@ body[data-k-layout="rails"] .k-eg-btn:focus-visible {
     color: var(--k-accent-bright);
 }
 
+/* Solid, with contrasting text (tokens.css § Control states): Blue Hour's look. A pack that sets
+   the primary tokens to `initial` gets this button's own, a rose-or-accent tint. Restated for
+   hover so the ghost hover above cannot hand it accent text on the primary fill; its fallbacks
+   are that ghost hover, which is what a primary showed under the pointer before. */
 body[data-k-layout="rails"] .k-eg-btn--primary {
-    border-color: color-mix(in srgb, var(--k-rose, var(--k-accent)) 60%, transparent);
-    background: color-mix(in srgb, var(--k-rose, var(--k-accent)) 18%, transparent);
-    color: var(--k-text-strong);
+    border-color: var(--k-primary-bg, color-mix(in srgb, var(--k-rose, var(--k-accent)) 60%, transparent));
+    background: var(--k-primary-bg, color-mix(in srgb, var(--k-rose, var(--k-accent)) 18%, transparent));
+    color: var(--k-primary-text, var(--k-text-strong));
+}
+
+body[data-k-layout="rails"] .k-eg-btn--primary:hover,
+body[data-k-layout="rails"] .k-eg-btn--primary:focus-visible {
+    border-color: var(--k-primary-hover-bg, color-mix(in srgb, var(--k-accent) 45%, transparent));
+    background: var(--k-primary-hover-bg, color-mix(in srgb, var(--k-rose, var(--k-accent)) 18%, transparent));
+    color: var(--k-primary-text, var(--k-accent-bright));
 }
 
 body[data-k-layout="rails"] .k-eg-btn:disabled {

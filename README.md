@@ -12,7 +12,7 @@
 |:---:|:---:|
 | <img src=".github/screenshots/welcome.webp" alt="Mikan-chan's welcome tour: four steps from connecting a model to meeting your first character, every one skippable"> | <img src=".github/screenshots/connect.webp" alt="The Connect step: Claude Code in use through your Claude subscription, no API key, with ChatGPT one click away"> |
 | Mikan-chan walks you through setup | Use the subscription you already have |
-| <img src=".github/screenshots/library.webp" alt="The cast library: character posters under the heading Who are we meeting tonight?"> | <img src=".github/screenshots/reader.webp" alt="The reader: a chat with Wren Aldermoor, characters and chats on the left, the preset's sections on the right"> |
+| <img src=".github/screenshots/library.webp" alt="The cast library: character posters under the heading Who are we meeting tonight?"> | <img src=".github/screenshots/reader.webp" alt="The reader: a chat with Wren Aldermoor. On the left, the characters and her chats, a pinned story above the recent ones by day; on the right, the preset's sections"> |
 | Your cast, on one shelf | A reader made for long stories |
 
 ---
@@ -138,6 +138,8 @@ Copy your user data, and leave SillyTavern's code and `config.yaml` where they a
 - **One settings window,** with tabs and search, instead of a dozen drawers.
 
 **Branches as a real tree.** Fork a chat at any message, jump between branches, rename without breaking links, and see the whole tree on a map (`Ctrl+Shift+B`).
+
+**Chats you can find again.** A character with hundreds of chats still has a calm sidebar. **Recent** strings them along a thread by day, with an unnamed chat shown by what was last said in it. **Folders** come from how you already name chats: `Arc - Story - Main` files itself under Arc › Story, and a chat's branches fold under it. Pin the stories you keep returning to.
 
 ## Fast, and nothing in the way
 

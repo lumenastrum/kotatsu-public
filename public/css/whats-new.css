@@ -338,15 +338,18 @@ body[data-k-layout="rails"] .k-wn-button:focus-visible {
 }
 
 body[data-k-layout="rails"] .k-wn-button[data-kind="primary"] {
-    border-color: var(--k-accent);
-    background: var(--k-accent);
-    color: var(--k-ground);
+    /* Primary tokens are Blue Hour's rose; a pack that sets them to `initial` keeps the solid
+       accent fill this button always had. */
+    border-color: var(--k-primary-bg, var(--k-accent));
+    background: var(--k-primary-bg, var(--k-accent));
+    color: var(--k-primary-text, var(--k-ground));
 }
 
 body[data-k-layout="rails"] .k-wn-button[data-kind="primary"]:hover,
 body[data-k-layout="rails"] .k-wn-button[data-kind="primary"]:focus-visible {
-    border-color: var(--k-accent-bright);
-    background: var(--k-accent-bright);
+    border-color: var(--k-primary-hover-bg, var(--k-accent-bright));
+    background: var(--k-primary-hover-bg, var(--k-accent-bright));
+    color: var(--k-primary-text, var(--k-ground));
 }
 
 body[data-k-layout="rails"] :is(.k-wn-button, .k-wn-close, .k-wn-wiki):focus-visible {

@@ -112,7 +112,8 @@ body[data-k-layout="rails"] {
     --k-set-sheet-fill: var(--k-surface);
     --k-set-hairline: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
     --k-set-hover-fill: color-mix(in srgb, var(--k-accent) 10%, transparent);
-    --k-set-active-fill: color-mix(in srgb, var(--k-rose) 12%, transparent);
+    /* The selected tab: the pack's colour of choosing (tokens.css § Control states). */
+    --k-set-active-fill: color-mix(in srgb, var(--k-select) 12%, transparent);
     --k-set-field-fill: var(--k-ground-deep);
     --k-set-ring: color-mix(in srgb, var(--k-accent) 34%, transparent);
     /* The card's own hairline stop (22%) doubles as its border AND its eyebrow's
@@ -429,9 +430,9 @@ body[data-k-layout="rails"] .k-set-tab:focus-visible {
    active-state hairlines (rose, inset) already do. */
 body[data-k-layout="rails"] .k-set-tab.is-active {
     background: var(--k-set-active-fill);
-    color: var(--k-rose);
+    color: var(--k-select);
     font-weight: 600;
-    box-shadow: inset 2px 0 0 var(--k-rose);
+    box-shadow: inset 2px 0 0 var(--k-select);
 }
 
 /* A tab with zero matches for the running query. Dimmed, never disabled: the reader may still
@@ -892,7 +893,7 @@ body[data-k-layout="rails"] .k-set-control :is(#ui_preset_import_button,
 
 body[data-k-layout="rails"] .k-set-control #ui-preset-update-button {
     background: var(--k-set-active-fill);
-    border-color: var(--k-rose);
+    border-color: var(--k-select);
     color: var(--k-text-strong);
 }
 

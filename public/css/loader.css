@@ -25,7 +25,7 @@
     --spinner-h: var(--spinner-size);
     position: fixed;
     inset: 0;
-    background-color: var(--k-ground, #0e1119);
+    background-color: var(--k-ground, #11131a);
     transition: filter var(--animation-duration-2x) ease-out, opacity var(--animation-duration-2x) ease-out;
 }
 
@@ -136,7 +136,7 @@
     width: 104px;
     height: 14px;
     border-radius: 50%;
-    background: radial-gradient(closest-side, color-mix(in oklab, var(--k-text, #d8dce8) 16%, transparent), transparent);
+    background: radial-gradient(closest-side, color-mix(in oklab, var(--k-text, #dadce5) 16%, transparent), transparent);
     animation: k-chibi-shadow 2.8s ease-in-out infinite alternate;
 }
 
@@ -200,7 +200,7 @@
     left: -17px;
     top: 14px;
     opacity: 0;
-    color: var(--k-rose, #dca9a4);
+    color: var(--k-rose, #e2ae9f);
     animation: k-chibi-pop 3.2s ease-out infinite;
 }
 

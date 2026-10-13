@@ -558,13 +558,13 @@ function fillHearthSpinner(spinnerElement) {
         <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Loading">
             <defs>
                 <radialGradient id="${glowId}" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" style="stop-color: var(--k-rose, #dca9a4)" stop-opacity="0.55" />
-                    <stop offset="100%" style="stop-color: var(--k-rose, #dca9a4)" stop-opacity="0" />
+                    <stop offset="0%" style="stop-color: var(--k-rose, #e2ae9f)" stop-opacity="0.55" />
+                    <stop offset="100%" style="stop-color: var(--k-rose, #e2ae9f)" stop-opacity="0" />
                 </radialGradient>
             </defs>
             <path d="M18 12 h28 a8 8 0 0 1 8 8 v20 a8 8 0 0 1 -8 8 h-20 l-10 8 v-8 a8 8 0 0 1 -6 -7.7 v-20.3 a8 8 0 0 1 8 -8z" fill="none" style="stroke: var(--k-accent, #9aa4d2)" stroke-width="5" stroke-linejoin="round" />
             <ellipse class="k-loader-glow" cx="32" cy="30" rx="12" ry="8" fill="url(#${glowId})" />
-            <circle class="k-loader-dot" cx="32" cy="30" r="6.5" style="fill: var(--k-rose, #dca9a4)" />
+            <circle class="k-loader-dot" cx="32" cy="30" r="6.5" style="fill: var(--k-rose, #e2ae9f)" />
         </svg>`;
 }
 

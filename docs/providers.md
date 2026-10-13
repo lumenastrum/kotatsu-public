@@ -225,6 +225,22 @@ Both match `gemini-3.6-flash` and `gemini-3.7-flash` without modification. **Re-
 #### C4 — gemini-3.8-flash dropdown option (2026-09-23)
 Same shape as C1/C2: one `<option>` above `gemini-3.7-flash` in BOTH selects (`model_google_select` + `model_vertexai_select`), still under the "Gemini 3.5" optgroup label on purpose. ID confirmed stable on ai.google.dev/gemini-api/docs/models (not `-preview`). Zero JS/backend edits: the §3.3 assertion was re-run in node against the live regexes — 1M context, `isThinkingConfigModel`, flash thinking-level, `gemini-3` image-size/media-resolution/vision prefixes and the C3 guard all match `gemini-3.8-flash`.
 
+#### C5 — gemini-4-argon, the first Gemini 4 (2026-10-13)
+GA on the Gemini API the day it was added; `models/gemini-4-argon` confirmed in a live `models.list` (1,048,576 input, thinking true). A `gemini-4-*` id misses every `gemini-3` gate, so this is **not** dropdown-only (§3.3 predicted it). Every behaviour below was probed live against the API, not inferred:
+
+| Probe | Result | Kotatsu edit |
+|---|---|---|
+| `thinkingLevel` low / medium / high | 200 | `isThinkingConfigModel` += `/^gemini-4-argon/` (chat-completions.js); the budget routes to `getGemini3FlashBudget` |
+| `thinkingLevel` minimal | **400** "MINIMAL is not supported" | `noMinimalThinking` += `gemini-4-argon` (min → low) |
+| trailing model turn (prefill / continue) | **400** "ending with a model turn" | upstream's `noPrefillModel` += `gemini-4-argon` (merges into the user turn, same as 3.6–3.8); C3 still covers it as the fallback |
+| `functionCall` with no `thoughtSignature` | **400** "missing a thought_signature" | Gemini 3 signature block in prompt-converters.js → `/gemini-(?:3\|4-argon)/` |
+| `functionCall` with `skip_thought_signature_validator` | 200 | (same edit) |
+| per-part `mediaResolution`, plain image | 200 / 200 | media-resolution gate → `/gemini-(?:3\|4-argon)/` |
+| temperature 0 / 1.4, topP, topK | 200 | none: sampling stays on |
+| `maxOutputTokens` 65536, system instruction | 200 | none |
+
+Also: a 1M entry in `getGeminiMaxContext`'s fallback map (the live model list wins when connected), `gemini-4-argon` in the image / video / audio inlining lists, an option in both Google selects under a new "Gemini 4" optgroup, and in both caption selects. Vertex: listed GA in Model Garden but **not live-verified** (no Vertex credentials here). `tests/prompt-converters.test.js` pins the thinking map, the prefill merge and the signature fallback. When upstream adds Argon, take theirs and drop these.
+
 #### C3 — Gemini ≥3.6 continuation-turn guard
 **File:** `src/prompt-converters.js:618-623`, at the end of `convertGooglePrompt` (`:432`), immediately before its `return`.
 
@@ -359,6 +375,7 @@ Its behavior is precisely specified and was asserted by the retired script on ev
 | `gemini-3.6-flash` | ✅ | prefill removed |
 | `gemini-3.7-flash` | ✅ | prefill removed |
 | `gemini-3.8-flash` | ✅ | assumed same as 3.6/3.7 — NOT live-verified (no Google key in dev); guard is regex-covered |
+| `gemini-4-argon` | ✅ | live-verified 400 on a trailing model turn (2026-10-13); upstream-style `noPrefillModel` merges first, C3 is the fallback |
 | `gemini-3.5-flash` | ❌ | still prefills — **must be spared** |
 | `gemini-3.1-pro-preview` | ❌ | still prefills — **must be spared** |
 

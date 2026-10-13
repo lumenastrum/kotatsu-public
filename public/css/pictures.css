@@ -32,7 +32,7 @@ body[data-k-layout="rails"] {
     --k-pic-sheet-base: var(--k-ground);
     --k-pic-hairline: color-mix(in srgb, var(--k-border) 60%, transparent);
     --k-pic-field-fill: color-mix(in srgb, var(--k-surface-2) 85%, transparent);
-    --k-pic-chip-on: color-mix(in srgb, var(--k-accent) 22%, var(--k-surface));
+    --k-pic-chip-on: var(--k-control-on-bg);
     --k-pic-warn: var(--k-warning);
     --k-pic-danger: var(--k-danger);
     --k-pic-ring-track: color-mix(in srgb, var(--k-border) 70%, transparent);
@@ -195,16 +195,18 @@ body[data-k-layout="rails"] .k-pic-btn:focus-visible {
 
 body[data-k-layout="rails"] .k-pic-btn--primary {
     border-color: transparent;
-    background: var(--k-accent-bright);
-    color: var(--k-surface-2);
+    /* Primary tokens are Blue Hour's rose; a pack that sets them to `initial` keeps the accent
+       fill this button always had. */
+    background: var(--k-primary-bg, var(--k-accent-bright));
+    color: var(--k-primary-text, var(--k-surface-2));
     font-weight: 600;
 }
 
 body[data-k-layout="rails"] .k-pic-btn--primary:hover:not(:disabled),
 body[data-k-layout="rails"] .k-pic-btn--primary:focus-visible {
     border-color: transparent;
-    background: var(--k-text-strong);
-    color: var(--k-surface-2);
+    background: var(--k-primary-hover-bg, var(--k-text-strong));
+    color: var(--k-primary-text, var(--k-surface-2));
 }
 
 body[data-k-layout="rails"] .k-pic-btn:disabled {
@@ -254,7 +256,7 @@ body[data-k-layout="rails"] .k-pic-step.is-on {
 
 body[data-k-layout="rails"] .k-pic-step.is-on .k-pic-step-n {
     border-color: transparent;
-    background: var(--k-accent-bright);
+    background: var(--k-select-bright);
     color: var(--k-surface-2);
 }
 
@@ -310,9 +312,9 @@ body[data-k-layout="rails"] .k-pic-chip:focus-visible {
 }
 
 body[data-k-layout="rails"] .k-pic-chip.is-on {
-    border-color: var(--k-accent);
+    border-color: var(--k-control-on-border);
     background: var(--k-pic-chip-on);
-    color: var(--k-text-strong);
+    color: var(--k-control-on-text);
 }
 
 body[data-k-layout="rails"] .k-pic-field {
@@ -635,12 +637,12 @@ body[data-k-layout="rails"] .k-pic-switch-track::after {
 }
 
 body[data-k-layout="rails"] .k-pic-switch-input:checked + .k-pic-switch-track {
-    border-color: var(--k-accent);
+    border-color: var(--k-control-on-border);
     background: var(--k-pic-chip-on);
 }
 
 body[data-k-layout="rails"] .k-pic-switch-input:checked + .k-pic-switch-track::after {
-    background: var(--k-accent-bright);
+    background: var(--k-select-bright);
     transform: translateX(16px);
 }
 

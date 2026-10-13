@@ -53,6 +53,20 @@ body[data-k-layout="rails"] {
     --k-rl-branch-meta-gap: 6px;
     --k-rl-badge-size: 10px;
 
+    /* Chats v2 (sidebar canvas C + D). A chat's name and its quiet mono line;
+       the Recent thread's hairline x, the dot on it and where a row's text
+       starts past the dot; an offshoot's step in; the Folders view's one-line
+       row, its inline dot, and one indent step per folder level. */
+    --k-rl-chat-name-size: 12.5px;
+    --k-rl-chat-sub-size: 10.5px;
+    --k-rl-thread-x: 15px;
+    --k-rl-dot-size: 9px;
+    --k-rl-thread-pad: 26px;
+    --k-rl-offshoot-indent: 18px;
+    --k-rl-compact-height: 30px;
+    --k-rl-dot-size-compact: 7px;
+    --k-rl-folder-indent: 14px;
+
     --k-rl-weight-rest: 500;
     --k-rl-weight-active: 600;
     --k-rl-weight-head: 700;
@@ -265,12 +279,25 @@ body[data-k-layout="rails"] .k-rl-name {
     text-overflow: ellipsis;
 }
 
-/* Chat titles print as labels, not file ids (blue-hour-polish-v0 §C5:
-   `shell/chat-label.js` turns a stamped id into "Aug 25 · 1:40 PM"), so they
-   wear the UI face. Overflow ellipsises at the end; the full id is on `title`. */
-body[data-k-layout="rails"] .k-rl-row--chat .k-rl-name {
-    font-family: var(--k-font-ui);
-    font-size: var(--k-rl-chat-size);
+/* A group label inside Chats (the Folders view's "Pinned"): quieter than a
+   section head, a label over the rows, not a section of its own. */
+body[data-k-layout="rails"] .k-rl-group {
+    padding: 8px var(--k-rl-row-pad) 4px;
+    color: var(--k-text-faint);
+    font-size: var(--k-rl-meta-size);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+body[data-k-layout="rails"] .k-rl-group--pinned {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-rl-group--pinned .k-rl-icon {
+    width: 11px;
+    height: 11px;
 }
 
 body[data-k-layout="rails"] .k-rl-meta {
@@ -290,39 +317,225 @@ body[data-k-layout="rails"] .k-rl-row.is-active .k-rl-meta {
     color: var(--k-text-muted);
 }
 
-/* ── Chat-row rename affordance ──────────────────────────────────────────────
-   A hover-revealed pencil overlaying the meta column; rename mode swaps the
-   whole row for an inline input. Rename goes through branchStore.rename (the
-   healing path) — never core's raw rename, which orphans children. */
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHATS — v2 (`k-rail-left.js` #renderChats, `shell/chat-tree.js`)
 
-body[data-k-layout="rails"] .k-rl-rowwrap {
+   Two views behind a Recent | Folders switch, a pinned shelf above both, and
+   branches folded under their parent in both.
+   - Recent ("the thread"): a hairline down the section, recency groups as
+     pills on it, one dot per chat. Name on one line; a quiet mono line under
+     it says when, how many messages.
+   - Folders ("folders from names"): one-line rows, folders with a chevron.
+
+   A chat row is a wrapper holding the row's own button (opens the chat) and,
+   beside it, the branch count, pin and rename buttons (a button cannot hold a
+   button). So the wrapper wears the hover and selected fills; the open button
+   stays transparent. The dot: hollow at rest, a rose ring when pinned, filled
+   rose when open; an offshoot (a folded branch) wears the accent ring.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Recent | Folders ──────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-rl-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 2px 4px 6px;
+    padding: 2px;
+    border: 1px solid color-mix(in srgb, var(--k-control-border) 70%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-control-bg);
+}
+
+body[data-k-layout="rails"] .k-rl-switch-btn {
+    height: 24px;
+    margin: 0;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    color: var(--k-text-dim);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-rl-quiet-size);
+    font-weight: var(--k-rl-weight-rest);
+    cursor: pointer;
+    transition: background-color var(--k-motion), color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rl-switch-btn:hover,
+body[data-k-layout="rails"] .k-rl-switch-btn:focus-visible {
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-rl-switch-btn:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: 1px;
+}
+
+body[data-k-layout="rails"] .k-rl-switch-btn[aria-pressed="true"],
+body[data-k-layout="rails"] .k-rl-switch-btn[aria-pressed="true"]:hover,
+body[data-k-layout="rails"] .k-rl-switch-btn[aria-pressed="true"]:focus-visible {
+    background: var(--k-control-on-bg);
+    color: var(--k-control-on-text);
+    font-weight: var(--k-rl-weight-active);
+}
+
+/* ── A chat row ────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-rl-crow {
     position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    min-width: 0;
+    border-radius: var(--k-radius-md);
+    transition: background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rl-crow:hover,
+body[data-k-layout="rails"] .k-rl-crow:focus-within {
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-rl-crow.is-active,
+body[data-k-layout="rails"] .k-rl-crow.is-active:hover,
+body[data-k-layout="rails"] .k-rl-crow.is-active:focus-within {
+    background-color: color-mix(in srgb, var(--k-select) 12%, transparent);
+}
+
+body[data-k-layout="rails"] .k-rl-crow .k-rl-crow-open {
     display: flex;
+    align-items: center;
+    gap: 6px;
+    height: auto;
     min-width: 0;
+    background: transparent;
 }
 
-body[data-k-layout="rails"] .k-rl-rowwrap > .k-rl-row {
-    flex: 1 1 auto;
+body[data-k-layout="rails"] .k-rl-crow .k-rl-crow-open:hover,
+body[data-k-layout="rails"] .k-rl-crow .k-rl-crow-open:focus-visible {
+    background-color: transparent;
+}
+
+body[data-k-layout="rails"] .k-rl-crow-name {
     min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--k-text);
+    font-size: var(--k-rl-chat-name-size);
+    font-weight: var(--k-rl-weight-rest);
+    line-height: 1.35;
 }
 
-body[data-k-layout="rails"] .k-rl-rowwrap .k-rl-meta {
-    transition: color var(--k-motion), opacity var(--k-motion);
+/* An unnamed chat, shown by its last line: quieter than a name someone chose. */
+body[data-k-layout="rails"] .k-rl-crow-name--line {
+    color: var(--k-text-dim);
 }
 
-body[data-k-layout="rails"] .k-rl-rowwrap:hover .k-rl-meta,
-body[data-k-layout="rails"] .k-rl-rowwrap:focus-within .k-rl-meta {
+body[data-k-layout="rails"] .k-rl-crow--offshoot .k-rl-crow-name {
+    color: var(--k-text-quote);
+}
+
+body[data-k-layout="rails"] .k-rl-crow.is-active .k-rl-crow-name {
+    color: var(--k-select);
+}
+
+body[data-k-layout="rails"] .k-rl-crow-sub {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-rl-chat-sub-size);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.35;
+}
+
+body[data-k-layout="rails"] .k-rl-dot {
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    width: var(--k-rl-dot-size);
+    height: var(--k-rl-dot-size);
+    border: 1.5px solid var(--k-text-faint);
+    border-radius: var(--k-radius-round);
+    background: var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] .k-rl-crow--offshoot .k-rl-dot {
+    border-color: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-rl-crow.is-pinned .k-rl-dot {
+    border-color: var(--k-select);
+}
+
+body[data-k-layout="rails"] .k-rl-crow.is-active .k-rl-dot {
+    border-color: var(--k-select);
+    background: var(--k-select);
+}
+
+/* The branch count: a small fork and a number, in the accent. Opens the
+   folded branches under the row. */
+body[data-k-layout="rails"] .k-rl-forks {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 18px;
+    margin: 0 4px 0 0;
+    padding: 0 4px;
+    border: 0;
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    color: var(--k-accent);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-rl-chat-sub-size);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: color var(--k-motion), background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rl-forks:hover,
+body[data-k-layout="rails"] .k-rl-forks:focus-visible {
+    color: var(--k-accent-bright);
+    background-color: var(--k-ghost-hover);
+}
+
+body[data-k-layout="rails"] .k-rl-forks:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
+    outline-offset: 1px;
+}
+
+body[data-k-layout="rails"] .k-rl-forks[aria-expanded="true"] {
+    color: var(--k-accent-bright);
+}
+
+/* Pin and rename: out of the way until the row is pointed at or focused.
+   Zero-width rather than display:none, so Tab still reaches them — and a
+   focused one opens the pair. */
+body[data-k-layout="rails"] .k-rl-crow-acts {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    width: 0;
+    overflow: hidden;
     opacity: 0;
+    transition: opacity var(--k-motion);
 }
 
-body[data-k-layout="rails"] .k-rl-act {
-    position: absolute;
-    top: 50%;
-    right: var(--k-rl-row-pad);
-    translate: 0 -50%;
+body[data-k-layout="rails"] .k-rl-crow:hover .k-rl-crow-acts,
+body[data-k-layout="rails"] .k-rl-crow:focus-within .k-rl-crow-acts {
+    width: auto;
+    padding-right: 4px;
+    overflow: visible;
+    opacity: 1;
+}
+
+body[data-k-layout="rails"] .k-rl-crow-act {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex: 0 0 auto;
     width: var(--k-rl-icon-size);
     height: var(--k-rl-icon-size);
     margin: 0;
@@ -333,26 +546,202 @@ body[data-k-layout="rails"] .k-rl-act {
     color: var(--k-text-muted);
     font: inherit;
     cursor: pointer;
-    opacity: 0;
-    pointer-events: none;
-    transition: color var(--k-motion), background-color var(--k-motion), opacity var(--k-motion);
+    transition: color var(--k-motion), background-color var(--k-motion);
 }
 
-body[data-k-layout="rails"] .k-rl-rowwrap:hover .k-rl-act,
-body[data-k-layout="rails"] .k-rl-act:focus-visible {
-    opacity: 1;
-    pointer-events: auto;
+body[data-k-layout="rails"] .k-rl-crow-act.is-on {
+    color: var(--k-select);
 }
 
-body[data-k-layout="rails"] .k-rl-act:hover,
-body[data-k-layout="rails"] .k-rl-act:focus-visible {
+body[data-k-layout="rails"] .k-rl-crow-act:hover,
+body[data-k-layout="rails"] .k-rl-crow-act:focus-visible {
     color: var(--k-accent-bright);
     background-color: var(--k-ghost-hover);
 }
 
-body[data-k-layout="rails"] .k-rl-act:focus-visible {
+body[data-k-layout="rails"] .k-rl-crow-act.is-on:hover,
+body[data-k-layout="rails"] .k-rl-crow-act.is-on:focus-visible {
+    color: var(--k-select-bright);
+}
+
+body[data-k-layout="rails"] .k-rl-crow-act:focus-visible {
     outline: 1px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
     outline-offset: 1px;
+}
+
+/* ── Recent: the thread ────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-rl-thread {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding-bottom: 4px;
+}
+
+body[data-k-layout="rails"] .k-rl-thread::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: var(--k-rl-thread-x);
+    width: 1px;
+    background: color-mix(in srgb, var(--k-border) 70%, transparent);
+    pointer-events: none;
+}
+
+body[data-k-layout="rails"] .k-rl-pill-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 26px;
+    padding-left: var(--k-rl-row-pad);
+}
+
+body[data-k-layout="rails"] .k-rl-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border: 1px solid color-mix(in srgb, var(--k-border) 70%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-surface);
+    color: var(--k-text-muted);
+    font-size: var(--k-rl-chat-sub-size);
+    font-weight: var(--k-rl-weight-active);
+    line-height: 1.2;
+}
+
+body[data-k-layout="rails"] .k-rl-pill .k-rl-icon {
+    width: 10px;
+    height: 10px;
+}
+
+/* The row spans both lines on the left; the pin/rename pair sits at the top
+   right and the branch count at the bottom right, on the quiet line. */
+body[data-k-layout="rails"] .k-rl-crow--thread {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+}
+
+body[data-k-layout="rails"] .k-rl-crow--thread .k-rl-crow-open {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1px;
+    padding: 6px 4px 7px var(--k-rl-thread-pad);
+}
+
+body[data-k-layout="rails"] .k-rl-crow--thread .k-rl-crow-acts {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    margin-top: 3px;
+}
+
+body[data-k-layout="rails"] .k-rl-crow--thread .k-rl-forks {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    align-self: end;
+    margin-bottom: 5px;
+}
+
+/* On the line: the dot sits over the hairline, punching it with the rail fill. */
+body[data-k-layout="rails"] .k-rl-crow--thread .k-rl-dot {
+    position: absolute;
+    top: 11px;
+    left: calc(var(--k-rl-thread-x) + 0.5px - var(--k-rl-dot-size) / 2);
+}
+
+body[data-k-layout="rails"] .k-rl-crow--thread.k-rl-crow--offshoot {
+    margin-left: var(--k-rl-offshoot-indent);
+}
+
+body[data-k-layout="rails"] .k-rl-thread .k-rl-thread-more {
+    padding-left: var(--k-rl-thread-pad);
+}
+
+/* ── Folders ───────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-rl-crow--compact .k-rl-crow-open {
+    grid-column: 1;
+    height: var(--k-rl-compact-height);
+    padding: 0 6px 0 calc(12px + var(--k-rl-depth, 0) * var(--k-rl-folder-indent));
+}
+
+body[data-k-layout="rails"] .k-rl-crow--compact .k-rl-dot {
+    width: var(--k-rl-dot-size-compact);
+    height: var(--k-rl-dot-size-compact);
+    margin: 0 1px;
+}
+
+body[data-k-layout="rails"] .k-rl-crow--compact .k-rl-crow-name {
+    flex: 1 1 auto;
+}
+
+body[data-k-layout="rails"] .k-rl-crow--compact .k-rl-meta {
+    color: var(--k-text-faint);
+    font-size: var(--k-rl-chat-sub-size);
+}
+
+body[data-k-layout="rails"] .k-rl-crow--compact .k-rl-forks {
+    grid-column: 2;
+}
+
+body[data-k-layout="rails"] .k-rl-crow--compact .k-rl-crow-acts {
+    grid-column: 3;
+}
+
+body[data-k-layout="rails"] .k-rl-row--folder {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: var(--k-rl-compact-height);
+    padding: 0 var(--k-rl-row-pad) 0 calc(var(--k-rl-row-pad) + var(--k-rl-depth, 0) * var(--k-rl-folder-indent));
+    color: var(--k-text-strong);
+    font-weight: var(--k-rl-weight-active);
+}
+
+body[data-k-layout="rails"] .k-rl-row--folder .k-rl-name {
+    flex: 1 1 auto;
+}
+
+body[data-k-layout="rails"] .k-rl-row--folder.is-nested {
+    color: var(--k-text-quote);
+    font-size: var(--k-rl-chat-name-size);
+    font-weight: var(--k-rl-weight-rest);
+}
+
+body[data-k-layout="rails"] .k-rl-row--folder.k-rl-row--loose {
+    color: var(--k-text-dim);
+    font-weight: var(--k-rl-weight-rest);
+}
+
+body[data-k-layout="rails"] .k-rl-row--folder .k-rl-meta {
+    color: var(--k-text-faint);
+    font-size: var(--k-rl-chat-sub-size);
+}
+
+body[data-k-layout="rails"] .k-rl-row--folder .k-rl-chev {
+    color: var(--k-text-muted);
+    transition: rotate var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-rl-row--folder[aria-expanded="true"] .k-rl-chev {
+    rotate: 90deg;
+}
+
+/* ── Inline rename ─────────────────────────────────────────────────────────────
+   Rename mode swaps the whole row for an input. Rename goes through
+   branchStore.rename (the healing path) — never core's raw rename, which
+   orphans children. */
+
+body[data-k-layout="rails"] .k-rl-rowwrap {
+    position: relative;
+    display: flex;
+    min-width: 0;
 }
 
 body[data-k-layout="rails"] .k-rl-rename-input {

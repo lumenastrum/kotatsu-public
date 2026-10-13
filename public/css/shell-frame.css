@@ -336,8 +336,8 @@ body[data-k-layout="rails"] .k-layout-option:focus-visible {
 }
 
 body[data-k-layout="rails"] .k-layout-option[aria-pressed="true"] {
-    color: var(--k-rose);
-    background-color: color-mix(in srgb, var(--k-rose) 12%, transparent);
+    color: var(--k-select);
+    background-color: color-mix(in srgb, var(--k-select) 12%, transparent);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -26,7 +26,7 @@
  *
  * Colour: `--k-viz-1…5` + `--k-viz-other` (tokens.css), bound to categories in
  * css/receipt-tracker.css. Validated with the dataviz validator against every shipped pack's
- * popup surface (Blue Hour #171b2c, Sparkle #23182e dark; Natsumikan #fffaf0 light — the
+ * popup surface (Blue Hour #171b2c in 0.7.0, #1a1d27 since Dusk; Sparkle #23182e dark; Natsumikan #fffaf0 light — the
  * light steps sit under 3:1 for three slots, so every mark carries a visible text label: the
  * relief rule). Identity is never colour-alone: every bar is named in text.
  *

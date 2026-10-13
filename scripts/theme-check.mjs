@@ -1,8 +1,11 @@
-// npm run theme:check -- <id> [--drift] [--user <handle>]
+// npm run theme:check -- <id> [--drift | --no-drift] [--user <handle>]
 //
 // Checks one theme pack the way the app will load it, and says what to fix in plain words.
 // Finds the pack in data/<user>/theme-packs/ first, then public/themes/ (scripts/theme-lib.mjs).
 // Exit code 1 on any FAIL; WARN and INFO lines never fail the check.
+// The Blue Hour mirror check (public/themes/blue-hour/theme.json against public/css/tokens.css)
+// runs by default for a pack that ships with Kotatsu; --drift forces it for any pack, --no-drift
+// skips it.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -21,7 +24,7 @@ import {
 } from '../public/kotatsu/theme/core.js';
 import { isRootContext } from '../public/kotatsu/theme/knobs.js';
 import { FONT_TYPES, IMAGE_TYPES, SHEET_TYPES } from '../src/endpoints/kotatsu/theme-asset-types.js';
-import { PALETTE_KEYS, resolveTokenColor, toHex } from '../public/kotatsu/theme/palette.js';
+import { PALETTE_KEYS, resolveTokenColor, resolveTokenColorDeep, toHex } from '../public/kotatsu/theme/palette.js';
 import { BUILTIN_DIRECTORY, describeKnobReach, findPack, ID_PATTERN, readCoreTokens, readKnobs } from './theme-lib.mjs';
 
 const WCAG_AA_RATIO = 4.5;
@@ -51,7 +54,9 @@ const GENERIC_FAMILIES = new Set(['serif', 'sans-serif', 'monospace', 'cursive',
 /**
  * Contrast pairs, in reading order. `level: 'fail'` pairs are text people read for hours; the
  * rest are reported as warnings because their use is incidental (status colours, faint hints).
- * @type {{fg: string, bg: string, label: string, level: 'fail'|'warn', floor?: number}[]}
+ * Colours are resolved through var() chains and srgb color-mix() (resolveTokenColorDeep); a mix
+ * that comes out see-through cannot be measured without knowing what is under it.
+ * @type {{fg: string, bg: string, label: string, level: 'fail'|'warn', floor?: number, hint?: string}[]}
  */
 const CONTRAST_PAIRS = [
     ...['--k-text', '--k-text-prose', '--k-text-dim', '--k-text-muted', '--k-text-strong', '--k-accent'].flatMap(fg => [
@@ -70,6 +75,17 @@ const CONTRAST_PAIRS = [
     { fg: '--k-success', bg: '--k-surface', label: 'success colour on panels', level: 'warn' },
     { fg: '--k-warning', bg: '--k-surface', label: 'warning colour on panels', level: 'warn' },
     { fg: '--k-danger', bg: '--k-surface', label: 'danger colour on panels', level: 'warn' },
+    // Controls (tokens.css § Control states): buttons, chips and toggles, resting, selected and primary.
+    { fg: '--k-select', bg: '--k-surface', label: 'the selection colour on panels: a selected tab\'s label', level: 'fail' },
+    { fg: '--k-control-text', bg: '--k-control-bg', label: 'a resting button\'s label', level: 'fail' },
+    { fg: '--k-control-on-text', bg: '--k-control-on-bg', label: 'a selected button\'s label', level: 'fail' },
+    { fg: '--k-primary-text', bg: '--k-primary-bg', label: 'a primary button\'s label', level: 'fail' },
+    { fg: '--k-primary-text', bg: '--k-primary-hover-bg', label: 'a primary button\'s label under the pointer', level: 'fail' },
+    // Not text: the selected fill against the resting one, so "on" reads without the border.
+    {
+        fg: '--k-control-on-bg', bg: '--k-control-bg', label: 'a selected button\'s fill against a resting one', level: 'warn', floor: 2,
+        hint: 'The selected state leans on its --k-control-on-border; raise --k-control-on-strength to make the fill carry it too.',
+    },
 ];
 
 /** @type {string[]} */
@@ -89,17 +105,21 @@ const warn = (/** @type {string} */ message) => {
 
 /**
  * @param {string[]} args
- * @returns {{id: string, drift: boolean, handle: string|undefined}}
+ * @returns {{id: string, drift: boolean|null, handle: string|undefined}} `drift: null` = decide by
+ *   where the pack lives (on for the packs that ship with Kotatsu).
  */
 function parseArguments(args) {
     let id = '';
-    let drift = false;
+    /** @type {boolean|null} */
+    let drift = null;
     /** @type {string|undefined} */
     let handle;
     for (let index = 0; index < args.length; index++) {
         const argument = args[index];
         if (argument === '--drift') {
             drift = true;
+        } else if (argument === '--no-drift') {
+            drift = false;
         } else if (argument === '--user') {
             handle = args[++index];
             if (!handle) throw new Error('--user needs a data user handle, like --user default-user');
@@ -111,7 +131,7 @@ function parseArguments(args) {
             id = argument;
         }
     }
-    if (!id) throw new Error('Usage: npm run theme:check -- <id> [--drift] [--user <handle>]');
+    if (!id) throw new Error('Usage: npm run theme:check -- <id> [--drift | --no-drift] [--user <handle>]');
     if (!ID_PATTERN.test(id)) throw new Error(`Invalid theme id "${id}"; use lowercase letters, digits and dashes only`);
     return { id, drift, handle };
 }
@@ -171,7 +191,7 @@ function firstFamily(stack) {
 
 /**
  * @param {string} id
- * @param {boolean} checkDrift
+ * @param {boolean|null} checkDrift null = on for a built-in pack (public/themes/), off for the rest.
  * @param {string|undefined} handle
  */
 async function checkTheme(id, checkDrift, handle) {
@@ -455,9 +475,45 @@ async function checkTheme(id, checkDrift, handle) {
     }
 
     // ── Contrast ────────────────────────────────────────────────────────────────────────
+    // A plain colour is measured as it always was (a see-through one over white, as contrastRatio
+    // does); a color-mix() is resolved too, but only measured when the mix comes out solid.
+    const measurable = (/** @type {string} */ token) => {
+        const plain = resolveTokenColor(token, effective);
+        if (plain) return plain;
+        const mixed = resolveTokenColorDeep(token, effective);
+        return mixed && mixed.a >= 0.999 ? mixed : null;
+    };
+    // A token set to `initial` is guaranteed-invalid: every var() that reads it takes its own
+    // fallback, so there is no colour here to measure. A pack does this to the primary tokens to
+    // keep each component's own primary look (docs/theme-authoring-guide.md § Controls). A pair
+    // is skipped when either side's var() chain ends in one of those tokens.
+    /**
+     * @param {string} token
+     * @param {Set<string>} [seen] Tokens already on this chain (cycle guard).
+     * @returns {boolean}
+     */
+    const readsInitial = (token, seen = new Set()) => {
+        if (seen.has(token)) return false;
+        seen.add(token);
+        const value = normalizeTokenValue(String(effective[token] ?? ''));
+        // Only the primary tokens have a fallback everywhere they are read; any other token set
+        // to `initial` falls through to "cannot be measured" below.
+        if (value === 'initial') return /^--k-primary-/.test(token);
+        // Any var() inside the value (a plain reference, or a colour in a color-mix()) that ends
+        // in `initial` makes the whole value invalid at computed-value time.
+        return [...value.matchAll(/var\((--k-[a-z0-9-]+)/g)].some(match => readsInitial(match[1], seen));
+    };
+    let primaryReset = false;
     for (const pair of CONTRAST_PAIRS) {
-        const fg = resolveTokenColor(pair.fg, effective);
-        const bg = resolveTokenColor(pair.bg, effective);
+        if (readsInitial(pair.fg) || readsInitial(pair.bg)) {
+            if (/^--k-primary-/.test(pair.fg) && !primaryReset) {
+                primaryReset = true;
+                info('primary buttons use each component\'s own look (the primary tokens are "initial"), so their contrast is not measured here');
+            }
+            continue;
+        }
+        const fg = measurable(pair.fg);
+        const bg = measurable(pair.bg);
         const floor = pair.floor ?? WCAG_AA_RATIO;
         const label = `contrast ${pair.fg} on ${pair.bg} (${pair.label})`;
         if (!fg || !bg) {
@@ -465,17 +521,20 @@ async function checkTheme(id, checkDrift, handle) {
             continue;
         }
         const ratio = contrastRatio(toHex(fg), toHex(bg)) ?? 0;
+        const hint = pair.hint ? ` ${pair.hint}` : '';
         if (ratio >= floor) {
             pass(`${label}: ${ratio.toFixed(2)}:1`);
         } else if (pair.level === 'fail') {
-            fail(`${label}: ${ratio.toFixed(2)}:1, needs ${floor}:1. Make one of them lighter or darker.`);
+            fail(`${label}: ${ratio.toFixed(2)}:1, needs ${floor}:1. ${pair.hint ?? 'Make one of them lighter or darker.'}`);
         } else {
-            warn(`${label}: ${ratio.toFixed(2)}:1 (below ${floor}:1)`);
+            warn(`${label}: ${ratio.toFixed(2)}:1 (below ${floor}:1).${hint}`);
         }
     }
 
     // ── Blue Hour mirror ────────────────────────────────────────────────────────────────
-    if (checkDrift) {
+    // On by default for the shipped packs: every one of them inherits from the mirror, so a
+    // drifted mirror is a bug in all of them, not only in Blue Hour.
+    if (checkDrift ?? chain[0]?.source === 'builtin') {
         const blueHour = await loadPack('blue-hour');
         const manifestTokens = blueHour.manifest?.tokens ?? {};
         const allNames = new Set([...coreNames, ...Object.keys(manifestTokens)]);

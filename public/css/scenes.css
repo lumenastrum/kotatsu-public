@@ -244,8 +244,8 @@ body[data-k-layout="rails"] .k-scene-seg button span {
 }
 
 body[data-k-layout="rails"] .k-scene-seg button.is-on {
-    background: color-mix(in srgb, var(--k-accent) 22%, var(--k-surface));
-    color: var(--k-text-strong);
+    background: var(--k-control-on-bg);
+    color: var(--k-control-on-text);
 }
 
 body[data-k-layout="rails"] .k-scene-seg button:disabled {
@@ -654,7 +654,7 @@ body[data-k-layout="rails"] .k-scene-option input {
 }
 
 body[data-k-layout="rails"] .k-scene-option input:checked {
-    border: 5px solid var(--k-accent);
+    border: 5px solid var(--k-select);
 }
 
 body[data-k-layout="rails"] .k-scene-option input:focus-visible {
@@ -1259,7 +1259,7 @@ body[data-k-layout="rails"] .k-stage-item--radio b {
 }
 
 body[data-k-layout="rails"] .k-stage-item--radio.is-on b {
-    color: var(--k-accent-bright);
+    color: var(--k-select-bright);
 }
 
 body[data-k-layout="rails"] .k-stage-check {
@@ -1424,8 +1424,8 @@ body[data-k-layout="rails"] .k-cast-seg button:focus-visible {
 }
 
 body[data-k-layout="rails"] .k-cast-seg button.is-on {
-    background: color-mix(in srgb, var(--k-accent) 22%, var(--k-surface));
-    color: var(--k-text-strong);
+    background: var(--k-control-on-bg);
+    color: var(--k-control-on-text);
 }
 
 body[data-k-layout="rails"] .k-cast-chips {
@@ -1651,13 +1651,13 @@ body[data-k-layout="rails"] .k-cast-switch span {
 }
 
 body[data-k-layout="rails"] .k-cast-switch.is-on {
-    background: color-mix(in srgb, var(--k-accent) 35%, transparent);
-    border-color: var(--k-accent);
+    background: color-mix(in srgb, var(--k-select) 35%, transparent);
+    border-color: var(--k-select);
 }
 
 body[data-k-layout="rails"] .k-cast-switch.is-on span {
     transform: translateX(18px);
-    background: var(--k-accent-bright);
+    background: var(--k-select-bright);
 }
 
 body[data-k-layout="rails"] .k-cast-switch:focus-visible {
@@ -1885,14 +1885,18 @@ body[data-k-layout="rails"] .k-banner-btn:focus-visible {
 
 body[data-k-layout="rails"] .k-banner-btn--primary {
     border-color: transparent;
-    background: var(--k-accent);
-    color: var(--k-ground);
+    /* Primary tokens are Blue Hour's rose; a pack that sets them to `initial` keeps the solid
+       accent fill this button always had. */
+    background: var(--k-primary-bg, var(--k-accent));
+    color: var(--k-primary-text, var(--k-ground));
 }
 
 body[data-k-layout="rails"] .k-banner-btn--primary:hover,
 body[data-k-layout="rails"] .k-banner-btn--primary:focus-visible {
-    background: var(--k-accent-bright);
-    color: var(--k-ground);
+    /* The fallback border is the generic hover's accent, which a primary always showed. */
+    border-color: var(--k-primary-hover-bg, var(--k-accent));
+    background: var(--k-primary-hover-bg, var(--k-accent-bright));
+    color: var(--k-primary-text, var(--k-ground));
 }
 
 body[data-k-layout="rails"] .k-banner-btn:disabled {

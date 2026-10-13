@@ -60,8 +60,8 @@ body[data-k-layout="rails"] .k-mkt-chip:focus-visible {
 }
 
 body[data-k-layout="rails"] .k-mkt-chip.is-on {
-    border-color: color-mix(in srgb, var(--k-accent) 55%, transparent);
-    background: color-mix(in srgb, var(--k-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--k-select) 55%, transparent);
+    background: color-mix(in srgb, var(--k-select) 20%, transparent);
     color: var(--k-text-strong);
 }
 

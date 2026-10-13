@@ -24,73 +24,81 @@
 
 :root {
     /* ── Ground & surfaces ───────────────────────────────────────────── */
-    --k-ground: #0e1119;
+    /* Blue Hour "Dusk split" (issue #12): the neutrals are a quiet blue-grey, far
+       less saturated than the accent, so an accent tint or a selection reads as a
+       colour and not as "more of the same blue". */
+    --k-ground: #11131a;
     /* deepest stop: pill/panel/popup gradient bottom, `pre` blocks */
-    --k-ground-deep: #0d101b;
+    --k-ground-deep: #0e1016;
     /* the panel fill; `blur_tint_color` writes here from a theme JSON */
-    --k-surface: #171b2c;
+    --k-surface: #1a1d27;
     /* raised: pill/panel/popup gradient top, toast cards */
-    --k-surface-2: #131726;
+    --k-surface-2: #161821;
     /* sunken: inline-drawer cards, .menu_button, table head, checkbox well */
-    --k-surface-sunken: #181d2a;
+    --k-surface-sunken: #1d2029;
     /* side panels stay slightly softer than popup and menu surfaces */
     --k-panel-fill-soft: linear-gradient(180deg,
             color-mix(in srgb, var(--k-surface-2) 96%, transparent),
             color-mix(in srgb, var(--k-ground-deep) 94%, transparent));
     /* modal scrim + the base of every dark overlay wash */
-    --k-scrim: #080a12;
+    --k-scrim: #08090d;
 
     /* Top stop of the ambient body backdrop. Held apart from --k-surface even
-       though Blue Hour gives both #171b2c, because the theme-JSON compat map
-       writes `blur_tint_color` INTO --k-surface — and that value carries its own
-       alpha. Reusing --k-surface here made the gradient's top stop translucent
+       though Blue Hour gives both the same colour, because the theme-JSON compat
+       map writes `blur_tint_color` INTO --k-surface — and that value carries its
+       own alpha. Reusing --k-surface here made the gradient's top stop translucent
        over a body background of the same color, which flattened the moonlit
-       sweep to a wash. Verified live: --k-surface resolves to
-       rgba(15, 18, 27, 0.82) at runtime, not #171b2c. Inventory §3 lists this
-       separately as --k-panel, one use: the body gradient start. */
-    --k-backdrop-top: #171b2c;
+       sweep to a wash. Verified live (0.7.0): --k-surface resolved to
+       rgba(15, 18, 27, 0.82) at runtime, not the sheet value; since Dusk the
+       shipped "Blue Hour (Native)" JSON pins rgba(16, 18, 25, 0.82). Inventory §3
+       lists this separately as --k-panel, one use: the body gradient start. */
+    --k-backdrop-top: #1a1d27;
 
     /* ── Text ────────────────────────────────────────────────────────── */
-    --k-text: #d8dce8;
-    --k-text-strong: #eceef6;
+    --k-text: #dadce5;
+    --k-text-strong: #eeeff5;
     /* The reading surface — `.mes_text` / `.mes_reasoning` (kotatsu-chrome.css §3).
        Defaults to the body text; a pack whose `--k-text` runs near-white takes the
        glare off hours of prose HERE without dimming a single label (Sparkle does:
        reader-polish v0 finding 6). A colour, or a `var(--k-text*)` reference. */
     --k-text-prose: var(--k-text);
     /* blockquote copy, hljs bullets */
-    --k-text-quote: #c3c8da;
+    --k-text-quote: #c5c8d6;
     /* one notch below muted; hljs operators/punctuation */
-    --k-text-dim: #8891ad;
+    --k-text-dim: #8b90a6;
     /* resting drawer icons, swipe arrows, .code-copy — inventory-corrected */
-    --k-text-muted: #7f89ac;
+    --k-text-muted: #8489a2;
     /* timestamps, mesID, token counter, placeholders, code comments */
-    --k-text-faint: #6d7590;
+    --k-text-faint: #6e7389;
     /* reasoning body + hljs tags */
-    --k-text-reasoning: #949dc4;
+    --k-text-reasoning: #9aa2c8;
 
     /* ── Accents ─────────────────────────────────────────────────────── */
+    /* Two jobs, two hues. The periwinkle accent is the blue hour's light: links,
+       focus, hover. The dusk rose is the colour of choosing: selected states and
+       primary buttons read it through --k-select and --k-primary-bg (§Control
+       states below), plus "dialogue" and the checkbox tick. */
     --k-accent: #9aa4d2;
     --k-accent-bright: #b6bee2;
-    --k-rose: #dca9a4;
-    --k-rose-bright: #e6bdb6;
+    --k-rose: #e2ae9f;
+    --k-rose-bright: #ecc3b6;
 
     /* ── Structure ───────────────────────────────────────────────────── */
     /* third-most-used color in Blue Hour: every panel/card/pill border */
-    --k-border: #545e80;
+    --k-border: #4d5266;
     --k-border-strength: 35%;
     --k-shadow: #000000;
     --k-shadow-strength: 40%;
     /* Sheet-owned bases: applyThemeColor() can inline-pin --k-border/--k-shadow
        from a theme JSON. Native chrome recipes must remain switchable by
        data-k-theme, so they derive from unpinned peers instead. */
-    --k-chrome-border: #545e80;
+    --k-chrome-border: #4d5266;
     --k-elevation-shadow: #000000;
 
     /* ── Message tints ───────────────────────────────────────────────── */
-    --k-user-mes: #202536;
-    --k-bot-mes: #181d2a;
-    --k-chat-tint: #0f121b;
+    --k-user-mes: #232633;
+    --k-bot-mes: #1d2029;
+    --k-chat-tint: #101219;
 
     /* ── Status ──────────────────────────────────────────────────────── */
     --k-success: #9ec49a;
@@ -108,7 +116,8 @@
        binds category N → slot N). Dark-surface steps of the dataviz reference palette
        (blue, orange, aqua, yellow, magenta), ORDER IS THE CVD-SAFETY MECHANISM — never
        re-order or cycle. Validated (dataviz validate_palette.js, 10/2) on Blue Hour
-       #171b2c and Sparkle #23182e: all checks PASS, worst adjacent CVD ΔE 8.4, normal
+       #171b2c (0.7.0; Dusk's #1a1d27 is a near-identical lightness) and Sparkle
+       #23182e: all checks PASS, worst adjacent CVD ΔE 8.4, normal
        19.3, every slot ≥ 3:1. A light pack overrides all six with the light steps
        (Natsumikan does). `-other` is a neutral bucket, not a series. */
     --k-viz-1: #3987e5;
@@ -134,10 +143,54 @@
        sheet block. Verified live. */
     --k-checkbox-tick: var(--k-rose);
 
+    /* ── Control states ──────────────────────────────────────────────────
+       One vocabulary for "this one is chosen" and "do this", so no component
+       hard-codes its own color-mix (issue #12). Two rules hold it together:
+         1. SELECTED and PRIMARY are different objects. Selected (a toggle that
+            is on, a chip, a segment, the current tab or step) is a tint plus a
+            solid border; primary (the one action that moves you forward) is a
+            SOLID fill with contrasting text. Never one rule for both.
+         2. Selection has its own colour, --k-select, apart from the accent. In
+            Blue Hour it is the dusk rose and the accent keeps links, focus and
+            hover; a pack whose accent IS its colour of choosing (Sparkle,
+            Midnight Kissaten, Natsumikan) points it at var(--k-accent).
+       theme:check measures the pairs: control text on the resting fill, on-text
+       on the selected fill and primary text on both primary fills at 4.5:1, and
+       warns when the selected fill sits under 2:1 from the resting one. */
+
+    /* the colour of choosing: selected tabs, rows, chips, toggles, steps */
+    --k-select: var(--k-rose);
+    /* its lighter twin, for small marks on a selected thing (a count, a knob) */
+    --k-select-bright: var(--k-rose-bright);
+    /* a resting button, chip or segment: fill, hairline, label */
+    --k-control-bg: var(--k-surface-2);
+    --k-control-border: var(--k-border);
+    --k-control-text: var(--k-text);
+    /* how much --k-select tints a selected control's fill (like --k-border-strength) */
+    --k-control-on-strength: 20%;
+    /* a selected (on, pressed, current) control: fill, border, label */
+    --k-control-on-bg: color-mix(in srgb, var(--k-select) var(--k-control-on-strength), var(--k-control-bg));
+    --k-control-on-border: var(--k-select);
+    --k-control-on-text: #f6dfd6;
+    /* the primary action: a solid fill with contrasting text, never a tint */
+    --k-primary-bg: var(--k-select);
+    --k-primary-text: var(--k-surface-2);
+    /* under the pointer or focused: lifted toward the strong text colour */
+    --k-primary-hover-bg: color-mix(in srgb, var(--k-primary-bg) 70%, var(--k-text-strong));
+    /* a primary button's label weight, a notch above a resting button's */
+    --k-primary-weight: 600;
+    /* Solid primaries are Blue Hour's look. Every component rule reads these four as
+       var(--k-primary-x, <its own look>), so a pack that sets them to `initial` keeps each
+       button's own primary (a tinted pill, an accent fill, whatever it was). */
+
     /* ── Ambient glows (body backdrop ellipses) ──────────────────────── */
-    --k-glow-dawn: #7e8cc8;
+    /* Dawn and deep are what palette.js grows from the accent over the Dusk ground
+       (accent 85% / 55% into --k-ground), so the backdrop's blue is the accent's
+       own light and no longer the old saturated #7e8cc8 / #5a64a0. The rose glow
+       is mauve, not blue, and stays as drawn. */
+    --k-glow-dawn: #858eb6;
     --k-glow-rose: #966a8a;
-    --k-glow-deep: #5a64a0;
+    --k-glow-deep: #5c637f;
 
     /* ── Overlay bases ───────────────────────────────────────────────── */
     /* Every legacy --white*a wash derives from this; every --black*a / --grey*a

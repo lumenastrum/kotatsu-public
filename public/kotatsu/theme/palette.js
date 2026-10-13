@@ -36,7 +36,7 @@ export const PALETTE_KEYS = Object.freeze({
     text: { token: '--k-text', about: 'Body text. The greys (dim, muted, faint) grow from this and the background.' },
     prose: { token: '--k-text-prose', about: 'The story text in messages. Leave it out to use `text`.' },
     accent: { token: '--k-accent', about: 'The main accent: links, buttons, focus rings, the user\'s name.' },
-    dialogue: { token: '--k-rose', about: 'Quoted "dialogue" in messages, and the second accent (selected rows).' },
+    dialogue: { token: '--k-rose', about: 'Quoted "dialogue" in messages, and the colour of choosing: selected tabs, chips and toggles, and primary buttons.' },
     actions: { token: '--k-italics', about: 'Italic *actions* in messages. Leave it out to use `accent`.' },
     border: { token: '--k-border', about: 'Hairlines around panels and cards. Grows from text + background if left out.' },
     'character-message': { token: '--k-bot-mes', about: 'The card behind the character\'s messages.' },
@@ -165,6 +165,14 @@ const RECIPES = [
     // A light ground smudges under the global text halo (natsumikan-v0: "--k-shadow-strength: 0%
     // kills it"). Only ever switched OFF here; a dark ground leaves the parent's halo alone.
     { token: '--k-shadow-strength', inputs: ['--k-ground'], derive: (_get, light) => light ? '0%' : null },
+    // The label on a selected control sits on a faint tint of the selection colour over a resting
+    // fill (tokens.css § Control states). On a dark room Blue Hour lights it with its own rose
+    // (#f6dfd6); a child that moves the selection colour gets the same: that colour lifted most of
+    // the way to white. On a light room the tint is pale, so the label is the strong (dark) text.
+    {
+        token: '--k-control-on-text', inputs: ['--k-select', '--k-rose', '--k-ground', '--k-text-strong'],
+        derive: (get, light) => light ? get('--k-text-strong') : mixOf(get('--k-select'), WHITE, 0.6),
+    },
 ];
 
 /**
@@ -205,6 +213,118 @@ export function resolveTokenColor(token, tokens, seen = new Set()) {
         return resolveTokenColor(reference[1], tokens, seen);
     }
     return parseColor(value);
+}
+
+/**
+ * Splits a CSS value on a separator that is not nested inside parentheses.
+ * @param {string} source
+ * @param {RegExp} separator One character, like /,/ or /\s/.
+ * @returns {string[]}
+ */
+function splitTopLevel(source, separator) {
+    const parts = [];
+    let depth = 0;
+    let current = '';
+    for (const character of source) {
+        if (character === '(') depth++;
+        if (character === ')') depth--;
+        if (depth === 0 && separator.test(character)) {
+            parts.push(current);
+            current = '';
+        } else {
+            current += character;
+        }
+    }
+    parts.push(current);
+    return parts.map(part => part.trim()).filter(part => part !== '');
+}
+
+/**
+ * Resolves a token to a colour the way the browser computes the forms Kotatsu's own tokens use:
+ * a plain colour, `transparent`, a `var(--k-x)` / `var(--k-x, fallback)` chain, or
+ * `color-mix(in srgb, A [p%], B [q%])` built from any of those, where a percentage may itself be
+ * a `var(--k-x)` holding one (`--k-control-on-strength`). The mix follows CSS Color 5: missing
+ * percentages complete to 100%, a sum under 100% scales the alpha, and translucent colours mix
+ * premultiplied. Anything else (gradients, other colour spaces) resolves to null.
+ *
+ * This is what `theme:check` measures with; palette derivation keeps the plainer
+ * {@link resolveTokenColor}, so growing a palette never starts reading values it ignored before.
+ * @param {string} token
+ * @param {Record<string, string>} tokens
+ * @returns {ParsedColor|null}
+ */
+export function resolveTokenColorDeep(token, tokens) {
+    return resolveColorExpression(`var(${token})`, tokens, new Set());
+}
+
+/**
+ * @param {string} source
+ * @param {Record<string, string>} tokens
+ * @param {Set<string>} seen Tokens on the current reference chain (cycle guard).
+ * @returns {string|null} The source with any var() chain followed to a concrete value.
+ */
+function followReference(source, tokens, seen) {
+    const reference = source.trim().match(/^var\(\s*(--k-[a-z0-9-]+)\s*(?:,(.*))?\)$/s);
+    if (!reference) return source.trim();
+    const [, name, fallback] = reference;
+    const value = tokens[name];
+    if (typeof value === 'string' && !seen.has(name)) {
+        return followReference(value, tokens, new Set([...seen, name]));
+    }
+    return fallback === undefined ? null : followReference(fallback, tokens, seen);
+}
+
+/**
+ * @param {string} source
+ * @param {Record<string, string>} tokens
+ * @param {Set<string>} seen
+ * @returns {ParsedColor|null}
+ */
+function resolveColorExpression(source, tokens, seen) {
+    const value = followReference(source, tokens, seen);
+    if (value === null) return null;
+    if (value === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
+    const mixed = value.match(/^color-mix\(\s*in\s+srgb\s*,(.*)\)$/is);
+    if (!mixed) return parseColor(value);
+
+    const operands = splitTopLevel(mixed[1], /,/);
+    if (operands.length !== 2) return null;
+    /** @type {{color: ParsedColor, percent: number|null}[]} */
+    const sides = [];
+    for (const operand of operands) {
+        const words = splitTopLevel(operand, /\s/);
+        if (words.length < 1 || words.length > 2) return null;
+        const percentOf = (/** @type {string} */ word) => {
+            const match = followReference(word, tokens, seen)?.match(/^(\d+(?:\.\d+)?)%$/);
+            return match ? Number(match[1]) : null;
+        };
+        // The percentage may come after the colour or before it, as in CSS.
+        let percent = null;
+        let colorWord = words[0];
+        if (words.length === 2) {
+            percent = percentOf(words[1]);
+            if (percent === null) {
+                percent = percentOf(words[0]);
+                colorWord = words[1];
+            }
+            if (percent === null) return null;
+        }
+        const color = resolveColorExpression(colorWord, tokens, seen);
+        if (!color) return null;
+        sides.push({ color, percent });
+    }
+    const [given1, given2] = sides.map(side => side.percent);
+    // Missing percentages complete to 100%; both missing is an even split.
+    const p1 = given1 ?? (given2 === null ? 50 : 100 - given2);
+    const p2 = given2 ?? 100 - p1;
+    const sum = p1 + p2;
+    if (sum <= 0) return null;
+    const w1 = p1 / sum;
+    const w2 = p2 / sum;
+    const [a, b] = sides.map(side => side.color);
+    const alpha = a.a * w1 + b.a * w2;
+    const channel = (/** @type {'r'|'g'|'b'} */ key) => alpha === 0 ? 0 : (a[key] * a.a * w1 + b[key] * b.a * w2) / alpha;
+    return { r: channel('r'), g: channel('g'), b: channel('b'), a: alpha * Math.min(sum, 100) / 100 };
 }
 
 /**

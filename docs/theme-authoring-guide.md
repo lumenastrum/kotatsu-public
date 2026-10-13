@@ -109,11 +109,11 @@ starts from):
     "version": 1,
     "extends": "blue-hour",
     "palette": {
-        "background": "#0e1119",
-        "panel": "#171b2c",
-        "text": "#d8dce8",
+        "background": "#11131a",
+        "panel": "#1a1d27",
+        "text": "#dadce5",
         "accent": "#9aa4d2",
-        "dialogue": "#dca9a4",
+        "dialogue": "#e2ae9f",
         "shadow": "#000000",
         "success": "#9ec49a",
         "warning": "#cbb289",
@@ -210,7 +210,7 @@ The palette is the easiest way to colour a theme. Each entry is one colour with 
 | `text` | Body text. The greys (dim, muted, faint) grow from this and the background. |
 | `prose` | The story text in messages. Leave it out to use `text`. |
 | `accent` | The main accent: links, buttons, focus rings, the user's name. |
-| `dialogue` | Quoted "dialogue" in messages, and the second accent (selected rows). |
+| `dialogue` | Quoted "dialogue" in messages, and the colour of choosing: selected tabs, chips and toggles, and primary buttons. |
 | `actions` | Italic \*actions\* in messages. Leave it out to use `accent`. |
 | `border` | Hairlines around panels and cards. Grows from text + background if left out. |
 | `character-message` | The card behind the character's messages. |
@@ -229,7 +229,8 @@ the ones that depend on it are worked out for you:
 - change `text` → the strong, dim, muted, faint, quote and reasoning text colours follow;
 - change `background` or `panel` → the deeper and raised panels, the sunken wells, the
   overlay dim and the chat tint follow;
-- change `accent` or `dialogue` → their bright versions and the glows follow;
+- change `accent` or `dialogue` → their bright versions and the glows follow (and `dialogue`
+  also moves the colour of choosing, so the label on a selected control grows from it);
 - a light `background` (like cream paper) also turns off the soft shadow behind text, which
   smudges dark text on light paper.
 
@@ -396,6 +397,60 @@ for readers who turned on Reduced Motion (in Kotatsu, or in their computer's set
 (Blue Hour: `120ms`, `180ms`, `240ms`). Keep them at 260ms or less so nothing feels like it is in the
 way. `--k-ease-out` is the curve things settle with.
 
+**Controls: chosen, and "do this".** Buttons, chips, segments, switches and tabs share one set of
+colours, so a theme changes them all at once. Two ideas hold it together. A *selected* control (a
+toggle that is on, the chosen chip, the current tab or step) is a light tint with a solid border. A
+*primary* button (the one action that moves you on: Save, Draw, OK) is a solid fill with
+contrasting text. The two never look alike. And choosing has its own colour, `--k-select`, apart
+from the accent: in Blue Hour the accent (periwinkle) is for links, focus and hover, and the rose
+is for choosing.
+
+| Token | What it sets | Blue Hour |
+| --- | --- | --- |
+| `--k-select` | The colour of choosing: selected tabs, rows, chips, toggles, steps. | `var(--k-rose)` |
+| `--k-select-bright` | Its lighter twin, for small marks on a selected thing (a count, a switch knob). | `var(--k-rose-bright)` |
+| `--k-control-bg` | A resting button, chip or segment: its fill. | `var(--k-surface-2)` |
+| `--k-control-border` | ...its hairline. | `var(--k-border)` |
+| `--k-control-text` | ...its label. | `var(--k-text)` |
+| `--k-control-on-strength` | How much `--k-select` tints a selected control's fill. | `20%` |
+| `--k-control-on-bg` | A selected control's fill: `--k-select` at that strength over the resting fill. | a `color-mix()` |
+| `--k-control-on-border` | A selected control's border. | `var(--k-select)` |
+| `--k-control-on-text` | A selected control's label. | `#f6dfd6` |
+| `--k-primary-bg` | A primary button's solid fill. | `var(--k-select)` |
+| `--k-primary-text` | Its label. | `var(--k-surface-2)` |
+| `--k-primary-hover-bg` | Its fill under the pointer or focused. | 70% primary, 30% strong text |
+| `--k-primary-weight` | Its label's weight. | `600` |
+
+Because `--k-select` points at the rose, changing `dialogue` in your palette moves the colour of
+choosing too (and the selected label grows from it). If your accent *is* your colour of choosing,
+point it there, the way Sparkle, Midnight Kissaten and Natsumikan do:
+
+```json
+"--k-select": "var(--k-accent)",
+"--k-select-bright": "var(--k-accent-bright)",
+"--k-control-on-text": "var(--k-text-strong)"
+```
+
+**Keeping each button's own primary look.** The solid primary is Blue Hour's look. Every primary
+button in the app reads the four primary tokens with its own look as the fallback, so a pack can
+decline the solid fill: set them to `initial` and each button keeps what it looked like before
+primary and selected were split (a light accent pill here, a solid accent fill there, a ghost with an
+accent label elsewhere). Sparkle, Midnight Kissaten and Natsumikan do this:
+
+```json
+"--k-primary-bg": "initial",
+"--k-primary-text": "initial",
+"--k-primary-hover-bg": "initial",
+"--k-primary-weight": "initial"
+```
+
+`initial` is a plain CSS word, not a colour: a custom property set to it has no value, so the
+button's own fallback is used. Set all four together; setting only one leaves the others (the
+inherited Blue Hour text and hover colours) painting over that button's own fill. `theme:check` does
+not measure the primary contrast pairs for such a pack, since there is no one colour to measure; it
+says so on an INFO line. To pick your own primary instead, give the tokens real colours as in
+Blue Hour, and the check measures them as before.
+
 ### Component knobs
 
 Beyond the core tokens there are over 400 *component knobs*: fine dials that belong to one part of
@@ -518,8 +573,13 @@ Run it after every few edits. Every line starts with a word:
 What it checks: that `theme.json` is well-formed, every name is real, every file you point at
 exists inside your folder, nothing reaches outside it, and that the text people read is readable:
 body text, story text, "dialogue", \*actions\*, names and the dim greys against panels and message
-cards, measured against the WCAG AA standard (4.5 to 1). It also warns about fonts you name but don't
-include, tokens that repeat your parent's value, and movements longer than 260ms.
+cards, measured against the WCAG AA standard (4.5 to 1). The controls are measured the same way:
+a resting button's label on its fill, a selected button's label on the selected fill, and a primary
+button's label on its fill and on its hover fill. It also warns about fonts you name but don't
+include, tokens that repeat your parent's value, movements longer than 260ms, and a selected fill
+that sits closer than 2 to 1 to the resting fill. That last one is advice, not a fault: Blue Hour's
+own selected fill is a gentle 1.5 to 1 and leans on its solid border, so a theme built on it shows
+that warning until it raises `--k-control-on-strength`.
 
 **Common messages and fixes**
 
@@ -528,6 +588,7 @@ include, tokens that repeat your parent's value, and movements longer than 260ms
 | `theme.json is not valid JSON` | A missing comma between entries, an extra one after the last entry, or a missing `"`. |
 | `is not a known token (did you mean "--k-lib-card-radius"?)` | A typo; use the suggested name. |
 | `contrast ... 3.10:1, needs 4.5:1` | That text is too close to its background. Make the text lighter (dark theme) or darker (light theme), or the background the other way. |
+| `a primary button's label ... needs 4.5:1` | Your `--k-primary-bg` is too close to `--k-primary-text`. On a light theme pick a deep primary; on a dark one a light primary. (Or set the primary tokens to `initial` to keep each button's own look; the check then skips this.) |
 | `may only use url() for files inside your pack folder` | Copy the picture into your folder and point at it, like `url("textures/wood.png")`. No web addresses. |
 | `points at a file that does not exist` | Check the spelling and the folder name; capitals count. |
 | `"id" must be "...", the same as its folder name` | Rename the folder or the id so they match. |

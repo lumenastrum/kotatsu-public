@@ -497,13 +497,13 @@ k-prompt-list[variant="list"] .k-pl-knob {
 }
 
 k-prompt-list[variant="list"] .k-pl-switch[aria-checked="true"] {
-    background: color-mix(in srgb, var(--k-accent) 32%, transparent);
-    border-color: var(--k-accent);
+    background: color-mix(in srgb, var(--k-select) 32%, transparent);
+    border-color: var(--k-select);
 }
 
 k-prompt-list[variant="list"] .k-pl-switch[aria-checked="true"] .k-pl-knob {
     inset-inline-start: calc(var(--k-pl-switch-w) - var(--k-pl-knob) - 4px);
-    background: var(--k-accent-bright);
+    background: var(--k-select-bright);
 }
 
 /* An always-on prompt: the slot still occupies the column so names stay aligned. */
@@ -611,7 +611,7 @@ k-prompt-list[variant="list"] .k-pl-act:focus-visible {
 }
 
 k-prompt-list[variant="list"] .k-pl-act.is-on {
-    color: var(--k-accent);
+    color: var(--k-select);
 }
 
 k-prompt-list[variant="list"] .k-pl-act--danger:hover,
@@ -706,8 +706,8 @@ k-prompt-list[variant="list"] .k-pl-chip--relax {
 }
 
 k-prompt-list[variant="list"] .k-pl-chip--relax.is-on {
-    color: var(--k-accent);
-    border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
+    color: var(--k-select);
+    border-color: color-mix(in srgb, var(--k-select) 45%, transparent);
 }
 
 k-prompt-list[variant="list"] .k-pl-chip--relax:hover,

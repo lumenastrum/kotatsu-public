@@ -319,16 +319,20 @@ body[data-k-layout="rails"] .k-lib-btn--ghost:focus-visible {
     color: var(--k-text-strong);
 }
 
+/* Primary is a solid fill with contrasting text (tokens.css § Control states). That solid fill is
+   Blue Hour's: the other packs set the primary tokens to `initial`, and each var() falls back to
+   this button's own look, a light accent pill (which reads like a selected tab beside it). */
 body[data-k-layout="rails"] .k-lib-btn--primary {
-    border-color: color-mix(in srgb, var(--k-accent) 55%, transparent);
-    background: color-mix(in srgb, var(--k-accent) 18%, transparent);
-    color: var(--k-text-strong);
+    border-color: var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 55%, transparent));
+    background: var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 18%, transparent));
+    color: var(--k-primary-text, var(--k-text-strong));
 }
 
 body[data-k-layout="rails"] .k-lib-btn--primary:hover,
 body[data-k-layout="rails"] .k-lib-btn--primary:focus-visible {
-    border-color: var(--k-accent-bright);
-    background: color-mix(in srgb, var(--k-accent) 30%, transparent);
+    border-color: var(--k-primary-hover-bg, var(--k-accent-bright));
+    background: var(--k-primary-hover-bg, color-mix(in srgb, var(--k-accent) 30%, transparent));
+    color: var(--k-primary-text, var(--k-text-strong));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -552,7 +556,7 @@ body[data-k-layout="rails"] .k-lib-view:focus-visible {
 
 body[data-k-layout="rails"] .k-lib-tab.is-active,
 body[data-k-layout="rails"] .k-lib-view.is-active {
-    background: color-mix(in srgb, var(--k-accent) 20%, transparent);
+    background: color-mix(in srgb, var(--k-select) 20%, transparent);
     color: var(--k-text-strong);
 }
 
@@ -564,7 +568,7 @@ body[data-k-layout="rails"] .k-lib-tab-count {
 }
 
 body[data-k-layout="rails"] .k-lib-tab.is-active .k-lib-tab-count {
-    color: var(--k-accent-bright);
+    color: var(--k-select-bright);
 }
 
 body[data-k-layout="rails"] .k-lib-sort {

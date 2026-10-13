@@ -14,8 +14,12 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
+    // Sprites is the headline of the whole 0.7 line, so 0.7.1 carries 0.7.0's cards and clips
+    // (media moved to 0.7.1/) with its own lines on top. A separate notes-only 0.7.1 entry would
+    // never open: the plan skips releases without cards, and an install that closed 0.7.0's sheet
+    // only sees releases newer than that.
     Object.freeze({
-        version: '0.7.0',
+        version: '0.7.1',
         title: 'Sprites',
         cards: [
             {
@@ -41,6 +45,10 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'The Chats list in the left rail is new. Pin the chats you return to, switch between Recent and Folders, and find each branch folded under the chat it came from.',
+            'Folders come from chat names: “Arc - Part one” and “Arc - Part two” land together in Arc.',
+            'Blue Hour has a new palette: a quieter blue-grey room with the accent standing apart from it, and solid main buttons that no longer look like a selected toggle.',
+            'Gemini 4 Argon is in the Google model list, with its thinking levels and tool calls.',
             'Already have sprites? Upload them one by one, or import a pack (.zip), in the Card Studio’s Sprites tab.',
             'The Pictures sheet draws in two steps now: set up the scene, then Write scene. It opens on the model you used last.',
             'Generate says up front when ComfyUI isn’t answering, with a button to set it up.',

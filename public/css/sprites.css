@@ -290,10 +290,10 @@ body[data-k-layout="rails"] .k-sprite-slot__button {
     justify-content: center;
     min-height: 30px;
     padding: 0 12px;
-    border: 1px solid var(--k-border);
+    border: 1px solid var(--k-control-border);
     border-radius: var(--k-radius-md);
-    background: var(--k-surface-2);
-    color: var(--k-text);
+    background: var(--k-control-bg);
+    color: var(--k-control-text);
     font: 500 12.5px var(--k-font-ui);
     cursor: pointer;
 }
@@ -311,10 +311,22 @@ body[data-k-layout="rails"] .k-sprite-slot__button--quiet {
     background: transparent;
 }
 
+/* Primary is a solid fill, never the selected tint (tokens.css § Control states): Blue Hour's
+   look. A pack that sets the primary tokens to `initial` gets this button's own, an accent tint.
+   Restated for hover so the generic hover above cannot hand it light text on a light fill; its
+   fallbacks are that generic hover, which is what a primary showed under the pointer before. */
 body[data-k-layout="rails"] .k-sprite-studio__button--primary {
-    border-color: var(--k-accent);
-    background: color-mix(in srgb, var(--k-accent) 28%, var(--k-surface-2));
-    color: var(--k-text-strong);
+    border-color: var(--k-primary-bg, var(--k-accent));
+    background: var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 28%, var(--k-surface-2)));
+    color: var(--k-primary-text, var(--k-text-strong));
+    font-weight: var(--k-primary-weight, 500);
+}
+
+body[data-k-layout="rails"] .k-sprite-studio__button--primary:hover,
+body[data-k-layout="rails"] .k-sprite-studio__button--primary:focus-within {
+    border-color: var(--k-primary-hover-bg, var(--k-accent));
+    background: var(--k-primary-hover-bg, color-mix(in srgb, var(--k-accent) 28%, var(--k-surface-2)));
+    color: var(--k-primary-text, var(--k-text-strong));
 }
 
 body[data-k-layout="rails"] .k-sprite-studio__button:disabled {
@@ -505,8 +517,8 @@ body[data-k-layout="rails"] .k-sprite-framing__pin button:first-child {
 }
 
 body[data-k-layout="rails"] .k-sprite-framing__pin button[data-on] {
-    background: color-mix(in srgb, var(--k-accent) 28%, var(--k-surface-2));
-    color: var(--k-text-strong);
+    background: var(--k-control-on-bg);
+    color: var(--k-control-on-text);
 }
 
 body[data-k-layout="rails"] .k-sprite-framing__preview {
@@ -637,10 +649,10 @@ k-sprite-touchup .k-tu__btn {
     gap: 6px;
     min-height: 30px;
     padding: 0 10px;
-    border: 1px solid var(--k-border);
+    border: 1px solid var(--k-control-border);
     border-radius: var(--k-radius-md);
-    background: var(--k-surface-2);
-    color: var(--k-text);
+    background: var(--k-control-bg);
+    color: var(--k-control-text);
     font: 500 12.5px var(--k-font-ui);
     text-align: left;
     cursor: pointer;
@@ -651,11 +663,27 @@ k-sprite-touchup .k-tu__btn:hover:not(:disabled) {
     color: var(--k-text-strong);
 }
 
-k-sprite-touchup .k-tu__btn[data-on],
+/* Selected (a tool, a mode) and primary (Save) are two objects: a tint with a solid border, and a
+   solid fill (tokens.css § Control states). They used to share one rule. */
+k-sprite-touchup .k-tu__btn[data-on] {
+    border-color: var(--k-control-on-border);
+    background: var(--k-control-on-bg);
+    color: var(--k-control-on-text);
+}
+
 k-sprite-touchup .k-tu__btn--primary {
-    border-color: var(--k-accent);
-    background: color-mix(in srgb, var(--k-accent) 28%, var(--k-surface-2));
-    color: var(--k-text-strong);
+    border-color: var(--k-primary-bg, var(--k-accent));
+    background: var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 28%, var(--k-surface-2)));
+    color: var(--k-primary-text, var(--k-text-strong));
+    font-weight: var(--k-primary-weight, 500);
+}
+
+/* The solid fill is Blue Hour's; the fallbacks are the old shared rule's tint (the selected one's
+   look in the other packs), and the generic hover's accent border. */
+k-sprite-touchup .k-tu__btn--primary:hover:not(:disabled) {
+    border-color: var(--k-primary-hover-bg, var(--k-accent));
+    background: var(--k-primary-hover-bg, color-mix(in srgb, var(--k-accent) 28%, var(--k-surface-2)));
+    color: var(--k-primary-text, var(--k-text-strong));
 }
 
 k-sprite-touchup .k-tu__btn--quiet {
@@ -877,7 +905,7 @@ k-sprite-touchup .k-tu__bd {
 }
 
 k-sprite-touchup .k-tu__bd[data-on] {
-    outline: 2px solid var(--k-accent);
+    outline: 2px solid var(--k-control-on-border);
 }
 
 k-sprite-touchup .k-tu__help {
@@ -1015,14 +1043,14 @@ k-sprite-generate .k-gen__stepdot {
 }
 
 k-sprite-generate .k-gen__stepdot[data-state="done"] {
-    border-color: color-mix(in srgb, var(--k-accent) 40%, var(--k-border));
+    border-color: color-mix(in srgb, var(--k-select) 40%, var(--k-border));
     color: var(--k-text-muted);
 }
 
 k-sprite-generate .k-gen__stepdot[data-state="current"] {
-    border-color: var(--k-accent);
-    background: color-mix(in srgb, var(--k-accent) 24%, var(--k-surface-2));
-    color: var(--k-text-strong);
+    border-color: var(--k-control-on-border);
+    background: var(--k-control-on-bg);
+    color: var(--k-control-on-text);
     font-weight: 600;
 }
 
@@ -1081,10 +1109,10 @@ k-sprite-generate .k-gen__btn {
     gap: 6px;
     min-height: 30px;
     padding: 0 12px;
-    border: 1px solid var(--k-border);
+    border: 1px solid var(--k-control-border);
     border-radius: var(--k-radius-md);
-    background: var(--k-surface-2);
-    color: var(--k-text);
+    background: var(--k-control-bg);
+    color: var(--k-control-text);
     font: 500 12.5px var(--k-font-ui);
     cursor: pointer;
 }
@@ -1094,11 +1122,28 @@ k-sprite-generate .k-gen__btn:hover:not(:disabled):not([data-disabled]) {
     color: var(--k-text-strong);
 }
 
-k-sprite-generate .k-gen__btn[data-on],
+/* Selected (a chosen option in a segment) and primary (Draw masters, Save) are two objects: a tint
+   with a solid border, and a solid fill (tokens.css § Control states). They used to share one
+   rule, which is why "Draw masters" read as one more selected toggle. */
+k-sprite-generate .k-gen__btn[data-on] {
+    border-color: var(--k-control-on-border);
+    background: var(--k-control-on-bg);
+    color: var(--k-control-on-text);
+}
+
 k-sprite-generate .k-gen__btn--primary {
-    border-color: var(--k-accent);
-    background: color-mix(in srgb, var(--k-accent) 28%, var(--k-surface-2));
-    color: var(--k-text-strong);
+    border-color: var(--k-primary-bg, var(--k-accent));
+    background: var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 28%, var(--k-surface-2)));
+    color: var(--k-primary-text, var(--k-text-strong));
+    font-weight: var(--k-primary-weight, 500);
+}
+
+/* The solid fill is Blue Hour's; the fallbacks are the old shared rule's tint (the selected one's
+   look in the other packs), and the generic hover's accent border. */
+k-sprite-generate .k-gen__btn--primary:hover:not(:disabled):not([data-disabled]) {
+    border-color: var(--k-primary-hover-bg, var(--k-accent));
+    background: var(--k-primary-hover-bg, color-mix(in srgb, var(--k-accent) 28%, var(--k-surface-2)));
+    color: var(--k-primary-text, var(--k-text-strong));
 }
 
 k-sprite-generate .k-gen__btn--quiet {
@@ -1183,21 +1228,21 @@ k-sprite-generate .k-gen__engine {
     grid-template-columns: auto minmax(0, 1fr);
     gap: 2px 8px;
     padding: 10px 12px;
-    border: 1px solid var(--k-border);
+    border: 1px solid var(--k-control-border);
     border-radius: var(--k-radius-lg);
-    background: var(--k-surface-2);
+    background: var(--k-control-bg);
     cursor: pointer;
 }
 
 k-sprite-generate .k-gen__engine[data-on] {
-    border-color: var(--k-accent);
-    background: color-mix(in srgb, var(--k-accent) 14%, var(--k-surface-2));
+    border-color: var(--k-control-on-border);
+    background: var(--k-control-on-bg);
 }
 
 k-sprite-generate .k-gen__engine input {
     grid-row: span 2;
     margin: 2px 0 0;
-    accent-color: var(--k-accent);
+    accent-color: var(--k-select);
 }
 
 k-sprite-generate .k-gen__engine-name {

@@ -163,7 +163,7 @@ body[data-k-layout="rails"] {
     /* The message tints, at core's own alpha stops (style.css:85-86) so a theme pack that
        retints `--k-user-mes` / `--k-bot-mes` (theme/loader.js:17-18) retints the bubbles
        with it. User is the raised stop, bot one step down — which is what those two tokens
-       already encode (#202536 over #181d2a in Blue Hour). */
+       already encode (#232633 over #1d2029 in Blue Hour). */
     --k-cc-user-bubble: color-mix(in srgb, var(--k-user-mes) 80%, transparent);
     --k-cc-bot-bubble: color-mix(in srgb, var(--k-bot-mes) 88%, transparent);
     --k-cc-bubble-border: color-mix(in srgb, var(--k-chrome-border) 22%, transparent);
