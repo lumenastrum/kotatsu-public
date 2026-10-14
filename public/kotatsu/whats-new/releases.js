@@ -15,11 +15,11 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
     // Sprites is the headline of the whole 0.7 line, so each 0.7.x carries 0.7.0's cards and clips
-    // (media moved along, now 0.7.3/) with its own lines on top. A separate notes-only entry would
+    // (media moved along, now 0.7.4/) with its own lines on top. A separate notes-only entry would
     // never open: the plan skips releases without cards, and an install that closed the previous
     // sheet only sees releases newer than that.
     Object.freeze({
-        version: '0.7.3',
+        version: '0.7.4',
         title: 'Sprites',
         cards: [
             {
@@ -45,6 +45,8 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'On a phone, a message’s … menu keeps Translate on screen: its buttons wrap onto another row instead of running off the edge.',
+            'A translator URL saved without http:// in front (LibreTranslate, Lingva, OneRingTranslator, DeepLX) works now, instead of failing with “Invalid URL”.',
             'Hover a prompt in the preset dock to read what its author says it does. Sola writes a note for most of hers.',
             'New sauces: Sola V3 · Flame and Sola · Kindling by Pyrxpia, and Freaky Frankenstein 5.4 by dptgreg. Already playing with Sola V2? Your copy stays where it is.',
             'The preset dock reads Sola V3’s sections and its pick-one sets, so which Sola, the point of view and the style are each one choice.',

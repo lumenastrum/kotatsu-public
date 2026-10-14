@@ -13,6 +13,18 @@ const LINGVA_DEFAULT = 'https://lingva.ml/api/v1';
 
 export const router = express.Router();
 
+/**
+ * KOTATSU-PATCH 2026-10-14: a self-hosted translator URL saved without its scheme
+ * (`127.0.0.1:4990/translate`) failed every request with "Invalid URL". Assume `http://`,
+ * the way a browser's address bar does.
+ * @param {string} url URL as the user saved it
+ * @returns {string} The URL with a scheme
+ */
+function withScheme(url) {
+    const trimmed = String(url).trim();
+    return /^[a-z][a-z\d+.-]*:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`;
+}
+
 router.post('/libre', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.LIBRE);
@@ -44,7 +56,7 @@ router.post('/libre', async (request, response) => {
 
         console.debug('Input text: ' + text);
 
-        const result = await fetch(url, {
+        const result = await fetch(withScheme(url), {
             method: 'POST',
             body: JSON.stringify({
                 q: text,
@@ -182,7 +194,7 @@ router.post('/lingva', async (request, response) => {
 
         console.debug('Input text: ' + text);
 
-        const url = urlJoin(baseUrl, 'auto', lang, encodeURIComponent(text));
+        const url = urlJoin(withScheme(baseUrl), 'auto', lang, encodeURIComponent(text));
         const result = await fetch(url);
 
         if (!result.ok) {
@@ -295,7 +307,7 @@ router.post('/onering', async (request, response) => {
 
         console.debug('Input text: ' + text);
 
-        const fetchUrl = new URL(url);
+        const fetchUrl = new URL(withScheme(url));
         fetchUrl.search = params.toString();
 
         const result = await fetch(fetchUrl, {
@@ -345,7 +357,7 @@ router.post('/deeplx', async (request, response) => {
 
         console.debug('Input text: ' + text);
 
-        const result = await fetch(url, {
+        const result = await fetch(withScheme(url), {
             method: 'POST',
             body: JSON.stringify({
                 text: text,

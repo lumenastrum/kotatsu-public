@@ -372,6 +372,14 @@ body .k-rail-handle .k-rail-handle__phone {
         min-height: 36px;
     }
 
+    /* Core's expanded row is `nowrap` + `flex-end` + `overflow-x: hidden`. At 36px a button,
+       eight of them outgrow a phone-width message, and a right-aligned row that overflows
+       spills off its LEFT edge: Translate (the first child) sat off-screen, out of reach.
+       Wrapping keeps every button inside the message. */
+    body[data-k-layout="rails"] #chat .mes .mes_buttons .extraMesButtons {
+        flex-wrap: wrap;
+    }
+
     body[data-k-layout="rails"] #send_form #options_button,
     body[data-k-layout="rails"] #send_form #extensionsMenuButton,
     body[data-k-layout="rails"] #send_form #send_but {
