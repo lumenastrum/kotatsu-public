@@ -121,8 +121,31 @@ const LEGACY_BANNER_PARTS = Object.freeze([
 ]);
 /** Legacy sub-header, e.g. `<🩸| Realism Filters >`. */
 const LEGACY_SUBHEADER_PATTERN = /^<\s*(.+?)\s*>$/;
-/** A cleaned banner label matching this marks its section exclusive (decision 6). */
-const PICK_ONE_PATTERN = /\bpick one\b/i;
+/**
+ * A cleaned banner label matching this marks its section exclusive (decision 6). Authors say it
+ * several ways: `Pick one POV`, `Length (Toggle Only One)` (Pura), `// choose only one` (Megumin),
+ * `PICK: AGENCY` (Deus Ex Machina). `Choose two max` is not one of them.
+ */
+const PICK_ONE_PATTERN = /\bpick\s+(?:one|1)\b|\b(?:only|just)\s+(?:one|1)\b|^[^\p{L}\p{N}]*pick\s*:/iu;
+/**
+ * A banner written as glyphs, then a rule glued to a literal `+`, then a title:
+ * `🐈‍⬛─+ Narration Voice`, `🐈‍⬛ ─+ Length (Toggle Only One)` (Pura's Director). A cousin of the
+ * `━+` sigil, written with U+2500 or U+2501 and a badge in front.
+ */
+const PLUS_RULE_BANNER = /^([^\p{L}\p{N}\s\x00-\x7F]{1,8}?)\s*[─━]\+\s+(.*\p{L}.*)$/u;
+/** A banner's trailing note, `… ━━━━━  //  choose only one` (Megumin): what follows the slashes. */
+const BANNER_HINT = /\s+\/\/\s+(.+)$/;
+/** A macro in parentheses inside a label, `Writing Style ({{style}})`: shown as nothing. */
+const LABEL_MACRO = /\s*\(\s*\{\{[^}]*\}\}\s*\)/g;
+/**
+ * Core's own marker slots. Any other prompt flagged `marker` is one the author made, and core sends
+ * nothing for it, so an empty one is a pure label: Deus Ex Machina writes its headers that way
+ * (`🔹🔹CORE🔹🔹`, `🔻PICK: AGENCY🔻`), and Megumin its banners.
+ */
+const CORE_MARKER_IDS = new Set([
+    'chatHistory', 'dialogueExamples', 'worldInfoBefore', 'worldInfoAfter',
+    'charDescription', 'charPersonality', 'scenario', 'personaDescription',
+]);
 /**
  * A row that says it is one of a set, in its own name: `[Core] User: Agency-Lite (Pick 1)`.
  * Sola V2's convention — no header row, just the tag on each option.
@@ -162,6 +185,8 @@ const MAX_SLUG_LENGTH = 64;
  * @property {boolean} [marker] Engine-supplied slot (data-contract §4.2).
  * @property {boolean} [system_prompt] One of core's own prompts: the markers, plus Main,
  *   Auxiliary, Post-History and Enhance Definitions.
+ * @property {string} [content] Prompt text.
+ * @property {number} [injection_position] 1 = injected in-chat at a depth.
  */
 
 /**
@@ -253,7 +278,65 @@ const MAX_SLUG_LENGTH = 64;
  * @property {boolean} marker
  * @property {boolean} builtin
  * @property {Classification} cls
+ * @property {'banner'|'subgroup'|'separator'|null} authored What an author-made marker is
+ *   ({@link authoredMarkerKind}); null for every other row.
  */
+
+/**
+ * What an author-made marker row is.
+ *
+ * Core only sends such a marker's content when it is a user prompt (`system_prompt: false`) or
+ * injected in-chat (openai.js populateChatCompletion); otherwise it is a label that may carry
+ * hidden logic (Deus Ex Machina keeps `{{// notes}}` and checkpoint macros in its headers). One
+ * that sends nothing is then read by its name:
+ * - no letter (`· · ─ ·✶· ─ · ·`): a separator, closing the group above it;
+ * - opening with a glyph, and its label says pick (`🔻PICK: AGENCY🔻`): a pick-one sub-group;
+ * - opening with a glyph otherwise (`🔹🔹CORE🔹🔹`, `━━━━━ POV ━━━━━`): a section banner.
+ * Anything else stays a row, like Deus Ex Machina's `! Macro Cleaner !`.
+ * @param {PromptRecord} prompt The prompt.
+ * @returns {'banner'|'subgroup'|'separator'|null}
+ */
+function authoredMarkerKind(prompt) {
+    if (prompt.marker !== true || CORE_MARKER_IDS.has(prompt.identifier)) return null;
+    const blank = typeof prompt.content !== 'string' || !prompt.content.trim();
+    const sendsNothing = prompt.injection_position !== 1 && (blank || prompt.system_prompt === true);
+    if (!sendsNothing) return null;
+    const name = typeof prompt.name === 'string' ? prompt.name.trim() : '';
+    if (!/\p{L}/u.test(name)) return 'separator';
+    const first = Array.from(name)[0] ?? '';
+    if ((first.codePointAt(0) ?? 0) < 0x80 || /[\p{L}\p{N}]/u.test(first)) return null;
+    return PICK_ONE_PATTERN.test(unwrapLabel(name)) ? 'subgroup' : 'banner';
+}
+
+/**
+ * A label without the glyphs wrapped around it: `🔹🔹CORE🔹🔹` → `CORE`,
+ * `🚨🚨 DANGER ZONE 🚨🚨` → `DANGER ZONE`. Brackets that open or close the text stay.
+ * @param {string} name Raw name.
+ * @returns {string}
+ */
+function unwrapLabel(name) {
+    return name.trim().replace(/^[^\p{L}\p{N}([{]+/u, '').replace(/[^\p{L}\p{N})\]}]+$/u, '').trim();
+}
+
+/**
+ * Finishes a banner label. A trailing `// note` loses the rule left dangling in front of it; a note
+ * that says pick-one makes the section exclusive and leaves the label, any other note stays. A
+ * parenthesized macro goes too (`Writing Style ({{style}})` → `Writing Style`).
+ * @param {string} label Label as matched.
+ * @returns {{label: string, pickOne: boolean}}
+ */
+function finishBannerLabel(label) {
+    let text = label;
+    let pickOne = false;
+    const hint = BANNER_HINT.exec(text);
+    if (hint) {
+        pickOne = PICK_ONE_PATTERN.test(hint[1]);
+        const title = text.slice(0, hint.index).replace(/\s*[═━─=]{3,}$/u, '');
+        text = pickOne ? title : `${title} // ${hint[1].trim()}`;
+    }
+    text = text.replace(LABEL_MACRO, '').trim();
+    return { label: text, pickOne: pickOne || PICK_ONE_PATTERN.test(text) };
+}
 
 /**
  * Normalizes a label into an id slug. Letters and numbers survive (in any script); everything
@@ -417,6 +500,10 @@ function matchLegacyBanner(rawName, pattern) {
     const name = String(rawName ?? '').trim();
     const direct = pattern.exec(name);
     if (direct) return { lead: '', body: name, token: direct[0] };
+
+    // Glyphs, a rule glued to a `+`, a title: `🐈‍⬛ ─+ Narration Voice`. The glyphs stay in front.
+    const plus = PLUS_RULE_BANNER.exec(name);
+    if (plus) return { lead: plus[1], body: name, token: '+', label: `${plus[1]} ${plus[2].trim()}` };
 
     const points = Array.from(name);
     let lead = '';
@@ -794,28 +881,39 @@ function buildLegacySections(rows, bannerPattern) {
     const mint = makeIdMint();
     /** @type {Section[]} */
     const sections = [];
-    const isBanner = (/** @type {OrderRow} */ row) => matchLegacyBanner(row.name, bannerPattern) !== null;
+    const isBanner = (/** @type {OrderRow} */ row) => row.authored === 'banner' || matchLegacyBanner(row.name, bannerPattern) !== null;
+    const isSubHeader = (/** @type {OrderRow} */ row) => row.authored === 'subgroup' || row.authored === 'separator'
+        || LEGACY_SUBHEADER_PATTERN.test(row.name.trim());
     for (const run of splitOn(rows, isBanner)) {
         if (!run.header && run.rows.length === 0) continue;
-        let label = '';
+        let finished = { label: '', pickOne: false };
         if (run.header) {
             const match = matchLegacyBanner(run.header.name, bannerPattern);
             // Glyphs in front of the divider stay in front of the label, glued the way an
             // inside-the-divider badge already is (`=🚫Pick one NSFW Toggle` → `🚫Pick one …`).
-            label = match ? match.label ?? `${match.lead}${cleanLegacyLabel(match.body, match.token)}` : '';
+            // An author-made marker with no divider is labelled by what its glyphs wrap.
+            finished = finishBannerLabel(match
+                ? match.label ?? `${match.lead}${cleanLegacyLabel(match.body, match.token)}`
+                : unwrapLabel(run.header.name));
         }
-        const section = makeSection(run.header, mint, label);
-        section.exclusive = Boolean(run.header) && PICK_ONE_PATTERN.test(label);
-        for (const groupRun of splitOn(run.rows, row => LEGACY_SUBHEADER_PATTERN.test(row.name.trim()))) {
+        const section = makeSection(run.header, mint, finished.label);
+        section.exclusive = Boolean(run.header) && finished.pickOne;
+        for (const groupRun of splitOn(run.rows, isSubHeader)) {
             if (!groupRun.header) {
                 section.children.push(...buildLegacyBody(groupRun.rows, section.id, mint, section.exclusive));
                 continue;
             }
             const header = groupRun.header;
+            // A separator closes the group above it: it and the rows after it belong to the section.
+            if (header.authored === 'separator') {
+                section.children.push(...buildLegacyBody([header, ...groupRun.rows], section.id, mint, section.exclusive));
+                continue;
+            }
             const match = LEGACY_SUBHEADER_PATTERN.exec(header.name.trim());
-            const groupLabel = match ? match[1] : header.name.trim();
+            // `🔻PICK: AGENCY🔻` reads `AGENCY`: the radios already say pick one.
+            const groupLabel = match ? match[1] : unwrapLabel(header.name).replace(/^pick\s*:\s*/i, '') || unwrapLabel(header.name);
             const id = mint(section.id, 'g', slugify(groupLabel));
-            const exclusive = PICK_ONE_PATTERN.test(groupLabel);
+            const exclusive = header.authored === 'subgroup' || PICK_ONE_PATTERN.test(groupLabel);
             const children = buildLegacyBody(groupRun.rows, id, mint, exclusive);
             if (exclusive) promoteOptions(children);
             section.children.push({
@@ -1158,6 +1256,7 @@ export function deriveSections({ prompts, promptOrder, override = null, extraPat
             marker: prompt.marker === true,
             builtin: prompt.system_prompt === true && prompt.marker !== true,
             cls: classifySigil(name),
+            authored: authoredMarkerKind(prompt),
         });
     }
 
@@ -1173,7 +1272,7 @@ export function deriveSections({ prompts, promptOrder, override = null, extraPat
     for (const row of rows) {
         const type = row.cls.type;
         if (type === 'banner' || type === 'subgroup' || type === 'span-open' || type === 'span-close') sigilSignals++;
-        if (matchLegacyBanner(row.name, bannerPattern)) legacySignals++;
+        if (row.authored === 'banner' || row.authored === 'subgroup' || matchLegacyBanner(row.name, bannerPattern)) legacySignals++;
     }
 
     /** @type {'override'|'sigil'|'legacy'|'flat'} */
