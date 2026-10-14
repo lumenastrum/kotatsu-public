@@ -1618,7 +1618,7 @@ export class KPromptList extends LitElement {
                 ${this.#renderGrip(row.identifier, row.label)}
                 ${this.#renderSwitch(row)}
                 <span class="k-pl-kind" title=${chrome.title} aria-label=${chrome.label}>${chrome.icon}</span>
-                <span class="k-pl-name" title=${row.name || row.identifier}>${this.#renderLabel(row.label)}</span>
+                <span class="k-pl-name" title=${row.hint ? `${row.name || row.identifier}\n\n${row.hint}` : row.name || row.identifier}>${this.#renderLabel(row.label)}</span>
                 ${note ? html`<span class="k-pl-note">${note}</span>` : nothing}
                 ${this.#renderRowChips(row)}
                 ${this.#renderRowChrome(row)}

@@ -115,6 +115,8 @@ const CHIPPED_ROLES = Object.freeze(['user', 'assistant']);
  * @property {number|null} tokens Honest badge value; null means "show no badge".
  * @property {'warning'|'danger'|null} warn Chat-history squeeze level.
  * @property {string} sigil The leading token slice A stripped off the label.
+ * @property {string} hint What the author says the prompt does, from a `{{// …}}` comment it
+ *   opens with ({@link promptHint}); '' when it opens with none.
  * @property {string} haystack Lowercased `name` + `content`, built once per model.
  */
 
@@ -317,6 +319,27 @@ export function indexPrompts(prompts) {
 
 /** A bracketed tag in front of a name: `[Module] Voice: Idiolect`. The tag is kept short on purpose. */
 const LEADING_TAG = /^\[([^\][]{1,24})\]\s*(\S[\s\S]*)$/;
+/** Longest hint a row's tooltip carries; an author's note past this is cut at a word. */
+const MAX_HINT_LENGTH = 400;
+
+/**
+ * What the author says a prompt does, when its text opens with a comment macro:
+ * `{{// Enabling this will make it where the AI will only do explicitly what you had seeded.}}`.
+ * Sola V3 writes one on 70 of its 104 prompts. The macro renders to nothing, so the model never
+ * sees it, and core's prompt list never showed it either; the row's tooltip does.
+ * Only a comment at the very start counts: one further in is a note on that passage, not the toggle.
+ * @param {string} content The prompt's text.
+ * @returns {string} The note, whitespace folded, or ''.
+ */
+export function promptHint(content) {
+    const match = /^\s*\{\{\/\/([\s\S]*?)\}\}/.exec(String(content ?? ''));
+    if (!match) return '';
+    const text = match[1].replace(/\s+/g, ' ').trim();
+    if (text.length <= MAX_HINT_LENGTH) return text;
+    const cut = text.slice(0, MAX_HINT_LENGTH);
+    return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), MAX_HINT_LENGTH / 2)).trimEnd()}…`;
+}
+
 /**
  * "This is one of a set", written into each option's own name: Sola V2's `(Pick 1)`, Sola V3's
  * `[PICK 1: MIND]` and `[PICK 1: ↓]`.
@@ -392,6 +415,7 @@ function buildRow(identifier, label, sigil, ctx, option = false) {
         tokens,
         warn: historyWarning(identifier, tokens, ctx.budget),
         sigil,
+        hint: promptHint(content),
         // Built once here, not per keystroke: search is fragment-AND over name AND content
         // (decision 7), and lowercasing 94 prompt bodies on every input event is the exact
         // O(n²)-on-a-timer shape the Nemo autopsy condemned.
