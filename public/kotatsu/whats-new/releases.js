@@ -14,12 +14,12 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
-    // Sprites is the headline of the whole 0.7 line, so 0.7.1 carries 0.7.0's cards and clips
-    // (media moved to 0.7.1/) with its own lines on top. A separate notes-only 0.7.1 entry would
-    // never open: the plan skips releases without cards, and an install that closed 0.7.0's sheet
-    // only sees releases newer than that.
+    // Sprites is the headline of the whole 0.7 line, so each 0.7.x carries 0.7.0's cards and clips
+    // (media moved along, now 0.7.2/) with its own lines on top. A separate notes-only entry would
+    // never open: the plan skips releases without cards, and an install that closed the previous
+    // sheet only sees releases newer than that.
     Object.freeze({
-        version: '0.7.1',
+        version: '0.7.2',
         title: 'Sprites',
         cards: [
             {
@@ -45,6 +45,9 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'New sauces: Sola V3 · Flame and Sola · Kindling by Pyrxpia, and Freaky Frankenstein 5.4 by dptgreg. Already playing with Sola V2? Your copy stays where it is.',
+            'The preset dock reads Sola V3’s sections and its pick-one sets, so which Sola, the point of view and the style are each one choice.',
+            'A bundled sauce’s credit line has a Ko-fi link when its author has one. Tip the people who cook for you.',
             'The Chats list in the left rail is new. Pin the chats you return to, switch between Recent and Folders, and find each branch folded under the chat it came from.',
             'Folders come from chat names: “Arc - Part one” and “Arc - Part two” land together in Arc.',
             'Blue Hour has a new palette: a quieter blue-grey room with the accent standing apart from it, and solid main buttons that no longer look like a selected toggle.',

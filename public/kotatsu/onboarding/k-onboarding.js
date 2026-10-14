@@ -94,7 +94,7 @@ import { composerReason } from '../connections/composer-reason.js';
 import { getBridgeEffort, setBridgeEffort } from '../connections/bridge.js';
 import { getPresetManager } from '../../scripts/preset-manager.js';
 import { PROMPT_LIST_RENDERED_EVENT, PROMPT_LIST_TOGGLED_EVENT } from '../prompts/k-prompt-list.js';
-import { DIALS, MATURE_IDENTIFIER, availableSauces, bridgeContextCeiling, dialsFor, modeGroup, modeLabel, optionBlurb, optionLabel, promptState, regexNote, selectedOption } from './sauce-state.js';
+import { DIALS, MATURE_IDENTIFIER, availableSauces, bridgeContextCeiling, dialsFor, modeLabel, optionBlurb, optionLabel, promptState, regexNote, selectedOption, tourGroups } from './sauce-state.js';
 import { SCRIPT_TYPES, getCurrentPresetAPI, getCurrentPresetName, getScriptsByType, isPresetScriptsAllowed } from '../../scripts/extensions/regex/engine.js';
 import { FALLBACK_MANIFEST, loadPresetCredits } from './preset-credits.js';
 import { PROVIDERS } from '../connections/providers.js';
@@ -992,7 +992,9 @@ export class KOnboarding extends LitElement {
     #renderCredit(sauce) {
         return html`<span class="k-onb-sauce-credit">${sauce.url
             ? html`by <a href=${sauce.url} target="_blank" rel="noopener noreferrer" aria-label=${`${sauce.title}, by ${sauce.author} (opens in a new tab)`}>${sauce.author}</a>`
-            : html`by ${sauce.author}`}</span>`;
+            : html`by ${sauce.author}`}${sauce.support
+            ? html` · <a href=${sauce.support} target="_blank" rel="noopener noreferrer" aria-label=${`Tip ${sauce.author} on Ko-fi (opens in a new tab)`}>Ko-fi</a>`
+            : nothing}</span>`;
     }
 
     /**
@@ -1095,12 +1097,12 @@ export class KOnboarding extends LitElement {
         const { names, selected } = this.#presets();
         const sauces = availableSauces(names, this._credits ?? FALLBACK_MANIFEST);
         const mature = this.#matureState(sauces.find(sauce => sauce.name === selected));
-        const groups = this.#promptList()?.radioGroups() ?? [];
-        const group = modeGroup(groups);
-        // The sauce's other seasonings (Narration, Tense, POV, Length, Guidelines in both shipped
-        // sauces). Length is a prompt instruction, so it is the reply-length control that works on
-        // the Claude Code bridge too.
-        const seasonings = groups.filter(other => other !== group && other.options.length >= 2);
+        // The play style and the sauce's other seasonings (Narration, Tense, POV, Length, Guidelines
+        // in Nabe). Length is a prompt instruction, so it is the reply-length control that works on
+        // the Claude Code bridge too. An author's sauce asks nothing: it comes as she set it.
+        const chosen = sauces.find(sauce => sauce.name === selected);
+        const { mode: group, seasonings } = tourGroups(this.#promptList()?.radioGroups() ?? [], chosen);
+        const asSet = Boolean(chosen && !chosen.own && chosen.author);
         const dials = dialsFor({ onBridge: isOnBridge(), mainApi: String(main_api ?? '') });
         const ceiling = this.#contextCeiling();
         return html`
@@ -1123,6 +1125,7 @@ export class KOnboarding extends LitElement {
                         ${sauce.name === selected && mature.present ? this.#renderMature(mature.enabled) : nothing}
                     </div>`)}
             </div>
+            ${asSet ? html`<p class="k-onb-note">${chosen?.title} comes the way ${chosen?.author} set it up. Every choice in it waits in the preset dock for when you're curious.</p>` : nothing}
             ${group ? html`
                 <div class="k-onb-field">
                     <span class="k-onb-label" id="k-onb-mode-label">How do you like to play?</span>
@@ -1214,7 +1217,7 @@ export class KOnboarding extends LitElement {
                     <h3 id="k-onb-explain-title" class="k-onb-explain-title">So, what's a sauce?</h3>
                     <p>A sauce is what we call a preset: the recipe the model reads before every reply. Voice, pacing, how long to write, what to keep in mind.</p>
                     <p>Your character is who you're talking to. The sauce is how the story gets told. Same character, different sauce, different evening.</p>
-                    <p>Nabe is ours, light on purpose so your writing leads. Sola and Vivarium are bigger engines, made by their authors and shipped with their blessing.</p>
+                    <p>Nabe is ours, light on purpose so your writing leads. Sola, Freaky Frankenstein and Vivarium are made by their authors and shipped with their blessing: Sola's Kindling is small, the rest are bigger engines.</p>
                     <p>Taste one now and switch any time from the preset dock. Your chats stay exactly as they are.</p>
                     <button type="button" class="k-onb-button" data-kind="primary" data-explain-close @click=${() => this.#explain(false)}>Got it</button>
                 </div>
@@ -1386,7 +1389,7 @@ export class KOnboarding extends LitElement {
         const connected = this.#connectReading().state === 'connected';
         const { names, selected } = this.#presets();
         const sauce = availableSauces(names, this._credits ?? FALLBACK_MANIFEST).find(entry => entry.name === selected);
-        const style = modeGroup(this.#promptList()?.radioGroups() ?? [])?.options.find(option => option.enabled);
+        const style = tourGroups(this.#promptList()?.radioGroups() ?? [], sauce).mode?.options.find(option => option.enabled);
         const persona = this.#personaNow();
         const card = this_chid !== undefined ? characters[Number(this_chid)] : null;
         return readySummary({

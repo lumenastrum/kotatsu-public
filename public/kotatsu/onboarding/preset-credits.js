@@ -16,6 +16,8 @@ export const CREDITS_URL = '/kotatsu/prompts/preset-credits.json';
  * @property {string} title Display title.
  * @property {string} author Who made it.
  * @property {string|null} url Where the author's work lives, or null.
+ * @property {string|null} support Where to tip the author (their Ko-fi), or null. Only a link the
+ *   author put up themselves.
  * @property {string} blurb One line about it.
  * @property {boolean} own Whether Kotatsu made it (`permission.status === 'own'`).
  */
@@ -78,6 +80,7 @@ export function creditEntries(manifest) {
             title: String(value.title),
             author: typeof value.author === 'string' ? value.author : '',
             url: typeof value.url === 'string' && /^https:\/\//i.test(value.url) ? value.url : null,
+            support: typeof value.support === 'string' && /^https:\/\//i.test(value.support) ? value.support : null,
             blurb: typeof value.blurb === 'string' ? value.blurb : '',
             own: value.permission?.status === 'own',
         }));
@@ -91,10 +94,10 @@ export function creditEntries(manifest) {
  * Kotatsu's own and unknown presets (the person's own, imported ones, Default) get nothing.
  * @param {any} manifest The manifest.
  * @param {string} presetName The active Chat Completion preset.
- * @returns {{text: string, author: string, url: string|null}|null} The line, or null.
+ * @returns {{text: string, author: string, url: string|null, support: string|null}|null} The line, or null.
  */
 export function presetCredit(manifest, presetName) {
     const entry = creditEntries(manifest).find(candidate => candidate.name === presetName);
     if (!entry || entry.own || !entry.author) return null;
-    return { text: `${entry.title} by ${entry.author}`, author: entry.author, url: entry.url };
+    return { text: `${entry.title} by ${entry.author}`, author: entry.author, url: entry.url, support: entry.support };
 }

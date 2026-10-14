@@ -161,7 +161,7 @@ if (isMain) {
                 failed++;
                 continue;
             }
-            console.log(`  provenance: git blob ${blob.slice(0, 12)} matches ${entry.upstream.repo}/${entry.upstream.path}`);
+            console.log(`  provenance: git blob ${blob.slice(0, 12)} matches ${entry.upstream.repo ? `${entry.upstream.repo}/${entry.upstream.path}` : `${entry.upstream.path} from ${entry.upstream.site}`}`);
         }
 
         const source = JSON.parse(sourceBytes.toString('utf-8'));

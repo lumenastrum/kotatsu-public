@@ -128,8 +128,18 @@ const PICK_ONE_PATTERN = /\bpick one\b/i;
  * Sola V2's convention — no header row, just the tag on each option.
  */
 const PICK_ONE_TAG = /\(\s*pick\s*(?:1|one)\s*\)/i;
+/**
+ * Sola V3's convention, the set named inside the tag: `Riot Sola [PICK 1: MIND]` is one of the
+ * MIND set; `[PICK 1: ↓] Agency-Lite` and `[PICK 1: ↑] Embellished User` point at each other.
+ */
+const PICK_ONE_KEYED_TAG = /\[\s*pick\s*(?:1|one)\s*:\s*([^\][]+?)\s*\]/i;
 /** Label for a tagged run whose names share nothing to call it by. */
 const PICK_ONE_FALLBACK_LABEL = 'Pick one';
+/**
+ * A banner written as a title with a rule after it: `🧠 00. SOLA'S MIND ══════════` (Sola V3).
+ * Only box-drawing rules count, three or more, and the title must hold a letter.
+ */
+const TRAILING_RULE_BANNER = /^(.*\p{L}.*?)\s*([═━─])\2{2,}$/u;
 /**
  * A banner may carry glyphs in front of its divider (`🧘=Pick Internal States👇 ====`). At most
  * this many codepoints are looked through, and only non-ASCII, non-letter, non-digit ones.
@@ -394,10 +404,14 @@ function buildLegacyBannerPattern(extraPatterns) {
  * a run of the same divider, so a badge in front of a single `=` stays an ordinary name.
  * Freaky Frankenstein 5.4 named two of its banners this way and they were read as rows, which
  * let the banner before them run on to the end of the list.
+ *
+ * Sola V3 puts no divider in front at all: `🧠 00. SOLA'S MIND ══════════`. A name that ends in a
+ * box-drawing rule ({@link TRAILING_RULE_BANNER}) is a banner too, labelled by what comes before it.
  * @param {string} rawName Prompt name.
  * @param {RegExp} pattern The banner alternation, anchored at the start.
- * @returns {{lead: string, body: string, token: string}|null} `lead` is the glyphs in front,
- *   `body` the name from the divider on, `token` the matched divider.
+ * @returns {{lead: string, body: string, token: string, label?: string}|null} `lead` is the glyphs
+ *   in front, `body` the name from the divider on, `token` the matched divider; `label`, when
+ *   present, is the finished label of a title-then-rule banner.
  */
 function matchLegacyBanner(rawName, pattern) {
     const name = String(rawName ?? '').trim();
@@ -408,7 +422,7 @@ function matchLegacyBanner(rawName, pattern) {
     let lead = '';
     for (let i = 0; i < points.length && i < MAX_BANNER_LEAD_POINTS; i++) {
         const point = points[i];
-        if ((point.codePointAt(0) ?? 0) < 0x80 || /[\p{L}\p{Nd}]/u.test(point)) return null;
+        if ((point.codePointAt(0) ?? 0) < 0x80 || /[\p{L}\p{Nd}]/u.test(point)) break;
         lead += point;
         const body = name.slice(lead.length).trimStart();
         const match = pattern.exec(body);
@@ -416,16 +430,65 @@ function matchLegacyBanner(rawName, pattern) {
         const divider = new Set(Array.from(match[0]));
         let run = 0;
         for (let at = body.length - 1; at >= 0 && divider.has(body[at]); at--) run++;
-        return run >= MIN_BANNER_CLOSING_RUN ? { lead, body, token: match[0] } : null;
+        if (run >= MIN_BANNER_CLOSING_RUN) return { lead, body, token: match[0] };
+        break;
     }
+    // No divider in front: a title closed by a rule. The title is the label, glyphs and all.
+    const ruled = TRAILING_RULE_BANNER.exec(name);
+    if (ruled) return { lead: '', body: name, token: ruled[2], label: ruled[1].trim() };
     return null;
+}
+
+/**
+ * What a row's own name says about the set it belongs to.
+ * - `adjacent`: `(Pick 1)`, Sola V2 — the set is every tagged row next to it.
+ * - `keyed`: `[PICK 1: MIND]`, Sola V3 — the set is the rows next to it with the same key.
+ * - `down` / `up`: `[PICK 1: ↓]` / `[PICK 1: ↑]`, Sola V3 — a pair, the arrows pointing at each other.
+ * @param {OrderRow} row Order row.
+ * @returns {{kind: 'adjacent'|'keyed'|'down'|'up', key: string}|null} `key` is empty unless keyed.
+ */
+function pickTagOf(row) {
+    if (row.marker) return null;
+    const keyed = PICK_ONE_KEYED_TAG.exec(row.name);
+    if (keyed) {
+        const key = keyed[1].trim();
+        if (key === '↓') return { kind: 'down', key: '' };
+        if (key === '↑') return { kind: 'up', key: '' };
+        return { kind: 'keyed', key };
+    }
+    return PICK_ONE_TAG.test(row.name) ? { kind: 'adjacent', key: '' } : null;
+}
+
+/**
+ * Where the pick-one run that starts at `start` ends (exclusive); `start + 1` or less when no
+ * run starts there. Keys compare without case, so `[Pick 1: Mind]` and `[PICK 1: MIND]` agree.
+ * @param {OrderRow[]} rows Rows of the body, in order.
+ * @param {number} start First row of the run.
+ * @returns {number}
+ */
+function taggedRunEnd(rows, start) {
+    const first = pickTagOf(rows[start]);
+    if (!first) return start;
+    if (first.kind === 'up') return start + 1;
+    if (first.kind === 'down') {
+        return start + 1 < rows.length && pickTagOf(rows[start + 1])?.kind === 'up' ? start + 2 : start + 1;
+    }
+    const key = first.key.toLowerCase();
+    let end = start + 1;
+    while (end < rows.length) {
+        const tag = pickTagOf(rows[end]);
+        if (!tag || tag.kind !== first.kind || tag.key.toLowerCase() !== key) break;
+        end++;
+    }
+    return end;
 }
 
 /**
  * Names a run of rows tagged "(Pick 1)" by what their names share: the leading words
  * (`User: Agency-Lite` / `User: Embellishment` → `User`), else the trailing ones
  * (`Anti-Slop` / `Lite Anti-Slop` → `Anti-Slop`). A leading `[Tag]` and the pick tag itself are
- * not part of the name.
+ * not part of the name, and what they share must hold a letter (two names ending in 🎨 share
+ * nothing worth calling them by).
  * @param {string[]} names Raw prompt names, two or more.
  * @returns {string} The label; {@link PICK_ONE_FALLBACK_LABEL} when they share nothing.
  */
@@ -445,7 +508,7 @@ function labelTaggedRun(names) {
     while (tail < shortest - head && words.every(list => list[list.length - 1 - tail] === words[0][words[0].length - 1 - tail])) tail++;
     const shared = head > 0 ? words[0].slice(0, head) : words[0].slice(words[0].length - tail);
     const label = shared.join(' ').replace(/[\s:–—-]+$/, '').trim();
-    return label || PICK_ONE_FALLBACK_LABEL;
+    return /\p{L}/u.test(label) ? label : PICK_ONE_FALLBACK_LABEL;
 }
 
 /**
@@ -597,8 +660,9 @@ function promoteOptions(children, swept = true) {
 
 /**
  * Builds the leaves of one legacy or flat body, gathering each run of two or more adjacent rows
- * tagged "(Pick 1)" into an exclusive group of its own. The group has no header row: nothing in
- * the preset is one, so its key is its tree id and its label is what the names share.
+ * tagged as one set ({@link pickTagOf}) into an exclusive group of its own. The group has no
+ * header row: nothing in the preset is one, so its key is its tree id and its label is the set's
+ * own key (`[PICK 1: MIND]` → `MIND`), else what the names share.
  *
  * Not done inside a container that is already exclusive; one tagged row alone is just a row.
  * @param {OrderRow[]} rows Rows of the body, in order.
@@ -611,17 +675,15 @@ function buildLegacyBody(rows, parentId, mint, exclusiveParent) {
     /** @type {SectionNode[]} */
     const nodes = [];
     for (let start = 0; start < rows.length;) {
-        let end = start;
-        if (!exclusiveParent) {
-            while (end < rows.length && !rows[end].marker && PICK_ONE_TAG.test(rows[end].name)) end++;
-        }
+        const end = exclusiveParent ? start : taggedRunEnd(rows, start);
         if (end - start < 2) {
             nodes.push(makeLegacyLeaf(rows[start], parentId, mint, 0));
             start++;
             continue;
         }
         const run = rows.slice(start, end);
-        const label = labelTaggedRun(run.map(row => row.name));
+        const key = pickTagOf(run[0])?.key;
+        const label = key ? key : labelTaggedRun(run.map(row => row.name));
         const id = mint(parentId, 'g', slugify(label));
         const children = run.map(row => makeLegacyLeaf(row, id, mint, 0));
         promoteOptions(children);
@@ -740,7 +802,7 @@ function buildLegacySections(rows, bannerPattern) {
             const match = matchLegacyBanner(run.header.name, bannerPattern);
             // Glyphs in front of the divider stay in front of the label, glued the way an
             // inside-the-divider badge already is (`=🚫Pick one NSFW Toggle` → `🚫Pick one …`).
-            label = match ? `${match.lead}${cleanLegacyLabel(match.body, match.token)}` : '';
+            label = match ? match.label ?? `${match.lead}${cleanLegacyLabel(match.body, match.token)}` : '';
         }
         const section = makeSection(run.header, mint, label);
         section.exclusive = Boolean(run.header) && PICK_ONE_PATTERN.test(label);

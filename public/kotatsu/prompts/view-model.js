@@ -317,8 +317,13 @@ export function indexPrompts(prompts) {
 
 /** A bracketed tag in front of a name: `[Module] Voice: Idiolect`. The tag is kept short on purpose. */
 const LEADING_TAG = /^\[([^\][]{1,24})\]\s*(\S[\s\S]*)$/;
-/** Sola V2's "this is one of a set" marker, written into each option's own name. */
-const PICK_ONE_TAG = /\s*\(\s*pick\s*(?:1|one)\s*\)/i;
+/**
+ * "This is one of a set", written into each option's own name: Sola V2's `(Pick 1)`, Sola V3's
+ * `[PICK 1: MIND]` and `[PICK 1: ↓]`.
+ */
+const PICK_ONE_TAG = /\s*(?:\(\s*pick\s*(?:1|one)\s*\)|\[\s*pick\s*(?:1|one)\s*:[^\][]*\])/i;
+/** A leading tag that is only a pick-one marker. */
+const PICK_ONE_LEADING = /^pick\s*(?:1|one)\s*:/i;
 
 /**
  * Splits a label into the words that tell rows apart and the tag in front of them.
@@ -326,7 +331,7 @@ const PICK_ONE_TAG = /\s*\(\s*pick\s*(?:1|one)\s*\)/i;
  * Sola V2 opens all 70 of its names with `[Core]` or `[Module]`. In a narrow dock the tag is the
  * first thing drawn and the last thing anyone needs, so the row shows it as a chip that can step
  * aside and starts the name at the first real word. A row that is one option of a pick-one group
- * also drops its "(Pick 1)": the group header already says so.
+ * also drops its "(Pick 1)" or "[PICK 1: …]", in front or behind: the group header already says so.
  *
  * Display only. `name` stays raw, which is what search and the tooltip read.
  * @param {string} label The label so far.
@@ -342,6 +347,7 @@ export function splitLabel(label, option = false) {
         text = tagged[2];
     }
     if (option) {
+        if (PICK_ONE_LEADING.test(tag)) tag = '';
         const stripped = text.replace(PICK_ONE_TAG, '').trim();
         if (stripped) text = stripped;
     }

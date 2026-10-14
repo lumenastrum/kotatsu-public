@@ -160,11 +160,25 @@ k-preset-pages {
     text-decoration: none;
 }
 
-#left-nav-panel.k-docked .k-pp-credit-link:hover {
+#left-nav-panel.k-docked .k-pp-credit-link:hover,
+#left-nav-panel.k-docked .k-pp-credit-support:hover {
     color: var(--k-accent-bright);
 }
 
-#left-nav-panel.k-docked .k-pp-credit-link:focus-visible {
+/* Where to tip the author, when they put a link up themselves. A word, set off by a dot. */
+#left-nav-panel.k-docked .k-pp-credit-support {
+    color: var(--k-text-muted);
+    text-decoration: none;
+}
+
+#left-nav-panel.k-docked .k-pp-credit-support::before {
+    content: '·';
+    margin-right: 5px;
+    color: var(--k-text-faint);
+}
+
+#left-nav-panel.k-docked .k-pp-credit-link:focus-visible,
+#left-nav-panel.k-docked .k-pp-credit-support:focus-visible {
     outline: 1px solid var(--k-accent);
     outline-offset: 2px;
     border-radius: var(--k-radius-sm);

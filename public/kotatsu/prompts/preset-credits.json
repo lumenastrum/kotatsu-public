@@ -10,23 +10,35 @@
             "blurb": "Kotatsu's own sauce: light, warm, and written to let you lead.",
             "permission": { "status": "own" }
         },
-        "Sola V2 Ember": {
-            "title": "Sola V2 · Ember",
+        "Sola Kindling V1": {
+            "title": "Sola · Kindling",
             "author": "Pyrxpia",
             "url": "https://github.com/Pyrxpia/sola-hub",
-            "source": "default/presets-upstream/Sola V2 Ember.json",
-            "upstream": { "repo": "Pyrxpia/sola-hub", "path": "presets/Sola V2 Ember.json", "blob": "fb0fe446d7caccd3991bc224b64f11ff1560bee3" },
-            "blurb": "Lightweight roleplay: Sola's core, with the extras left off.",
-            "permission": { "status": "granted", "date": "2026-10-03", "note": "Ship both Flame and Ember, and the regex." }
+            "source": "default/presets-upstream/Sola Kindling V1.json",
+            "upstream": { "repo": "Pyrxpia/sola-hub", "path": "presets/☀️ 🧡 Sola Kindling V1 🧡 ☀️.json", "blob": "0f45a546c3a7a91dbef6089d7f399b1e00363cf0" },
+            "support": "https://ko-fi.com/pyropia",
+            "blurb": "Small and light, made for local models: Sola's most important prompts, the Feeling Engine and the Easel.",
+            "permission": { "status": "granted", "date": "2026-10-03", "note": "Sola and its regex, updated with her releases. V3 Flame and Kindling replaced V2 Ember and Flame on 2026-10-13 (Ember is deprecated upstream)." }
         },
-        "Sola V2 Flame": {
-            "title": "Sola V2 · Flame",
+        "Sola V3 Flame": {
+            "title": "Sola V3 · Flame",
             "author": "Pyrxpia",
             "url": "https://github.com/Pyrxpia/sola-hub",
-            "source": "default/presets-upstream/Sola V2 Flame.json",
-            "upstream": { "repo": "Pyrxpia/sola-hub", "path": "presets/Sola V2 Flame.json", "blob": "cf06c6ff3caebae2d90ab0171ea7d84922151a84" },
-            "blurb": "The full engine: story review, trackers and colored dialogue, the way its author plays.",
-            "permission": { "status": "granted", "date": "2026-10-03", "note": "Ship both Flame and Ember, and the regex." }
+            "source": "default/presets-upstream/Sola V3 Flame.json",
+            "upstream": { "repo": "Pyrxpia/sola-hub", "path": "presets/☀️ 🧡 Sola V3 Flame 🧡 ☀️.json", "blob": "89641330793d3d09c6e91ebee2217e365fdc3de6" },
+            "support": "https://ko-fi.com/pyropia",
+            "blurb": "The full engine: pick one of three Sola minds, with trackers, the Easel director and HTML headers.",
+            "permission": { "status": "granted", "date": "2026-10-03", "note": "Sola and its regex, updated with her releases. V3 Flame and Kindling replaced V2 Ember and Flame on 2026-10-13 (Ember is deprecated upstream)." }
+        },
+        "Freaky Frankenstein 5.4 Internal States": {
+            "title": "Freaky Frankenstein 5.4",
+            "author": "dptgreg",
+            "url": "https://rentry.org/freaky-frankenstein-presets",
+            "source": "default/presets-upstream/Freaky Frankenstein 5.4 Internal States.json",
+            "upstream": { "site": "https://rentry.org/freaky-frankenstein-presets", "path": "Freaky_Frankenstein_5.4_Internal_States (2).json (MediaFire, 2026-09-01)", "blob": "0dc9466b6fd98464e30ce84331c32a52ebcecf13" },
+            "support": "https://ko-fi.com/dptgreg",
+            "blurb": "Characters with inner lives: internal states, a choice of prose style and POV, and a realism mode.",
+            "permission": { "status": "granted", "date": "2026-10-13", "note": "dptgreg: \"yes please have it if you didnt already!\" Co-authors on his archive: u/leovarian, u/Ok_Strategy_2420. Its 25 regex scripts are embedded; the separate FF5 Regex 3.0 Suite is the same 25." }
         },
         "Nemo Vivarium v1.0 Beta": {
             "title": "Nemo Vivarium",

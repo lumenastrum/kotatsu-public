@@ -82,12 +82,13 @@ On first launch, Mikan-chan walks you through five steps. Every one can be skipp
 | Preset | Author | What it is |
 |---|---|---|
 | **Kotatsu Nabe** | Kotatsu | The default. Kotatsu's own sauce, with the mature content switch. |
-| **Sola V2 · Ember** | [Pyrxpia](https://github.com/Pyrxpia/sola-hub) | Lightweight roleplay: Sola's core, with the extras left off. |
-| **Sola V2 · Flame** | [Pyrxpia](https://github.com/Pyrxpia/sola-hub) | The full engine: story review, trackers and colored dialogue, the way its author plays. |
+| **Sola · Kindling** | [Pyrxpia](https://github.com/Pyrxpia/sola-hub) ([Ko-fi](https://ko-fi.com/pyropia)) | Small and light, made for local models: Sola's most important prompts, the Feeling Engine and the Easel. |
+| **Sola V3 · Flame** | [Pyrxpia](https://github.com/Pyrxpia/sola-hub) ([Ko-fi](https://ko-fi.com/pyropia)) | The full engine: pick one of three Sola minds, with trackers, the Easel director and HTML headers. |
+| **Freaky Frankenstein 5.4** | [dptgreg](https://rentry.org/freaky-frankenstein-presets) ([Ko-fi](https://ko-fi.com/dptgreg)), with u/leovarian and u/Ok_Strategy_2420 | Characters with inner lives: internal states, a choice of prose style and POV, and a realism mode. |
 | **Nemo Vivarium** | [NemoVonNirgend](https://github.com/NemoVonNirgend/NemoEngine/tree/main/Vivarium) | A living world in a handful of deep blocks, by the author of Nemo Engine. |
 | **Plain (Default)** | SillyTavern | SillyTavern's own default preset, unchanged. |
 
-Pyrxpia gave permission to ship Ember and Flame, including the regex scripts embedded in them. NemoVonNirgend gave permission to ship Vivarium. The authors' presets are shipped as published; only the connection settings are pointed at Kotatsu's bridge. The preset dock shows a credit line for the active preset.
+Pyrxpia gave permission to ship Sola, including the regex scripts embedded in it, and to follow her releases. dptgreg gave permission to ship Freaky Frankenstein. NemoVonNirgend gave permission to ship Vivarium. The authors' presets are shipped as published; where a preset carries connection settings, only those are pointed at Kotatsu's bridge. The preset dock shows a credit line for the active preset.
 
 ### Browse Characters
 

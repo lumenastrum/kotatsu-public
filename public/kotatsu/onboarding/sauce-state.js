@@ -13,6 +13,7 @@ import { creditEntries } from './preset-credits.js';
  * @property {string} blurb One line about it.
  * @property {string} author Who made it ('' for Plain).
  * @property {string|null} url The author's page (https), or null.
+ * @property {string|null} [support] Where to tip the author (their own Ko-fi), or null.
  * @property {boolean} own Whether Kotatsu made it.
  * @property {string} line Key of Mikan-chan's line for it (brand/mascot/lines.js).
  */
@@ -111,6 +112,26 @@ const MODE_GROUP = /^(?:play\s*)?(?:mode|modes|type|style)$|^play$/i;
 export function modeGroup(groups) {
     return (Array.isArray(groups) ? groups : []).find(group => Array.isArray(group.options) && group.options.length >= 2
         && MODE_GROUP.test(modeLabel(group.label ?? ''))) ?? null;
+}
+
+/**
+ * The choices the Sauce step asks about: "How do you like to play?" and "More seasoning".
+ *
+ * An author's sauce is served the way its author set it, with no questions (decision 2026-10-13).
+ * Sola V3 has eight pick-one sets, from which of three Solas to whether the prose reads like
+ * Hemingway or McCarthy, and its STYLE set even passed for a play mode. A first evening is no place
+ * to choose between those. Every one of them is still in the preset dock. Kotatsu's own sauce, and
+ * a preset the manifest doesn't know, keep both rows.
+ * @template {{label?: string, options: unknown[]}} G
+ * @param {G[]} groups `<k-prompt-list>.radioGroups()`.
+ * @param {{own?: boolean, author?: string|null}|null|undefined} sauce The selected sauce, if offered.
+ * @returns {{mode: G|null, seasonings: G[]}}
+ */
+export function tourGroups(groups, sauce) {
+    if (sauce && !sauce.own && sauce.author) return { mode: null, seasonings: [] };
+    const list = Array.isArray(groups) ? groups : [];
+    const mode = modeGroup(list);
+    return { mode, seasonings: list.filter(other => other !== mode && Array.isArray(other.options) && other.options.length >= 2) };
 }
 
 /**

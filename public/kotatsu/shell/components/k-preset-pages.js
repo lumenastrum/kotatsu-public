@@ -137,7 +137,7 @@ export class KPresetPages extends LitElement {
         this.variant = 'pills';
         /** @type {string} */
         this._active = readStoredPage();
-        /** @type {{text: string, author: string, url: string|null}|null} */
+        /** @type {{text: string, author: string, url: string|null, support: string|null}|null} */
         this._credit = null;
         /** @type {any} The credits manifest, once fetched. */
         this._manifest = null;
@@ -147,7 +147,7 @@ export class KPresetPages extends LitElement {
     #refreshCredit = () => {
         const name = main_api === 'openai' ? String(getPresetManager('openai')?.getSelectedPresetName?.() ?? '') : '';
         const credit = this._manifest && name ? presetCredit(this._manifest, name) : null;
-        if (credit?.text !== this._credit?.text || credit?.url !== this._credit?.url) this._credit = credit;
+        if (credit?.text !== this._credit?.text || credit?.url !== this._credit?.url || credit?.support !== this._credit?.support) this._credit = credit;
     };
 
     /** Light DOM: `css/preset-dock.css` owns every rule. See the file header. */
@@ -257,6 +257,8 @@ export class KPresetPages extends LitElement {
                         title=${`Open ${this._credit.author}'s page`}>
                         <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3H3.5A1.5 1.5 0 0 0 2 4.5v8A1.5 1.5 0 0 0 3.5 14h8a1.5 1.5 0 0 0 1.5-1.5V10"/><path d="M9.5 2H14v4.5"/><path d="M14 2 7.5 8.5"/></svg>
                     </a>` : ''}
+                    ${this._credit.support ? html`<a class="k-pp-credit-support" href=${this._credit.support} target="_blank" rel="noopener noreferrer"
+                        aria-label=${`Tip ${this._credit.author} on Ko-fi (opens in a new tab)`}>Ko-fi</a>` : ''}
                 </p>` : ''}`;
     }
 }
