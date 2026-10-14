@@ -31,7 +31,10 @@
 import { LitElement, html, nothing } from '../shell/lit.js';
 import { online_status } from '../../script.js';
 import { event_types, eventSource } from '../../scripts/events.js';
-import { BRIDGE_CHANGE_EVENT, BRIDGE_STATUS_EVENT, useSavedConnection } from './bridge.js';
+import { BRIDGE_CHANGE_EVENT, BRIDGE_STATUS_EVENT, getBridgeListener, isKotatsuBridgeUrl, useSavedConnection } from './bridge.js';
+import { getStatus as getChatGPTStatus } from './chatgpt.js';
+import { oai_settings } from '../../scripts/openai.js';
+import { extension_settings } from '../../scripts/extensions.js';
 import { PROVIDERS } from './providers.js';
 import { currentWays, deleteSavedConnection, hasConnectionManager, isCurrentWay, renameSavedConnection, savedConnections, wayField } from './saved.js';
 import { power_user } from '../../scripts/power-user.js';
@@ -100,6 +103,26 @@ function commit(id, value) {
     if (!(element instanceof HTMLSelectElement) || element.value === value) return;
     element.value = value;
     element.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+/**
+ * Empties the custom lane when it still holds a bridge's address and model. Claude Code and
+ * ChatGPT ride Chat Completion → custom, so someone pointing that lane at their own server found
+ * the bridge's URL in the field and its model (`claude-sonnet-5-5`) staying behind: Connect read
+ * "Valid", then every send was "model not found" (Reddit report, 2026-10-14). Empty, core's own
+ * Connect picks the server's first model, as stock starts. The bridges keep their values in their
+ * saved connections, and "Use Claude Code" / "Use ChatGPT" apply those.
+ * @returns {void}
+ */
+function clearBridgeLeftovers() {
+    const profiles = /** @type {any[]} */ (extension_settings?.connectionManager?.profiles ?? []);
+    if (!isKotatsuBridgeUrl(oai_settings?.custom_url, [getBridgeListener(), getChatGPTStatus()?.url], profiles)) return;
+    for (const id of ['custom_api_url_text', 'custom_model_id']) {
+        const field = document.getElementById(id);
+        if (!(field instanceof HTMLInputElement)) continue;
+        field.value = '';
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+    }
 }
 
 /**
@@ -193,6 +216,14 @@ export class KConnectionMore extends LitElement {
         commit('main_api', way.mainApi);
         if (way.source) commit('chat_completion_source', way.source);
         if (way.type) commit('textgen_type', way.type);
+        if (way.source === 'custom') {
+            clearBridgeLeftovers();
+            // A local server's chat template opens the reply's turn itself, and a system message
+            // after the last user message (Kotatsu Nabe's post-history note) stops llama3 on
+            // Ollama doing it: it writes "assistant" into the reply (4/4; 0/4 folded, 2026-10-14).
+            // Semi-strict folds late system messages into the user's; this variant keeps tools.
+            commit('custom_prompt_post_processing', 'semi_tools');
+        }
         this._toggleStock(true);
         // Core shows the API's block in the same task as the change; wait a frame for layout.
         requestAnimationFrame(() => {

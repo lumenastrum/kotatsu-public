@@ -54,6 +54,7 @@ import {
 import { getRailStates, setRail, toggleRail } from './rail-collapse.js';
 import { installBaggage } from '../settings/baggage.js';
 import { installBridgeLink } from '../connections/bridge.js';
+import { installLocalAutoConnect } from '../connections/local-autoconnect.js';
 import { mountBridgeCard } from '../connections/k-bridge-card.js';
 import { mountProviderCards } from '../connections/k-provider-cards.js';
 import { mountConnectionMore } from '../connections/k-connection-more.js';
@@ -154,6 +155,8 @@ export async function initKotatsuShell() {
     // Connections v0 slice C0 (docs/connections-v0.md): what the frontend knows about the built-in
     // Claude Code bridge — the `data-k-bridge` attribute, the first-run connect, the doctor toast.
     installBridgeLink();
+    // A local or LAN server used last reconnects at startup, like the bridge does (2026-10-14).
+    installLocalAutoConnect();
     // D3: presets shape the prompt, connections pick the model — unbind once per install.
     installPresetBinding();
     // Artboard 3's first-run half: the composer says why Claude Code isn't ready, and links the fix.

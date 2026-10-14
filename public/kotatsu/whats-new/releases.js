@@ -15,11 +15,11 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
     // Sprites is the headline of the whole 0.7 line, so each 0.7.x carries 0.7.0's cards and clips
-    // (media moved along, now 0.7.5/) with its own lines on top. A separate notes-only entry would
+    // (media moved along, now 0.7.6/) with its own lines on top. A separate notes-only entry would
     // never open: the plan skips releases without cards, and an install that closed the previous
     // sheet only sees releases newer than that.
     Object.freeze({
-        version: '0.7.5',
+        version: '0.7.6',
         title: 'Sprites',
         cards: [
             {
@@ -45,6 +45,7 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'Local models work on the OpenAI-compatible connection: it no longer starts with Claude Code’s address and model in it, and replies no longer open with “assistant”. A local or home-network server you used last reconnects by itself.',
             'The preset dock finds the sections and pick-one sets in more presets: Deus Ex Machina, Pura’s Director and Megumin now open as tidy groups instead of one long list.',
             'On a phone, a message’s … menu keeps Translate on screen: its buttons wrap onto another row instead of running off the edge.',
             'A translator URL saved without http:// in front (LibreTranslate, Lingva, OneRingTranslator, DeepLX) works now, instead of failing with “Invalid URL”.',

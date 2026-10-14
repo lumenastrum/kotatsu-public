@@ -70,6 +70,21 @@ export function isBridgeUrl(url, listener) {
     }
 }
 
+/**
+ * Whether a custom URL belongs to one of Kotatsu's own bridges: a listener they report, or the
+ * address a Kotatsu bridge connection was saved with (so it holds before health has loaded). Pure.
+ * @param {unknown} url `oai_settings.custom_url`
+ * @param {Array<string|null|undefined>} listeners Live bridge listener URLs
+ * @param {Array<{'api-url'?: unknown, 'secret-id'?: unknown}>} profiles Connection Manager profiles
+ * @returns {boolean}
+ */
+export function isKotatsuBridgeUrl(url, listeners, profiles) {
+    const saved = profiles
+        .filter(profile => String(profile?.['secret-id'] ?? '').startsWith('kotatsu-'))
+        .map(profile => String(profile?.['api-url'] ?? ''));
+    return [...listeners, ...saved].some(listener => isBridgeUrl(url, listener));
+}
+
 /** `power_user` key: the ids of notices the person turned off with "Don't show again". */
 export const QUIET_NOTICES_KEY = 'kotatsu_quiet_notices';
 /** The "Claude Code isn't installed" notice's id. */
@@ -375,6 +390,13 @@ export async function connectToBridge({ listener, secretId }) {
     if (!saved || !await applyProfile(saved.id)) {
         const { executeSlashCommandsWithOptions } = await import('../../scripts/slash-commands.js');
         await executeSlashCommandsWithOptions(`/api custom | /api-url ${listener} | /secret-id ${secretId}`, { handleParserErrors: true, handleExecutionErrors: true });
+        // The bridges take the prompt as built, like their saved connections say; a local server
+        // picked before may have left semi-strict behind (k-connection-more.js).
+        const post = document.getElementById('custom_prompt_post_processing');
+        if (post instanceof HTMLSelectElement && post.value !== '') {
+            post.value = '';
+            post.dispatchEvent(new Event('change', { bubbles: true }));
+        }
     }
     await settleConnection();
 }
