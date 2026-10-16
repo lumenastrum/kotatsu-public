@@ -44,6 +44,9 @@ import {
     convertXAIMessages,
     cachingAtDepthForOpenRouterClaude,
     cachingAtDepthForClaude,
+    cachingAtAnchorForClaude,
+    cachingAtAnchorForOpenRouterClaude,
+    markCacheAnchor,
     getPromptNames,
     calculateClaudeBudgetTokens,
     calculateGoogleBudgetTokens,
@@ -121,11 +124,38 @@ function isKotatsuBridgeUrl(url) {
         return false;
     }
 }
-const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean');
+// KOTATSU-PATCH 2026-10-16 (prompt cache v0, docs/prompt-cache-v0.md): caching is ON for every
+// provider that supports it. The legacy claude.* knobs only matter with `kotatsu.promptCache: false`;
+// with it on, an explicit cachingAtDepth is kept as the no-anchor fallback depth, otherwise 0.
+const kotatsuPromptCache = getConfigValue('kotatsu.promptCache', true, 'boolean');
+const enableSystemPromptCache = kotatsuPromptCache || getConfigValue('claude.enableSystemPromptCache', false, 'boolean');
 const cachingAtDepth = (() => {
     const value = getConfigValue('claude.cachingAtDepth', -1, 'number');
-    return Number.isInteger(value) && value >= 0 ? value : -1;
+    if (Number.isInteger(value) && value >= 0) return value;
+    return kotatsuPromptCache ? 0 : -1;
 })();
+
+/**
+ * KOTATSU-PATCH 2026-10-16 (prompt cache v0): applies the history breakpoint at the client's
+ * anchor when one was tagged, else at the fixed depth, and reports the mode to the metrics pill
+ * through the `X-Kotatsu-Cache` response header (off | system | anchor | depth).
+ * @param {import('express').Response} response Express response, before any body is sent
+ * @param {boolean} anchored Whether the request carried a usable anchor
+ * @param {() => boolean} atAnchor Places the anchor breakpoint, true when it found the block
+ * @param {() => void} atDepth Places the fixed-depth breakpoints
+ */
+function applyHistoryCache(response, anchored, atAnchor, atDepth) {
+    let mode = enableSystemPromptCache ? 'system' : 'off';
+    if (anchored && kotatsuPromptCache && atAnchor()) {
+        mode = 'anchor';
+    } else if (cachingAtDepth !== -1) {
+        atDepth();
+        mode = 'depth';
+    }
+    if (!response.headersSent) {
+        response.setHeader('X-Kotatsu-Cache', mode);
+    }
+}
 const enableAdaptiveThinking = getConfigValue('claude.enableAdaptiveThinking', true, 'boolean');
 
 /**
@@ -264,6 +294,7 @@ async function sendClaudeRequest(request, response) {
         const betaHeaders = ['output-128k-2025-02-19', 'context-1m-2025-08-07'];
         const useTools = Array.isArray(request.body.tools) && request.body.tools.length > 0;
         const useSystemPrompt = Boolean(request.body.use_sysprompt);
+        const cacheAnchored = markCacheAnchor(request.body.messages, request.body.kotatsu_cache_anchor); // KOTATSU-PATCH (prompt cache v0)
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
         // Unanchored to also match prefixed ids passed through proxies, e.g. 'anthropic/claude-fable-5'
         const isFableModel = /claude-fable/.test(request.body.model);
@@ -344,9 +375,10 @@ async function sendClaudeRequest(request, response) {
             requestBody.tools = [...webSearchTool, ...(requestBody.tools || [])];
         }
 
-        if (cachingAtDepth !== -1) {
-            cachingAtDepthForClaude(convertedPrompt.messages, cachingAtDepth, cacheTTL);
-        }
+        // KOTATSU-PATCH (prompt cache v0): anchor first, fixed depth as the fallback.
+        applyHistoryCache(response, cacheAnchored,
+            () => cachingAtAnchorForClaude(convertedPrompt.messages, cacheTTL),
+            () => cachingAtDepthForClaude(convertedPrompt.messages, cachingAtDepth, cacheTTL));
 
         if (enableSystemPromptCache || cachingAtDepth !== -1) {
             betaHeaders.push('prompt-caching-2024-07-31');
@@ -1469,9 +1501,10 @@ async function sendElectronHubRequest(request, response) {
                 cachingSystemPromptForOpenRouter(request.body.messages, cacheTTL);
             }
 
-            if (cachingAtDepth !== -1) {
-                cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
-            }
+            // KOTATSU-PATCH (prompt cache v0): anchor first, fixed depth as the fallback.
+            applyHistoryCache(response, markCacheAnchor(request.body.messages, request.body.kotatsu_cache_anchor),
+                () => cachingAtAnchorForOpenRouterClaude(request.body.messages, cacheTTL),
+                () => cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL));
         }
 
         const requestBody = {
@@ -2395,7 +2428,8 @@ router.post('/generate', async function (request, response) {
             const isClaude = /^anthropic\/claude/.test(request.body.model);
             const isGemini = /google\/gemini/.test(request.body.model);
             const isCacheableGemini = isGemini && await isOpenRouterModelCacheable(request.body.model);
-            const enableGeminiSystemPromptCache = getConfigValue('gemini.enableSystemPromptCache', false, 'boolean');
+            // KOTATSU-PATCH (prompt cache v0): on unless kotatsu.promptCache is false.
+            const enableGeminiSystemPromptCache = kotatsuPromptCache || getConfigValue('gemini.enableSystemPromptCache', false, 'boolean');
 
             if (Array.isArray(request.body.messages)) {
                 embedOpenRouterMedia(request.body.messages, { audio: true, video: true });
@@ -2406,9 +2440,10 @@ router.post('/generate', async function (request, response) {
                         cachingSystemPromptForOpenRouter(request.body.messages, cacheTTL);
                     }
 
-                    if (cachingAtDepth !== -1) {
-                        cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
-                    }
+                    // KOTATSU-PATCH (prompt cache v0): anchor first, fixed depth as the fallback.
+                    applyHistoryCache(response, markCacheAnchor(request.body.messages, request.body.kotatsu_cache_anchor),
+                        () => cachingAtAnchorForOpenRouterClaude(request.body.messages, cacheTTL),
+                        () => cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL));
                 }
 
                 if (isCacheableGemini && enableGeminiSystemPromptCache) {

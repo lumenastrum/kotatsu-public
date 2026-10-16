@@ -351,20 +351,11 @@ ollama:
   batchSize: -1
 # -- ANTHROPIC CLAUDE API CONFIGURATION --
 claude:
-  # Enables caching of the system prompt (if supported).
-  # https://platform.claude.com/docs/en/build-with-claude/prompt-caching
-  # -- IMPORTANT! --
-  # Use only when the prompt before the chat history is static and doesn't change between requests
-  # (e.g {{random}} macro or lorebooks not as in-chat injections).
-  # Otherwise, you'll just waste money on cache misses.
+  # Kotatsu caches by default (kotatsu.promptCache below). These two only matter when you turn
+  # that off. https://platform.claude.com/docs/en/build-with-claude/prompt-caching
   enableSystemPromptCache: false
-  # Enables caching of the message history at depth (if supported).
-  # https://platform.claude.com/docs/en/build-with-claude/prompt-caching
-  # -- IMPORTANT! --
-  # Use with caution. Behavior may be unpredictable and no guarantees can or will be made.
-  # Set to an integer to specify the desired depth. 0 (which does NOT include the prefill)
-  # should be ideal for most use cases.
-  # Any value other than a non-negative integer will be ignored and caching at depth will not be enabled.
+  # With kotatsu.promptCache on, a value of 0 or more is the fallback depth used when a request
+  # carries no cache anchor (-1 = Kotatsu's default of 0).
   cachingAtDepth: -1
   # Use 1h TTL instead of the default 5m.
   ## 5m: base price x 1.25
@@ -380,11 +371,8 @@ gemini:
   apiVersion: 'v1beta'
   # Adds thought signatures to requests (if available). Only for Gemini 3 and above.
   thoughtSignatures: true
-  # Enables caching of the system prompt (if supported). Only for OpenRouter.
-  # -- IMPORTANT! --
-  # Use only when the prompt before the chat history is static and doesn't change between requests
-  # (e.g {{random}} macro or lorebooks not as in-chat injections).
-  # Otherwise, you'll just waste money on cache misses.
+  # OpenRouter only. Kotatsu caches by default (kotatsu.promptCache below); this only matters
+  # when that is off.
   enableSystemPromptCache: false
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
@@ -392,6 +380,11 @@ enableServerPlugins: false
 enableServerPluginsAutoUpdate: true
 # -- KOTATSU --
 kotatsu:
+  # Prompt caching for every provider that supports it: Claude (direct, OpenRouter, ElectronHub,
+  # NanoGPT) and Gemini on OpenRouter. The history breakpoint goes on the newest message that the
+  # next turn repeats byte for byte, so Author's Notes and lorebook entries at depth no longer bust
+  # it. OpenAI, DeepSeek and Gemini direct cache on their own. Design: docs/prompt-cache-v0.md.
+  promptCache: true
   # Claude bridge: an OpenAI-compatible listener on 127.0.0.1 that answers through the
   # Claude Code login of the OS user running Kotatsu (Pro/Max subscription).
   # The shipped "Claude" connection profile points at it. Design: docs/ship-v0.md.

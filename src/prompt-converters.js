@@ -3,6 +3,32 @@ import { getConfigValue, tryParse } from './util.js';
 
 const PROMPT_PLACEHOLDER = getConfigValue('promptPlaceholder', 'Let\'s get started.');
 
+/**
+ * KOTATSU-PATCH 2026-10-16 (prompt cache v0, docs/prompt-cache-v0.md): the client names the newest message that
+ * will still be byte-identical on the next turn; the server tags that message with this symbol
+ * before provider conversion, and the converters carry the tag down to its own last content
+ * block. Symbol keys never serialize, so a tag nobody consumes cannot leak into a request body.
+ */
+export const KOTATSU_CACHE_ANCHOR = Symbol('kotatsu.cacheAnchor');
+
+/**
+ * Tags the cache anchor on an OpenAI-shaped message array, in place.
+ * @param {any[]} messages Request messages, before any provider conversion
+ * @param {unknown} index Anchor index sent by the client (`kotatsu_cache_anchor`)
+ * @returns {boolean} True when a message was tagged
+ */
+export function markCacheAnchor(messages, index) {
+    if (!Array.isArray(messages) || !Number.isInteger(index) || Number(index) < 0 || Number(index) >= messages.length) {
+        return false;
+    }
+    const message = messages[Number(index)];
+    if (!message || typeof message !== 'object') {
+        return false;
+    }
+    message[KOTATSU_CACHE_ANCHOR] = true;
+    return true;
+}
+
 const REASONING_EFFORT = {
     auto: 'auto',
     low: 'low',
@@ -230,6 +256,14 @@ export function convertClaudeMessages(messages, prefillString, useSysPrompt, use
         delete message.tool_calls;
         delete message.tool_call_id;
     });
+
+    // KOTATSU-PATCH 2026-10-16 (prompt cache v0): tag the anchor's OWN last block now, before the merge below glues the
+    // volatile tail (Author's Note, post-history instructions, memory) onto the same message.
+    for (const message of messages) {
+        if (message[KOTATSU_CACHE_ANCHOR] && Array.isArray(message.content) && message.content.length) {
+            message.content[message.content.length - 1][KOTATSU_CACHE_ANCHOR] = true;
+        }
+    }
 
     // Images in assistant messages should be moved to the next user message
     for (let i = 0; i < messages.length; i++) {
@@ -903,6 +937,48 @@ export function convertTextCompletionPrompt(messages) {
         }
     });
     return messageStrings.join('\n') + '\nassistant:';
+}
+
+/**
+ * Puts the history cache breakpoint on the block `convertClaudeMessages` tagged as the anchor.
+ * Directly modifies the messages array.
+ * @param {any[]} messages Converted Claude messages
+ * @param {string} ttl TTL value
+ * @returns {boolean} True when the anchor block was found and marked
+ */
+export function cachingAtAnchorForClaude(messages, ttl) {
+    for (const message of messages) {
+        if (!Array.isArray(message?.content)) continue;
+        const block = message.content.find(part => part && part[KOTATSU_CACHE_ANCHOR]);
+        if (block) {
+            block.cache_control = { type: 'ephemeral', ttl: ttl };
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Puts the history cache breakpoint on the tagged anchor message of an OpenRouter (OpenAI-shaped)
+ * request. Directly modifies the messages array.
+ * @param {any[]} messages Request messages
+ * @param {string} ttl TTL value
+ * @returns {boolean} True when the anchor message was found and marked
+ */
+export function cachingAtAnchorForOpenRouterClaude(messages, ttl) {
+    const message = messages.find(msg => msg && msg[KOTATSU_CACHE_ANCHOR]);
+    if (!message) return false;
+    const cacheControl = { type: 'ephemeral', ttl: ttl };
+    if (typeof message.content === 'string') {
+        if (!message.content) return false;
+        message.content = [{ type: 'text', text: message.content, cache_control: cacheControl }];
+        return true;
+    }
+    if (Array.isArray(message.content) && message.content.length) {
+        message.content[message.content.length - 1].cache_control = cacheControl;
+        return true;
+    }
+    return false;
 }
 
 /**

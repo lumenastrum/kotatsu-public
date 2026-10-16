@@ -129,7 +129,28 @@ export function cacheVerdict(usage) {
             state: 'priming',
             label: 'Priming',
             title: `Cache priming — ${usage.cacheCreationTokens.toLocaleString()} tokens written fresh. `
-                + 'Normal on the first turn or right after editing the prompt.',
+                + 'Normal on the first turn, after more than 5 minutes idle, or right after editing the prompt.'
+                + (usage.cacheMode
+                    ? ' If it shows every turn, something above the cache point changes each turn: a keyword '
+                        + 'lorebook entry above the chat, history trimmed off the top, or an effort or model switch.'
+                    : ''),
+        };
+    }
+    // Prompt cache v0 (docs/prompt-cache-v0.md §4): the server says what it asked for, so a turn
+    // that never asked reads "Off", not "Busted".
+    if (usage.cacheMode === 'off') {
+        return {
+            state: 'na',
+            label: 'Off',
+            title: 'Prompt caching is off (kotatsu.promptCache: false in config.yaml), so every turn pays full price.',
+        };
+    }
+    if (usage.cacheMode) {
+        return {
+            state: 'busted',
+            label: 'Busted',
+            title: 'Cache miss — Kotatsu asked for caching, but nothing was read or written. The prompt may be '
+                + 'under the provider\'s minimum (512 tokens on current Claude models), or the provider ignored it.',
         };
     }
     return {

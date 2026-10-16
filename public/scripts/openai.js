@@ -86,6 +86,7 @@ import { accountStorage } from './util/AccountStorage.js';
 import { IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
 import { syncNanoGptProvidersForModel, syncOpenRouterProvidersForModel, updateNanoGptProvidersWarning, updateOpenRouterProvidersWarning } from './textgen-models.js';
 import { foldStreamingUsage } from './usage-capture.js';
+import { pickCacheAnchor } from './cache-anchor.js'; // KOTATSU-PATCH 2026-10-16 (prompt cache v0)
 
 export {
     openai_messages_count,
@@ -177,6 +178,12 @@ const textCompletionModels = [
 ];
 
 let biasCache = undefined;
+
+/**
+ * KOTATSU-PATCH 2026-10-16 (prompt cache v0): the sent message objects picked as cache anchors.
+ * @type {WeakSet<object>}
+ */
+const cacheAnchorMessages = new WeakSet();
 export let model_list = [];
 
 export const chat_completion_sources = {
@@ -958,6 +965,8 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         const prompt = new Prompt(chatPrompt);
         prompt.identifier = `chatHistory-${messages.length - index}`;
         const chatMessage = await Message.fromPromptAsync(promptManager.preparePrompt(prompt));
+        // KOTATSU-PATCH 2026-10-16 (prompt cache v0): `Prompt` drops the in-chat injection flag.
+        chatMessage.injected = Boolean(chatPrompt.injected);
 
         if (promptManager.serviceSettings.names_behavior === character_names_behavior.COMPLETION && prompt.name) {
             const messageName = promptManager.isValidName(prompt.name) ? prompt.name : promptManager.sanitizeName(prompt.name);
@@ -1647,6 +1656,14 @@ export async function prepareOpenAIMessages({
     }
 
     const chat = chatCompletion.getChat();
+
+    // KOTATSU-PATCH 2026-10-16 (prompt cache v0): remember which sent message is the cache anchor.
+    // Tracked by object identity, so extensions that splice `chat` below can't shift it.
+    const cacheAnchorEntries = chatCompletion.getCacheAnchorEntries();
+    if (cacheAnchorEntries.length === chat.length) {
+        const anchor = pickCacheAnchor(cacheAnchorEntries);
+        if (anchor >= 0) cacheAnchorMessages.add(chat[anchor]);
+    }
 
     const eventData = { chat, dryRun };
     await eventSource.emit(event_types.CHAT_COMPLETION_PROMPT_READY, eventData);
@@ -3231,6 +3248,11 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const { generate_data, stream, canMultiSwipe } = await createGenerationParameters(oai_settings, model, type, messages, { jsonSchema });
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
+    // KOTATSU-PATCH 2026-10-16 (prompt cache v0): the anchor travels as an index, resolved last
+    // so every earlier rewrite of `messages` is already in place.
+    const cacheAnchor = Array.isArray(generate_data.messages) ? generate_data.messages.findIndex(m => m && cacheAnchorMessages.has(m)) : -1;
+    if (cacheAnchor >= 0) generate_data.kotatsu_cache_anchor = cacheAnchor;
+
     const generate_url = '/api/backends/chat-completions/generate';
     const response = await fetch(generate_url, {
         method: 'POST',
@@ -3238,6 +3260,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         headers: getRequestHeaders(),
         signal: signal,
     });
+    const cacheMode = response.headers.get('X-Kotatsu-Cache'); // KOTATSU-PATCH (prompt cache v0)
 
     if (!response.ok) {
         tryParseStreamingError(response, await response.text());
@@ -3268,6 +3291,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
                 // in `message_start` / `message_delta`; OpenAI-compatible backends in the final
                 // usage chunk (which needs `stream_options.include_usage`, set at build time).
                 foldStreamingUsage(state, parsed);
+                if (cacheMode && state.usage) state.usage.kotatsu_cache_mode = cacheMode; // KOTATSU-PATCH (prompt cache v0)
 
                 if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
                     const swipeIndex = parsed.choices[0].index - 1;
@@ -3284,6 +3308,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         };
     } else {
         const data = await response.json();
+        if (cacheMode && data?.usage && typeof data.usage === 'object') data.usage.kotatsu_cache_mode = cacheMode; // KOTATSU-PATCH (prompt cache v0)
 
         checkQuotaError(data);
         checkModerationError(data);
@@ -3633,6 +3658,8 @@ class Message {
     signature = null;
     /** @type {string?} */
     reasoning = null;
+    /** @type {boolean} KOTATSU-PATCH (prompt cache v0): re-placed every turn (in-chat injection) */
+    injected = false;
 
     /**
      * @constructor
@@ -4045,6 +4072,7 @@ export class ChatCompletion {
             if (shouldSquash(message)) {
                 if (lastMessage && shouldSquash(lastMessage)) {
                     lastMessage.content += '\n' + message.content;
+                    if (message.injected) lastMessage.injected = true; // KOTATSU-PATCH (prompt cache v0)
                     lastMessage.tokens = await tokenHandler.countAsync({ role: lastMessage.role, content: lastMessage.content });
                 } else {
                     squashedMessages.push(message);
@@ -4216,6 +4244,26 @@ export class ChatCompletion {
      */
     getTotalTokenCount() {
         return this.messages.getTokens();
+    }
+
+    /**
+     * KOTATSU-PATCH 2026-10-16 (prompt cache v0): one entry per message `getChat()` returns, same
+     * walk and same filters, so an index into these entries is an index into the sent messages.
+     * @returns {import('./cache-anchor.js').CacheAnchorEntry[]}
+     */
+    getCacheAnchorEntries() {
+        const entries = [];
+        const push = (message) => entries.push({ identifier: message.identifier, volatile: Boolean(message.injected) });
+        for (let item of this.messages.collection) {
+            if (item instanceof MessageCollection) {
+                for (const message of item.collection) {
+                    if (message.content || message.tool_calls) push(message);
+                }
+            } else if (item instanceof Message && (item.content || item.tool_calls)) {
+                push(item);
+            }
+        }
+        return entries;
     }
 
     /**

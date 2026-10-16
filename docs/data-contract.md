@@ -199,8 +199,11 @@ type MmUsage = {
     cachedTokens: number;
     cacheCreationTokens: number;
     cacheKnown: boolean;
+    cacheMode?: 'off' | 'system' | 'anchor' | 'depth'; // amended 2026-10-16, docs/prompt-cache-v0.md §4
 };
 ```
+
+- **`cacheMode`** (optional, amended 2026-10-16): what Kotatsu asked the provider to cache, from the server's `X-Kotatsu-Cache` header. Absent on older messages and on providers Kotatsu doesn't steer; readers treat absent as "unknown", never as "off".
 
 - **Swipes:** `mm_usage` rides `swipe_info[].extra` on purpose and is deliberately absent from the `token_count` / `reasoning` delete lists (`script.js` finalize and `saveReply()`). Each swipe was its own generation with its own prompt and its own cache outcome, so per-swipe usage is correct, not leakage.
 - **Round trip:** an older or unrecognized shape (the extension's own, a hand-edit) is preserved verbatim like any other `extra.*` key. The reader treats a non-object as absent and paints nothing rather than a bar of `NaN`s. Stock SillyTavern ignores the key entirely, so the file stays openable there.

@@ -27,7 +27,11 @@
  * @property {number} cachedTokens prompt tokens served from cache (0 when none were)
  * @property {number} cacheCreationTokens prompt tokens written INTO the cache this turn
  * @property {boolean} cacheKnown whether the provider reported cache figures at all
+ * @property {'off'|'system'|'anchor'|'depth'} [cacheMode] what Kotatsu asked to cache (prompt cache v0)
  */
+
+/** Values the server's `X-Kotatsu-Cache` header can carry (docs/prompt-cache-v0.md §4). */
+const CACHE_MODES = ['off', 'system', 'anchor', 'depth'];
 
 /**
  * @param {{usage?: object}} state the streaming generator's per-request state bag
@@ -116,6 +120,10 @@ export function foldStreamingUsage(state, frame) {
 export function normalizeUsage(usage) {
     if (!usage || typeof usage !== 'object') return null;
 
+    // Prompt cache v0 (docs/prompt-cache-v0.md §4): what Kotatsu ASKED the provider to cache,
+    // from the server's X-Kotatsu-Cache header. Absent for providers Kotatsu doesn't steer.
+    const cacheMode = CACHE_MODES.includes(usage.kotatsu_cache_mode) ? { cacheMode: usage.kotatsu_cache_mode } : {};
+
     if (usage.input_tokens != null || usage.cache_read_input_tokens != null || usage.cache_creation_input_tokens != null) {
         const cacheRead = usage.cache_read_input_tokens || 0;
         const cacheCreation = usage.cache_creation_input_tokens || 0;
@@ -126,6 +134,7 @@ export function normalizeUsage(usage) {
             cachedTokens: cacheRead,
             cacheCreationTokens: cacheCreation,
             cacheKnown: true,
+            ...cacheMode,
         };
     }
 
@@ -147,6 +156,7 @@ export function normalizeUsage(usage) {
             cachedTokens: cached,
             cacheCreationTokens: 0,
             cacheKnown: !!cacheKnown,
+            ...cacheMode,
         };
     }
 
