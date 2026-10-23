@@ -39,6 +39,33 @@ body[data-k-layout="rails"]:has(#chat[data-k-mes-variant="sprite"]):not([data-k-
     pointer-events: none;
 }
 
+/* The backdrop (docs/stage-backdrop-v0.md). A chat's background is core's `#bg1`, painted inline
+   by core (backgrounds.js) behind everything; under rails it is a stage set, shown only in this
+   look and not on Home, so the reading looks keep the pack's own backdrop (Andres, 2026-10-22).
+   Hidden by opacity, never `display` or `background-image`: core keeps painting it per chat, and
+   the switch into Sprites only fades it in. The pack's `--k-app-backdrop` on <body> is what shows
+   when it is hidden or empty. */
+body[data-k-layout="rails"] #bg1 {
+    /* Core's z-index −1 puts #bg1 in the root context's negative layer, which paints BELOW the
+       in-flow block backgrounds, so <body>'s pack backdrop (--k-app-backdrop) covered every chat
+       background under rails (measured 2026-10-22: #bg1 painted, opacity 1, invisible). 0 lifts
+       it over <body>'s paint and keeps it far under #k-shell (30). Empty, it is transparent and
+       the pack's backdrop shows through. */
+    z-index: 0;
+    opacity: 0;
+    transition: opacity var(--k-sprite-fade, 250ms) ease;
+}
+
+body[data-k-layout="rails"]:has(#chat[data-k-mes-variant="sprite"]):not([data-k-view="home"]) #bg1 {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"] #bg1 {
+        transition: none;
+    }
+}
+
 /* The reading track's paint steps aside. `#sheld::before` (shell-center.css, decision 2)
    tints and blurs the whole centre track from z −1 in #k-shell's stacking context — the same
    layer as the stage and later in the tree, so it frosted every figure (measured 2026-10-10:
@@ -75,16 +102,18 @@ k-sprite-stage .k-sprite-figure {
         transform var(--k-sprite-move) ease-out,
         filter var(--k-sprite-move) ease-out,
         opacity var(--k-sprite-fade) ease-out;
-    /* Bottom: fades into the composer. Sides: a sprite whose art runs off its canvas there (stage-model.js
+    /* Bottom: fades into the composer over the last 8%, eased (Andres, 2026-10-23: the old linear 18% "reads very
+       aggressive", it ate a full-body figure's boots and shins). The Studio's framing figure uses the same ramp.
+       Sides: a sprite whose art runs off its canvas there (stage-model.js
        `cutSides`, data-cut-left/right) fades out instead of ending in a hard vertical line; uncut sides stay solid. */
     --k-sprite-fade-l: 0%;
     --k-sprite-fade-r: 0%;
     -webkit-mask-image:
-        linear-gradient(to top, transparent 0%, #000 18%),
+        linear-gradient(to top, transparent 0%, rgb(0 0 0 / 0.45) 2.5%, rgb(0 0 0 / 0.8) 5%, #000 8%),
         linear-gradient(to right, transparent 0%, #000 var(--k-sprite-fade-l), #000 calc(100% - var(--k-sprite-fade-r)), transparent 100%);
     -webkit-mask-composite: source-in;
     mask-image:
-        linear-gradient(to top, transparent 0%, #000 18%),
+        linear-gradient(to top, transparent 0%, rgb(0 0 0 / 0.45) 2.5%, rgb(0 0 0 / 0.8) 5%, #000 8%),
         linear-gradient(to right, transparent 0%, #000 var(--k-sprite-fade-l), #000 calc(100% - var(--k-sprite-fade-r)), transparent 100%);
     mask-composite: intersect;
 }
@@ -144,31 +173,7 @@ k-sprite-stage .k-sprite-bench__label {
     color: var(--k-text-muted);
 }
 
-/* The phone spotlight: no room for a wing, so the speaker's bust rides in a small card over the chat's top right
-   corner (the scene's cast lineup is its own On-stage strip above the composer). Off everywhere but phone width. */
-.k-sprite-spotlight {
-    display: none;
-}
-
-@media (max-width: 600px) {
-    body[data-k-layout="rails"]:has(#chat[data-k-mes-variant="sprite"]):not([data-k-view="home"]) .k-sprite-spotlight[data-on] {
-        display: block;
-        position: absolute;
-        top: calc(var(--k-cc-strip-height, 44px) + 8px);
-        right: 10px;
-        z-index: 32;
-        width: 72px;
-        height: 88px;
-        border-radius: var(--k-radius-lg);
-        border: 1.5px solid color-mix(in srgb, var(--k-speaker, var(--k-accent)) 70%, transparent);
-        background-color: var(--k-surface);
-        background-position: 50% var(--k-sprite-face-y, 3%);
-        background-repeat: no-repeat;
-        background-size: var(--k-sprite-face-zoom, 210%) auto;
-        box-shadow: var(--k-elev-4);
-        pointer-events: none;
-    }
-}
+/* The phone has no wing, so it has no spotlight card any more: the Sprite look there is the theatre (§9). */
 
 /* ── 3. Rails float over the stage ───────────────────────────────────────────
    rail-collapse.js suppresses both rails in this look, so they render collapsed unless a
@@ -547,8 +552,8 @@ body[data-k-layout="rails"] .k-sprite-framing__figure {
     background-size: auto var(--crop, 132%);
     transform-origin: bottom center;
     transform: translateY(var(--dy, 0%)) scale(var(--s, 1));
-    -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 18%);
-    mask-image: linear-gradient(to top, transparent 0%, #000 18%);
+    -webkit-mask-image: linear-gradient(to top, transparent 0%, rgb(0 0 0 / 0.45) 2.5%, rgb(0 0 0 / 0.8) 5%, #000 8%);
+    mask-image: linear-gradient(to top, transparent 0%, rgb(0 0 0 / 0.45) 2.5%, rgb(0 0 0 / 0.8) 5%, #000 8%);
 }
 
 /* The top of a cast-mate's box at the default height: a guide for "Height on stage". */
@@ -569,6 +574,609 @@ body[data-k-layout="rails"] .k-sprite-framing__chip {
     background-repeat: no-repeat;
     background-size: var(--k-sprite-face-zoom, 300%) auto;
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--k-accent) 55%, transparent);
+}
+
+/* ── 5b. Card Studio v2 ③: the strip (Simple) and the grid (Advanced) ─────────────────────────────────
+   <k-sprite-studio variant="strip"> pages big tiles of the set on show (bust by default), the expressions are the
+   page; variant="grid" lays all 28 out dense, with the framing knobs (5 above) under it. One tile object serves
+   both (`.k-sprite-tile`, `data-label` = the feeling, so a pack can give each feeling its own backdrop). The dials
+   below are the tile's knobs: a pack sets them in `tokens`, never in sheet.css. */
+body[data-k-layout="rails"] k-sprite-studio {
+    /* Height of a strip tile (Simple ③), where the expressions are the page. */
+    --k-sprite-tile-h: 330px;
+    /* Corner radius of a sprite tile, strip and grid. */
+    --k-sprite-tile-radius: var(--k-radius-lg);
+    /* A sprite tile's frame line, a border shorthand (width style colour); a missing feeling draws it dashed. */
+    --k-sprite-tile-line: 1px solid color-mix(in srgb, var(--k-border) 70%, transparent);
+    /* A sprite tile's shadow (one box-shadow, never `none`: the picked ring is listed with it). */
+    --k-sprite-tile-shadow: 0 0 0 0 transparent;
+    /* What a transparent sprite stands on in its tile. Per feeling: `.k-sprite-tile[data-label="anger"]`. */
+    --k-sprite-tile-backdrop: radial-gradient(130% 85% at 50% 0%, color-mix(in srgb, var(--k-accent) 14%, var(--k-surface-2)) 0%, var(--k-surface-sunken) 100%);
+    /* The picked tile's ring (a box-shadow). */
+    --k-sprite-tile-picked-ring: 0 0 0 2px var(--k-accent);
+    /* Columns of the dense grid (Advanced ③). */
+    --k-sprite-grid-cols: 7;
+    /* Browsing the strip: how long a tile takes to arrive, how far it drifts in from the side you are browsing
+       toward, and the beat between neighbours. Gated by the reduced-motion switch (kotatsu-motion.css §0). */
+    --k-sprite-strip-turn: 320ms;
+    --k-sprite-strip-turn-shift: 28px;
+    --k-sprite-strip-turn-stagger: 40ms;
+}
+
+@media (max-width: 700px) {
+    body[data-k-layout="rails"] k-sprite-studio {
+        --k-sprite-tile-h: 270px;
+        --k-sprite-grid-cols: 3;
+    }
+}
+
+/* File inputs in strip and grid are visually hidden, never `hidden`: Tab reaches them, and the label around each
+   shows the focus. `display` undoes core's `input[type="file"] { display: none }` (style.css), which takes them
+   out of the tab order. */
+body[data-k-layout="rails"] .k-sprite-studio__file,
+body[data-k-layout="rails"] .k-sprite-studio__sr {
+    display: block;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    border: 0;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-sprite-studio__button:has(.k-sprite-studio__file:focus-visible) {
+    outline: 2px solid var(--k-accent);
+    outline-offset: 2px;
+}
+
+body[data-k-layout="rails"] .k-sprite-studio__icon {
+    flex: none;
+}
+
+body[data-k-layout="rails"] .k-sprite-studio__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+}
+
+/* The set toggle: "Bust n/9 | Full body n/9", a segmented control like the framing pin. */
+body[data-k-layout="rails"] .k-sprite-sets {
+    display: inline-flex;
+    flex: none;
+    overflow: hidden;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-md);
+}
+
+body[data-k-layout="rails"] .k-sprite-sets__option {
+    display: inline-flex;
+    gap: 6px;
+    min-height: 30px;
+    padding: 0 12px;
+    align-items: center;
+    border: 0;
+    border-left: 1px solid var(--k-border);
+    background: var(--k-surface);
+    color: var(--k-text);
+    font: 500 12.5px var(--k-font-ui);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-sprite-sets__option:first-child {
+    border-left: 0;
+}
+
+body[data-k-layout="rails"] .k-sprite-sets__option[data-on] {
+    background: var(--k-control-on-bg);
+    color: var(--k-control-on-text);
+}
+
+body[data-k-layout="rails"] .k-sprite-sets__option:focus-visible {
+    outline: 2px solid var(--k-accent);
+    outline-offset: -2px;
+}
+
+body[data-k-layout="rails"] .k-sprite-sets__count {
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.75;
+}
+
+/* One tile. The pick button wraps the frame and the name, so the whole tile is the target. */
+body[data-k-layout="rails"] .k-sprite-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile[data-busy] {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__pick {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__pick:focus-visible {
+    outline: none;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__frame {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    height: var(--k-sprite-tile-h);
+    border: var(--k-sprite-tile-line);
+    border-radius: var(--k-sprite-tile-radius);
+    background: var(--k-sprite-tile-backdrop);
+    box-shadow: var(--k-sprite-tile-shadow);
+    transition: border-color var(--k-dur-1, 120ms) ease-out, box-shadow var(--k-dur-1, 120ms) ease-out;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__pick:hover .k-sprite-tile__frame {
+    border-color: color-mix(in srgb, var(--k-accent) 60%, var(--k-border));
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__pick:focus-visible .k-sprite-tile__frame,
+body[data-k-layout="rails"] .k-sprite-tile__pick:has(.k-sprite-studio__file:focus-visible) .k-sprite-tile__frame {
+    outline: 2px solid var(--k-accent);
+    outline-offset: 2px;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile[data-picked] .k-sprite-tile__frame {
+    box-shadow: var(--k-sprite-tile-picked-ring), var(--k-sprite-tile-shadow);
+}
+
+/* A bust is 1024² with the head in its upper half: cover the tile from the top, so the face reads. A full body
+   (832 × 1216) stands whole on the tile's floor. */
+body[data-k-layout="rails"] .k-sprite-tile__art,
+body[data-k-layout="rails"] .k-sprite-tile__ghost {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 0%;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile[data-set="full"] .k-sprite-tile__art,
+body[data-k-layout="rails"] .k-sprite-tile[data-set="full"] .k-sprite-tile__ghost {
+    object-fit: contain;
+    object-position: 50% 100%;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__name {
+    overflow: hidden;
+    color: var(--k-text-strong);
+    font: 600 13px var(--k-font-ui);
+    text-align: center;
+    text-overflow: ellipsis;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile[data-picked] .k-sprite-tile__name {
+    color: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-sprite-tile[data-empty] .k-sprite-tile__name {
+    color: var(--k-text-dim);
+    font-weight: 500;
+}
+
+/* A missing feeling: dashed, flat, and saying what the stage shows instead (its stand-in, ghosted behind). */
+body[data-k-layout="rails"] .k-sprite-tile[data-empty] .k-sprite-tile__frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 8px;
+    border-style: dashed;
+    background: color-mix(in srgb, var(--k-surface-sunken) 70%, transparent);
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__ghost {
+    position: absolute;
+    inset: 0;
+    opacity: 0.18;
+    filter: grayscale(1);
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__standin {
+    position: relative;
+    max-width: 100%;
+    padding: 3px 8px;
+    border-radius: var(--k-radius-pill);
+    background: color-mix(in srgb, var(--k-surface) 82%, transparent);
+    color: var(--k-text-muted);
+    font: 400 12px var(--k-font-ui);
+    line-height: 1.3;
+    text-align: center;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__standin b {
+    color: var(--k-text);
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__add {
+    position: relative;
+    gap: 5px;
+    padding: 0 14px;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__warnings {
+    margin: 0;
+    padding: 0 0 0 14px;
+    color: var(--k-warning);
+    font-size: 11.5px;
+    line-height: 1.35;
+}
+
+/* The strip: a page of tiles, ‹ › over its edges (hidden at either end). Columns come from the component
+   (`--strip-per`, five when there is room, two on a phone), so a short last page keeps the tile size. */
+body[data-k-layout="rails"] .k-sprite-strip {
+    position: relative;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__tiles {
+    display: grid;
+    grid-template-columns: repeat(var(--strip-per, 5), minmax(0, 1fr));
+    gap: 12px;
+}
+
+/* A page turn (k-sprite-studio.js `willUpdate`): the new tiles drift in from the side you are browsing toward and
+   fade up, one beat apart, starting with the tile nearest that side. `data-turn` alternates 0/1 between two identical
+   keyframes, which is how a CSS animation restarts; no turn has played until the first one (no attribute). `from`-only
+   keyframes (kotatsu-motion.css §1), durations through the motion gate, so reduced motion turns the page instantly. */
+@keyframes k-sprite-turn-0 {
+    from {
+        opacity: 0;
+        transform: translateX(calc(var(--turn-from) * var(--k-sprite-strip-turn-shift))) scale(0.985);
+    }
+}
+
+@keyframes k-sprite-turn-1 {
+    from {
+        opacity: 0;
+        transform: translateX(calc(var(--turn-from) * var(--k-sprite-strip-turn-shift))) scale(0.985);
+    }
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-turn] > * {
+    --turn-beat: 0;
+    animation-duration: min(var(--k-sprite-strip-turn), var(--k-motion-gate));
+    animation-timing-function: var(--k-ease-out);
+    animation-fill-mode: both;
+    animation-delay: min(calc(var(--turn-beat) * var(--k-sprite-strip-turn-stagger)), var(--k-motion-gate));
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-turn="0"] > * {
+    animation-name: k-sprite-turn-0;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-turn="1"] > * {
+    animation-name: k-sprite-turn-1;
+}
+
+/* Browsing on: tiles come from the right, left tile first. Back: from the left, right tile first. */
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="on"] {
+    --turn-from: 1;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="back"] {
+    --turn-from: -1;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="on"] > :nth-child(2),
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="back"] > :nth-last-child(2) {
+    --turn-beat: 1;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="on"] > :nth-child(3),
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="back"] > :nth-last-child(3) {
+    --turn-beat: 2;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="on"] > :nth-child(4),
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="back"] > :nth-last-child(4) {
+    --turn-beat: 3;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="on"] > :nth-child(5),
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="back"] > :nth-last-child(5) {
+    --turn-beat: 4;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="on"] > :nth-child(n+6),
+body[data-k-layout="rails"] .k-sprite-strip__tiles[data-dir="back"] > :nth-last-child(n+6) {
+    --turn-beat: 5;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__nav {
+    position: absolute;
+    top: calc(var(--k-sprite-tile-h) / 2);
+    z-index: 1;
+    display: inline-grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--k-control-border);
+    border-radius: var(--k-radius-round, 50%);
+    background: color-mix(in srgb, var(--k-surface-2) 92%, transparent);
+    color: var(--k-control-text);
+    box-shadow: var(--k-elev-1);
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__nav[data-act="prev"] {
+    left: 6px;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__nav[data-act="next"] {
+    right: 6px;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__nav:hover,
+body[data-k-layout="rails"] .k-sprite-strip__nav:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__nav:disabled {
+    visibility: hidden;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__nav .k-sprite-studio__icon {
+    width: 16px;
+    height: 16px;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__index {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__range {
+    color: var(--k-text-muted);
+    font: 500 12.5px var(--k-font-ui);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-sprite-strip__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* One chip per main feeling: filled = solid, missing = dashed, picked = the selected fill, on this page = a
+   brighter line. A click goes to the page that holds it. */
+body[data-k-layout="rails"] .k-sprite-chip {
+    min-height: 26px;
+    padding: 0 10px;
+    border: 1px dashed color-mix(in srgb, var(--k-border) 85%, var(--k-text-dim));
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text-dim);
+    font: 500 12px var(--k-font-ui);
+    text-transform: capitalize;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-sprite-chip[data-filled] {
+    border-style: solid;
+    border-color: var(--k-control-border);
+    background: var(--k-control-bg);
+    color: var(--k-control-text);
+}
+
+body[data-k-layout="rails"] .k-sprite-chip[aria-current] {
+    border-color: color-mix(in srgb, var(--k-accent) 70%, var(--k-border));
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-sprite-chip[data-picked] {
+    border-color: var(--k-control-on-border, var(--k-accent));
+    background: var(--k-control-on-bg);
+    color: var(--k-control-on-text);
+}
+
+body[data-k-layout="rails"] .k-sprite-chip:hover,
+body[data-k-layout="rails"] .k-sprite-chip:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+    outline: none;
+}
+
+/* The grid: all 28, dense. Tiles take the framing's own proportions (a square bust, an 832 × 1216 body); the
+   per-tile tools sit in the corner and show on hover or focus (and on the picked tile where there is no hover). */
+body[data-k-layout="rails"] .k-sprite-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--k-sprite-grid-cols), minmax(0, 1fr));
+    gap: 10px 8px;
+}
+
+body[data-k-layout="rails"] .k-sprite-grid .k-sprite-tile,
+body[data-k-layout="rails"] .k-sprite-grid .k-sprite-tile__pick {
+    gap: 4px;
+}
+
+body[data-k-layout="rails"] .k-sprite-grid .k-sprite-tile__frame {
+    height: auto;
+    aspect-ratio: 1;
+}
+
+body[data-k-layout="rails"] .k-sprite-grid .k-sprite-tile[data-set="full"] .k-sprite-tile__frame {
+    aspect-ratio: 832 / 1216;
+}
+
+body[data-k-layout="rails"] .k-sprite-grid .k-sprite-tile__name {
+    font-size: 11.5px;
+    font-weight: 500;
+}
+
+body[data-k-layout="rails"] .k-sprite-grid .k-sprite-tile[data-empty] .k-sprite-tile__frame {
+    justify-content: center;
+    gap: 6px;
+    padding: 6px;
+}
+
+body[data-k-layout="rails"] .k-sprite-grid .k-sprite-tile__standin {
+    padding: 0;
+    background: none;
+    color: var(--k-text-dim);
+    font-size: 11px;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__upload {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: 1px solid var(--k-control-border);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-control-bg);
+    color: var(--k-control-text);
+    font: 500 11.5px var(--k-font-ui);
+    opacity: 0;
+    transition: opacity var(--k-dur-1, 120ms) ease-out;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__pick:hover .k-sprite-tile__upload,
+body[data-k-layout="rails"] .k-sprite-tile__pick:focus-within .k-sprite-tile__upload {
+    opacity: 1;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__tools {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--k-dur-1, 120ms) ease-out;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile:hover .k-sprite-tile__tools,
+body[data-k-layout="rails"] .k-sprite-tile__tools:focus-within {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__tool {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--k-control-border);
+    border-radius: var(--k-radius-md);
+    background: color-mix(in srgb, var(--k-surface) 90%, transparent);
+    color: var(--k-control-text);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__tool:hover,
+body[data-k-layout="rails"] .k-sprite-tile__tool:focus-visible,
+body[data-k-layout="rails"] .k-sprite-tile__tool:focus-within {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__tool[data-act="delete"]:hover,
+body[data-k-layout="rails"] .k-sprite-tile__tool[data-act="delete"]:focus-visible {
+    border-color: var(--k-danger);
+    color: var(--k-danger);
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__tool:has(.k-sprite-studio__file:focus-visible) {
+    outline: 2px solid var(--k-accent);
+    outline-offset: 1px;
+}
+
+body[data-k-layout="rails"] .k-sprite-tile__warn {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--k-radius-round, 50%);
+    background: color-mix(in srgb, var(--k-surface) 90%, transparent);
+    color: var(--k-warning);
+}
+
+/* No hover on a touch screen: tap picks, and the picked tile shows its tools; an empty tile (all of it the upload
+   target) shows a quiet plus, not 22 Upload pills. */
+@media (hover: none) {
+    body[data-k-layout="rails"] .k-sprite-tile[data-picked] .k-sprite-tile__tools {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    body[data-k-layout="rails"] .k-sprite-tile__upload {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--k-text-dim);
+        opacity: 1;
+    }
+
+    body[data-k-layout="rails"] .k-sprite-tile__upload-word {
+        display: none;
+    }
+}
+
+@media (max-width: 700px) {
+    body[data-k-layout="rails"] .k-sprite-strip__tiles {
+        gap: 10px;
+    }
+
+    body[data-k-layout="rails"] .k-sprite-strip__foot,
+    body[data-k-layout="rails"] .k-sprite-strip__foot .k-sprite-studio__actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    body[data-k-layout="rails"] .k-sprite-strip__foot .k-sprite-studio__actions > * {
+        min-height: 36px;
+    }
 }
 
 /* ── 6. Touch-up (<k-sprite-touchup variant="sheet">) ──────────────────────────────────────────────────
@@ -1806,5 +2414,312 @@ k-sprite-generate .k-gen__ended {
     k-sprite-generate .k-gen__faceimg {
         height: auto;
         max-height: 70vh;
+    }
+}
+
+/* ── 8. The Background chip (<k-backdrop-chip variant="chip">, docs/stage-backdrop-v0.md) ────────────
+   In the chat header beside the Scene chip, Sprite view only (the element sets `hidden` itself).
+   The chip is the Scene chip's recipe; the picker is the Scene peek's chassis (shell-center.css §1);
+   its buttons are the house button (rechrome-controls.css `--k-rc-btn-*`). */
+
+body[data-k-layout="rails"] :is(k-backdrop-chip, k-vn-history) {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+body[data-k-layout="rails"] :is(k-backdrop-chip, k-vn-history)[hidden] {
+    display: none;
+}
+
+body[data-k-layout="rails"] k-vn-history .k-bd__chip[aria-pressed="true"] {
+    border-color: color-mix(in srgb, var(--k-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--k-accent) 16%, transparent);
+}
+
+body[data-k-layout="rails"] .k-bd__chip {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: -3px 0;
+    padding: 3px 9px;
+    border: 1px solid color-mix(in srgb, var(--k-accent) 28%, transparent);
+    border-radius: var(--k-radius-pill);
+    background: color-mix(in srgb, var(--k-accent) 8%, transparent);
+    font: inherit;
+    font-size: var(--k-cc-count-size);
+    color: var(--k-accent-bright);
+    cursor: pointer;
+    transition: background-color var(--k-motion), border-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-bd__chip:hover,
+body[data-k-layout="rails"] .k-bd__chip:focus-visible,
+body[data-k-layout="rails"] .k-bd__chip[aria-expanded="true"] {
+    border-color: color-mix(in srgb, var(--k-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--k-accent) 14%, transparent);
+}
+
+body[data-k-layout="rails"] .k-bd__peek {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    z-index: 3010;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    inline-size: min(420px, calc(100vw - 24px));
+    max-block-size: min(480px, calc(var(--k-vvh, 100dvh) - 90px));
+    overflow: hidden auto;
+    padding: 14px 16px;
+    background: var(--k-panel-fill);
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 35%, transparent);
+    border-radius: var(--k-radius-xl);
+    box-shadow: var(--k-elev-3);
+    transform: translateX(-50%);
+}
+
+body[data-k-layout="rails"] .k-bd__head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+body[data-k-layout="rails"] .k-bd__head strong {
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: 16px;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-bd__head span,
+body[data-k-layout="rails"] .k-bd__empty,
+body[data-k-layout="rails"] .k-bd__note {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-bd__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-bd__thumb {
+    appearance: none;
+    position: relative;
+    aspect-ratio: 16 / 10;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-sunken);
+    cursor: pointer;
+    transition: border-color var(--k-motion), box-shadow var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-bd__thumb img {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+}
+
+body[data-k-layout="rails"] .k-bd__thumb:hover,
+body[data-k-layout="rails"] .k-bd__thumb:focus-visible {
+    border-color: var(--k-rc-btn-line-hover);
+}
+
+/* The chat's background now: a ring in the accent, the same "this one" the model tiles use. */
+body[data-k-layout="rails"] .k-bd__thumb[aria-pressed="true"] {
+    border-color: var(--k-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--k-accent) 45%, transparent);
+}
+
+body[data-k-layout="rails"] .k-bd__thumb:focus-visible {
+    outline: 2px solid var(--k-accent);
+    outline-offset: 2px;
+}
+
+body[data-k-layout="rails"] .k-bd__thumb:disabled {
+    cursor: progress;
+    opacity: 0.6;
+}
+
+body[data-k-layout="rails"] .k-bd__tag {
+    position: absolute;
+    inset: auto auto 5px 5px;
+    padding: 1px 7px;
+    border-radius: var(--k-radius-pill);
+    background: color-mix(in srgb, var(--k-surface) 88%, transparent);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-bd__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-bd__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--k-rc-btn-h);
+    padding: 0 var(--k-rc-btn-pad-x);
+    border: 1px solid var(--k-rc-btn-line);
+    border-radius: var(--k-rc-btn-radius);
+    background: var(--k-rc-btn-fill);
+    box-shadow: var(--k-rc-btn-shadow);
+    color: var(--k-rc-btn-ink);
+    font: var(--k-rc-btn-weight) var(--k-rc-btn-size) var(--k-font-ui);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--k-motion), border-color var(--k-motion), box-shadow var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-bd__btn:not(:disabled):hover,
+body[data-k-layout="rails"] .k-bd__btn:not(:disabled):focus-visible,
+body[data-k-layout="rails"] .k-bd__btn:focus-within {
+    border-color: var(--k-rc-btn-line-hover);
+    background: var(--k-rc-btn-fill-hover);
+    box-shadow: var(--k-rc-btn-shadow-hover);
+    color: var(--k-rc-btn-ink-hover);
+}
+
+body[data-k-layout="rails"] .k-bd__btn:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+/* The real file input sits inside its label: reachable by keyboard, never drawn. */
+body[data-k-layout="rails"] .k-bd__file {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    opacity: 0;
+    overflow: hidden;
+}
+
+@media (max-width: 600px) {
+    body[data-k-layout="rails"] .k-bd__chip span {
+        display: none;
+    }
+
+    /* History lives only on a phone; a lone lines glyph says too little, so it keeps its word. */
+    body[data-k-layout="rails"] k-vn-history .k-bd__chip span {
+        display: inline;
+    }
+
+
+    body[data-k-layout="rails"] .k-bd__peek {
+        position: fixed;
+        top: calc(env(safe-area-inset-top, 0px) + 56px);
+    }
+}
+
+/* ── 9. The theatre: the Sprite look on a phone (docs/vn-theatre-v0.md) ────────────────────────────────
+   Andres, 2026-10-22, choosing between four mock-ups: "A is C without committing to what a sprite/VN mode
+   wants to be. So C it is." A phone has no wing beside the column, so the Sprite look becomes a visual novel:
+   the background, one big figure (stage-model.js `layoutTheatre`, k-sprite-stage.js `theatreActive()` — the
+   same 600px), and the latest message as a textbox at the bottom. The textbox IS the last row (`.last_mes`):
+   streaming, swipes, editing and the tap-to-reveal details all keep working because nothing is re-rendered.
+   History (<k-vn-history> in the header, `body[data-k-vn-history]`) lets the whole transcript back out. */
+
+@media (max-width: 600px) {
+    /* Only the latest line is on stage. */
+    body[data-k-layout="rails"]:not([data-k-vn-history]):not([data-k-view="home"]):has(#chat[data-k-mes-variant="sprite"]) #chat > .mes:not(.last_mes) {
+        display: none;
+    }
+
+    /* The textbox sits at the bottom at its natural height. #chat no longer scrolls here: the prose box does
+       (below), so core's keep-at-the-bottom scroll has nothing to move and a line opens at its start. */
+    body[data-k-layout="rails"]:not([data-k-vn-history]):not([data-k-view="home"]):has(#chat[data-k-mes-variant="sprite"]) #chat {
+        flex: 0 1 auto;
+        margin-block-start: auto;
+        overflow: visible;
+    }
+
+    /* The prose box is the textbox: about a quarter of the screen at most (of what the keyboard leaves), so she
+       stays in view above it; a long line turns its pages inside it, from its start (theatre.js: a tap turns the
+       page, a finger still scrolls). Was 36%: with real-length replies it covered her from the shoulders down
+       (Andres, 2026-10-23). */
+    body[data-k-layout="rails"]:not([data-k-vn-history]):not([data-k-view="home"]):has(#chat[data-k-mes-variant="sprite"]) #chat > .mes:not(.smallSysMes) .mes_text {
+        max-block-size: calc(var(--k-vvh, 100dvh) * 0.26);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--k-vn-fade-bottom, 0px)), transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 calc(100% - var(--k-vn-fade-bottom, 0px)), transparent 100%);
+    }
+
+    body[data-k-layout="rails"]:not([data-k-vn-history]):not([data-k-view="home"]):has(#chat[data-k-mes-variant="sprite"]) #chat > .mes:not(.smallSysMes) .mes_text[data-k-more-below] {
+        --k-vn-fade-bottom: 34px;
+    }
+
+    /* The "tap for more" cue, a visual novel's ▾: on the row (the prose box scrolls and is masked), centred just
+       above the box's bottom edge (theatre.js measures --vn-box-foot). It bobs once a beat; still under the gate. */
+    body[data-k-layout="rails"]:not([data-k-vn-history]):not([data-k-view="home"]):has(#chat[data-k-mes-variant="sprite"]) #chat > .mes[data-k-vn-more]::after {
+        content: "";
+        position: absolute;
+        inset-block-end: calc(var(--vn-box-foot, 0px) + 7px);
+        inset-inline-start: 50%;
+        inline-size: 14px;
+        block-size: 9px;
+        margin-inline-start: -7px;
+        background-color: var(--k-accent, currentColor);
+        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 9'%3E%3Cpath d='M1.5 1.5 7 7l5.5-5.5' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 9'%3E%3Cpath d='M1.5 1.5 7 7l5.5-5.5' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+        pointer-events: none;
+        animation: k-vn-more-bob 1.2s ease-in-out infinite;
+        animation-duration: min(1.2s, var(--k-motion-gate, 1.2s));
+    }
+}
+
+@keyframes k-vn-more-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"]:not([data-k-vn-history]):not([data-k-view="home"]):has(#chat[data-k-mes-variant="sprite"]) #chat > .mes[data-k-vn-more]::after {
+        animation: none;
+    }
+}
+
+@media (max-width: 600px) {
+
+    /* The stage is the face: the row's own face goes, and the phone grid's face column with it. */
+    body[data-k-layout="rails"]:not([data-k-vn-history]):not([data-k-view="home"]):has(#chat[data-k-mes-variant="sprite"]) #chat > .mes:not(.smallSysMes) {
+        grid-template-columns: 0 minmax(0, 1fr);
+        column-gap: 0;
+    }
+
+    body[data-k-layout="rails"]:not([data-k-vn-history]):not([data-k-view="home"]):has(#chat[data-k-mes-variant="sprite"]) #chat > .mes[is_user="true"]:not(.smallSysMes) {
+        grid-template-columns: minmax(0, 1fr) 0;
+    }
+
+    body[data-k-layout="rails"]:not([data-k-vn-history]):not([data-k-view="home"]):has(#chat[data-k-mes-variant="sprite"]) #chat > .mes:not(.smallSysMes) .mesAvatarWrapper {
+        display: none;
+    }
+
+    /* A textbox, not a chat bubble: a touch more frost, so the scene behind it never crowds the words. */
+    body[data-k-layout="rails"]:not([data-k-vn-history]):not([data-k-view="home"]):has(#chat[data-k-mes-variant="sprite"]) #chat > .mes:not(.smallSysMes) .mes_text:not(:empty) {
+        background-color: color-mix(in srgb, var(--k-surface) 90%, transparent);
+        box-shadow: 0 12px 30px -14px color-mix(in srgb, var(--k-elevation-shadow) 45%, transparent);
+    }
+
+    /* Nothing to jump back to: there is one line. */
+    body[data-k-layout="rails"]:not([data-k-vn-history]):not([data-k-view="home"]):has(#chat[data-k-mes-variant="sprite"]) k-jump-latest {
+        display: none;
+    }
+
+    /* History: the transcript is back over the scene, and she steps back so the words lead. */
+    body[data-k-layout="rails"][data-k-vn-history]:has(#chat[data-k-mes-variant="sprite"]) k-sprite-stage .k-sprite-figure {
+        filter: brightness(var(--b, 1)) saturate(var(--sat, 1)) opacity(0.35);
     }
 }

@@ -112,6 +112,14 @@ export const ENGINES = Object.freeze({
 /** Labels that repaint with the flush mask (features + cheeks): a features mask leaves no room for a blush. */
 export const FLUSH_LABELS = new Set(['embarrassment']);
 
+/**
+ * Labels whose mouth has to leave the neutral's. Over a resting grin they repaint with the flush mask too: the features
+ * mask at full LLLite strength traces the grin's lines whatever the words say (Mara 2026-10-23: sadness kept the grin
+ * on two seeds with a clean prompt; the flush mask at 0.7 drew a frown). Without a resting face the features mask
+ * stays, the measured best for keeping the face (2026-10-12, masks per set).
+ */
+export const MOUTH_LABELS = new Set(['sadness', 'anger', 'surprise']);
+
 /** LLLite strength per mask: flush 0.7 keeps the face; a features repaint draws at 1. */
 export const LLLITE_STRENGTH = Object.freeze({ features: 1, flush: 0.7 });
 
@@ -132,6 +140,53 @@ const join = (/** @type {(string | undefined | null)[]} */ parts) => parts.map(s
 export function spritePrompt(engine, look, framing, expression) {
     const triggers = (look.loras ?? []).map(l => l.trigger).filter(Boolean);
     return join([engine.quality, ...triggers, look.positive, engine.framing[framing], expression, engine.key]);
+}
+
+// A look may carry the character's resting face ("grin, confident" for a cocky captain). The master and the neutral keep
+// it; every other expression drops it, or the emotion fights it (Andres, 2026-10-23: Mara's sadness was her smirk with
+// one tear). Whole tags only, so traits that merely contain a word ("fangs", "tear-shaped earrings") stay.
+const FACE_TAGS = new Set([
+    'happy', 'sad', 'angry', 'annoyed', 'surprised', 'embarrassed', 'shy', 'nervous', 'scared', 'worried', 'confident',
+    'serious', 'determined', 'calm', 'bored', 'sleepy', 'smug', 'seductive', 'expressionless', 'naughty face', 'crying',
+    'laughing', 'tears', 'teary eyes', 'open mouth', 'closed mouth', 'parted lips', 'clenched teeth', 'wide eyes',
+    'closed eyes', 'half-closed eyes', 'one eye closed', 'wink', 'raised eyebrow', 'furrowed brow', 'tongue out',
+    ':d', ':)', ':(', ':o', ':3', ';d', ';)', '^_^', '>_<',
+]);
+// "light smile", "evil grin", "heavy blush", "slight frown": an optional qualifier, then the face word.
+const FACE_TAIL = /^(?:[a-z-]+ )?(?:smile|smiling|grin|grinning|smirk|smirking|frown|frowning|pout|pouting|blush|blushing|scowl|sneer|laugh)$/;
+
+/**
+ * Whether one tag describes the face's expression rather than the character. Weights are read through: `(grin:1.2)`.
+ * @param {string} tag @returns {boolean}
+ */
+export function isFaceTag(tag) {
+    const t = tag.trim().toLowerCase().replace(/^\((.*?)(?::[\d.]+)?\)$/, '$1').trim();
+    return FACE_TAGS.has(t) || FACE_TAIL.test(t);
+}
+
+/**
+ * Whether the look gives the character a resting face (any face tag).
+ * @param {Look} look @returns {boolean}
+ */
+export function hasRestingFace(look) {
+    return look.positive.split(',').some(tag => tag.trim() && isFaceTag(tag));
+}
+
+/**
+ * The mask a label repaints with when the run doesn't name one.
+ * @param {string} label @param {Look} look @returns {'features' | 'flush'}
+ */
+export function defaultMask(label, look) {
+    return FLUSH_LABELS.has(label) || (MOUTH_LABELS.has(label) && hasRestingFace(look)) ? 'flush' : 'features';
+}
+
+/**
+ * The look an expression other than the neutral is drawn with: the same character, minus the resting face's words.
+ * @param {Look} look @returns {Look}
+ */
+export function lookForExpression(look) {
+    const positive = look.positive.split(',').filter(tag => tag.trim() && !isFaceTag(tag)).map(tag => tag.trim()).join(', ');
+    return { ...look, positive };
 }
 
 /**

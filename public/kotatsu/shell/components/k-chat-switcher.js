@@ -568,6 +568,7 @@ export class KChatSwitcher extends LitElement {
                 </button>
             ` : nothing}
             <button type="button" class="k-cs__trigger" title=${this._chatId}
+                aria-label="Switch chat: ${chatLabelText(this._chatId, activeCharacterName())}"
                 aria-haspopup="true" aria-expanded=${this._open ? 'true' : 'false'}
                 aria-controls="${POP_ID}"
                 @click=${() => this._toggle()} @keydown=${this._onKeyDown}>

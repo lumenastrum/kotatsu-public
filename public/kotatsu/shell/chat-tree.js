@@ -284,13 +284,14 @@ function level(entries, prefix) {
     for (const [segment, group] of bySegment) {
         if (group.length >= 2) {
             const path = [...prefix, segment];
+            const threads = group.map(({ thread }) => thread);
             /** @type {FolderNode<T>} */
             const folder = {
                 key: path.join(SEP),
                 name: segment,
                 path,
-                count: group.reduce((sum, { thread }) => sum + 1 + thread.branches.length, 0),
-                lastMs: group.reduce((max, { thread }) => Math.max(max, thread.lastMs), 0),
+                count: chatCount(threads),
+                lastMs: newestMs(threads),
                 items: level(group, path),
             };
             mixed.push({ item: { kind: 'folder', folder }, lastMs: folder.lastMs });
@@ -364,6 +365,42 @@ export function folderKeysOf(tree, chatId) {
 export function threadOf(threads, chatId) {
     if (!chatId) return undefined;
     return threads.find(thread => thread.row.id === chatId || thread.branches.some(branch => branch.id === chatId));
+}
+
+/**
+ * Chats in a run of threads, folded branches included.
+ * @template {TreeRow} T
+ * @param {Thread<T>[]} threads
+ * @returns {number}
+ */
+export function chatCount(threads) {
+    return threads.reduce((sum, thread) => sum + 1 + thread.branches.length, 0);
+}
+
+/**
+ * Newest activity in a run of threads; 0 for none.
+ * @template {TreeRow} T
+ * @param {Thread<T>[]} threads
+ * @returns {number}
+ */
+export function newestMs(threads) {
+    return threads.reduce((max, thread) => Math.max(max, thread.lastMs), 0);
+}
+
+/**
+ * The Recent view's window: the first `max` threads, then the thread holding the open chat when it is
+ * further down (it keeps its place in time, so it lands last).
+ * @template {TreeRow} T
+ * @param {Thread<T>[]} threads Newest first.
+ * @param {string} activeId The open chat.
+ * @param {number} max
+ * @returns {{ visible: Thread<T>[], hidden: number }}
+ */
+export function recentWindow(threads, activeId, max) {
+    const visible = threads.slice(0, max);
+    const open = threadOf(threads, activeId);
+    if (open && !visible.includes(open)) visible.push(open);
+    return { visible, hidden: threads.length - visible.length };
 }
 
 /**

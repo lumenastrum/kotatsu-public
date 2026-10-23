@@ -317,6 +317,30 @@ Upstream has no Xiaomi source, so this is a permanent provider in the merge lane
 
 Upstream shipped Opus 5.5 (#6070) but not Sonnet 5.5. Same three places #6070 used: `model_claude_select` + caption list option, and `useNativeJsonOutput` (Sonnet 5.5 400s on forced `tool_choice`, so JSON-schema requests use `output_config.format`). Everything else reaches it through upstream's unanchored `isClaude5Model` / `^claude-(…sonnet-5…)` / `includes('claude-sonnet-5')`. **Bridge:** `isThinkingAlwaysOnModel` now covers `sonnet-5-5+` — its thinking-off branch had been sending `{type: 'disabled'}`, which Sonnet 5.5 rejects; it now gets adaptive + low effort like Opus 5.5. When upstream ships Sonnet 5.5, take theirs and drop ours (§4.2 rule 2).
 
+### 1.G Direct-API sweep: Kimi K3.1, DeepSeek, MiMo, GLM (2026-10-23)
+
+Kimi K3.1 Pro launched today. Each provider's own `/models` was read with real keys, then every new model was run
+end to end through Kotatsu, reasoning on and off (`playwright-rig/scripts/kotatsu-provider-sweep.mjs`, 16/16).
+- **Defaults** (`openai.js` `default_settings`): `deepseek-v4-flash` is retired → `deepseek-flash`; `kimi-latest` is
+  no longer served → `kimi-k3.1-pro`; `glm-4.6` → `glm-5.3`. The settings migration maps `deepseek-v4-flash` like the
+  older DeepSeek aliases. **No Kimi migration on purpose:** the acceptance presets carry `kimi-latest` and must load
+  byte-identically; the Moonshot picker heals a missing id against the live list instead, onto the default when Kimi
+  serves it (before: whatever `/models` listed first).
+- **Kimi context** (`getMoonshotMaxContext`): K2.6 and K2.7-code 256k, K3 and K3.1 Pro 1M, from Moonshot's
+  `context_length`. The lookup is `includes()` with a 32k fallback, so before this the 1M K3 line was capped at 32k.
+- **Kimi samplers** (`createGenerationParameters`): the K2.5-K3.1 line fixes its samplers itself, in BOTH modes:
+  thinking on accepts only temperature 1, top_p 0.95 and penalties 0; thinking off only temperature 0.6. Kotatsu
+  leaves those fields out for `/kimi-k(2\.[5-9]|3)/` (and for any Kimi while thinking), and each defaults to the value
+  it requires. Before this, every Kimi chat with reasoning on 400'd on the temperature slider.
+- **Kimi thinking** (backend Moonshot branch): `kimi-k2.7-code` accepts only `thinking: enabled`; every thinking Kimi
+  takes `reasoning_effort` low|medium|high|max (live-checked), mapped from the setting (`auto` sends none).
+- **GLM**: `glm-5.3-flashx` joins the picker and the context map (1M; Z.ai's docs page covers glm-5.3 only, the size
+  is OpenRouter's and the listings'). The always-thinking rule `/^glm-5\.[3-9]/` already covered it.
+- **DeepSeek and MiMo**: nothing else needed; both pickers fill from `/models`, both carry a flat 1M, both toggle
+  `thinking` cleanly (`deepseek-flash`, `deepseek-v4-pro`, `mimo-v2.6-pro-ultraspeed` live-checked).
+- **Known on Moonshot's side, not ours:** with thinking off, K3.1 Pro sometimes writes its reasoning into the reply
+  (1 in 5 direct requests on launch day). Reasoning on is the steady way to run it.
+
 ---
 
 ## 2. Provider field notes
@@ -448,6 +472,15 @@ OpenAI-compatible at `https://api.xiaomimimo.com/v1`, Bearer key. Measured again
 - **2026-10-08 `/models`:** adds `mimo-v2.6-flash` / `mimo-v2.6-pro` / `mimo-v2.6-pro-ultraspeed` alongside `mimo-v2.5` / `mimo-v2.5-pro` (+ the audio ids).
 
 A new MiMo model needs **nothing** for the picker (it comes from `/models`); check only whether it reads images (the vision rule in `isImageInliningSupported`) and its context (the 1M rule in `onModelChange`).
+
+### 2.6 Kimi (Moonshot) API dialect (live-probed 2026-10-23)
+
+`/models` carries `context_length` and `supports_reasoning`; read it before adding sizes by hand. Current Kimis
+(K2.5-K3.1) reject any sampler value but their own: with `thinking: enabled` temperature 1, top_p 0.95,
+presence/frequency 0; with `thinking: disabled` temperature 0.6 (each error names the allowed value, e.g. "invalid
+temperature: only 0.6 is allowed for this model"); omitted fields default to them. `kimi-k2.7-code` rejects
+`thinking: disabled` ("only type=enabled is allowed"). `reasoning_effort` low|medium|high|max is accepted while thinking.
+A new Kimi: its context in `getMoonshotMaxContext`, and check whether the sampler regex covers its name.
 
 ---
 

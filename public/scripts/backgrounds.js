@@ -1858,6 +1858,14 @@ export function initBackgrounds() {
         });
     });
 
+    // Kotatsu: jQuery UI tabs calls a tab local only when its link, without the hash, equals
+    // location.href without the hash. index.html's `<base href="/">` resolves "#bg_global_tab" to
+    // "/#bg_global_tab", so any query string on the page ("/?x=1") made both tabs "remote": tabs()
+    // XHR-loaded the whole app into a hidden panel here, duplicating every id in the document, and
+    // jQuery handlers bound by id (New Entry in the lorebook editor, 2026-10-22) landed on the
+    // hidden copy. Anchoring the links to this exact document keeps them local.
+    const here = location.href.replace(/#.*$/, '');
+    $('#bg_tabs > ul a[href^="#"]').each((_, anchor) => anchor.setAttribute('href', here + anchor.getAttribute('href')));
     $('#bg_tabs').tabs();
     $('#bg_tabs').on('tabsactivate', () => updateGroupFolderControlsVisibility());
     updateGroupFolderControlsVisibility();

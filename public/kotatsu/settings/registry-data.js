@@ -109,7 +109,7 @@
  * within keep their own stock bindings, their own stock lanes — including DIE lanes — and get
  * no registry entries of their own, which is what keeps the "zero DIE-lane keys" assertion
  * honest rather than merely narrow.
- * @typedef {'select'|'checkbox'|'range'|'number'|'textarea'|'color'|'buttongroup'|'button'|'block'|'kotatsu-layout'|'kotatsu-rails'|'kotatsu-tour'|'kotatsu-whats-new'|'kotatsu-phone'|'kotatsu-pictures'} ControlKind
+ * @typedef {'select'|'checkbox'|'range'|'number'|'textarea'|'color'|'buttongroup'|'button'|'block'|'kotatsu-layout'|'kotatsu-rails'|'kotatsu-tour'|'kotatsu-whats-new'|'kotatsu-phone'|'kotatsu-pictures'|'kotatsu-feedback'} ControlKind
  */
 
 /** @typedef {import('./registry.js').Entry} Entry */
@@ -163,7 +163,7 @@ export const AFFECTS = Object.freeze([
 export const CONTROLS = Object.freeze([
     'select', 'checkbox', 'range', 'number', 'textarea', 'color', 'buttongroup', 'button',
     'block', 'kotatsu-layout', 'kotatsu-rails', 'kotatsu-tour', 'kotatsu-whats-new', 'kotatsu-phone',
-    'kotatsu-pictures',
+    'kotatsu-pictures', 'kotatsu-feedback',
 ]);
 
 /** Every legal `store` value. See the `EntryStore` typedef in `registry.js` for the lane rules. */
@@ -2643,6 +2643,25 @@ export const ENTRIES = Object.freeze([
         keywords: ['logout', 'log out', 'sign out', 'signout', 'session', 'switch user', 'account'],
         // `user.js:920` → `logout()`. Hidden with the admin button when accounts are off
         // (`user.js:25`, `:30`).
+        tier: 'advanced',
+        store: 'power_user',
+        surface: 'modal',
+    },
+    {
+        id: 'k-feedback',
+        keys: [],
+        label: 'Feedback',
+        section: 'system',
+        group: 'Help',
+        control: 'kotatsu-feedback',
+        // Send feedback (feedback/k-feedback.js, docs/feedback-v0.md): drawn by the modal
+        // (`#renderFeedbackDoor`), no stock node, no key. It closes settings and dispatches
+        // `k-open-feedback`; the sheet opens a pre-filled GitHub issue in a new tab.
+        binding: { by: 'id', ref: 'k-feedback-open', runtime: true },
+        affects: ['startup'],
+        keywords: ['feedback', 'bug', 'report', 'report a bug', 'issue', 'problem', 'help', 'idea', 'suggestion', 'github', 'contact', 'support'],
+        // `advanced` like its siblings (tour, What's New): the simple seed is MEASURED (settings-v0
+        // §0) and the tier is dormant, so a door does not get to claim a place in it.
         tier: 'advanced',
         store: 'power_user',
         surface: 'modal',

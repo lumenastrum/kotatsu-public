@@ -141,40 +141,49 @@ body[data-k-layout="rails"] .k-gc__actions {
     gap: 8px;
 }
 
+/* The house button (rechrome-controls.css `--k-rc-btn-*`), as on the Claude Code card beside it. */
 body[data-k-layout="rails"] .k-gc__btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 7px;
-    min-height: 34px;
-    padding: 0 14px;
-    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
-    border-radius: var(--k-radius-md);
-    background: var(--k-surface-sunken);
-    color: var(--k-text);
-    font: 500 13px var(--k-font-ui);
+    min-height: var(--k-rc-btn-h);
+    padding: 0 var(--k-rc-btn-pad-x);
+    border: 1px solid var(--k-rc-btn-line);
+    border-radius: var(--k-rc-btn-radius);
+    background: var(--k-rc-btn-fill);
+    box-shadow: var(--k-rc-btn-shadow);
+    color: var(--k-rc-btn-ink);
+    font: var(--k-rc-btn-weight) var(--k-rc-btn-size) var(--k-font-ui);
+    white-space: nowrap;
     text-decoration: none;
     cursor: pointer;
-    transition: background-color var(--k-motion), border-color var(--k-motion), color var(--k-motion);
+    transition: background-color var(--k-motion), border-color var(--k-motion), color var(--k-motion),
+        box-shadow var(--k-motion), translate var(--k-motion);
 }
 
-body[data-k-layout="rails"] .k-gc__btn:hover,
-body[data-k-layout="rails"] .k-gc__btn:focus-visible {
-    border-color: var(--k-accent);
-    color: var(--k-text-strong);
+body[data-k-layout="rails"] .k-gc__btn:not(:disabled):hover,
+body[data-k-layout="rails"] .k-gc__btn:not(:disabled):focus-visible {
+    border-color: var(--k-rc-btn-line-hover);
+    background: var(--k-rc-btn-fill-hover);
+    box-shadow: var(--k-rc-btn-shadow-hover);
+    color: var(--k-rc-btn-ink-hover);
+    translate: 0 calc(-1 * var(--k-rc-btn-lift));
 }
 
 body[data-k-layout="rails"] .k-gc__btn--primary {
-    border-color: var(--k-rose);
-    background: var(--k-rose);
-    color: var(--k-ground-deep);
+    border-color: var(--k-rc-btn-primary-line);
+    background: var(--k-rc-btn-primary-fill);
+    box-shadow: var(--k-rc-btn-primary-shadow);
+    color: var(--k-rc-btn-primary-ink);
 }
 
-body[data-k-layout="rails"] .k-gc__btn--primary:hover,
-body[data-k-layout="rails"] .k-gc__btn--primary:focus-visible {
-    border-color: var(--k-rose-bright);
-    background: var(--k-rose-bright);
-    color: var(--k-ground-deep);
+body[data-k-layout="rails"] .k-gc__btn--primary:not(:disabled):hover,
+body[data-k-layout="rails"] .k-gc__btn--primary:not(:disabled):focus-visible {
+    border-color: var(--k-rc-btn-primary-line);
+    background: var(--k-rc-btn-primary-fill-hover);
+    box-shadow: var(--k-rc-btn-primary-shadow-hover);
+    color: var(--k-rc-btn-primary-ink);
 }
 
 body[data-k-layout="rails"] .k-gc__btn:disabled {
@@ -182,10 +191,9 @@ body[data-k-layout="rails"] .k-gc__btn:disabled {
     cursor: default;
 }
 
+/* Small sits beside a field of the same height, so only its pad tightens. */
 body[data-k-layout="rails"] .k-gc__btn--small {
-    min-height: 28px;
-    padding: 0 10px;
-    font-size: 12px;
+    padding: 0 12px;
 }
 
 body[data-k-layout="rails"] .k-gc__row {
@@ -219,7 +227,7 @@ body[data-k-layout="rails"] .k-gc__cap {
 }
 
 body[data-k-layout="rails"] .k-gc__field select {
-    min-height: 34px;
+    min-height: var(--k-rc-btn-h);
     padding: 0 10px;
     border: 1px solid color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
     border-radius: var(--k-radius-md);

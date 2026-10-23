@@ -14,6 +14,60 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
+    Object.freeze({
+        version: '0.8.0',
+        title: 'Summer',
+        cards: [
+            {
+                id: 'natsumikan',
+                title: 'Natsumikan, the summer look',
+                body: 'Kotatsu wears Natsumikan now: warm cream, indigo ink and a little mikan orange. New installs start in her; yours keeps whatever you chose, and she’s one click away in Settings → Appearance. The original lives on as Natsumikan Classic.',
+                line: 'whatsNewNatsumikan',
+                wiki: 'Themes#pick-a-theme',
+            },
+            {
+                id: 'theatre',
+                title: 'A visual novel in your pocket',
+                body: 'Set Messages to Sprites and a phone turns the chat into a stage: the backdrop, the speaker in the face that fits, and the reply in a textbox. Tap the words to turn the page, tap the name for edit, copy and the rest. History brings the whole conversation back.',
+                line: 'whatsNewTheatre',
+                wiki: 'Sprites#on-a-phone',
+            },
+            {
+                id: 'studio',
+                title: 'A page for every character',
+                body: 'The Card Studio is a character page now, in chapters: who they are, how it begins, how they look, how they talk. Simple shows what matters, Advanced shows everything, and the opening appears exactly as the chat will show it.',
+                line: 'whatsNewStudio',
+                wiki: 'Card-Studio',
+            },
+            {
+                id: 'backdrop',
+                title: 'A place behind the stage',
+                body: 'Give a chat a backdrop for the Sprite view: draw the place with Pictures, or upload your own. The Background chip over the chat has both.',
+                line: 'whatsNewBackdrop',
+                wiki: 'Sprites#a-background',
+            },
+            {
+                // Body to be confirmed against the tested APK (what connects on Android, how it updates).
+                id: 'android',
+                title: 'Kotatsu on Android',
+                body: 'Kotatsu runs on Android phones as an app: the server, your characters and your chats live on the phone itself. Connect it with an API key, or a model running on your network; Claude Code and ChatGPT plans need a computer. Download the APK from the release page and install it.',
+                line: 'whatsNewAndroid',
+                wiki: 'Installing-Kotatsu',
+            },
+        ],
+        notes: [
+            'Sprite sets come out truer to the character: a confident grin stays on the neutral face instead of following her into sadness, sad and angry faces can change the mouth, and a green-eyed character keeps her eyes when the background is cut.',
+            'The bottom of a figure on the stage fades in softly instead of eating their boots.',
+            'Send feedback (Settings → System → Help) opens a pre-filled GitHub issue. You see everything before it’s sent, and it never includes your chats, names or keys.',
+            'On a phone, the keyboard sits under the composer, the bars step aside while you read, and a tap or a pull on the story puts the keyboard away. Landscape gets its story back.',
+            'Settings on a phone opens on Close instead of the search keyboard, and its tab row shows that it scrolls.',
+            'The Connection tab lists what you’ve actually set up first.',
+            'Mikan-chan’s welcome tour wears Natsumikan too.',
+            'Long Claude chats keep their prompt cache through more kinds of edits, and cache writes are counted on OpenAI-style connections.',
+            'Kimi K3.1 Pro, Kimi K3 and K2.7 Code, DeepSeek Flash and GLM 5.3 FlashX work out of the box with their own keys. Kimi chats with thinking on stopped failing on the temperature slider, and K3 models get their full 1M context.',
+            'Fixed: a tag with a background colour and no text colour is readable, New Entry in a lorebook scrolls to the new entry, and opening Kotatsu from a link with a query string no longer loads it twice.',
+        ],
+    }),
     // Sprites is the headline of the whole 0.7 line, so each 0.7.x carries 0.7.0's cards and clips
     // (media moved along, now 0.7.7/) with its own lines on top. A separate notes-only entry would
     // never open: the plan skips releases without cards, and an install that closed the previous

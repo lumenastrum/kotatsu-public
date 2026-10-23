@@ -63,15 +63,6 @@ body[data-k-layout="rails"] k-topbar[variant="bar"] {
     --k-topbar-wordmark-weight: 700;
     --k-topbar-wordmark-tracking: -0.01em;
 
-    --k-topbar-cmd-width: 420px;
-    --k-topbar-cmd-height: 30px;
-    --k-topbar-cmd-pad: 10px;
-    --k-topbar-cmd-gap: 8px;
-    --k-topbar-cmd-font: 12.5px;
-    --k-topbar-cmd-icon: 13px;
-    --k-topbar-hint-pad-inline: 5px;
-    --k-topbar-hint-pad-block: 1px;
-
     --k-topbar-chip-height: 26px;
     --k-topbar-chip-pad: 9px;
     --k-topbar-chip-gap: 7px;
@@ -152,96 +143,15 @@ body[data-k-layout="rails"] k-topbar .k-topbar__wordmark {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   3. CENTER — the command pill (inert in v0)
+   3. CENTER — where the open chat's title docks
    ───────────────────────────────────────────────────────────────────────────
-   Not a control: `cursor: default`, no pointer affordance beyond the softest
-   hover wash, no focus ring. It is a promise, not a button.
+   Empty in the bar's own markup. Above 820px layouts/rails.js docks `<k-chat-header>`
+   here (variant `bar`, painted by shell-center.css §1), so the chat's title, switcher
+   and scene chip share the one row with the model and the gear instead of taking a
+   second 44px strip off the reader (reader-chrome, 2026-10-22). It used to hold an
+   inert command pill: a promise of a palette that does not exist yet, in the bar's
+   best spot. A palette, when it ships, comes back as a control, not a placeholder.
    ═══════════════════════════════════════════════════════════════════════════ */
-
-body[data-k-layout="rails"] k-topbar .k-cmd {
-    display: flex;
-    align-items: center;
-    gap: var(--k-topbar-cmd-gap);
-    inline-size: min(var(--k-topbar-cmd-width), 100%);
-    block-size: var(--k-topbar-cmd-height);
-    padding-inline: var(--k-topbar-cmd-pad);
-    border: var(--k-topbar-hairline) solid var(--k-inset-border);
-    border-radius: var(--k-radius-md);
-    background: var(--k-inset-fill);
-    color: var(--k-text-faint);
-    cursor: default;
-    user-select: none;
-    transition: border-color var(--k-motion), background-color var(--k-motion);
-}
-
-body[data-k-layout="rails"] k-topbar .k-cmd:hover,
-body[data-k-layout="rails"] k-topbar .k-cmd:focus-visible {
-    border-color: color-mix(in srgb, var(--k-chrome-border) 42%, transparent);
-    background: color-mix(in srgb, var(--k-surface-sunken) 72%, transparent);
-}
-
-body[data-k-layout="rails"] k-topbar .k-cmd .k-topbar__icon {
-    inline-size: var(--k-topbar-cmd-icon);
-    block-size: var(--k-topbar-cmd-icon);
-    color: var(--k-text-faint);
-}
-
-/* Muted, not faint like the rest of the pill: at 12.5px this is persistent
-   text, and faint measured 4.32:1 against the inset fill — under the 4.5:1
-   small-text AA floor (smoke 2026-08-25 P2). The icon stays faint; it is
-   decorative and reads with the pill, not as text. */
-body[data-k-layout="rails"] k-topbar .k-cmd__placeholder {
-    flex: 1 1 auto;
-    min-inline-size: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: var(--k-topbar-cmd-font);
-    line-height: 1;
-    color: var(--k-text-muted);
-}
-
-body[data-k-layout="rails"] k-topbar .k-cmd__hint {
-    flex: 0 0 auto;
-    padding-inline: var(--k-topbar-hint-pad-inline);
-    padding-block: var(--k-topbar-hint-pad-block);
-    border: var(--k-topbar-hairline) solid var(--k-inset-border);
-    border-radius: var(--k-radius-xs);
-    background: color-mix(in srgb, var(--k-ground-deep) 55%, transparent);
-    font-family: var(--k-font-mono);
-    font-size: var(--k-topbar-mono-size);
-    line-height: 1;
-    letter-spacing: 0;
-    color: var(--k-text-dim);
-    white-space: nowrap;
-}
-
-/* ── Responsive disappearance (smoke 2026-08-25 P2) ──────────────────────────
-   The pill is inert in v0, and the flanking zones hold their 264px symmetry, so
-   in portrait windows the placeholder ellipsizes into a meaningless stub (38.6px
-   of rendered text at 768 wide). A promise that cannot state itself should
-   leave, deliberately: first the sentence goes and the pill hugs the icon +
-   shortcut hint; narrower still, the whole pill yields the row to the
-   operational controls on the right. Raw px breakpoints, not tokens — media
-   queries cannot read custom properties. 1024 is where min(420px, centre) stops
-   fitting a useful fragment of the sentence between the two 264px zones; 820 is
-   where even icon + hint start crowding the model and context pills. Above
-   1024 nothing changes, which is the desktop-unchanged half of the acceptance. */
-@media (max-width: 1024px) {
-    body[data-k-layout="rails"] k-topbar .k-cmd {
-        inline-size: auto;
-    }
-
-    body[data-k-layout="rails"] k-topbar .k-cmd__placeholder {
-        display: none;
-    }
-}
-
-@media (max-width: 820px) {
-    body[data-k-layout="rails"] k-topbar .k-cmd {
-        display: none;
-    }
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    4. RIGHT — model pill, context pill, settings gear
@@ -854,7 +764,6 @@ body[data-k-layout="rails"] k-model-menu .k-mm__spinner {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
-    body[data-k-layout="rails"] k-topbar .k-cmd,
     body[data-k-layout="rails"] k-topbar .k-pill__dot,
     body[data-k-layout="rails"] k-topbar .k-topbar__gear,
     body[data-k-layout="rails"] k-model-menu .k-mm__trigger,

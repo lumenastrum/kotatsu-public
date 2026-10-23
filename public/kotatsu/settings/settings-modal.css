@@ -134,10 +134,11 @@ body[data-k-layout="rails"] {
        back the room, and the select rule below still pins its own line-height and
        padding-block explicitly rather than trusting that 2px alone holds at every
        font scale. */
-    --k-set-input-h: 27px;
-    --k-set-search-h: 30px;
+    /* Fields, the search and the buttons share one height, so a row of them lines up. */
+    --k-set-input-h: var(--k-rc-btn-h);
+    --k-set-search-h: var(--k-rc-btn-h);
     --k-set-close-size: 30px;
-    --k-set-btn-h: 32px;
+    --k-set-btn-h: var(--k-rc-btn-h);
     --k-set-chip-h: 22px;
 }
 
@@ -870,10 +871,17 @@ body[data-k-layout="rails"] .k-set-control .menu_button {
     justify-content: center;
     gap: 6px;
     height: var(--k-set-btn-h);
-    padding: 0 10px;
-    border-radius: 7px;
+    padding: 0 var(--k-rc-btn-pad-x);
+    border-radius: var(--k-rc-btn-radius);
     font-family: var(--k-font-ui);
-    font-size: 12px;
+    font-size: var(--k-rc-btn-size);
+}
+
+/* An icon-only borrowed button is the house circle, not a pill with a glyph adrift in it. */
+body[data-k-layout="rails"] .k-set-control .menu_button[class*="fa-"]:not(.menu_button_icon) {
+    width: var(--k-set-btn-h);
+    min-width: var(--k-set-btn-h);
+    padding: 0;
 }
 
 /* Theme actions keep their stock handlers. The modal adds reversible text labels, and
@@ -884,11 +892,11 @@ body[data-k-layout="rails"] .k-set-control :is(#ui_preset_import_button,
     #ui-preset-save-button,
     #ui-preset-delete-button) {
     width: auto;
-    min-width: 32px;
+    min-width: var(--k-set-btn-h);
     min-height: var(--k-set-btn-h);
     height: auto;
-    padding: 6px 9px;
-    border-radius: 6px;
+    padding: 0 var(--k-rc-btn-pad-x);
+    border-radius: var(--k-rc-btn-radius);
 }
 
 body[data-k-layout="rails"] .k-set-control #ui-preset-update-button {
@@ -1104,9 +1112,33 @@ body[data-k-layout="rails"] .k-set-rails-switch {
     display: flex;
     align-items: center;
     gap: 2px;
-    padding: 2px;
-    border: 1px solid var(--k-set-hairline);
-    border-radius: var(--k-radius-md);
+    padding: var(--k-rc-seg-pad);
+    border: 1px solid var(--k-rc-seg-line);
+    border-radius: var(--k-rc-btn-radius);
+    background: var(--k-rc-seg-fill);
+}
+
+/* Inside the modal the strip is the house segmented switch (rechrome-controls.css). The
+   options keep shell-frame.css's dressing everywhere else they mount. */
+body[data-k-layout="rails"] :is(.k-set-layout-switch, .k-set-rails-switch) .k-layout-option {
+    min-height: var(--k-rc-seg-option-h);
+    padding: 0 12px;
+    border-radius: var(--k-rc-btn-radius);
+    color: var(--k-rc-seg-ink);
+    font-size: var(--k-rc-btn-size);
+    font-weight: var(--k-rc-btn-weight);
+}
+
+body[data-k-layout="rails"] :is(.k-set-layout-switch, .k-set-rails-switch) .k-layout-option:hover,
+body[data-k-layout="rails"] :is(.k-set-layout-switch, .k-set-rails-switch) .k-layout-option:focus-visible {
+    background-color: transparent;
+    color: var(--k-rc-seg-ink-hover);
+}
+
+body[data-k-layout="rails"] :is(.k-set-layout-switch, .k-set-rails-switch) .k-layout-option[aria-pressed="true"] {
+    background-color: var(--k-rc-seg-on-fill);
+    box-shadow: var(--k-rc-seg-on-shadow);
+    color: var(--k-rc-seg-on-ink);
 }
 
 /* Pixel QA defect 3: this hint ("Switching reloads the page.", "A lit side is open.") lives in

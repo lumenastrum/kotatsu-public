@@ -244,7 +244,7 @@ async function createTheme(options) {
     if (!source && options.parentId && await findPack(sourceId, options.handle, { examples: true })) {
         throw new Error(`"${sourceId}" is an example, not an installed theme, so Kotatsu cannot use it as a parent. Copy it instead: npm run theme:new -- ${options.id} --from ${sourceId}`);
     }
-    if (!source) throw new Error(`There is no theme called "${sourceId}" to start from. Built-in ones: blue-hour, sparkle, natsumikan, midnight-kissaten; the example kissaten-showcase.`);
+    if (!source) throw new Error(`There is no theme called "${sourceId}" to start from. Built-in ones: blue-hour, sparkle, natsumikan, natsumikan-v2, natsumikan-v3, midnight-kissaten; the example kissaten-showcase.`);
 
     const name = options.name || displayName(options.id);
     const schema = path.relative(directory, path.join(REPO_ROOT, 'public', 'kotatsu', 'theme', 'theme.schema.json')).split(path.sep).join('/');

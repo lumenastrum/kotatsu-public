@@ -26,6 +26,8 @@ import { chat, getMediaIndex } from '../../script.js';
 import { eventSource, event_types } from '../../scripts/events.js';
 import { rowFor } from '../../scripts/message-rows.js';
 import { isSettingsModalOpen } from '../settings/k-settings-modal.js';
+import { setBackdrop } from '../sprites/backdrop.js';
+import { spriteLookActive } from '../sprites/k-sprite-stage.js';
 import { listRecipes } from './jobs-client.js';
 import { railsActive, setPendingReference, toast } from './doors.js';
 import { deletePicture, editPicturePrompt, rerollPicture } from './picture-actions.js';
@@ -58,6 +60,11 @@ const icons = {
         <svg class="k-pic-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
             <rect x="2.5" y="3" width="11" height="10" rx="1.5" /><path d="M2.5 10.5l3-3 3 3 2-2 3 3" /><circle cx="10.5" cy="6" r="1" />
+        </svg>`,
+    backdrop: html`
+        <svg class="k-pic-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <rect x="2.5" y="2.5" width="11" height="8.5" rx="1.5" /><path d="M2.5 9l3-2.5 2.5 2 2-1.5 3.5 2.5" /><path d="M4.5 13.5h7" />
         </svg>`,
     portrait: html`
         <svg class="k-pic-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
@@ -230,6 +237,19 @@ export class KPictureMenu extends LitElement {
         toast('info', 'The next picture will use this one as its reference.');
     }
 
+    /** This picture becomes the chat's background: the stage set behind the Sprite view. */
+    async #useAsBackdrop() {
+        const media = this.message?.extra?.media?.[getMediaIndex(this.message)];
+        if (typeof media?.url !== 'string') return;
+        if (!(await setBackdrop(media.url))) {
+            toast('warning', 'Open a chat first: a background belongs to one chat.');
+            return;
+        }
+        toast('success', spriteLookActive()
+            ? 'This chat has a new background.'
+            : 'This chat has a new background. It shows behind the characters in the Sprites look.');
+    }
+
     render() {
         return html`
             <button type="button" class="k-pic-tile-btn" aria-haspopup="menu" aria-expanded=${this._open ? 'true' : 'false'}
@@ -253,6 +273,8 @@ export class KPictureMenu extends LitElement {
                             @click=${() => this.#run(() => editPicturePrompt(message))}>${icons.edit}<span>Edit prompt</span></button>
                     <button type="button" class="k-pic-menu-item" role="menuitem" data-action="reference"
                             @click=${() => this.#run(() => this.#useAsReference())}>${icons.reference}<span>Use as reference</span></button>
+                    <button type="button" class="k-pic-menu-item" role="menuitem" data-action="backdrop"
+                            @click=${() => this.#run(() => this.#useAsBackdrop())}>${icons.backdrop}<span>Use as background</span></button>
                     <button type="button" class="k-pic-menu-item" role="menuitem" data-action="portrait" disabled
                             title="Coming in a later update">${icons.portrait}<span>Set as portrait</span><span class="k-pic-menu-later">Later</span></button>
                     <button type="button" class="k-pic-menu-item k-pic-menu-item--danger" role="menuitem" data-action="delete"

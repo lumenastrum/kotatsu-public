@@ -41,6 +41,11 @@ const INSTALLER = 'Install Kotatsu.bat';
  * No space in the name: GitHub would rewrite it to a dot.
  */
 const INSTALLER_ASSET = 'Install-Kotatsu.bat';
+/**
+ * The Android app, uploaded to the release after the cut (built in WSL with the release key, android/tools/
+ * build-local.sh). One stable name so the README's `releases/latest/download/` link always works.
+ */
+const ANDROID_ASSET = 'Kotatsu-Android.apk';
 const COMMIT_EMAIL = '43384618+lumenastrum@users.noreply.github.com';
 const COMMIT_NAME = 'lumenastrum';
 /**
@@ -344,6 +349,7 @@ function releaseBody(tag, shortSha, branch) {
         `Built from the private source repo at \`${shortSha}\` (${branch}).`,
         '',
         `**Install (Windows):** download \`${INSTALLER_ASSET}\` below and double-click it.`,
+        `**Install (Android 9+):** on the phone, download \`${ANDROID_ASSET}\` below and open it; allow installs from your browser when Android asks.`,
         '**Update an existing install:** click the pill in the header, or run `Update.bat`.',
     ].join('\n');
 }

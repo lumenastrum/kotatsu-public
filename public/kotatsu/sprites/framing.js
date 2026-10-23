@@ -9,7 +9,7 @@
  *            characters the same size (prototype v5: Velina's heavier build loomed at 1, sat right at 0.82).
  * - `offset` vertical shift on stage, as a fraction of the figure's height (+ = down).
  * - `faceY`  where the face sits in the sprite, as a fraction of its height from the top: the face
- *            chips (rows, bench, phone spotlight) crop there. The fixed 3 % showed only hair on sprites
+ *            chips (rows, bench) crop there. The fixed 3 % showed only hair on sprites
  *            whose head sits at the canvas top or under big hair (step 3, Aemeath and Cissia).
  * - `faceZoom` how far the face chips zoom, × the chip's width (3 = the sprite drawn 3× the chip).
  *

@@ -1,6 +1,6 @@
 /**
- * `<k-scene-banner>` — the scene, pinned at the top of a scene's chat (`docs/group-chat-v0.md`
- * G7, board A).
+ * `<k-scene-banner>` — the scene, opening a scene's transcript (`docs/group-chat-v0.md` G7,
+ * board A).
  *
  * The text is the open chat's `chat_metadata.scenario` — the per-chat override every member
  * reads instead of their own card's scenario (core's `setCharacterSettingsOverrides`,
@@ -8,9 +8,15 @@
  * Save and Cancel (core's popup committed on any close until S9). The popup still owns the other
  * two overrides (example dialogue, main prompt); "More overrides…" opens it.
  *
- * Mounted once by the rails layout right after `<k-chat-header>`; draws nothing outside a scene.
- * Light DOM, `variant="card"`; rules in css/scenes.css §8. The fold is a `power_user` key
- * (`kotatsu_scene_banner`: 'open' | 'closed').
+ * Mounted once by the rails layout as the first child of `#chat`, where it scrolls away with the
+ * story (reader-chrome, 2026-10-22: pinned above the transcript it cost 71px of a 900px desktop
+ * reader and 117px of a phone). Core empties `#chat` wholesale on every chat switch
+ * (`chatElement.children().remove()`, script.js clearChat), so a MutationObserver puts it back;
+ * css/scenes.css §8 keeps it visually first with `order: -1` when core prepends older messages.
+ * The header's Scene chip (`k-chat-header.js`) peeks at the text from anywhere in the chat and
+ * asks for an edit with {@link SCENE_EDIT_EVENT}; a save answers with {@link SCENE_CHANGED_EVENT}.
+ * Draws nothing outside a scene. Light DOM, `variant="card"`; rules in css/scenes.css §8. The fold
+ * is a `power_user` key (`kotatsu_scene_banner`: 'open' | 'closed').
  */
 
 import { LitElement, html, nothing } from '../shell/lit.js';
@@ -20,6 +26,12 @@ import { power_user } from '../../scripts/power-user.js';
 import { openScene } from './stage-actions.js';
 
 const EVENTS = ['APP_READY', 'CHAT_CHANGED', 'GROUP_UPDATED'];
+
+/** Document event: open the banner's editor (the header's Scene chip sends it). */
+export const SCENE_EDIT_EVENT = 'k-scene-edit';
+
+/** Document event: the scene's text was saved (the header's Scene chip re-reads it). */
+export const SCENE_CHANGED_EVENT = 'k-scene-changed';
 
 const icons = {
     fold: html`<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m4 10 4-4 4 4"/></svg>`,
@@ -43,6 +55,12 @@ export class KSceneBanner extends LitElement {
     #bound = [];
 
     #onCore = () => this.refresh();
+
+    #onEditRequest = () => {
+        if (!this._inScene) return;
+        this.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        this.#startEdit();
+    };
 
     constructor() {
         super();
@@ -76,12 +94,14 @@ export class KSceneBanner extends LitElement {
                 this.#bound.push(name);
             }
         }
+        document.addEventListener(SCENE_EDIT_EVENT, this.#onEditRequest);
         this.refresh();
     }
 
     disconnectedCallback() {
         for (const name of this.#bound) eventSource.removeListener(name, this.#onCore);
         this.#bound = [];
+        document.removeEventListener(SCENE_EDIT_EVENT, this.#onEditRequest);
         super.disconnectedCallback();
     }
 
@@ -127,6 +147,7 @@ export class KSceneBanner extends LitElement {
             await saveMetadata();
             this._text = chat_metadata.scenario;
             this._editing = false;
+            document.dispatchEvent(new CustomEvent(SCENE_CHANGED_EVENT));
         } catch (error) {
             console.error('[k-scene-banner] save failed', error);
             toastr.error('The scene could not be saved. See the console.', 'Kotatsu');
@@ -208,20 +229,30 @@ if (typeof customElements !== 'undefined' && !customElements.get('k-scene-banner
 /** @type {KSceneBanner|null} */
 let mounted = null;
 
-/** Mounts the banner right after the chat header (rails mount). Idempotent. */
+/** @type {MutationObserver|null} */
+let reseat = null;
+
+/** Mounts the banner at the head of `#chat` and keeps it there (rails mount). Idempotent. */
 export function installSceneBanner() {
     if (mounted) return;
-    const header = document.querySelector('#k-center > k-chat-header');
-    const center = document.getElementById('k-center');
-    if (!center) return;
-    mounted = /** @type {KSceneBanner} */ (document.createElement('k-scene-banner'));
-    mounted.setAttribute('variant', 'card');
-    if (header) header.after(mounted);
-    else center.prepend(mounted);
+    const chatElement = document.getElementById('chat');
+    if (!chatElement) return;
+    const banner = /** @type {KSceneBanner} */ (document.createElement('k-scene-banner'));
+    banner.setAttribute('variant', 'card');
+    chatElement.prepend(banner);
+    mounted = banner;
+    // Core's clearChat removes every child of #chat, ours included. Put it back at the head;
+    // re-attaching re-runs connectedCallback, which re-binds and re-reads the new chat.
+    reseat = new MutationObserver(() => {
+        if (banner.parentElement !== chatElement) chatElement.prepend(banner);
+    });
+    reseat.observe(chatElement, { childList: true });
 }
 
 /** @returns {void} */
 export function uninstallSceneBanner() {
+    reseat?.disconnect();
+    reseat = null;
     mounted?.remove();
     mounted = null;
 }

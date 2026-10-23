@@ -110,6 +110,8 @@ export function describeDoctor(doctor) {
     if (doctor.standingDown) {
         return { level: 'error', title: 'Claude Code bridge isn’t running', message: String(doctor.standingDown) };
     }
+    // On the Android app Claude Code can never be installed, so "install Claude Code" is the wrong advice there.
+    if (doctor.platform === 'android' && doctor.claudeCli?.available === false) return null;
     if (doctor.claudeCli && doctor.claudeCli.available === false) {
         // Kotatsu never needs Claude Code (an API key, a ChatGPT plan or a local model work just as well), so this
         // one says so and can be turned off for good: a fresh install starts on the bridge, and a nag on every boot
@@ -390,15 +392,28 @@ export async function connectToBridge({ listener, secretId }) {
     if (!saved || !await applyProfile(saved.id)) {
         const { executeSlashCommandsWithOptions } = await import('../../scripts/slash-commands.js');
         await executeSlashCommandsWithOptions(`/api custom | /api-url ${listener} | /secret-id ${secretId}`, { handleParserErrors: true, handleExecutionErrors: true });
-        // The bridges take the prompt as built, like their saved connections say; a local server
-        // picked before may have left semi-strict behind (k-connection-more.js).
-        const post = document.getElementById('custom_prompt_post_processing');
-        if (post instanceof HTMLSelectElement && post.value !== '') {
-            post.value = '';
-            post.dispatchEvent(new Event('change', { bubbles: true }));
-        }
+        // The bridges take the prompt as built, like their saved connections say.
+        clearPostProcessing();
     }
     await settleConnection();
+}
+
+/**
+ * Puts core's prompt post-processing back to none, through its own control so core saves it.
+ *
+ * `custom_prompt_post_processing` is one global setting: the More panel sets `semi_tools` when a
+ * local server is picked (its chat template wants late system messages folded), and nothing in
+ * core clears it again, so every hosted provider picked afterwards got semi-strict merging too
+ * (review pass, 2026-10-19). Every hosted pick calls this: the bridges, the provider cards, the
+ * More panel's own hosted ways.
+ * @returns {boolean} Whether the control held a value that was cleared.
+ */
+export function clearPostProcessing() {
+    const post = document.getElementById('custom_prompt_post_processing');
+    if (!(post instanceof HTMLSelectElement) || post.value === '') return false;
+    post.value = '';
+    post.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
 }
 
 /**

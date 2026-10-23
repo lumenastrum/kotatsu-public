@@ -822,7 +822,7 @@ body[data-k-layout="rails"] .k-pic-pend-actions .k-pic-btn {
 /* Caption line: a picture row whose text is only "[… sends a picture that contains: …]" keeps
    that text for the chat model and hides it from the reader unless Settings → Pictures shows it.
    A row being edited shows its text. */
-body[data-k-layout="rails"][data-k-pic-captions="hidden"] #chat .mes[data-k-pic-caption] .mes_text:not(:has(#curEditTextarea)) {
+body[data-k-layout="rails"][data-k-pic-captions="hidden"] :is(#chat, .k-chat-stage) .mes[data-k-pic-caption] .mes_text:not(:has(#curEditTextarea)) {
     display: none;
 }
 
@@ -834,7 +834,7 @@ body[data-k-layout="rails"] #chat k-picture-menu {
     height: 0;
 }
 
-body[data-k-layout="rails"] #chat .mes_media_wrapper:empty + k-picture-menu {
+body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes_media_wrapper:empty + k-picture-menu {
     display: none;
 }
 
@@ -925,12 +925,12 @@ body[data-k-layout="rails"] .k-pic-menu-later {
 /* 7. CAPTION UNDER A PICTURE — stock writes the caption line into .mes_text and hides it
    (`inline_image: false`); on a row Pictures drew, the line shows under the tile instead. The
    caption line setting decides whether the text exists at all. ───────────────── */
-body[data-k-layout="rails"] #chat .mes_block:has(> k-picture-menu) {
+body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes_block:has(> k-picture-menu) {
     display: flex;
     flex-direction: column;
 }
 
-body[data-k-layout="rails"] #chat .mes_block:has(> k-picture-menu) > .mes_text.inline_media:not(:empty) {
+body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes_block:has(> k-picture-menu) > .mes_text.inline_media:not(:empty) {
     display: block;
     order: 1;
     margin-top: 6px;

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Natsumikan V3 cream behind the boot screen, so the first frame matches the app. -->
+    <style name="Theme.Kotatsu" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/cream</item>
+        <item name="android:statusBarColor">@color/cream</item>
+        <item name="android:navigationBarColor">@color/cream</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <color name="cream">#FBECD2</color>
+    <color name="ink">#2B2560</color>
+    <color name="mikan">#F0902F</color>
+</resources>

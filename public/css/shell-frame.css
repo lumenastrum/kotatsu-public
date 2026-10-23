@@ -591,6 +591,35 @@ html:has(body[data-k-layout="rails"]) {
     height: 100dvh;
 }
 
+/* ── The keyboard (kotatsu/shell/keyboard.js, phone pass 2026-10-22) ─────────────────────────
+   iOS Safari's keyboard covers the page instead of resizing it (it ignores index.html's
+   `interactive-widget=resizes-content`), so `100dvh` keeps counting the screen under the keys.
+   While it is open, keyboard.js writes what is left as `--k-vvh`: <html> and the shell take
+   that height, the composer sits on the keyboard, and the transcript scrolls above it. */
+html:has(body[data-k-layout="rails"][data-k-keyboard="open"]) {
+    height: var(--k-vvh);
+}
+
+/* Measured on Andres's iPhone (keyboard telemetry + screenshot, 2026-10-22): with the keyboard up,
+   iOS Safari keeps a band between the visible viewport and the keyboard for its address pill
+   (~98pt: the composer ends at 446, the keyboard starts at 544). The page cannot draw into it;
+   what shows there is the canvas, i.e. <html>'s background, which was a bare light grey slab
+   under the theme. Paint it the theme's ground so the band reads as the app.
+
+   Core's mobile `fixFunkyPositioning` (scripts/browser-fixes.js) sets <html> `position: fixed`
+   inline for one frame on every window resize. On iOS the keyboard shrinks `innerHeight`, so
+   every keyboard open and close re-laid the whole page out for a frame: part of the shake.
+   Rails owns the frame's geometry; the hack has nothing to fix here, and `!important` outranks
+   its inline write. */
+html:has(body[data-k-layout="rails"]) {
+    position: static !important;
+    background-color: var(--k-ground);
+}
+
+body[data-k-layout="rails"][data-k-keyboard="open"] #k-shell {
+    height: var(--k-vvh);
+}
+
 /* Phone drawers (kotatsu-phone.css, <=600px): the open rail sheet and its scrim
    are `position: fixed; top: 0` INSIDE #k-shell (z 30) and used to paint over the
    top bar, because the bar lived in that same context. With the bar at root 3005

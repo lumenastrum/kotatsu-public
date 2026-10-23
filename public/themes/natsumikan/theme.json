@@ -1,7 +1,7 @@
 {
     "$schema": "../../kotatsu/theme/theme.schema.json",
     "id": "natsumikan",
-    "name": "Natsumikan",
+    "name": "Natsumikan Classic",
     "version": 1,
     "extends": "blue-hour",
     "tokens": {

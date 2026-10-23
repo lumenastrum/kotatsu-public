@@ -143,5 +143,8 @@ export async function buildDoctorReport(health) {
             : {}),
         claudeCli: cli,
         claudeAuth: auth,
+        // The Android app sets this (android/.../ServerService.java): Claude Code can't run on a phone, so the client
+        // doesn't tell anyone there to install it.
+        platform: process.env.KOTATSU_PLATFORM || null,
     };
 }

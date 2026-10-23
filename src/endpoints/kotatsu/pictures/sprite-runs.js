@@ -30,8 +30,8 @@ import { modelLists, nodeOptions } from './comfy.js';
 import { characterFolder } from './store.js';
 import { canonicalJson } from './recipes.js';
 import {
-    ENGINES, FLUSH_LABELS, LLLITE_STRENGTH,
-    deriveGraph, detectGraph, hasFaceDetector, masterGraph, pasteGraph, repaintGraph, resolveModels, spriteNeeds,
+    ENGINES, LLLITE_STRENGTH, defaultMask,
+    deriveGraph, detectGraph, hasFaceDetector, lookForExpression, masterGraph, pasteGraph, repaintGraph, resolveModels, spriteNeeds,
 } from './sprite-graphs.js';
 import { decodeImage, encodePng, writePng } from '../sprites/pixel-io.js';
 import { LIME, dilate, imageToMask, maskToImage } from '../../../../public/kotatsu/sprites/pixels/image.js';
@@ -289,7 +289,9 @@ export function createSpriteRuns({ jobs = createSpriteJobManager(), random = Mat
             uploadMask(run, `${type}-blend`, region.blend, region.crop.side, region.crop.side, true),
         ]);
         const strength = run.engineDef.repaint === 'lllite' ? LLLITE_STRENGTH[type] : undefined;
-        const at = await runGraph(run, `bust/${label}`, repaintGraph({ engine: run.engineDef, models: run.models, look: run.look, image, inner, blend, crop: region.crop, size: region.size, seed, expression: tags, strength }), { stage: run.stage, label });
+        // The neutral keeps the look's resting face; every other label is drawn without it (sprite-graphs.js).
+        const look = label === 'neutral' ? run.look : lookForExpression(run.look);
+        const at = await runGraph(run, `bust/${label}`, repaintGraph({ engine: run.engineDef, models: run.models, look, image, inner, blend, crop: region.crop, size: region.size, seed, expression: tags, strength }), { stage: run.stage, label });
         if (exists(run, 'masks/marks.png')) {
             const marks = hardMask(imageToMask(await decodeImage(file(run, 'masks/marks.png'))), 127);
             const out = await decodeImage(at);
@@ -314,8 +316,19 @@ export function createSpriteRuns({ jobs = createSpriteJobManager(), random = Mat
             uploadMask(run, `paste-${type}`, soft, side, side, true),
         ]);
         await runGraph(run, `full/${label}`, pasteGraph({ master, bust, mask, crop: run.crop }), { stage: run.stage, label });
+        // The face's features (eyes, brows, mouth, grown a little for the iris rims) are protected in the cut: a
+        // key-coloured highlight there is paint unless it touches the background (cut.js keyCut step 6).
+        const features = type === 'features' ? hard : hardMask(imageToMask(await decodeImage(file(run, 'masks/features.png'))));
+        const protectBust = dilate(features, BUST_SIZE, BUST_SIZE, 6);
+        const protectSide = cropScaleMask(protectBust, BUST_SIZE, { x: 0, y: 0, side: BUST_SIZE }, side);
         for (const framing of ['bust', 'full']) {
-            const cut = cutKey(await decodeImage(file(run, `${framing}/${label}.png`)));
+            const raw = await decodeImage(file(run, `${framing}/${label}.png`));
+            let protect = protectBust;
+            if (framing === 'full') {
+                protect = new Uint8Array(raw.width * raw.height);
+                for (let y = 0; y < side; y++) protect.set(protectSide.subarray(y * side, (y + 1) * side), (run.crop.y + y) * raw.width + run.crop.x);
+            }
+            const cut = cutKey(raw, protect.length === raw.width * raw.height ? { protect } : {});
             await writePng(file(run, `cut/${framing}/${label}.png`), cut.image);
         }
     }
@@ -355,10 +368,10 @@ export function createSpriteRuns({ jobs = createSpriteJobManager(), random = Mat
 
     /**
      * Reads the labels a run is asked for.
-     * @param {any} engine @param {unknown} value @param {number} seed
+     * @param {any} engine @param {unknown} value @param {number} seed @param {import('./sprite-graphs.js').Look} look
      * @returns {LabelState[]}
      */
-    function readLabels(engine, value, seed) {
+    function readLabels(engine, value, seed, look) {
         const list = value === undefined ? DEFAULT_LABELS.map(label => ({ label })) : value;
         if (!Array.isArray(list) || !list.length || list.length > 24) throw new SpriteRunError('labels must be a list of 1–24 entries');
         const seen = new Set();
@@ -370,7 +383,7 @@ export function createSpriteRuns({ jobs = createSpriteJobManager(), random = Mat
             const rung = item?.rung === 'mild' ? 'mild' : 'strong';
             const tags = typeof item?.tags === 'string' && item.tags.trim() ? item.tags.trim() : engine.labels[label]?.[rung];
             if (!tags) throw new SpriteRunError(`Label "${label}" needs tags (no built-in words for it)`);
-            const mask = item?.mask === 'flush' || item?.mask === 'features' ? item.mask : (FLUSH_LABELS.has(label) ? 'flush' : 'features');
+            const mask = item?.mask === 'flush' || item?.mask === 'features' ? item.mask : defaultMask(label, look);
             return { label, rung, tags, mask, seed: Number.isSafeInteger(item?.seed) ? item.seed : seed, state: 'waiting' };
         });
     }
@@ -400,7 +413,7 @@ export function createSpriteRuns({ jobs = createSpriteJobManager(), random = Mat
             if (!seeds.length) throw new SpriteRunError('seeds must be whole numbers');
             const models = resolveModels(engineDef, body?.models ?? {});
             const neutral = typeof body?.neutral === 'string' && body.neutral.trim() ? body.neutral.trim() : engineDef.neutral;
-            const labels = readLabels(engineDef, body?.labels, seeds[0]);
+            const labels = readLabels(engineDef, body?.labels, seeds[0], cleanLook);
 
             let facts;
             try {
@@ -510,7 +523,7 @@ export function createSpriteRuns({ jobs = createSpriteJobManager(), random = Mat
                 }
                 await writePng(file(run, 'masks/marks.png'), maskToImage(all, BUST_SIZE, BUST_SIZE));
             } else if (exists(run, 'masks/marks.png')) fs.rmSync(file(run, 'masks/marks.png'));
-            if (body.labels !== undefined) run.labels = readLabels(run.engineDef, body.labels, run.seed);
+            if (body.labels !== undefined) run.labels = readLabels(run.engineDef, body.labels, run.seed, run.look);
             launch(run, () => makeExpressions(run));
         },
 

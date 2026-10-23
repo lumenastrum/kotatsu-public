@@ -37,6 +37,7 @@ export const INTERNAL_PROPERTIES = {
     '--k-ind-w': 'measured by a script at runtime',
     '--k-ind-h': 'measured by a script at runtime',
     '--k-jl-offset': 'measured by a script at runtime',
+    '--k-vvh': 'measured by a script at runtime (the open phone keyboard, kotatsu/shell/keyboard.js)',
     '--k-mes-avatar': 'written per message by the renderer',
     '--k-mes-avatar-thumb': 'written per message by the renderer',
     '--k-mes-avatar-original': 'written per message by the renderer',

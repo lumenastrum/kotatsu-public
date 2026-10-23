@@ -367,7 +367,7 @@ body[data-k-layout="rails"] .k-pp-close--art {
 }
 
 /* 7. SOURCE RING — the portrait the peek came from. ───────────────────────── */
-body[data-k-layout="rails"] #chat .mes .avatar.k-pp-source img {
+body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes .avatar.k-pp-source img {
     box-shadow: 0 0 0 2px var(--k-ground), 0 0 0 4px var(--k-pp-ring);
 }
 

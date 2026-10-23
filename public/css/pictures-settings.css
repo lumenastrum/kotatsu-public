@@ -16,9 +16,6 @@ body[data-k-layout="rails"] .k-studio-look {
     --k-pics-card-bg: var(--k-surface);
     --k-pics-card-border: color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
     --k-pics-radius: var(--k-radius-lg);
-    /* The lane switch's chosen option. */
-    --k-pics-seg-active-bg: color-mix(in srgb, var(--k-rose) 22%, var(--k-surface));
-    --k-pics-seg-active-text: var(--k-text-strong);
     /* The Check result's two tones and the "Needs" line. */
     --k-pics-ok: var(--k-success);
     --k-pics-error: var(--k-danger);
@@ -94,32 +91,39 @@ body[data-k-layout="rails"] .k-pics__note {
 
 /* ── Lane switch ──────────────────────────────────────────────────────────────── */
 
+/* The house segmented switch (rechrome-controls.css `--k-rc-seg-*`). */
 body[data-k-layout="rails"] .k-pics__seg {
     display: inline-flex;
     align-self: flex-start;
     flex-wrap: wrap;
     gap: 2px;
-    padding: 2px;
-    border: 1px solid var(--k-pics-card-border);
-    border-radius: var(--k-radius-pill);
-    background: var(--k-surface-sunken);
+    padding: var(--k-rc-seg-pad);
+    border: 1px solid var(--k-rc-seg-line);
+    border-radius: var(--k-rc-btn-radius);
+    background: var(--k-rc-seg-fill);
 }
 
 body[data-k-layout="rails"] .k-pics__seg-option {
-    min-height: 28px;
+    min-height: var(--k-rc-seg-option-h);
     padding: 0 14px;
     border: 0;
-    border-radius: var(--k-radius-pill);
+    border-radius: var(--k-rc-btn-radius);
     background: transparent;
-    color: var(--k-text-dim);
-    font: 500 12.5px var(--k-font-ui);
+    color: var(--k-rc-seg-ink);
+    font: var(--k-rc-btn-weight) var(--k-rc-btn-size) var(--k-font-ui);
     cursor: pointer;
-    transition: background-color var(--k-motion), color var(--k-motion);
+    transition: background-color var(--k-motion), color var(--k-motion), box-shadow var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-pics__seg-option:hover,
+body[data-k-layout="rails"] .k-pics__seg-option:focus-visible {
+    color: var(--k-rc-seg-ink-hover);
 }
 
 body[data-k-layout="rails"] .k-pics__seg-option[aria-checked="true"] {
-    background: var(--k-pics-seg-active-bg);
-    color: var(--k-pics-seg-active-text);
+    background: var(--k-rc-seg-on-fill);
+    box-shadow: var(--k-rc-seg-on-shadow);
+    color: var(--k-rc-seg-on-ink);
 }
 
 body[data-k-layout="rails"] .k-pics__seg-option:focus-visible,
@@ -165,16 +169,30 @@ body[data-k-layout="rails"] .k-set-control input.k-pics__input {
     font-size: var(--k-set-ui-size);
 }
 
+/* The house button (rechrome-controls.css `--k-rc-btn-*`). */
 body[data-k-layout="rails"] .k-pics__button {
     flex: 0 0 auto;
-    min-height: 28px;
-    padding: 0 14px;
-    border: 1px solid var(--k-pics-card-border);
-    border-radius: var(--k-radius-md);
-    background: var(--k-surface-2);
-    color: var(--k-text-strong);
-    font: 500 12.5px var(--k-font-ui);
+    min-height: var(--k-rc-btn-h);
+    padding: 0 var(--k-rc-btn-pad-x);
+    border: 1px solid var(--k-rc-btn-line);
+    border-radius: var(--k-rc-btn-radius);
+    background: var(--k-rc-btn-fill);
+    box-shadow: var(--k-rc-btn-shadow);
+    color: var(--k-rc-btn-ink);
+    font: var(--k-rc-btn-weight) var(--k-rc-btn-size) var(--k-font-ui);
+    white-space: nowrap;
     cursor: pointer;
+    transition: background-color var(--k-motion), border-color var(--k-motion), box-shadow var(--k-motion),
+        translate var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-pics__button:not(:disabled):hover,
+body[data-k-layout="rails"] .k-pics__button:not(:disabled):focus-visible {
+    border-color: var(--k-rc-btn-line-hover);
+    background: var(--k-rc-btn-fill-hover);
+    box-shadow: var(--k-rc-btn-shadow-hover);
+    color: var(--k-rc-btn-ink-hover);
+    translate: 0 calc(-1 * var(--k-rc-btn-lift));
 }
 
 body[data-k-layout="rails"] .k-pics__button:disabled {

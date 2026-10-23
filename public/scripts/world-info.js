@@ -2459,10 +2459,11 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
                 return;
             }
 
-            const elementOffset = element.offset();
-            const parentOffset = element.parent().offset();
-            const scrollOffset = elementOffset.top - parentOffset.top;
-            $('#WorldInfo').scrollTop(scrollOffset);
+            // Kotatsu: the rails settings modal adopts #world_popup, after which #WorldInfo no
+            // longer scrolls and `$('#WorldInfo').scrollTop(…)` moved nothing: New Entry made an
+            // entry somewhere off screen and looked like it did nothing (on a phone, 2026-10-22).
+            // scrollIntoView scrolls whichever ancestor does scroll, #WorldInfo in classic included.
+            element[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
             if (flashOnNav) flashHighlight(element);
         });
     }

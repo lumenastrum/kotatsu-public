@@ -83,15 +83,18 @@ import { OPEN_SCENE_STUDIO_EVENT } from '../../groups/doors.js';
 // Side-effect import: defines <k-persona-menu>, rendered in the footer below.
 import './k-persona-menu.js';
 import { chatLabel, chatLabelText } from '../chat-label.js';
-import { groupByRecency, previewText, rowTime } from '../chat-groups.js';
+import { groupByRecency, previewText, rowTime, scenePreviewText } from '../chat-groups.js';
 import {
     LOOSE_KEY,
     branchLabel,
     buildFolders,
+    chatCount,
     defaultView,
     folderKeysOf,
     foldBranches,
+    newestMs,
     pinsFor,
+    recentWindow,
     renamePin,
     splitPins,
     threadOf,
@@ -794,7 +797,7 @@ export class KRailLeft extends LitElement {
             return;
         }
 
-        const key = `${chid} ${this._activeChatId}`;
+        const key = `${chid} ${this._activeChatId}`;
         if (!this.#forceChats && key === this.#chatsKey) {
             return;
         }
@@ -857,7 +860,7 @@ export class KRailLeft extends LitElement {
                 return;
             }
             this.#chatsOwner = `group:${groupId}`;
-            this._chats = rows.map(({ id, title, count, lastMs, preview }) => ({ id, title, count, lastMs, preview: previewText(preview) }));
+            this._chats = rows.map(({ id, title, count, lastMs, preview }) => ({ id, title, count, lastMs, preview: scenePreviewText(preview) }));
             this._activeChatId = this.#readActiveChatId();
             this.#chatsKey = `group:${groupId} ${this._activeChatId}`;
         } catch (error) {
@@ -1777,10 +1780,7 @@ export class KRailLeft extends LitElement {
      * @returns {unknown}
      */
     #renderChatThread(model) {
-        const visible = model.rest.slice(0, CHATS_VISIBLE_MAX);
-        const open = threadOf(model.rest, this._activeChatId);
-        if (open && !visible.includes(open)) visible.push(open);
-        const hidden = model.rest.length - visible.length;
+        const { visible, hidden } = recentWindow(model.rest, this._activeChatId, CHATS_VISIBLE_MAX);
         return html`
             <div class="k-rl-thread">
                 ${model.pinned.length ? html`
@@ -1814,8 +1814,8 @@ export class KRailLeft extends LitElement {
         const loose = {
             key: LOOSE_KEY,
             name: 'Not in a folder',
-            count: tree.loose.reduce((sum, thread) => sum + 1 + thread.branches.length, 0),
-            lastMs: tree.loose.reduce((max, thread) => Math.max(max, thread.lastMs), 0),
+            count: chatCount(tree.loose),
+            lastMs: newestMs(tree.loose),
         };
         // With no folders at all, the chats in none are the whole list: open unless closed by hand.
         const looseOpen = state[LOOSE_KEY] ?? tree.folders.length === 0;

@@ -5,7 +5,7 @@
    "group": "Chrome: fills, backdrop, inset cards",
    "file": "css/kotatsu-chrome.css",
    "default": "radial-gradient(ellipse 75% 60% at 85% -12%, color-mix(in srgb, var(--k-glow-dawn) 48%, transparent), transparent 64%), radial-gradient(ellipse 65% 52% at 4% 112%, color-mix(in srgb, var(--k-glow-rose) 42%, transparent), transparent 64%), radial-gradient(ellipse 40% 30% at 50% 118%, color-mix(in srgb, var(--k-glow-deep) 22%, transparent), transparent 70%), linear-gradient(175deg, var(--k-backdrop-top) 0%, var(--k-ground) 100%)",
-   "note": "Ambient backdrop [11] Core `body` (style.css:157-175) sets `background-color` only, so the three glow ellipses need a background-image. Painted on `body`, not on a new element, so a background image chosen in ST (inline on #bg1) covers it naturally. Exposed as a token so a sheet can replace the whole recipe rather than only re-tinting the three glows. The top stop reads --k-backdrop-top, NOT --k-surface: the compat map writes `blur_tint_color` into --k-surface and that value carries its own alpha, which collapsed the sweep into a flat wash over an identically-colored body background. Caught by a live computed-style read (--k-surface resolves to rgba(15, 18, 27, 0.82) at runtime), not by review.",
+   "note": "Ambient backdrop [11] Core `body` (style.css:157-175) sets `background-color` only, so the three glow ellipses need a background-image. Painted on `body`, not on a new element, so a background image chosen in ST (inline on #bg1) can cover it — under rails only because sprites.css §1 lifts #bg1 to z-index 0: at core's −1 it painted beneath this (measured 2026-10-22). Exposed as a token so a sheet can replace the whole recipe rather than only re-tinting the three glows. The top stop reads --k-backdrop-top, NOT --k-surface: the compat map writes `blur_tint_color` into --k-surface and that value carries its own alpha, which collapsed the sweep into a flat wash over an identically-colored body background. Caught by a live computed-style read (--k-surface resolves to rgba(15, 18, 27, 0.82) at runtime), not by review.",
    "contexts": [
     {
      "selector": ":root",
@@ -20,7 +20,7 @@
    "note": "`--k-pcol-w` / `--k-pcol-gap` inherit from the body rule above.",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait-column\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait-column\"]",
      "at": []
     }
    ]
@@ -292,7 +292,7 @@
    "default": "0.55",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"broadcast\"]",
      "at": []
     }
    ]
@@ -303,7 +303,7 @@
    "default": "16px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"broadcast\"]",
      "at": []
     }
    ]
@@ -314,7 +314,7 @@
    "default": "0.14em",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"broadcast\"]",
      "at": []
     }
    ]
@@ -325,7 +325,7 @@
    "default": "14px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"broadcast\"]",
      "at": []
     }
    ]
@@ -336,7 +336,7 @@
    "default": "3px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"broadcast\"]",
      "at": []
     }
    ]
@@ -348,11 +348,11 @@
    "note": "The speaker colours css/kotatsu-chrome.css §15 already uses for the row stripe: rose for the character, lavender for you. One token, overridden once for user turns.",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"broadcast\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"broadcast\"]",
      "at": []
     },
     {
-     "selector": "body #chat[data-k-mes-variant=\"broadcast\"] .mes[is_user=\"true\"]:not(.smallSysMes)",
+     "selector": "body :is(#chat, .k-chat-stage)[data-k-mes-variant=\"broadcast\"] .mes[is_user=\"true\"]:not(.smallSysMes)",
      "at": []
     }
    ]
@@ -363,11 +363,11 @@
    "default": "color-mix(in srgb, var(--k-chrome-border) 22%, transparent)",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble\"]",
      "at": []
     },
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -379,11 +379,11 @@
    "note": "Core's own alpha stops (style.css:85-86), so a pack that retints `--k-user-mes` / `--k-bot-mes` retints the pills with it.",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble\"]",
      "at": []
     },
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -394,11 +394,11 @@
    "default": "14px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble\"]",
      "at": []
     },
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -409,11 +409,11 @@
    "default": "72%",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble\"]",
      "at": []
     },
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -431,11 +431,11 @@
    "default": "14px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble\"]",
      "at": []
     },
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -446,11 +446,11 @@
    "default": "9px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble\"]",
      "at": []
     },
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -461,11 +461,11 @@
    "default": "16px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble\"]",
      "at": []
     },
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -477,11 +477,11 @@
    "note": "The corner nearest the speaker's avatar. One token, mirrored by the two rules that consume it, instead of two hand-written corner quartets.",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble\"]",
      "at": []
     },
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -492,11 +492,11 @@
    "default": "color-mix(in srgb, var(--k-user-mes) 88%, transparent)",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble\"]",
      "at": []
     },
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -507,7 +507,7 @@
    "default": "var(--k-phone-avatar)",
    "contexts": [
     {
-     "selector": "body[data-k-layout=\"rails\"] #chat .mes:not(.smallSysMes)",
+     "selector": "body[data-k-layout=\"rails\"] :is(#chat, .k-chat-stage) .mes:not(.smallSysMes)",
      "at": [
       "@media (max-width: 600px)"
      ]
@@ -524,7 +524,7 @@
    "default": "var(--k-phone-avatar)",
    "contexts": [
     {
-     "selector": "body[data-k-layout=\"rails\"] #chat .mes:not(.smallSysMes)",
+     "selector": "body[data-k-layout=\"rails\"] :is(#chat, .k-chat-stage) .mes:not(.smallSysMes)",
      "at": [
       "@media (max-width: 600px)"
      ]
@@ -697,6 +697,40 @@
     }
    ]
   },
+  "--k-cc-composer-glow": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "var(--k-accent)",
+   "note": "The pill's edge and its light (2026-10-22, Andres: the bar \"merges with the background\"; wanted \"a soft glass glow border … without distracting from the prose\"). A sunken fill on a ground of nearly the same value reads as background, so the pill gets a halo in --k-cc-composer-glow and a low lift, and both warm a little while you type. Shadows only: no backdrop-filter comes back (see #send_form below), and the focus change is the only thing that animates, never a keystroke. A pack sets the glow colour, or the whole shadow, edge and fill.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-composer-line": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "color-mix(in srgb, var(--k-cc-composer-glow) 22%, var(--k-inset-border))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-composer-line-focus": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "color-mix(in srgb, var(--k-cc-composer-glow) 45%, var(--k-inset-border))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-cc-composer-min": {
    "group": "Reading column",
    "file": "css/shell-center.css",
@@ -724,6 +758,28 @@
    "group": "Reading column",
    "file": "css/shell-center.css",
    "default": "4px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-composer-shadow": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "0 0 0 3px color-mix(in srgb, var(--k-cc-composer-glow) 5%, transparent), 0 0 22px -6px color-mix(in srgb, var(--k-cc-composer-glow) 22%, transparent), 0 10px 26px -14px color-mix(in srgb, var(--k-elevation-shadow) 55%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-cc-composer-shadow-focus": {
+   "group": "Reading column",
+   "file": "css/shell-center.css",
+   "default": "0 0 0 3px color-mix(in srgb, var(--k-cc-composer-glow) 10%, transparent), 0 0 26px -6px color-mix(in srgb, var(--k-cc-composer-glow) 34%, transparent), 0 10px 26px -14px color-mix(in srgb, var(--k-elevation-shadow) 55%, transparent)",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -1058,13 +1114,46 @@
     }
    ]
   },
+  "--k-fb-width": {
+   "group": "css/feedback.css",
+   "file": "css/feedback.css",
+   "default": "min(560px, calc(100vw - 32px))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-fb-z-scrim": {
+   "group": "css/feedback.css",
+   "file": "css/feedback.css",
+   "default": "4075",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-fb-z-sheet": {
+   "group": "css/feedback.css",
+   "file": "css/feedback.css",
+   "default": "4076",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-flat-gap": {
    "group": "Message looks (wardrobe)",
    "file": "css/mes-variants.css",
    "default": "20px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"flat\"]",
      "at": []
     }
    ]
@@ -1076,7 +1165,7 @@
    "note": "Book rhythm: print prose separates paragraphs by first-line indent, not vertical gap. Set to 0 to fall back to gap-separated paragraphs.",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"flat\"]",
      "at": []
     }
    ]
@@ -1088,7 +1177,7 @@
    "note": "The measure is set on `.mes_block` so the byline and the prose share one column edge. `ch` there resolves against the UI face rather than the prose face — a few percent wider than a measure set on `.mes_text`, and worth it for the alignment.",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"flat\"]",
      "at": []
     }
    ]
@@ -1099,7 +1188,7 @@
    "default": "2px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"flat\"]",
      "at": []
     }
    ]
@@ -1110,7 +1199,7 @@
    "default": "0.82em",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"flat\"]",
      "at": []
     }
    ]
@@ -1121,7 +1210,7 @@
    "default": "6px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"flat\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"flat\"]",
      "at": []
     }
    ]
@@ -1772,11 +1861,11 @@
    "default": "0",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-metadata=\"hover\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-metadata=\"hover\"]",
      "at": []
     },
     {
-     "selector": "#chat[data-k-mes-metadata=\"click\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-metadata=\"click\"]",
      "at": []
     }
    ]
@@ -2067,7 +2156,7 @@
    "default": "5px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-nameplate=\"above\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-nameplate=\"above\"]",
      "at": []
     }
    ]
@@ -2079,7 +2168,95 @@
    "note": "The row's reserved height. One token drives all three halves of the lift — the reservation, the label box and the clip margin — so a pack that wants a taller label line changes one number (recon §3.4).",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-nameplate=\"above\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-nameplate=\"above\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-bubble-border": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-border)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-bubble-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-surface-2)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-bubble-shadow": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "none",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-control-border": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "color-mix(in srgb, var(--k-onb-peri) 45%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-control-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "color-mix(in srgb, var(--k-onb-peri) 8%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-control-hover-border": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-onb-peri)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-control-hover-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "color-mix(in srgb, var(--k-onb-peri) 18%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-control-shadow": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "none",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
      "at": []
     }
    ]
@@ -2095,10 +2272,77 @@
     }
    ]
   },
+  "--k-onb-dot-now": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-onb-warm)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-dot-past": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-onb-peri)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-dot-rest": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-border)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-face": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "72px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-field-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-rcf-fill)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-focus": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-onb-mikan)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-onb-height": {
    "group": "Welcome tour",
    "file": "css/onboarding.css",
-   "default": "min(680px, calc(100dvh - 32px))",
+   "default": "min(680px, calc(var(--k-vvh, 100dvh) - 32px))",
+   "note": "--k-vvh, not 100dvh: iOS keeps dvh at full height under the keyboard (shell/keyboard.js).",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -2110,6 +2354,28 @@
    "group": "Welcome tour",
    "file": "css/onboarding.css",
    "default": "#2a3150",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-lane-on-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-onb-warm)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-mascot-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "radial-gradient(circle at 50% 70%, var(--k-glow-rose), transparent 65%), var(--k-surface-sunken)",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -2139,6 +2405,28 @@
     }
    ]
   },
+  "--k-onb-on-ink": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-onb-indigo)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-on-shadow": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "none",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-onb-pad": {
    "group": "Welcome tour",
    "file": "css/onboarding.css",
@@ -2147,12 +2435,6 @@
     {
      "selector": "body[data-k-layout=\"rails\"]",
      "at": []
-    },
-    {
-     "selector": "body[data-k-layout=\"rails\"] .k-onb-main",
-     "at": [
-      "@media (max-width: 640px)"
-     ]
     }
    ]
   },
@@ -2160,6 +2442,215 @@
    "group": "Welcome tour",
    "file": "css/onboarding.css",
    "default": "#9aa4d2",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-pop-border": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-onb-peri)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-pop-scrim": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "color-mix(in srgb, var(--k-ground) 70%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-pop-shadow": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "0 18px 50px -12px color-mix(in srgb, var(--k-onb-indigo) 80%, black)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-primary-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-onb-warm)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-primary-glow": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "color-mix(in srgb, var(--k-onb-mikan) 70%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-primary-ink": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-onb-indigo)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-rule": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-border)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-scrim-blur": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "0px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-scrim-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-scrim)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-seg-on-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-onb-peri)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-sheet-border": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-border)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-sheet-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-surface)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-speaker-ink": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-onb-mikan)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-tile-border": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-border)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-tile-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-surface-sunken)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-tile-hover-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-surface-2)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-tile-shadow": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "none",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-track-border": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "var(--k-border)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-onb-track-fill": {
+   "group": "Welcome tour",
+   "file": "css/onboarding.css",
+   "default": "transparent",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -2255,7 +2746,7 @@
    "note": "§2.5 mechanism #3: the 168px column wants the original, not the 96px thumb. Row scope for the same reason as portrait's art var — see the note there.",
    "contexts": [
     {
-     "selector": "body #chat[data-k-mes-variant=\"portrait-column\"] .mes:not(.smallSysMes)",
+     "selector": "body :is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait-column\"] .mes:not(.smallSysMes)",
      "at": []
     }
    ]
@@ -2277,7 +2768,7 @@
    "default": "var(--k-radius-lg)",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait-column\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait-column\"]",
      "at": []
     }
    ]
@@ -2288,7 +2779,7 @@
    "default": "12px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait-column\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait-column\"]",
      "at": []
     }
    ]
@@ -2732,37 +3223,6 @@
    "group": "Pictures settings and the studio Look",
    "file": "css/pictures-settings.css",
    "default": "var(--k-radius-lg)",
-   "contexts": [
-    {
-     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
-     "at": []
-    },
-    {
-     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
-     "at": []
-    }
-   ]
-  },
-  "--k-pics-seg-active-bg": {
-   "group": "Pictures settings and the studio Look",
-   "file": "css/pictures-settings.css",
-   "default": "color-mix(in srgb, var(--k-rose) 22%, var(--k-surface))",
-   "note": "The lane switch's chosen option.",
-   "contexts": [
-    {
-     "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
-     "at": []
-    },
-    {
-     "selector": "body[data-k-layout=\"rails\"] .k-studio-look",
-     "at": []
-    }
-   ]
-  },
-  "--k-pics-seg-active-text": {
-   "group": "Pictures settings and the studio Look",
-   "file": "css/pictures-settings.css",
-   "default": "var(--k-text-strong)",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"] k-pictures-settings",
@@ -3245,7 +3705,7 @@
    "default": "var(--k-mes-avatar-original, var(--k-mes-avatar))",
    "contexts": [
     {
-     "selector": "body #chat[data-k-mes-variant=\"portrait\"] .mes:not(.smallSysMes)",
+     "selector": "body :is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait\"] .mes:not(.smallSysMes)",
      "at": []
     }
    ]
@@ -3256,7 +3716,7 @@
    "default": "14px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait\"]",
      "at": []
     }
    ]
@@ -3267,7 +3727,7 @@
    "default": "120px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait\"]",
      "at": []
     }
    ]
@@ -3278,7 +3738,7 @@
    "default": "34%",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait\"]",
      "at": []
     }
    ]
@@ -3289,7 +3749,7 @@
    "default": "40%",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait\"]",
      "at": []
     }
    ]
@@ -3301,7 +3761,7 @@
    "note": "Mask stops. `0%` = a hard edge flush with the message surface; any positive length = that edge dissolves into the text over that fraction of the box. Moonlit's shipped Echo/Ripple values are inner 30% / bottom 40%, outer and top hard.",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait\"]",
      "at": []
     }
    ]
@@ -3312,7 +3772,7 @@
    "default": "0%",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait\"]",
      "at": []
     }
    ]
@@ -3323,7 +3783,7 @@
    "default": "0%",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait\"]",
      "at": []
     }
    ]
@@ -3334,7 +3794,7 @@
    "default": "140px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait\"]",
      "at": []
     }
    ]
@@ -3345,7 +3805,7 @@
    "default": "10px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"portrait\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"portrait\"]",
      "at": []
     }
    ]
@@ -3660,10 +4120,33 @@
     }
    ]
   },
+  "--k-rc-btn-fill-hover": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "color-mix(in srgb, var(--k-accent) 12%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-rc-btn-gap": {
    "group": "Controls",
    "file": "css/rechrome-controls.css",
    "default": "6px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-h": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "32px",
+   "note": "The house button, everywhere (settings polish, 2026-10-22) Settings had eight button heights and five radii: stock's `.menu_button` restyled here, then squared again by settings rows, and every Kotatsu card (bridge, phone, pictures) with a button of its own. These knobs are the ONE recipe all of them read, so a pack dresses every button in the app by setting them once (Natsumikan V3: frosted glass and a lit primary). Geometry is fixed across packs on purpose; only the material is a pack's to change. The defaults are this sheet's existing ghost pill.",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -3682,10 +4165,66 @@
     }
    ]
   },
+  "--k-rc-btn-ink": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-text)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-ink-hover": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-text-strong)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-lift": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "0px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-line": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-rc-hairline)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-line-hover": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-accent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-rc-btn-min-h": {
    "group": "Controls",
    "file": "css/rechrome-controls.css",
-   "default": "30px",
+   "default": "var(--k-rc-btn-h)",
+   "note": "Kept for readers outside this sheet (css/preset-dock.css); the height is --k-rc-btn-h.",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -3709,6 +4248,106 @@
    "file": "css/rechrome-controls.css",
    "default": "6px",
    "note": "Button Padding is `.k-studio-tab`'s (css/studio.css:386). The icon pad is square and deliberately smaller than the text pad-x: several stock icon buttons are pinned to a fixed square box by an ID rule (`#rm_button_bar .menu_button` is `calc(var(--mainFontSize) * 1.7)`, ~25.5px, at (1,1,1)), and with `box-sizing: border-box` everywhere (style.css:146) a 14px pad would leave the glyph almost no content box. 6px leaves ~13.5px against a 15px glyph — the overflow is centred by the button's own flex centring and renders clean, and the HIT TARGET is that ID rule's box either way.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-primary-fill": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 18%, transparent))",
+   "note": "Primary follows the core primary contract (tokens.css § Control states), with `.k-lib-btn--primary`'s fallback for packs that unset it.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-primary-fill-hover": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-primary-hover-bg, color-mix(in srgb, var(--k-accent) 30%, transparent))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-primary-ink": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-primary-text, var(--k-text-strong))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-primary-line": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 55%, transparent))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-primary-shadow": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "none",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-primary-shadow-hover": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-rc-btn-primary-shadow)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-radius": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-radius-pill)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-shadow": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "none",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-btn-shadow-hover": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-rc-btn-shadow)",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -3776,7 +4415,7 @@
    "note": "The chevron. Replaces `/img/down-arrow.svg`'s frozen `#888888` triangle — see the header for why this is gradients and not a data: URI, and the parameters block for why the recipe is declared HERE, on the control, and not up there with its own parameters. Declared once; §2f reuses it.",
    "contexts": [
     {
-     "selector": "body[data-k-layout=\"rails\"] select",
+     "selector": "body[data-k-layout=\"rails\"] :is(select, :where(.select2-container .select2-selection--single))",
      "at": []
     }
    ]
@@ -3838,6 +4477,14 @@
     },
     {
      "selector": "body[data-k-layout=\"rails\"] .k-studio-control select:focus-visible",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .select2-container:hover .select2-selection",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] .select2-container.select2-container--focus .select2-selection",
      "at": []
     }
    ]
@@ -4037,6 +4684,106 @@
    "file": "css/rechrome-controls.css",
    "default": "color-mix(in srgb, var(--k-accent) 34%, transparent)",
    "note": "`.k-studio-control`'s focus ring, restated locally (css/studio.css:547).",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-seg-fill": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-rc-field-fill)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-seg-ink": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-text-dim)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-seg-ink-hover": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-text-strong)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-seg-line": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-rc-hairline)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-seg-on-fill": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-surface)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-seg-on-ink": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "var(--k-text-strong)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-seg-on-shadow": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "inset 0 0 0 1px var(--k-rc-hairline)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-seg-option-h": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "calc(var(--k-rc-btn-h) - 2 * var(--k-rc-seg-pad) - 2px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-rc-seg-pad": {
+   "group": "Controls",
+   "file": "css/rechrome-controls.css",
+   "default": "2px",
+   "note": "The house segmented switch A track with the options inside it; the chosen one is a raised pill. The track lands on --k-rc-btn-h (option + 2 × pad + 2 × 1px border), so a switch sits level with the buttons beside it.",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -4764,7 +5511,7 @@
   "--k-scene-height": {
    "group": "css/scenes.css",
    "file": "css/scenes.css",
-   "default": "min(820px, calc(100dvh - 48px))",
+   "default": "min(820px, calc(var(--k-vvh, 100dvh) - 48px))",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5058,7 +5805,7 @@
    "default": "28px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"script\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"script\"]",
      "at": []
     }
    ]
@@ -5069,7 +5816,7 @@
    "default": "58ch",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"script\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"script\"]",
      "at": []
     }
    ]
@@ -5080,7 +5827,7 @@
    "default": "10px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"script\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"script\"]",
      "at": []
     }
    ]
@@ -5091,7 +5838,7 @@
    "default": "0.72em",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"script\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"script\"]",
      "at": []
     }
    ]
@@ -5102,7 +5849,7 @@
    "default": "0.18em",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"script\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"script\"]",
      "at": []
     }
    ]
@@ -5122,7 +5869,7 @@
   "--k-set-btn-h": {
    "group": "Settings",
    "file": "kotatsu/settings/settings-modal.css",
-   "default": "32px",
+   "default": "var(--k-rc-btn-h)",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5268,7 +6015,8 @@
   "--k-set-height": {
    "group": "Phone",
    "file": "css/kotatsu-phone.css",
-   "default": "100dvh",
+   "default": "var(--k-vvh, 100dvh)",
+   "note": "What an open keyboard leaves (kotatsu/shell/keyboard.js); unset, the whole screen.",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"] k-settings-modal",
@@ -5307,8 +6055,8 @@
   "--k-set-input-h": {
    "group": "Settings",
    "file": "kotatsu/settings/settings-modal.css",
-   "default": "27px",
-   "note": "Row controls only — the header search pill and close button are their own literals now (§2), decoupled on purpose: a 49px header and a 27px row never wanted the same number twice. 27, not the README's 24-25: a bare 25px clipped stock `<select>`'s own line-height/padding against a fixed box (pixel QA, \"Blue Hour (Native)\"/\"Card\"/\"Inline\"/\"List\" cut at the baseline) — 2px bought back the room, and the select rule below still pins its own line-height and padding-block explicitly rather than trusting that 2px alone holds at every font scale.",
+   "default": "var(--k-rc-btn-h)",
+   "note": "Fields, the search and the buttons share one height, so a row of them lines up.",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5411,7 +6159,7 @@
   "--k-set-search-h": {
    "group": "Settings",
    "file": "kotatsu/settings/settings-modal.css",
-   "default": "30px",
+   "default": "var(--k-rc-btn-h)",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5529,7 +6277,7 @@
    "default": "5px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -5540,7 +6288,7 @@
    "default": "var(--k-bubble-pad-x)",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -5551,7 +6299,7 @@
    "default": "var(--k-bubble-pad-y)",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"bubble-split\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"bubble-split\"]",
      "at": []
     }
    ]
@@ -5562,7 +6310,7 @@
    "default": "6px",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"sprite\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"sprite\"]",
      "at": []
     }
    ]
@@ -5573,7 +6321,7 @@
    "default": "color-mix(in srgb, var(--k-surface) 84%, transparent)",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"sprite\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"sprite\"]",
      "at": []
     }
    ]
@@ -5584,7 +6332,7 @@
    "default": "color-mix(in srgb, var(--k-surface-2) 76%, transparent)",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"sprite\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"sprite\"]",
      "at": []
     }
    ]
@@ -5595,7 +6343,7 @@
    "default": "3%",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"sprite\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"sprite\"]",
      "at": []
     }
    ]
@@ -5607,7 +6355,7 @@
    "note": "The face crop: the sprite drawn at this multiple of the avatar's width, top-centred. Measured on the lab sets (full body in an 832 × 1216 canvas): head and shoulders.",
    "contexts": [
     {
-     "selector": "#chat[data-k-mes-variant=\"sprite\"]",
+     "selector": ":is(#chat, .k-chat-stage)[data-k-mes-variant=\"sprite\"]",
      "at": []
     }
    ]
@@ -5627,7 +6375,7 @@
    "group": "css/sprites.css",
    "file": "css/sprites.css",
    "default": "0%",
-   "note": "Bottom: fades into the composer. Sides: a sprite whose art runs off its canvas there (stage-model.js `cutSides`, data-cut-left/right) fades out instead of ending in a hard vertical line; uncut sides stay solid.",
+   "note": "Bottom: fades into the composer over the last 8%, eased (Andres, 2026-10-23: the old linear 18% \"reads very aggressive\", it ate a full-body figure's boots and shins). The Studio's framing figure uses the same ramp. Sides: a sprite whose art runs off its canvas there (stage-model.js `cutSides`, data-cut-left/right) fades out instead of ending in a hard vertical line; uncut sides stay solid.",
    "contexts": [
     {
      "selector": "k-sprite-stage .k-sprite-figure",
@@ -5654,6 +6402,24 @@
     }
    ]
   },
+  "--k-sprite-grid-cols": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "7",
+   "note": "Columns of the dense grid (Advanced ③).",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": [
+      "@media (max-width: 700px)"
+     ]
+    }
+   ]
+  },
   "--k-sprite-move": {
    "group": "css/sprites.css",
    "file": "css/sprites.css",
@@ -5672,10 +6438,122 @@
    "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
    "contexts": []
   },
+  "--k-sprite-strip-turn": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "320ms",
+   "note": "Browsing the strip: how long a tile takes to arrive, how far it drifts in from the side you are browsing toward, and the beat between neighbours. Gated by the reduced-motion switch (kotatsu-motion.css §0).",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-strip-turn-shift": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "28px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-strip-turn-stagger": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "40ms",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-tile-backdrop": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "radial-gradient(130% 85% at 50% 0%, color-mix(in srgb, var(--k-accent) 14%, var(--k-surface-2)) 0%, var(--k-surface-sunken) 100%)",
+   "note": "What a transparent sprite stands on in its tile. Per feeling: `.k-sprite-tile[data-label=\"anger\"]`.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-tile-h": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "330px",
+   "note": "Height of a strip tile (Simple ③), where the expressions are the page.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": [
+      "@media (max-width: 700px)"
+     ]
+    }
+   ]
+  },
+  "--k-sprite-tile-line": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "1px solid color-mix(in srgb, var(--k-border) 70%, transparent)",
+   "note": "A sprite tile's frame line, a border shorthand (width style colour); a missing feeling draws it dashed.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-tile-picked-ring": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "0 0 0 2px var(--k-accent)",
+   "note": "The picked tile's ring (a box-shadow).",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-tile-radius": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "var(--k-radius-lg)",
+   "note": "Corner radius of a sprite tile, strip and grid.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": []
+    }
+   ]
+  },
+  "--k-sprite-tile-shadow": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "0 0 0 0 transparent",
+   "note": "A sprite tile's shadow (one box-shadow, never `none`: the picked ring is listed with it).",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"] k-sprite-studio",
+     "at": []
+    }
+   ]
+  },
   "--k-studio-area-min-h": {
    "group": "Card studio",
    "file": "css/studio.css",
-   "default": "120px",
+   "default": "110px",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5686,7 +6564,97 @@
   "--k-studio-area-tall-h": {
    "group": "Card studio",
    "file": "css/studio.css",
-   "default": "180px",
+   "default": "170px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-chapter-done": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-success)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-chapter-on-fill": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-control-on-bg)",
+   "note": "Chapter bar",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-chapter-on-line": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-control-on-border)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-chapter-on-text": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-control-on-text)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-chapter-title-shadow": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "none",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-chapter-title-size": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "clamp(22px, 2vw, 30px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-eyebrow-fill": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "transparent",
+   "note": "The eyebrow: plain caps by default, a tag when a pack fills it",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-eyebrow-ink": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-accent)",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5698,6 +6666,17 @@
    "group": "Card studio",
    "file": "css/studio.css",
    "default": "11px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-eyebrow-tilt": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "0deg",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5750,10 +6729,33 @@
     }
    ]
   },
+  "--k-studio-frame-color": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-studio-hairline)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-frame-line": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "1px",
+   "note": "Frame: how every panel in the sheet is drawn. A flagship inks them here.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-studio-gap": {
    "group": "Card studio",
    "file": "css/studio.css",
-   "default": "clamp(14px, 1.4vw, 22px)",
+   "default": "clamp(18px, 2vw, 34px)",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5772,10 +6774,21 @@
     }
    ]
   },
+  "--k-studio-hero-w": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "360px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-studio-hint-size": {
    "group": "Card studio",
    "file": "css/studio.css",
-   "default": "11px",
+   "default": "11.5px",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5831,7 +6844,143 @@
   "--k-studio-max-h": {
    "group": "Card studio",
    "file": "css/studio.css",
-   "default": "calc(100dvh - 64px)",
+   "default": "calc(var(--k-vvh, 100dvh) - 48px)",
+   "note": "`--k-vvh` is what an open phone keyboard leaves (kotatsu/shell/keyboard.js); unset, 100dvh.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-name-shadow": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "none",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-name-size": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "clamp(24px, 2.2vw, 32px)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-next-fill": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "color-mix(in srgb, var(--k-select) 9%, transparent)",
+   "note": "The next-step strip",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-next-line": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "color-mix(in srgb, var(--k-select) 45%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-opening-fill": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-studio-field-fill)",
+   "note": "② the opening, as the chat renders it The real message row stands on this stage; its look is the chat's (the wardrobe), the stage around it is the studio's. Taller openings scroll inside it.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-opening-max-h": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "560px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 700px)"
+     ]
+    }
+   ]
+  },
+  "--k-studio-opening-pad": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "14px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 700px)"
+     ]
+    }
+   ]
+  },
+  "--k-studio-opening-radius": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-studio-panel-radius)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-opening-tile-fill": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-control-bg)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-opening-tile-on-line": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-accent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-opening-tile-radius": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-radius-md)",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5850,10 +6999,22 @@
     }
    ]
   },
-  "--k-studio-rail-w": {
+  "--k-studio-panel-radius": {
    "group": "Card studio",
    "file": "css/studio.css",
-   "default": "280px",
+   "default": "var(--k-radius-lg)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-panel-shadow": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "none",
+   "note": "Shadow under the panels inside it (the stage, the next step, the token breakdown).",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5895,6 +7056,77 @@
     }
    ]
   },
+  "--k-studio-sheet-shadow": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-elev-4)",
+   "note": "Shadow under the sheet itself.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-stage-fill": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "radial-gradient(ellipse 70% 30% at 50% 100%, color-mix(in srgb, var(--k-select) 26%, transparent), transparent 70%), radial-gradient(ellipse 60% 50% at 50% 35%, color-mix(in srgb, var(--k-accent) 16%, transparent), transparent 70%), linear-gradient(180deg, var(--k-surface-sunken), var(--k-ground-deep))",
+   "note": "What the sprite stands in front of. Layers, first on top.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-stage-floor": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "none",
+   "note": "A floor under the sprite's feet: whole background layers (position, size, repeat included), so a tiled floor can tile. `none` = no floor. `-h` is how tall it is: the sprite stands on it.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-stage-floor-h": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "0px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-stage-h": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "420px",
+   "note": "The hero's stage",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-stage-min-h": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "220px",
+   "note": "How far the stage gives on a shorter window before the hero stops being pinned.",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-studio-title-lh": {
    "group": "Card studio",
    "file": "css/studio.css",
@@ -5918,10 +7150,66 @@
     }
    ]
   },
+  "--k-studio-token-1": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-accent)",
+   "note": "The token chip's bar, field by field",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-token-2": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-select)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-token-3": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-success)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-token-4": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-warning)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-studio-token-5": {
+   "group": "Card studio",
+   "file": "css/studio.css",
+   "default": "var(--k-text-dim)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-studio-ui-size": {
    "group": "Card studio",
    "file": "css/studio.css",
-   "default": "12.5px",
+   "default": "13px",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5932,8 +7220,8 @@
   "--k-studio-width": {
    "group": "Card studio",
    "file": "css/studio.css",
-   "default": "min(1060px, calc(100vw - 64px))",
-   "note": "Sheet geometry (doc §2.2)",
+   "default": "min(1380px, calc(100vw - 48px))",
+   "note": "Sheet geometry",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -5970,13 +7258,13 @@
    "default": "38px",
    "contexts": [
     {
-     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "selector": "body[data-k-layout=\"rails\"] :is(#chat, .k-chat-stage)",
      "at": [
       "@media (pointer: coarse)"
      ]
     },
     {
-     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "selector": "body[data-k-layout=\"rails\"] :is(#chat, .k-chat-stage)",
      "at": []
     }
    ]
@@ -5987,7 +7275,7 @@
    "default": "42px",
    "contexts": [
     {
-     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "selector": "body[data-k-layout=\"rails\"] :is(#chat, .k-chat-stage)",
      "at": []
     }
    ]
@@ -5998,13 +7286,13 @@
    "default": "34px",
    "contexts": [
     {
-     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "selector": "body[data-k-layout=\"rails\"] :is(#chat, .k-chat-stage)",
      "at": [
       "@media (pointer: coarse)"
      ]
     },
     {
-     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "selector": "body[data-k-layout=\"rails\"] :is(#chat, .k-chat-stage)",
      "at": []
     }
    ]
@@ -6015,7 +7303,7 @@
    "default": "12px",
    "contexts": [
     {
-     "selector": "body[data-k-layout=\"rails\"] #chat",
+     "selector": "body[data-k-layout=\"rails\"] :is(#chat, .k-chat-stage)",
      "at": []
     }
    ]
@@ -6046,72 +7334,6 @@
    "group": "Top bar",
    "file": "css/shell-topbar.css",
    "default": "9px",
-   "contexts": [
-    {
-     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
-     "at": []
-    }
-   ]
-  },
-  "--k-topbar-cmd-font": {
-   "group": "Top bar",
-   "file": "css/shell-topbar.css",
-   "default": "12.5px",
-   "contexts": [
-    {
-     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
-     "at": []
-    }
-   ]
-  },
-  "--k-topbar-cmd-gap": {
-   "group": "Top bar",
-   "file": "css/shell-topbar.css",
-   "default": "8px",
-   "contexts": [
-    {
-     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
-     "at": []
-    }
-   ]
-  },
-  "--k-topbar-cmd-height": {
-   "group": "Top bar",
-   "file": "css/shell-topbar.css",
-   "default": "30px",
-   "contexts": [
-    {
-     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
-     "at": []
-    }
-   ]
-  },
-  "--k-topbar-cmd-icon": {
-   "group": "Top bar",
-   "file": "css/shell-topbar.css",
-   "default": "13px",
-   "contexts": [
-    {
-     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
-     "at": []
-    }
-   ]
-  },
-  "--k-topbar-cmd-pad": {
-   "group": "Top bar",
-   "file": "css/shell-topbar.css",
-   "default": "10px",
-   "contexts": [
-    {
-     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
-     "at": []
-    }
-   ]
-  },
-  "--k-topbar-cmd-width": {
-   "group": "Top bar",
-   "file": "css/shell-topbar.css",
-   "default": "420px",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
@@ -6200,28 +7422,6 @@
    "group": "Top bar",
    "file": "css/shell-topbar.css",
    "default": "1px",
-   "contexts": [
-    {
-     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
-     "at": []
-    }
-   ]
-  },
-  "--k-topbar-hint-pad-block": {
-   "group": "Top bar",
-   "file": "css/shell-topbar.css",
-   "default": "1px",
-   "contexts": [
-    {
-     "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
-     "at": []
-    }
-   ]
-  },
-  "--k-topbar-hint-pad-inline": {
-   "group": "Top bar",
-   "file": "css/shell-topbar.css",
-   "default": "5px",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"] k-topbar[variant=\"bar\"]",
@@ -6535,6 +7735,19 @@
     {
      "selector": "body[data-k-layout=\"rails\"]",
      "at": []
+    }
+   ]
+  },
+  "--k-vn-fade-bottom": {
+   "group": "css/sprites.css",
+   "file": "css/sprites.css",
+   "default": "34px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]:not([data-k-vn-history]):not([data-k-view=\"home\"]):has(#chat[data-k-mes-variant=\"sprite\"]) #chat > .mes:not(.smallSysMes) .mes_text[data-k-more-below]",
+     "at": [
+      "@media (max-width: 600px)"
+     ]
     }
    ]
   },

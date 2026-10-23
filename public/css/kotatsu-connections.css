@@ -147,40 +147,50 @@ body[data-k-layout="rails"] .k-bc__actions {
     gap: 8px;
 }
 
+/* The house button (rechrome-controls.css `--k-rc-btn-*`): one height, one pill, one material in
+   every pack, primary on the core primary contract. Was a 34px slab with a rose primary. */
 body[data-k-layout="rails"] .k-bc__btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 7px;
-    min-height: 34px;
-    padding: 0 14px;
-    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
-    border-radius: var(--k-radius-md);
-    background: var(--k-surface-sunken);
-    color: var(--k-text);
-    font: 500 13px var(--k-font-ui);
+    min-height: var(--k-rc-btn-h);
+    padding: 0 var(--k-rc-btn-pad-x);
+    border: 1px solid var(--k-rc-btn-line);
+    border-radius: var(--k-rc-btn-radius);
+    background: var(--k-rc-btn-fill);
+    box-shadow: var(--k-rc-btn-shadow);
+    color: var(--k-rc-btn-ink);
+    font: var(--k-rc-btn-weight) var(--k-rc-btn-size) var(--k-font-ui);
+    white-space: nowrap;
     text-decoration: none;
     cursor: pointer;
-    transition: background-color var(--k-motion), border-color var(--k-motion), color var(--k-motion);
+    transition: background-color var(--k-motion), border-color var(--k-motion), color var(--k-motion),
+        box-shadow var(--k-motion), translate var(--k-motion);
 }
 
-body[data-k-layout="rails"] .k-bc__btn:hover,
-body[data-k-layout="rails"] .k-bc__btn:focus-visible {
-    border-color: var(--k-accent);
-    color: var(--k-text-strong);
+body[data-k-layout="rails"] .k-bc__btn:not(:disabled):hover,
+body[data-k-layout="rails"] .k-bc__btn:not(:disabled):focus-visible {
+    border-color: var(--k-rc-btn-line-hover);
+    background: var(--k-rc-btn-fill-hover);
+    box-shadow: var(--k-rc-btn-shadow-hover);
+    color: var(--k-rc-btn-ink-hover);
+    translate: 0 calc(-1 * var(--k-rc-btn-lift));
 }
 
 body[data-k-layout="rails"] .k-bc__btn--primary {
-    border-color: var(--k-rose);
-    background: var(--k-rose);
-    color: var(--k-ground-deep);
+    border-color: var(--k-rc-btn-primary-line);
+    background: var(--k-rc-btn-primary-fill);
+    box-shadow: var(--k-rc-btn-primary-shadow);
+    color: var(--k-rc-btn-primary-ink);
 }
 
-body[data-k-layout="rails"] .k-bc__btn--primary:hover,
-body[data-k-layout="rails"] .k-bc__btn--primary:focus-visible {
-    border-color: var(--k-rose-bright);
-    background: var(--k-rose-bright);
-    color: var(--k-ground-deep);
+body[data-k-layout="rails"] .k-bc__btn--primary:not(:disabled):hover,
+body[data-k-layout="rails"] .k-bc__btn--primary:not(:disabled):focus-visible {
+    border-color: var(--k-rc-btn-primary-line);
+    background: var(--k-rc-btn-primary-fill-hover);
+    box-shadow: var(--k-rc-btn-primary-shadow-hover);
+    color: var(--k-rc-btn-primary-ink);
 }
 
 body[data-k-layout="rails"] .k-bc__btn:disabled {
@@ -188,10 +198,9 @@ body[data-k-layout="rails"] .k-bc__btn:disabled {
     cursor: default;
 }
 
+/* Small sits beside a field of the same height, so only its pad tightens. */
 body[data-k-layout="rails"] .k-bc__btn--small {
-    min-height: 28px;
-    padding: 0 10px;
-    font-size: 12px;
+    padding: 0 12px;
 }
 
 /* A problem card: its border tone says how blocking it is (warning = can't send yet). */
@@ -310,38 +319,39 @@ body[data-k-layout="rails"] .k-bc__model:disabled {
     cursor: default;
 }
 
+/* The house segmented switch (rechrome-controls.css `--k-rc-seg-*`). */
 body[data-k-layout="rails"] .k-bc__seg {
     display: flex;
     flex-wrap: wrap;
     gap: 2px;
-    padding: 3px;
-    border: 1px solid color-mix(in srgb, var(--k-chrome-border) 40%, transparent);
-    border-radius: var(--k-radius-lg);
-    background: var(--k-ground-deep);
+    padding: var(--k-rc-seg-pad);
+    border: 1px solid var(--k-rc-seg-line);
+    border-radius: var(--k-rc-btn-radius);
+    background: var(--k-rc-seg-fill);
 }
 
 body[data-k-layout="rails"] .k-bc__seg button {
     flex: 1 1 auto;
-    min-height: 30px;
-    padding: 0 8px;
+    min-height: var(--k-rc-seg-option-h);
+    padding: 0 10px;
     border: 0;
-    border-radius: var(--k-radius-md);
+    border-radius: var(--k-rc-btn-radius);
     background: transparent;
-    color: var(--k-text-dim);
-    font: 500 12.5px var(--k-font-ui);
+    color: var(--k-rc-seg-ink);
+    font: var(--k-rc-btn-weight) var(--k-rc-btn-size) var(--k-font-ui);
     cursor: pointer;
-    transition: background-color var(--k-motion), color var(--k-motion);
+    transition: background-color var(--k-motion), color var(--k-motion), box-shadow var(--k-motion);
 }
 
 body[data-k-layout="rails"] .k-bc__seg button:hover,
 body[data-k-layout="rails"] .k-bc__seg button:focus-visible {
-    color: var(--k-text-strong);
+    color: var(--k-rc-seg-ink-hover);
 }
 
 body[data-k-layout="rails"] .k-bc__seg button[aria-pressed="true"] {
-    background: var(--k-surface);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k-chrome-border) 60%, transparent);
-    color: var(--k-text-strong);
+    background: var(--k-rc-seg-on-fill);
+    box-shadow: var(--k-rc-seg-on-shadow);
+    color: var(--k-rc-seg-on-ink);
 }
 
 body[data-k-layout="rails"] .k-bc__facts {
@@ -455,7 +465,7 @@ body[data-k-layout="rails"] .k-bc__label {
 body[data-k-layout="rails"] .k-bc__form :is(select, textarea, input) {
     box-sizing: border-box;
     width: 100%;
-    min-height: 34px;
+    min-height: var(--k-rc-btn-h);
     padding: 6px 10px;
     border: 1px solid color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
     border-radius: var(--k-radius-md);
@@ -482,7 +492,9 @@ body[data-k-layout="rails"] .k-bc__inline {
 }
 
 body[data-k-layout="rails"] .k-bc__inline input {
+    box-sizing: border-box;
     flex: 0 1 120px;
+    height: var(--k-rc-btn-h);
     font-family: var(--k-font-mono);
 }
 
@@ -617,7 +629,7 @@ body[data-k-layout="rails"] .k-pc__label {
 body[data-k-layout="rails"] .k-pc__form input {
     box-sizing: border-box;
     width: 100%;
-    min-height: 34px;
+    min-height: var(--k-rc-btn-h);
     padding: 0 10px;
     border: 1px solid color-mix(in srgb, var(--k-chrome-border) 55%, transparent);
     border-radius: var(--k-radius-md);

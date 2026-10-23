@@ -42,6 +42,9 @@ export const PLACEHOLDER_NAME = '[Unnamed Persona]';
  *   names no persona: core's `/persona-update` then edits the active one, which is the point.
  */
 
+/** The picture core gives a persona nobody has given one: every new profile's slot wears it. */
+export const DEFAULT_AVATAR = 'user-default.png';
+
 /** A persona name longer than this is a paragraph in the wrong box. */
 export const NAME_LIMIT = 64;
 
@@ -52,6 +55,19 @@ export const NAME_LIMIT = 64;
 export function isNamed(now) {
     const name = String(now?.name ?? '').trim();
     return Boolean(now?.exists) && name !== '' && name !== PLACEHOLDER_NAME;
+}
+
+/**
+ * Whether the portrait has a picture of its own to show. Core's stock one is a black silhouette
+ * with a question mark, the harshest thing on a light pack's sheet (issue #20), so until someone
+ * picks a picture the step draws a soft empty frame instead.
+ * @param {PersonaNow|null|undefined} now The active persona.
+ * @param {string} picked A data URL of a newly picked image, '' for none.
+ * @returns {boolean} True for a picked image or a slot on any picture but core's default.
+ */
+export function hasOwnPicture(now, picked) {
+    if (picked) return true;
+    return Boolean(now?.exists) && Boolean(now?.avatarId) && now?.avatarId !== DEFAULT_AVATAR;
 }
 
 /**

@@ -28,6 +28,8 @@ import { installExtGuard, uninstallExtGuard } from '../ext-guard.js';
 import { installRailCollapse, uninstallRailCollapse } from '../rail-collapse.js';
 import { installSyncNotice, uninstallSyncNotice } from '../sync-notice.js';
 import { installViewState, uninstallViewState } from '../view-state.js';
+import { installKeyboard, uninstallKeyboard } from '../keyboard.js';
+import { installReadingBar, uninstallReadingBar } from '../reading-bar.js';
 // Settings v0 slice B. A STATIC import, like the card studio's below and for the same two
 // reasons: the unmount path has to call `uninstallSettingsModal()` SYNCHRONOUSLY before
 // `ctx.restoreAll()`, and a module handle captured from a dynamic import would not be
@@ -168,6 +170,42 @@ function setComposerInlineHeight(value) {
     }
 }
 
+/**
+ * Where `<k-chat-header>` lives (reader-chrome, 2026-10-22). Above 820px it docks into the
+ * top bar's empty centre zone as variant `bar`, so the reader loses one strip instead of
+ * two; at 820 and under it stays the `strip` above #sheld, where the phone's rail handles
+ * flank it (kotatsu-phone.css §2). 820 is the width at which the bar's old command pill
+ * already gave its centre up (shell-topbar.css §3), so the two zones never fought for it.
+ * A short screen wider than a phone docks too: a phone on its side (601+ wide, 500 or less
+ * tall) keeps its rail handles on the edges, not in the strip, and had 105 of 343px left
+ * for the story with the strip in place (kotatsu-phone.css, short screens).
+ */
+const HEADER_DOCK_QUERY = '(min-width: 821px), (min-width: 601px) and (max-height: 500px)';
+
+/** @type {MediaQueryList | null} */
+let headerDock = null;
+
+/** @type {(() => void) | null} */
+let onHeaderDockChange = null;
+
+/**
+ * Puts the chat header where the current width wants it. Moving it re-runs its
+ * connectedCallback, which re-binds its events and re-reads the open chat.
+ * @param {HTMLElement} header
+ * @returns {void}
+ */
+function placeChatHeader(header) {
+    const zone = document.querySelector('k-topbar .k-topbar__zone--center');
+    if (headerDock?.matches && zone) {
+        header.setAttribute('variant', 'bar');
+        if (header.parentElement !== zone) zone.append(header);
+        return;
+    }
+    header.setAttribute('variant', 'strip');
+    const center = document.getElementById('k-center');
+    if (center && header.parentElement !== center) center.prepend(header);
+}
+
 /** @type {import('../registry.js').LayoutDefinition} */
 export const railsLayout = {
     async mount(ctx) {
@@ -190,9 +228,10 @@ export const railsLayout = {
                 : buildPlaceholder(spec.label, spec.note ?? 'component not available'));
         }
 
-        // Slice D's chat header sits ABOVE the relocated #sheld, so it prepends into
-        // #k-center rather than replacing — that slot is never cleared (restoreAll
-        // owns #sheld) and must not be.
+        // Slice D's chat header: docked in the top bar on wide screens, a strip ABOVE the
+        // relocated #sheld otherwise (placeChatHeader). As a strip it prepends into
+        // #k-center rather than replacing — that slot is never cleared (restoreAll owns
+        // #sheld) and must not be.
         try {
             // Specifier kept in a const so the import stays dynamic for the type
             // checker, matching how SlotSpec modules resolve (the file may not
@@ -200,7 +239,14 @@ export const railsLayout = {
             const chatHeaderModule = '../components/k-chat-header.js';
             await import(chatHeaderModule);
             if (customElements.get('k-chat-header')) {
-                document.getElementById('k-center')?.prepend(document.createElement('k-chat-header'));
+                const header = document.createElement('k-chat-header');
+                // The bar renders its zones on its first update; dock into a zone that exists.
+                const topbar = document.querySelector('k-topbar');
+                if (topbar && 'updateComplete' in topbar) await topbar.updateComplete;
+                headerDock = window.matchMedia(HEADER_DOCK_QUERY);
+                onHeaderDockChange = () => placeChatHeader(header);
+                headerDock.addEventListener('change', onHeaderDockChange);
+                placeChatHeader(header);
             }
         } catch {
             // Slice D not landed — the centre column simply has no header yet.
@@ -278,7 +324,7 @@ export const railsLayout = {
         installStage();
         // G5: each cast member's rows wear their identity hue (an empty sheet outside scenes).
         installSpeakerHues();
-        // G7: the scene banner, right after the chat header (hidden outside scenes).
+        // G7: the scene banner, at the head of the transcript (hidden outside scenes).
         installSceneBanner();
 
         // Rail collapse (variant wardrobe v0 slice C). Last, so the first apply()
@@ -299,6 +345,11 @@ export const railsLayout = {
         // The document never scrolls under rails (ext gauntlet finding 7). Order-free: it
         // only ever puts the viewport back at 0.
         installDocScrollPin();
+        // iOS Safari's keyboard covers the shell instead of resizing it; size the shell to what
+        // the keyboard leaves (touch only). Order-free, like the pin it stops fighting.
+        installKeyboard();
+        // On a phone the bars step aside while the reader scrolls down through the story.
+        installReadingBar();
 
         // An extension that takes #sheld or covers the centre is named, with a way out
         // (ext gauntlet finding 5). After everything above: it hit-tests the mounted frame.
@@ -325,6 +376,8 @@ export const railsLayout = {
         uninstallSettingsModal();
         uninstallExtGuard();
         uninstallSyncNotice();
+        uninstallReadingBar();
+        uninstallKeyboard();
         uninstallDocScrollPin();
         uninstallViewState();
         uninstallRailCollapse();
@@ -343,7 +396,10 @@ export const railsLayout = {
         // #sheld is still where the gallery expects it (the tab-rail ordering lesson).
         document.querySelector('#k-center > k-library')?.remove();
         document.querySelector('#k-center > k-jump-latest')?.remove();
-        document.querySelector('#k-center > k-chat-header')?.remove();
+        if (headerDock && onHeaderDockChange) headerDock.removeEventListener('change', onHeaderDockChange);
+        headerDock = null;
+        onHeaderDockChange = null;
+        document.querySelector('k-chat-header')?.remove();
         for (const id of COMPONENT_SLOT_IDS) {
             document.getElementById(id)?.replaceChildren();
         }

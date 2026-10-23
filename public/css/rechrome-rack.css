@@ -429,9 +429,17 @@ body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) hr {
    `.paginationjs-size-changer select` is slice A's — no `<select>` is touched here.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Each page link is the house icon circle (rechrome-controls.css `--k-rc-btn-h`), so the
+   pager sits level with the size changer and the grid toggle beside it. */
 body[data-k-layout="rails"] :is(.drawer-content, .k-set-block) .paginationjs-pages ul li a {
-    min-width: 1.7em;
-    padding: 0.3em 0.5em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-width: var(--k-rc-btn-h);
+    height: var(--k-rc-btn-h);
+    padding: 0 0.5em;
+    border-radius: var(--k-rc-btn-radius);
     text-align: center;
     font-family: 'Font Awesome 6 Free', var(--k-font-ui);
     transition: color var(--k-motion), background-color var(--k-motion), border-color var(--k-motion);

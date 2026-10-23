@@ -3,9 +3,12 @@
  * gathers the facts, this decides what they mean, and Jest drives it without a server.
  */
 
+import { chatgptState, claudeState, keysState, tourLane } from '../connections/order.js';
+
 /** @typedef {'claude'|'keys'|'other'} Lane */
 
-/** The three ways to connect, in the order the step offers them (Claude Code first). */
+/** The three ways to connect, in the order the lane switch shows them. Which one opens first is
+ * {@link initialLane}'s call. */
 export const LANES = Object.freeze(/** @type {const} */ (['claude', 'keys', 'other']));
 
 /**
@@ -40,12 +43,28 @@ export function connectState({ online, reason, failed, label }) {
 }
 
 /**
- * Which lane to open on: the one the live (or selected) connection already belongs to.
- * @param {{ onBridge: boolean, source: string, providerSources: readonly string[] }} facts
+ * Which lane to open on: the Connection tab's rule (connections/order.js), so the tour and the tab
+ * never disagree about what comes first. The subscription lane holds both plans and opens first
+ * only when one of them is in use, or set up while no key is; without Claude Code (a fresh install
+ * still starts on the bridge) the tour opens on the API keys. A selected provider counts as the
+ * keys being in use here even before it answers: the step opens on the lane the person's own
+ * connection belongs to.
+ * @param {{
+ *   onBridge: boolean,
+ *   onChatGPT: boolean,
+ *   doctorKnown: boolean,
+ *   problems: ReadonlyArray<{ kind: string }>,
+ *   chatgptFace: string,
+ *   source: string,
+ *   providerSources: readonly string[],
+ * }} facts `isOnBridge()`, `isOnChatGPT()`; whether `/doctor` has answered and `doctorProblems()`
+ *   of it; the ChatGPT card's `cardState()`; core's chat-completion source; the providers' sources.
  * @returns {Lane}
  */
-export function initialLane({ onBridge, source, providerSources }) {
-    if (onBridge) return 'claude';
-    if (providerSources.includes(source)) return 'keys';
-    return 'claude';
+export function initialLane({ onBridge, onChatGPT, doctorKnown, problems, chatgptFace, source, providerSources }) {
+    return tourLane({
+        claude: claudeState({ onBridge, doctorKnown, problems }),
+        chatgpt: chatgptState({ onChatGPT, face: chatgptFace }),
+        keys: keysState({ keyInUse: !onBridge && !onChatGPT && providerSources.includes(source) }),
+    });
 }

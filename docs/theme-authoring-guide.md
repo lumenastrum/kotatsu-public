@@ -79,7 +79,8 @@ it.
 > **Prefer to start from a theme you like?** Copy it instead:
 > `npm run theme:new -- my-kissaten --from midnight-kissaten`
 > You get every file of that theme (fonts and pictures included) under your new id, ready to
-> change. The built-in themes are `blue-hour`, `sparkle`, `natsumikan` and `midnight-kissaten`;
+> change. The built-in themes are `blue-hour`, `sparkle`, `natsumikan`, `natsumikan-v2`,
+> `natsumikan-v3` and `midnight-kissaten`;
 > the worked example in [section 10](#10-worked-example-kissaten-showcase) is `kissaten-showcase`.
 
 ### Step 2: look inside

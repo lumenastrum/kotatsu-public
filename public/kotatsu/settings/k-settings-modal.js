@@ -87,6 +87,7 @@ import { getEntries, getSections, searchEntries } from './registry.js';
 import { regionsFor } from './region-plan.js';
 import { OPEN_TOUR_EVENT } from '../onboarding/k-onboarding.js';
 import { OPEN_WHATS_NEW_EVENT } from '../whats-new/k-whats-new.js';
+import { OPEN_FEEDBACK_EVENT } from '../feedback/k-feedback.js';
 import '../phone/k-phone-card.js';
 import '../pictures/k-pictures-settings.js';
 
@@ -558,12 +559,35 @@ export class KSettingsModal extends LitElement {
 
     firstUpdated() {
         this.#place(this.tab);
-        this.#focusSearch();
+        this.#focusOnOpen();
+    }
+
+    /** The tab {@link #revealTab} last brought into view; '' before the first. */
+    #revealedTab = '';
+
+    /**
+     * On a phone the section nav is one scrolling row (kotatsu-phone.css), and opening on, say,
+     * System left the lit tab off the edge (mobile pass 2026-10-22). When the TAB changes, scroll
+     * the row so it shows; never on other updates, so a person dragging the row is not fought.
+     * @returns {void}
+     */
+    #revealTab() {
+        if (this.tab === this.#revealedTab) return;
+        const strip = this.querySelector('.k-set-tabs');
+        const active = strip?.querySelector('.k-set-tab.is-active');
+        if (!(strip instanceof HTMLElement) || !(active instanceof HTMLElement)) return;
+        this.#revealedTab = this.tab;
+        if (strip.scrollWidth <= strip.clientWidth) return;
+        const row = strip.getBoundingClientRect();
+        const tab = active.getBoundingClientRect();
+        // 32px: the faded end of the row.
+        if (tab.left < row.left || tab.right > row.right - 32) strip.scrollLeft += tab.left - row.left - 12;
     }
 
     /** The section nav's pill follows the active tab (blue-hour-polish-v0 §4 M3). */
     updated() {
         glideIndicator(this.querySelector('.k-set-tabs'), '.k-set-tab.is-active');
+        this.#revealTab();
         // A running search shows every match in place: the Connection tab's stock panel, folded
         // behind its disclosure otherwise (connections-v0 C3), stands open while one runs.
         this.toggleAttribute('data-searching', Boolean(this._query.trim()));
@@ -687,6 +711,22 @@ export class KSettingsModal extends LitElement {
         }
         this.#activate(sectionId);
         return true;
+    }
+
+    /**
+     * Where focus lands when the modal opens. With a keyboard, the search field: type to find a
+     * setting. On a touch screen a focused field raises the on-screen keyboard over half the sheet
+     * before the person has chosen anything (Andres, on his iPhone, 2026-10-22), so focus goes to
+     * the Close button instead: still inside the dialog for Escape and screen readers, and a
+     * button never opens the keyboard. `pointer: coarse` is the test shell/keyboard.js uses.
+     * @returns {void}
+     */
+    #focusOnOpen() {
+        if (window.matchMedia('(pointer: coarse)').matches) {
+            /** @type {HTMLElement|null} */ (this.querySelector('.k-set-close'))?.focus({ preventScroll: true });
+            return;
+        }
+        this.#focusSearch();
     }
 
     /** Puts the caret where a settings visitor most often starts. @returns {void} */
@@ -1229,6 +1269,9 @@ export class KSettingsModal extends LitElement {
         if (entry.control === 'kotatsu-whats-new') {
             return this.#renderWhatsNewReplay(entry.binding.ref);
         }
+        if (entry.control === 'kotatsu-feedback') {
+            return this.#renderFeedbackDoor(entry.binding.ref);
+        }
         if (entry.control === 'kotatsu-phone') {
             return html`<k-phone-card id=${entry.binding.ref} variant="settings"></k-phone-card>`;
         }
@@ -1269,6 +1312,20 @@ export class KSettingsModal extends LitElement {
             window.dispatchEvent(new CustomEvent(OPEN_WHATS_NEW_EVENT));
         };
         return html`<button id=${buttonId} type="button" class="menu_button" @click=${replay}>Show what’s new</button>`;
+    }
+
+    /**
+     * Send feedback's door (docs/feedback-v0.md). Settings closes first, for the same reason as
+     * What's New's: the sheet sits under this one.
+     * @param {string} buttonId The entry's `binding.ref`.
+     * @returns {unknown} A Lit template.
+     */
+    #renderFeedbackDoor(buttonId) {
+        const open = () => {
+            this.close();
+            window.dispatchEvent(new CustomEvent(OPEN_FEEDBACK_EVENT));
+        };
+        return html`<button id=${buttonId} type="button" class="menu_button" @click=${open}>Send feedback</button>`;
     }
 
     /**

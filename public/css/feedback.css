@@ -1,0 +1,266 @@
+/*
+ * feedback.css — Send feedback (<k-feedback variant="sheet">, docs/feedback-v0.md).
+ *
+ * A body-level sheet with its own scrim, one rung over What's New (4070) and under the tour (4080)
+ * and settings (4090), which closes before it opens. Every rule is gated on rails; colours come from
+ * `--k-*`. The buttons and the kind switch are the house button and segmented switch
+ * (rechrome-controls.css `--k-rc-btn-*`, `--k-rc-seg-*`), so a pack that dresses those dresses this.
+ */
+
+body[data-k-layout="rails"] {
+    --k-fb-z-scrim: 4075;
+    --k-fb-z-sheet: 4076;
+    --k-fb-width: min(560px, calc(100vw - 32px));
+}
+
+body[data-k-layout="rails"] k-feedback {
+    display: contents;
+}
+
+body[data-k-layout="rails"] .k-fb-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: var(--k-fb-z-scrim);
+    background: var(--k-set-scrim-fill, color-mix(in srgb, var(--k-scrim) 72%, transparent));
+    backdrop-filter: blur(calc(var(--k-blur-panel) / 2));
+    -webkit-backdrop-filter: blur(calc(var(--k-blur-panel) / 2));
+}
+
+/* Centred with inset + margin, never a transform: see settings-modal.css "Centring". */
+body[data-k-layout="rails"] .k-fb-sheet {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    z-index: var(--k-fb-z-sheet);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    inline-size: var(--k-fb-width);
+    block-size: fit-content;
+    max-block-size: calc(var(--k-vvh, 100dvh) - 32px);
+    padding: 22px 24px 20px;
+    overflow: hidden;
+    background: var(--k-surface);
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-xl);
+    box-shadow: var(--k-elev-4);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+}
+
+body[data-k-layout="rails"] .k-fb-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+body[data-k-layout="rails"] .k-fb-title {
+    margin: 0;
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: 22px;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-fb-close {
+    display: inline-grid;
+    place-items: center;
+    inline-size: var(--k-rc-btn-h);
+    block-size: var(--k-rc-btn-h);
+    padding: 0;
+    border: 1px solid var(--k-rc-btn-line);
+    border-radius: var(--k-radius-round);
+    background: var(--k-rc-btn-fill);
+    color: var(--k-text-muted);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-fb-close:hover,
+body[data-k-layout="rails"] .k-fb-close:focus-visible {
+    border-color: var(--k-rc-btn-line-hover);
+    background: var(--k-rc-btn-fill-hover);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-fb-lede,
+body[data-k-layout="rails"] .k-fb-hint {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-fb-hint {
+    font-size: 12px;
+}
+
+/* The one scroller: the head and the buttons stay put on a short screen. */
+body[data-k-layout="rails"] .k-fb-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-block-size: 0;
+    overflow-y: auto;
+    padding: 2px;
+    margin: -2px;
+}
+
+body[data-k-layout="rails"] .k-fb-kinds {
+    display: flex;
+    flex-wrap: wrap;
+    align-self: flex-start;
+    gap: 2px;
+    padding: var(--k-rc-seg-pad);
+    border: 1px solid var(--k-rc-seg-line);
+    border-radius: var(--k-rc-btn-radius);
+    background: var(--k-rc-seg-fill);
+}
+
+body[data-k-layout="rails"] .k-fb-kind {
+    min-block-size: var(--k-rc-seg-option-h);
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--k-rc-btn-radius);
+    background: transparent;
+    color: var(--k-rc-seg-ink);
+    font: var(--k-rc-btn-weight) var(--k-rc-btn-size) var(--k-font-ui);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-fb-kind:hover,
+body[data-k-layout="rails"] .k-fb-kind:focus-visible {
+    color: var(--k-rc-seg-ink-hover);
+}
+
+body[data-k-layout="rails"] .k-fb-kind[aria-checked="true"] {
+    background: var(--k-rc-seg-on-fill);
+    box-shadow: var(--k-rc-seg-on-shadow);
+    color: var(--k-rc-seg-on-ink);
+}
+
+body[data-k-layout="rails"] .k-fb-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-fb-label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-fb-label small {
+    margin-inline-start: 6px;
+    font-weight: 500;
+    color: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-fb-input {
+    inline-size: 100%;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body[data-k-layout="rails"] .k-fb-text {
+    min-block-size: 120px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-fb-diag {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-block-start: 12px;
+    border-block-start: 1px solid var(--k-border);
+}
+
+body[data-k-layout="rails"] .k-fb-diagtext {
+    font-family: var(--k-font-mono);
+    font-size: 11.5px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+body[data-k-layout="rails"] .k-fb-status {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-fb-foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-block-start: 12px;
+    border-block-start: 1px solid var(--k-border);
+}
+
+body[data-k-layout="rails"] .k-fb-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-block-size: var(--k-rc-btn-h);
+    padding: 0 var(--k-rc-btn-pad-x);
+    border: 1px solid var(--k-rc-btn-line);
+    border-radius: var(--k-rc-btn-radius);
+    background: var(--k-rc-btn-fill);
+    box-shadow: var(--k-rc-btn-shadow);
+    color: var(--k-rc-btn-ink);
+    font: var(--k-rc-btn-weight) var(--k-rc-btn-size) var(--k-font-ui);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--k-motion), border-color var(--k-motion), box-shadow var(--k-motion);
+}
+
+body[data-k-layout="rails"] .k-fb-button:hover,
+body[data-k-layout="rails"] .k-fb-button:focus-visible {
+    border-color: var(--k-rc-btn-line-hover);
+    background: var(--k-rc-btn-fill-hover);
+    box-shadow: var(--k-rc-btn-shadow-hover);
+    color: var(--k-rc-btn-ink-hover);
+}
+
+body[data-k-layout="rails"] .k-fb-button[data-kind="primary"] {
+    border-color: var(--k-rc-btn-primary-line);
+    background: var(--k-rc-btn-primary-fill);
+    box-shadow: var(--k-rc-btn-primary-shadow);
+    color: var(--k-rc-btn-primary-ink);
+}
+
+body[data-k-layout="rails"] .k-fb-button[data-kind="primary"]:hover,
+body[data-k-layout="rails"] .k-fb-button[data-kind="primary"]:focus-visible {
+    background: var(--k-rc-btn-primary-fill-hover);
+    box-shadow: var(--k-rc-btn-primary-shadow-hover);
+}
+
+body[data-k-layout="rails"] :is(.k-fb-kind, .k-fb-button, .k-fb-close):focus-visible {
+    outline: 2px solid var(--k-accent);
+    outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+    body[data-k-layout="rails"] .k-fb-sheet {
+        padding: 18px 16px 16px;
+    }
+
+    /* Three equal columns across the sheet, never a second row. */
+    body[data-k-layout="rails"] .k-fb-kinds {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-self: stretch;
+    }
+
+    body[data-k-layout="rails"] .k-fb-kind {
+        padding: 0 6px;
+    }
+
+    body[data-k-layout="rails"] .k-fb-foot .k-fb-button {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+}

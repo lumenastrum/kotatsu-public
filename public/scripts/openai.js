@@ -467,15 +467,15 @@ const default_settings = {
     nanogpt_model: 'gpt-4o-mini',
     nanogpt_provider: '',
     nanogpt_payg_override: false,
-    deepseek_model: 'deepseek-v4-flash',
+    deepseek_model: 'deepseek-flash', // KOTATSU-PATCH 2026-10-23: deepseek-v4-flash is retired; /models serves deepseek-flash + deepseek-v4-pro
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
     pollinations_endpoint: POLLINATIONS_ENDPOINT.AUTHENTICATED,
-    moonshot_model: 'kimi-latest',
+    moonshot_model: 'kimi-k3.1-pro', // KOTATSU-PATCH 2026-10-23: kimi-latest is no longer served; K3.1 Pro launched today
     xiaomi_model: 'mimo-v2.6-pro',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
-    zai_model: 'glm-4.6',
+    zai_model: 'glm-5.3', // KOTATSU-PATCH 2026-10-23: the current flagship (glm-4.6 still served)
     zai_endpoint: ZAI_ENDPOINT.COMMON,
     workers_ai_model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     workers_ai_account_id: '',
@@ -2426,7 +2426,9 @@ function saveModelList(data) {
 
         const selectedModel = model_list.find(model => model.id === oai_settings.moonshot_model);
         if (model_list.length > 0 && (!selectedModel || !oai_settings.moonshot_model)) {
-            oai_settings.moonshot_model = model_list[0].id;
+            // KOTATSU-PATCH 2026-10-23: a retired id (kimi-latest) lands on the current default when Kimi still serves
+            // it, not on whichever model /models happens to list first.
+            oai_settings.moonshot_model = model_list.find(model => model.id === default_settings.moonshot_model)?.id ?? model_list[0].id;
         }
 
         $('#model_moonshot_select').val(oai_settings.moonshot_model).trigger('change');
@@ -3136,7 +3138,11 @@ export async function createGenerationParameters(settings, model, type, messages
     // https://platform.moonshot.ai/docs/api/chat#public-service-address
     if (settings.chat_completion_source === chat_completion_sources.MOONSHOT) {
         // >Kimi API is fully compatible with OpenAI's API format
-        if (/kimi-k2.5/.test(model)) {
+        // KOTATSU-PATCH 2026-10-23: the current Kimi line (K2.5 to K3.1) fixes its samplers itself, in both modes
+        // (live-probed today): thinking on accepts only temperature 1, top_p 0.95 and penalties 0; thinking off only
+        // temperature 0.6 ("invalid temperature: only 0.6 is allowed for this model"). Left out, each defaults to the
+        // value it requires. Older Kimis that think (kimi-k2-thinking) get the same treatment while thinking.
+        if (/kimi-k(?:2\.[5-9]|3)/.test(model) || generate_data.include_reasoning) {
             delete generate_data.temperature;
             delete generate_data.top_p;
             delete generate_data.frequency_penalty;
@@ -4444,7 +4450,10 @@ function migrateChatCompletionSettings(settings) {
         { oldKey: 'claude_use_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'use_makersuite_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'mistralai_model', oldValue: /^(mistral-medium|mistral-small)$/, newKey: 'mistralai_model', newValue: (settings.mistralai_model + '-latest') },
-        { oldKey: 'deepseek_model', oldValue: /^deepseek-(chat|reasoner|coder)$/, newKey: 'deepseek_model', newValue: 'deepseek-v4-flash' },
+        // KOTATSU-PATCH 2026-10-23: deepseek-v4-flash retired too; deepseek-flash is its successor. (A retired Kimi id
+        // is healed by the picker against the live /models list instead: the acceptance presets carry kimi-latest
+        // and must load byte-identically, tests/preset-byte-identity.test.js.)
+        { oldKey: 'deepseek_model', oldValue: /^deepseek-(chat|reasoner|coder|v4-flash)$/, newKey: 'deepseek_model', newValue: 'deepseek-flash' },
         { oldKey: 'openrouter_sort_models', oldValue: 'alphabetically', newKey: 'sort_models', newValue: 'alphabetically' },
         { oldKey: 'openrouter_sort_models', oldValue: 'pricing.prompt', newKey: 'sort_models', newValue: 'pricing.prompt' },
         { oldKey: 'openrouter_sort_models', oldValue: 'context_length', newKey: 'sort_models', newValue: 'context_length' },
@@ -5480,6 +5489,7 @@ function getZaiMaxContext(model, isUnlocked) {
 
     const contextMap = {
         'glm-5.3': max_1mil, // KOTATSU-PATCH 2026-08-14: 1M ctx per Z.AI docs (same base as 5.2)
+        'glm-5.3-flashx': max_1mil, // KOTATSU-PATCH 2026-10-23: the high-speed 5.3-flash tier, live on api.z.ai /models; 1M per OpenRouter and the listings (Z.ai's docs page covers glm-5.3 only)
         'glm-5.3-flash': max_1mil, // KOTATSU-PATCH 2026-08-26: launch-day add (ex-stealth "Ox Alpha"), 1M ctx per Z.AI launch; id live-verified against api.z.ai
         'glm-5.2': max_1mil,
         'glm-5.1': max_200k,
@@ -5596,6 +5606,12 @@ function getMoonshotMaxContext(model, isUnlocked) {
         'kimi-k2-turbo-preview': max_256k,
         'kimi-k2-thinking': max_256k,
         'kimi-k2-thinking-turbo': max_256k,
+        // KOTATSU-PATCH 2026-10-23: sizes from Moonshot's own /models (context_length), live-read today.
+        // Without them the lookup falls back to 32k, which capped the 1M K3 line at 32k.
+        'kimi-k2.6': max_256k,
+        'kimi-k2.7-code': max_256k,
+        'kimi-k3.1-pro': max_1mil,
+        'kimi-k3': max_1mil,
     };
 
     // Return context size if model found, otherwise default to 32k

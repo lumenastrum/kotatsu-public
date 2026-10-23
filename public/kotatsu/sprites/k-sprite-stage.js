@@ -23,10 +23,22 @@ import { readStoredExpression, resolveExpression } from './expression-model.js';
 import { EXPRESSION_EVENT, stageCharacterFor } from './expressions.js';
 import { FRAMING_EVENT, faceStyle, readFraming } from './framing.js';
 import { SPRITES_EVENT, forgetSpriteSet, spriteSetsFor } from './sprite-sets.js';
-import { cropFor, cutSides, layoutStage, pickFraming, stageMode } from './stage-model.js';
+import { cropFor, cutSides, layoutStage, layoutTheatre, pickFraming, stageMode } from './stage-model.js';
 import { loadFrame } from './frame-measure.js';
+import { installTheatre } from './theatre.js';
 
 export const SPRITE_STAGE_TAG = 'k-sprite-stage';
+
+/**
+ * Where the Sprite look becomes the phone's theatre (stage-model.js `layoutTheatre`, css/sprites.css §9): the
+ * width at which the shell is a phone (kotatsu-phone.css), so the textbox and the stage switch together.
+ */
+export const THEATRE_QUERY = '(max-width: 600px)';
+
+/** @returns {boolean} whether the Sprite look is a theatre here (a phone-width screen) */
+export function theatreActive() {
+    return spriteLookActive() && window.matchMedia(THEATRE_QUERY).matches;
+}
 
 /** @returns {boolean} whether the reading column wears the sprite look */
 export function spriteLookActive() {
@@ -126,8 +138,6 @@ export class KSpriteStage extends LitElement {
         /** @type {(import('./stage-model.js').StageLayout & {members: Array<CastMember & {url: string, faceUrl: string, label: string, framing: string, cut?: {left: boolean, right: boolean}}>, speaker?: string|null}) | null} */
         this._layout = null;
         this._token = 0;
-        /** @type {HTMLElement|null} the phone spotlight card, a sibling (see paintSpotlight) */
-        this._spot = null;
         this._frame = 0;
         this._refresh = () => this.schedule();
         this._onChatChanged = () => { forgetSpriteSet(); this.schedule(); };
@@ -166,8 +176,6 @@ export class KSpriteStage extends LitElement {
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        this._spot?.remove();
-        this._spot = null;
         document.removeEventListener(EXPRESSION_EVENT, this._refresh);
         document.removeEventListener(VARIANT_AXIS_EVENT, this._refresh);
         document.removeEventListener(FRAMING_EVENT, this._refresh);
@@ -195,9 +203,9 @@ export class KSpriteStage extends LitElement {
         const token = ++this._token;
         if (!spriteLookActive() || document.body.dataset.kView === 'home') {
             this._layout = null;
-            this.paintSpotlight([], null, {});
             return;
         }
+        const theatre = theatreActive();
         const { members, solo } = currentCast();
         const { speaker, recency, latest } = readScene();
         // A card may carry two framings (the full body in its folder, the bust in `bust/`); the layout's mode picks
@@ -207,7 +215,7 @@ export class KSpriteStage extends LitElement {
             const sets = await spriteSetsFor(member.character);
             if (sets.full.labels.size || sets.bust.labels.size) withSets.push({ member, sets });
         }
-        const mode = stageMode(withSets.length, solo);
+        const mode = theatre ? 'theatre' : stageMode(withSets.length, solo);
         /** @type {Array<CastMember & {url: string, faceUrl: string, label: string, framing: string, aspect: number, crop: number, cut: {left: boolean, right: boolean}}>} */
         const placed = [];
         for (const { member, sets } of withSets) {
@@ -225,8 +233,19 @@ export class KSpriteStage extends LitElement {
             placed.push({ ...member, url: wanted, faceUrl, label, framing: framing ?? 'full', aspect, crop: cropFor(base.bottomCoverage), cut: cutSides(base) });
         }
         if (token !== this._token) return;
-        this.paintSpotlight(placed, speaker, recency);
         const box = this.getBoundingClientRect();
+        if (theatre) {
+            const layout = box.width ? layoutTheatre({
+                width: box.width,
+                height: box.height,
+                members: placed.map(m => ({ id: m.id, aspect: m.aspect, crop: m.crop, ...framingOf(m.character) })),
+                speaker,
+                recency,
+            }) : null;
+            this._layout = layout ? { ...layout, members: placed, speaker } : null;
+            this.dataset.mode = layout?.mode ?? 'none';
+            return;
+        }
         const column = document.getElementById('form_sheld')?.getBoundingClientRect();
         if (!column || !box.width) {
             this._layout = null;
@@ -245,37 +264,6 @@ export class KSpriteStage extends LitElement {
         });
         this._layout = { ...layout, members: placed, speaker };
         this.dataset.mode = layout.mode;
-    }
-
-    /**
-     * The phone's spotlight (the staging spec: no room for a wing → the speaker's bust in a small card; the cast
-     * lineup is the scene's own On-stage strip). A sibling of the stage, not a child: the stage sits under the
-     * messages and the card must float over them. Painted every refresh; CSS shows it only at phone width.
-     * @param {Array<CastMember & {url: string, faceUrl: string}>} placed members with a face
-     * @param {string|null} speaker
-     * @param {Record<string, number>} recency
-     */
-    paintSpotlight(placed, speaker, recency) {
-        if (!this._spot) {
-            this._spot = document.createElement('div');
-            this._spot.className = 'k-sprite-spotlight';
-            this._spot.setAttribute('aria-hidden', 'true');
-            this.after(this._spot);
-        }
-        const latestSpeaker = Object.entries(recency).sort((a, b) => b[1] - a[1])[0]?.[0];
-        const who = placed.find(m => m.id === speaker) ?? placed.find(m => m.id === latestSpeaker) ?? placed[0];
-        if (!who) {
-            delete this._spot.dataset.on;
-            return;
-        }
-        this._spot.dataset.on = 'true';
-        this._spot.dataset.id = who.id;
-        this._spot.style.backgroundImage = `url("${who.faceUrl}")`;
-        const framing = readFraming(who.character);
-        this._spot.style.setProperty('--k-sprite-face-y', `${(framing.faceY * 100).toFixed(1)}%`);
-        this._spot.style.setProperty('--k-sprite-face-zoom', `${(framing.faceZoom * 70).toFixed(0)}%`);
-        if (who.color) this._spot.style.setProperty('--k-speaker', who.color);
-        else this._spot.style.removeProperty('--k-speaker');
     }
 
     /** Diagnostics for the door and the probe. */
@@ -351,6 +339,8 @@ export function installSpriteStage() {
     const center = document.getElementById('k-center');
     if (!center || center.querySelector(`:scope > ${SPRITE_STAGE_TAG}`)) return;
     center.prepend(document.createElement(SPRITE_STAGE_TAG));
+    // The phone theatre's reading behaviour (start of a line, the box's edge fades).
+    installTheatre();
 
     // The console door joins the one expressions.js made (properties added, so its live getters survive).
     /** @type {Window & typeof globalThis & {kotatsu?: Record<string, any>}} */

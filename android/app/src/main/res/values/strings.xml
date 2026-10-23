@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kotatsu</string>
+    <string name="channel_name">Kotatsu server</string>
+    <string name="notif_running">Kotatsu is running on this phone</string>
+    <string name="notif_unpacking">Setting up Kotatsu…</string>
+    <string name="notif_stop">Stop</string>
+    <string name="boot_unpacking">Setting up Kotatsu for the first time…</string>
+    <string name="boot_starting">Warming up the kotatsu…</string>
+    <string name="boot_failed">Kotatsu stopped while starting. Close the app and open it again; if it keeps happening, report a bug with the log below.</string>
+</resources>

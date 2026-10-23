@@ -19,7 +19,7 @@
 
 /** @type {Readonly<Record<string, number>>} */
 export const STAGE = Object.freeze({
-    /** Below this wing width there is no stage (the phone spotlight takes over). */
+    /** Below this wing width there is no stage beside the column (a phone gets the theatre, {@link layoutTheatre}). */
     minWing: 150,
     /** Seat pitch: wing × 0.62, clamped to [minWing, max(maxPitch, the pitch at which the height cap governs)]. */
     pitchOfWing: 0.62,
@@ -113,7 +113,7 @@ export function cutSides(frame) {
 
 /**
  * @typedef {object} StageLayout
- * @property {'stage'|'duet'|'wings'|'none'} mode
+ * @property {'stage'|'duet'|'wings'|'theatre'|'none'} mode
  * @property {StageFigure[]} figures
  * @property {{left: string[], right: string[]}} bench
  * @property {number} pitch
@@ -145,13 +145,13 @@ export const FRAMING_PINS = Object.freeze(['auto', 'bust', 'full']);
  * Which of a character's two sets the stage shows: the card's pin when that set exists; else the bust in Stage and
  * Duet (a lone figure beside the column reads best as a bust) and the full body in the Wings (rows of figures);
  * else whichever set the card has.
- * @param {'stage'|'duet'|'wings'} mode
+ * @param {'stage'|'duet'|'wings'|'theatre'} mode
  * @param {string} pin `auto` | `bust` | `full`
  * @param {{bust: boolean, full: boolean}} has which sets have sprites
  * @returns {'bust'|'full'|null} null when the card has neither
  */
 export function pickFraming(mode, pin, has) {
-    const want = pin === 'bust' || pin === 'full' ? pin : mode === 'wings' ? 'full' : 'bust';
+    const want = pin === 'bust' || pin === 'full' ? pin : mode === 'wings' || mode === 'theatre' ? 'full' : 'bust';
     if (has[want]) return want;
     const other = want === 'bust' ? 'full' : 'bust';
     return has[other] ? other : null;
@@ -273,4 +273,68 @@ export function layoutStage({ width, height, columnLeft, columnRight, members, s
         });
     }
     return { mode, figures, bench, pitch: Math.round(pitch) };
+}
+
+/**
+ * The phone's theatre (Andres, 2026-10-22: "A is C without committing to what a sprite/VN mode wants to be. So C
+ * it is"). A phone has no wing beside the column, so the Sprite look becomes a visual novel: one figure, centred and
+ * large, standing behind the textbox (the last message, css/sprites.css §9) so her upper body shows above it.
+ */
+export const THEATRE = Object.freeze({
+    /** Her box is this share of the stage's height; with the 132 % crop the knees fall behind the textbox. */
+    heightOfStage: 0.86,
+    /** She may be wider than the screen by this much: a close-up, her sides off the edges (they fade, `cutSides`). */
+    widthOfStage: 1.4,
+});
+
+/**
+ * Lays out the theatre: the speaker, else whoever finished a reply last, else the first member, centred.
+ * Everyone else is off stage (a scene's cast is its own On-stage strip).
+ * @param {object} args
+ * @param {number} args.width stage width
+ * @param {number} args.height stage height
+ * @param {StageMember[]} args.members home order
+ * @param {string|null} [args.speaker] who is speaking (may be writing now); null when no one is
+ * @param {Record<string, number>} [args.recency] finished replies only
+ * @returns {StageLayout}
+ */
+export function layoutTheatre({ width, height, members, speaker = null, recency = {} }) {
+    const none = /** @type {StageLayout} */ ({ mode: 'none', figures: [], bench: { left: [], right: [] }, pitch: 0 });
+    const list = Array.isArray(members) ? members.filter(m => m && typeof m.id === 'string' && m.id) : [];
+    if (!list.length || !(width > 0) || !(height > 0)) return none;
+    const latest = list
+        .filter(m => Number.isFinite(recency?.[m.id]))
+        .sort((a, b) => recency[b.id] - recency[a.id])[0];
+    const who = list.find(m => m.id === speaker) ?? latest ?? list[0];
+    const speaking = who.id === speaker;
+    const aspect = Number(who.aspect) > 0 ? Number(who.aspect) : DEFAULT_ASPECT;
+    const crop = Number(who.crop) > 0 ? Number(who.crop) : STAGE.crop;
+    const knob = Number(who.scale) > 0 ? Number(who.scale) : 1;
+    // As tall as the theatre allows, then narrowed so a wide canvas overhangs the screen by at most widthOfStage: a
+    // close-up rather than a figure shrunk to fit (a full-body 832 × 1216 sprite fit to 393 px was 57 % of the screen).
+    let boxHeight = height * THEATRE.heightOfStage;
+    const widest = width * THEATRE.widthOfStage;
+    if (boxHeight * crop * aspect * knob > widest) boxHeight = widest / (crop * aspect * knob);
+    const boxWidth = boxHeight * crop * aspect;
+    const offset = Number.isFinite(who.offset) ? Number(who.offset) * boxHeight : 0;
+    return {
+        mode: 'theatre',
+        figures: [{
+            id: who.id,
+            side: 'left',
+            row: 0,
+            x: Math.round(width / 2 - boxWidth / 2),
+            width: Math.round(boxWidth),
+            height: Math.round(boxHeight),
+            crop,
+            scale: Math.round(knob * 1000) / 1000,
+            dy: Math.round(offset),
+            brightness: speaking ? STAGE.brightSpeaker : STAGE.brightIdle,
+            saturate: speaking ? 1 : STAGE.saturateIdle,
+            z: 5,
+            speaking,
+        }],
+        bench: { left: [], right: [] },
+        pitch: 0,
+    };
 }

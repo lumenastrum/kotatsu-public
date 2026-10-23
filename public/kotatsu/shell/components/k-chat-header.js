@@ -1,9 +1,15 @@
 /**
  * `<k-chat-header>` — the rails-layout centre-column header strip (shell v0, slice D).
  *
- * The 44px line above the messages, per `docs/shell-v0.md` §"The target > Center":
+ * The open chat's identity line, per `docs/shell-v0.md` §"The target > Center":
  *
- *   character name · `/` · <k-chat-switcher> · spacer · message count
+ *   character name · `/` · <k-chat-switcher> · Scene chip · Background chip · History chip · spacer · message count
+ *
+ * Two placements, chosen by layouts/rails.js (reader-chrome, 2026-10-22): above 820px it docks
+ * into `<k-topbar>`'s centre zone as variant `bar`, so the reader loses one strip instead of
+ * two; at 820 and under it is the 44px `strip` above the messages, flanked by the phone's rail
+ * handles. The Scene chip (scenes only) peeks at the scene's text, which no longer stays pinned
+ * over the transcript (`k-scene-banner.js`), and asks the banner for an edit.
  *
  * The chat title is `<k-chat-switcher>`'s (that component owns the title
  * button, the switcher popover and the branch chip — see its header). The old
@@ -49,12 +55,18 @@
  */
 
 import { LitElement, html, nothing } from '../lit.js';
-import { characters, chat, getCurrentChatId, this_chid } from '../../../script.js';
+import { characters, chat, chat_metadata, getCurrentChatId, this_chid } from '../../../script.js';
 import { event_types, eventSource } from '../../../scripts/events.js';
 import { groups, selected_group } from '../../../scripts/group-chats.js';
 import { shouldSendOnEnter } from '../../../scripts/RossAscends-mods.js';
 // Side-effect import: defines <k-chat-switcher>, rendered in the ident below.
 import './k-chat-switcher.js';
+import { openScene } from '../../groups/stage-actions.js';
+import { SCENE_CHANGED_EVENT, SCENE_EDIT_EVENT } from '../../groups/k-scene-banner.js';
+// Side-effect import: defines <k-backdrop-chip>, which shows itself in the Sprite view only.
+import '../../sprites/k-backdrop-chip.js';
+// Side-effect import: defines <k-vn-history>, which shows itself in the phone's theatre only.
+import '../../sprites/k-vn-history.js';
 
 /** Coalescing window for bursty core events (one chat switch fires several). */
 const REFRESH_DEBOUNCE_MS = 60;
@@ -126,7 +138,23 @@ function readSubjectName() {
 }
 
 /**
- * The centre column's header strip.
+ * The open scene's text, or '' outside a scene or when none is set.
+ * @returns {string} Scene text.
+ */
+function readScene() {
+    try {
+        return openScene() ? String(chat_metadata?.scenario ?? '').trim() : '';
+    } catch (error) {
+        console.error('[k-chat-header] scene read failed', error);
+        return '';
+    }
+}
+
+/** A framed landscape: the scene. Stroke glyph, no icon set (repo CLAUDE.md). */
+const sceneIcon = html`<svg class="k-ch__scene-icon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="m2.5 11.5 3.5-3.5 2.5 2.5 1.5-1.5 3.5 3"/><circle cx="10.5" cy="6" r="1"/></svg>`;
+
+/**
+ * The open chat's header: a strip over the messages, or docked in the top bar.
  */
 export class KChatHeader extends LitElement {
     static properties = {
@@ -135,6 +163,8 @@ export class KChatHeader extends LitElement {
         _name: { state: true },
         _chatId: { state: true },
         _count: { state: true },
+        _scene: { state: true },
+        _peek: { state: true },
     };
 
     /** @type {ReturnType<typeof setTimeout> | 0} Coalesced refresh handle, 0 = idle. */
@@ -142,6 +172,21 @@ export class KChatHeader extends LitElement {
 
     /** @type {Array<{ type: string, handler: () => void }>} */
     #subscriptions = [];
+
+    #onSceneChanged = () => this.#scheduleRefresh();
+
+    /** Closes the peek on a press outside the chip and its card. */
+    #onOutsidePress = (/** @type {PointerEvent} */ event) => {
+        const scene = this.querySelector('.k-ch__scene');
+        if (scene && !event.composedPath().includes(scene)) this.#closePeek();
+    };
+
+    #onPeekKey = (/** @type {KeyboardEvent} */ event) => {
+        if (event.key !== 'Escape') return;
+        event.stopPropagation();
+        this.#closePeek();
+        /** @type {HTMLElement | null} */ (this.querySelector('.k-ch__scene-chip'))?.focus();
+    };
 
     constructor() {
         super();
@@ -153,6 +198,10 @@ export class KChatHeader extends LitElement {
         this._chatId = '';
         /** @type {number} Messages in the open chat. */
         this._count = 0;
+        /** @type {string} The open scene's text; '' hides the Scene chip. */
+        this._scene = '';
+        /** @type {boolean} Whether the scene peek is open. */
+        this._peek = false;
     }
 
     /** Light DOM: `public/css/shell-center.css` owns every rule. */
@@ -179,6 +228,7 @@ export class KChatHeader extends LitElement {
             this.#subscriptions.push({ type, handler });
             eventSource.on(type, handler);
         }
+        document.addEventListener(SCENE_CHANGED_EVENT, this.#onSceneChanged);
         this.#refresh();
     }
 
@@ -187,6 +237,8 @@ export class KChatHeader extends LitElement {
             eventSource.removeListener(type, handler);
         }
         this.#subscriptions = [];
+        document.removeEventListener(SCENE_CHANGED_EVENT, this.#onSceneChanged);
+        this.#closePeek();
         if (this.#refreshTimer !== 0) {
             clearTimeout(this.#refreshTimer);
             this.#refreshTimer = 0;
@@ -224,6 +276,8 @@ export class KChatHeader extends LitElement {
         this._chatId = chatId;
         this._name = chatId ? readSubjectName() : '';
         this._count = Array.isArray(chat) ? chat.length : 0;
+        this._scene = chatId ? readScene() : '';
+        if (!this._scene) this.#closePeek();
         // Drives `k-chat-header[empty] { display: none }` — see shell-center.css §1.
         this.toggleAttribute('empty', !chatId);
 
@@ -255,6 +309,47 @@ export class KChatHeader extends LitElement {
         document.body.dataset.kSendOnEnter = sends ? 'yes' : 'no';
     }
 
+    #togglePeek() {
+        if (this._peek) {
+            this.#closePeek();
+            return;
+        }
+        this._scene = readScene();
+        this._peek = true;
+        document.addEventListener('pointerdown', this.#onOutsidePress, true);
+        document.addEventListener('keydown', this.#onPeekKey, true);
+    }
+
+    #closePeek() {
+        this._peek = false;
+        document.removeEventListener('pointerdown', this.#onOutsidePress, true);
+        document.removeEventListener('keydown', this.#onPeekKey, true);
+    }
+
+    /** The banner owns the editor; it scrolls to the head of the transcript and opens it. */
+    #editScene() {
+        this.#closePeek();
+        document.dispatchEvent(new CustomEvent(SCENE_EDIT_EVENT));
+    }
+
+    #renderScene() {
+        if (!this._scene) return nothing;
+        return html`
+            <div class="k-ch__scene">
+                <button type="button" class="k-ch__scene-chip" aria-expanded=${String(this._peek)}
+                    aria-controls="k-ch-scene-peek" aria-label="The scene" title="The scene" @click=${() => this.#togglePeek()}>
+                    ${sceneIcon}<span>Scene</span>
+                </button>
+                ${this._peek ? html`
+                    <div class="k-ch__scene-peek" id="k-ch-scene-peek" role="dialog" aria-label="The scene">
+                        <p class="k-ch__scene-text">${this._scene}</p>
+                        <div class="k-ch__scene-actions">
+                            <button type="button" class="k-ch__scene-edit" @click=${() => this.#editScene()}>Edit the scene</button>
+                        </div>
+                    </div>` : nothing}
+            </div>`;
+    }
+
     render() {
         if (!this._chatId) {
             return nothing;
@@ -267,6 +362,9 @@ export class KChatHeader extends LitElement {
                         <span class="k-ch__sep" aria-hidden="true">/</span>` : nothing}
                     <k-chat-switcher></k-chat-switcher>
                 </div>
+                ${this.#renderScene()}
+                <k-backdrop-chip></k-backdrop-chip>
+                <k-vn-history></k-vn-history>
                 <span class="k-ch__spacer"></span>
                 <span class="k-ch__count" title="${this._count} messages in this chat">
                     <span class="k-ch__count-value">${this._count}</span>

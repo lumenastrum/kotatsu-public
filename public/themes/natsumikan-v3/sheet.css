@@ -1,0 +1,426 @@
+/*
+ * Natsumikan V3: the same summer mikan as V2, leaner. Warm cream under frosted glass instead of
+ * ink frames and hard shadows; mikan for what matters, periwinkle for choosing, mint and rose
+ * only as light at the edges. Colours stay on tokens where they can: ink = var(--k-text),
+ * mikan = var(--k-primary-bg), choosing = var(--k-select), deep mikan text = var(--k-accent).
+ * Every block is tracked debt: what it wants is named in its header.
+ */
+
+/* ── 1. LIBRARY HERO: the eyebrow as a glass tag ───────────────────────────────────────────
+   Wants: --k-lib-eyebrow-fill / -ink / -shadow (an "eyebrow as tag" variant). */
+body[data-k-layout="rails"] .k-lib-eyebrow {
+    align-self: flex-start;
+    padding: 5px 12px;
+    border: 1px solid color-mix(in srgb, #ffffff 80%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, #ffffff 55%, transparent);
+    backdrop-filter: blur(var(--k-blur-panel));
+    color: var(--k-text);
+    box-shadow: var(--k-elev-1);
+}
+
+/* ── 2. GLASS BUTTONS, AND A LIT MIKAN PRIMARY ────────────────────────────────────────────────
+   Resting: frosted cream with a white top edge. Primary: a mikan gradient that glows a little.
+   Wants: --k-control-material (a gradient fill), --k-control-highlight (the inset top edge),
+   --k-primary-glow, --k-control-lift. */
+body[data-k-layout="rails"] .k-lib-btn,
+body[data-k-layout="rails"] .k-sprite-studio__button {
+    border: 1px solid color-mix(in srgb, #ffffff 85%, transparent);
+    border-radius: 999px;
+    font-weight: 700;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 90%, transparent), var(--k-elev-1);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+body[data-k-layout="rails"] .k-lib-btn:not(.k-lib-btn--primary),
+body[data-k-layout="rails"] .k-sprite-studio__button:not(.k-sprite-studio__button--primary) {
+    background-color: color-mix(in srgb, #ffffff 58%, transparent);
+    backdrop-filter: blur(var(--k-blur-panel));
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-btn:hover,
+body[data-k-layout="rails"] .k-lib-btn:focus-visible,
+body[data-k-layout="rails"] .k-sprite-studio__button:hover,
+body[data-k-layout="rails"] .k-sprite-studio__button:focus-within {
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 90%, transparent), var(--k-elev-2);
+}
+
+body[data-k-layout="rails"] .k-lib-btn--ghost:hover,
+body[data-k-layout="rails"] .k-lib-btn--ghost:focus-visible,
+body[data-k-layout="rails"] .k-sprite-studio__button:not(.k-sprite-studio__button--primary):hover {
+    border-color: color-mix(in srgb, var(--k-primary-bg) 45%, #ffffff);
+    background-color: var(--k-lib-hover-fill);
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-btn--primary,
+body[data-k-layout="rails"] .k-sprite-studio__button--primary {
+    border-color: color-mix(in srgb, #ffffff 45%, var(--k-primary-bg));
+    background: linear-gradient(180deg, #f8b262, #f0902f);
+    color: var(--k-primary-text);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 55%, transparent), 0 8px 20px -8px color-mix(in srgb, #f0902f 80%, transparent);
+}
+
+body[data-k-layout="rails"] .k-lib-btn--primary:hover,
+body[data-k-layout="rails"] .k-lib-btn--primary:focus-visible,
+body[data-k-layout="rails"] .k-sprite-studio__button--primary:hover {
+    background: linear-gradient(180deg, #fabd73, #f39a3c);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 60%, transparent), 0 12px 26px -8px color-mix(in srgb, #f0902f 90%, transparent);
+}
+
+body[data-k-layout="rails"] .k-lib-btn:active,
+body[data-k-layout="rails"] .k-sprite-studio__button:active {
+    transform: translateY(0);
+}
+
+/* ── 3. SEGMENTED SWITCHES: a glass track, the chosen one a raised white pill ─────────────────
+   Wants: --k-segment-track-material and --k-control-on-shadow. */
+body[data-k-layout="rails"] .k-lib-tabs,
+body[data-k-layout="rails"] .k-lib-views,
+body[data-k-layout="rails"] .k-studio-view {
+    border: 1px solid color-mix(in srgb, #ffffff 80%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--k-chrome-border) 22%, color-mix(in srgb, #ffffff 40%, transparent));
+    backdrop-filter: blur(var(--k-blur-panel));
+}
+
+body[data-k-layout="rails"] .k-lib-tab,
+body[data-k-layout="rails"] .k-lib-view {
+    border-radius: 999px;
+    color: var(--k-text-dim);
+    font-weight: 700;
+}
+
+body[data-k-layout="rails"] .k-lib-tab.is-active,
+body[data-k-layout="rails"] .k-lib-view.is-active {
+    background: #fffdf8;
+    color: var(--k-select);
+    box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--k-elevation-shadow) 30%, transparent);
+}
+
+/* ── 4. FIELDS AND RECENTS: frosted, with a soft mikan focus ring ─────────────────────────────
+   Wants: --k-focus-ring (colour + spread) and --k-lib-recent-material. */
+body[data-k-layout="rails"] .k-lib-search,
+body[data-k-layout="rails"] .k-lib-sort {
+    border: 1px solid color-mix(in srgb, #ffffff 80%, transparent);
+    border-radius: 999px;
+    backdrop-filter: blur(var(--k-blur-panel));
+}
+
+body[data-k-layout="rails"] .k-lib-search:focus-within,
+body[data-k-layout="rails"] .k-lib-sort:focus-visible {
+    border-color: color-mix(in srgb, var(--k-primary-bg) 60%, #ffffff);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--k-primary-bg) 22%, transparent);
+}
+
+body[data-k-layout="rails"] .k-lib-recent {
+    border: 1px solid color-mix(in srgb, #ffffff 80%, transparent);
+    border-radius: 14px;
+    background: color-mix(in srgb, #ffffff 52%, transparent);
+    backdrop-filter: blur(var(--k-blur-panel));
+    box-shadow: var(--k-elev-1);
+}
+
+body[data-k-layout="rails"] .k-lib-recent:hover,
+body[data-k-layout="rails"] .k-lib-recent:focus-visible {
+    border-color: color-mix(in srgb, var(--k-primary-bg) 45%, #ffffff);
+    box-shadow: var(--k-elev-2);
+}
+
+body[data-k-layout="rails"] .k-lib-recent-face {
+    border-radius: 8px;
+}
+
+/* ── 5. SECTION LABELS: the mikan sparkle stays, Natsumikan's one signature mark ──────────────
+   Wants: --k-label-mark. */
+body[data-k-layout="rails"] .k-lib-sectiontitle::before,
+body[data-k-layout="rails"] .k-studio-label::before {
+    content: '✦ ';
+    color: var(--k-primary-bg);
+}
+
+body[data-k-layout="rails"] .k-lib-sectiontitle,
+body[data-k-layout="rails"] .k-studio-label {
+    color: var(--k-text);
+}
+
+/* The rule under the tools row: one hairline that runs mikan → periwinkle → mint.
+   Wants: --k-lib-tools-rule (a material). */
+body[data-k-layout="rails"] .k-lib-tools {
+    border-bottom: 0;
+    padding-bottom: 22px;
+    background: linear-gradient(90deg, color-mix(in srgb, #f39a3c 70%, transparent), color-mix(in srgb, #5546b0 45%, transparent) 55%, color-mix(in srgb, #3fa98a 35%, transparent)) left bottom / 100% 1.5px no-repeat;
+}
+
+/* ── 6. CAST CARDS: the portrait owns the card; name and foot sit on a frosted band ──────────
+   No spine, no kicker, no blurb (Andres, 2026-10-19: the portrait is the point of a gallery).
+   Wants: --k-lib-card-copy-material (a glass band), --k-lib-card-shadow / -hover, and a
+   "portrait" card variant that drops the kicker and body. */
+body[data-k-layout="rails"] .k-lib-card {
+    box-shadow: var(--k-elev-2);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-k-layout="rails"] .k-lib-card:hover,
+body[data-k-layout="rails"] .k-lib-card:focus-visible {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--k-primary-bg) 70%, transparent), 0 18px 40px -12px color-mix(in srgb, #f0902f 55%, transparent);
+}
+
+body[data-k-layout="rails"] .k-lib-card-kicker,
+body[data-k-layout="rails"] .k-lib-card-body {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-lib-card-copy {
+    inset: auto 8px 8px 8px;
+    gap: 2px;
+    padding: 10px 12px 8px;
+    border: 1px solid color-mix(in srgb, #ffffff 75%, transparent);
+    border-radius: 13px;
+    background: color-mix(in srgb, #fffaf1 84%, transparent);
+    backdrop-filter: blur(16px) saturate(1.4) brightness(1.2);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 80%, transparent);
+}
+
+body[data-k-layout="rails"] .k-lib-card-name {
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-card-foot {
+    margin-top: 2px;
+    padding-top: 6px;
+    border-top: 1px solid color-mix(in srgb, var(--k-chrome-border) 50%, transparent);
+}
+
+body[data-k-layout="rails"] .k-lib-card-open {
+    color: var(--k-accent);
+    font-weight: 700;
+}
+
+body[data-k-layout="rails"] .k-lib-card-tag {
+    border: 1px solid color-mix(in srgb, #ffffff 80%, transparent);
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-card-fav,
+body[data-k-layout="rails"] .k-lib-card-edit {
+    border: 1px solid color-mix(in srgb, #ffffff 80%, transparent);
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-card-fav.is-on {
+    background: var(--k-primary-bg);
+    color: var(--k-primary-text);
+}
+
+/* ── 7. CARD STUDIO: almost all knobs (theme.json `--k-studio-*`); the core buttons it
+   borrows have no knobs of their own. */
+body[data-k-layout="rails"] .k-studio-slot--fav #favorite_button,
+body[data-k-layout="rails"] .k-studio-slot--portrait #avatar_div_div {
+    border: 1px solid color-mix(in srgb, #ffffff 80%, transparent);
+    border-radius: 12px;
+    box-shadow: var(--k-elev-1);
+}
+
+/* ── 8. SPRITE STUDIO: the counter as a glass tag ─────────────────────────────────────────────
+   Wants: a count/badge variant on k-sprite-studio. */
+body[data-k-layout="rails"] .k-sprite-studio__count {
+    padding: 4px 12px;
+    border: 1px solid color-mix(in srgb, #ffffff 80%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, #ffffff 55%, transparent);
+    color: var(--k-text);
+    font-weight: 700;
+}
+
+body[data-k-layout="rails"] .k-sprite-studio__count::before {
+    content: '✦ ';
+    color: var(--k-primary-bg);
+}
+
+body[data-k-layout="rails"] .k-sprite-studio__sets b {
+    color: var(--k-select);
+}
+
+/* ── 9. SPRITE SLOTS: glass panels, each figure on a soft stage chosen by feeling ─────────────
+   V2's stages, quieter: the sun's rays at half strength, no ink lines, a warm floor fade instead
+   of the checkerboard, and the night sky kept for sadness, grief and fear.
+   Wants: --k-sprite-slot-backdrop (a material) and per-feeling backdrops, as V2. */
+body[data-k-layout="rails"] .k-sprite-studio__grid {
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 16px;
+}
+
+@media (max-width: 700px) {
+    body[data-k-layout="rails"] .k-sprite-studio__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+}
+
+body[data-k-layout="rails"] .k-sprite-slot {
+    gap: 10px;
+    border: 1px solid color-mix(in srgb, #ffffff 80%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, #ffffff 50%, transparent);
+    backdrop-filter: blur(var(--k-blur-panel));
+    box-shadow: var(--k-elev-2);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__art {
+    border: 0;
+    border-radius: 12px;
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        linear-gradient(180deg, transparent 78%, color-mix(in srgb, #f39a3c 22%, transparent)),
+        radial-gradient(ellipse 44% 36% at 50% 42%, #fffbee 30%, color-mix(in srgb, #fffbee 0%, transparent) 100%),
+        repeating-conic-gradient(from 0deg at 50% 42%, color-mix(in srgb, #f39a3c 14%, transparent) 0deg 6deg, transparent 6deg 30deg),
+        radial-gradient(circle at 50% 42%, #fff6d8, #fde6b4 72%);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-label="neutral"] .k-sprite-slot__art {
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        linear-gradient(180deg, transparent 78%, color-mix(in srgb, #f39a3c 18%, transparent)),
+        radial-gradient(circle at 50% 42%, #fffdf6, #f8ecd6 75%);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-label="love"] .k-sprite-slot__art {
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        linear-gradient(180deg, transparent 78%, color-mix(in srgb, #3fa98a 20%, transparent)),
+        radial-gradient(circle at 50% 42%, #fbfff9, #dcefd8 75%);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-label="joy"] .k-sprite-slot__art,
+body[data-k-layout="rails"] .k-sprite-slot[data-label="amusement"] .k-sprite-slot__art {
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        linear-gradient(180deg, transparent 78%, color-mix(in srgb, #f39a3c 24%, transparent)),
+        radial-gradient(circle at 16% 18%, color-mix(in srgb, #4cc8e2 70%, transparent) 0 3.5px, transparent 4px),
+        radial-gradient(circle at 84% 26%, color-mix(in srgb, #ee5fae 65%, transparent) 0 3px, transparent 3.5px),
+        radial-gradient(circle at 50% 8%, color-mix(in srgb, #5fbf9c 70%, transparent) 0 3px, transparent 3.5px),
+        radial-gradient(ellipse 40% 34% at 50% 42%, #fffbee 30%, color-mix(in srgb, #fffbee 0%, transparent) 100%),
+        repeating-conic-gradient(from 0deg at 50% 42%, color-mix(in srgb, #f39a3c 22%, transparent) 0deg 5deg, transparent 5deg 15deg),
+        radial-gradient(circle at 50% 42%, #fff6d8, #fdd28c 78%);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-label="anger"] .k-sprite-slot__art,
+body[data-k-layout="rails"] .k-sprite-slot[data-label="annoyance"] .k-sprite-slot__art {
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        linear-gradient(180deg, transparent 78%, color-mix(in srgb, #e0562a 22%, transparent)),
+        radial-gradient(circle at 50% 42%, #fff4e6, #f8c79a 80%);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-label="sadness"] .k-sprite-slot__art,
+body[data-k-layout="rails"] .k-sprite-slot[data-label="grief"] .k-sprite-slot__art,
+body[data-k-layout="rails"] .k-sprite-slot[data-label="fear"] .k-sprite-slot__art,
+body[data-k-layout="rails"] .k-sprite-slot[data-label="nervousness"] .k-sprite-slot__art {
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        radial-gradient(circle at 18% 14%, #fff4c7 0 1.2px, transparent 1.8px),
+        radial-gradient(circle at 76% 22%, #fff4c7 0 1px, transparent 1.5px),
+        radial-gradient(circle at 86% 48%, #fff4c7 0 1.2px, transparent 1.8px),
+        radial-gradient(circle at 60% 9%, #f2c230 0 2px, transparent 2.6px),
+        radial-gradient(ellipse 70% 40% at 40% 40%, color-mix(in srgb, #5b4584 60%, transparent), transparent 70%),
+        linear-gradient(180deg, #34306a, #232052);
+}
+
+/* An empty slot: a faint dashed outline on the glass, nothing to stand on yet. */
+body[data-k-layout="rails"] .k-sprite-slot[data-empty] {
+    border: 1.5px dashed color-mix(in srgb, var(--k-chrome-border) 90%, transparent);
+    background: color-mix(in srgb, #ffffff 30%, transparent);
+    box-shadow: none;
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-empty] .k-sprite-slot__art {
+    background: color-mix(in srgb, var(--k-surface-sunken) 70%, transparent);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__standin {
+    color: var(--k-text-dim);
+    font-weight: 700;
+}
+
+/* The name as a glass flipper ‹ joy ›: V2's bubble without the ink or the tail.
+   Wants: --k-sprite-name-flipper (the glyph pair). */
+body[data-k-layout="rails"] .k-sprite-slot__name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-height: 24px;
+    padding: 2px 10px 3px;
+    border: 1px solid color-mix(in srgb, #ffffff 85%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, #ffffff 65%, transparent);
+    color: var(--k-text);
+    font: 700 13px var(--k-font-ui);
+    text-transform: none;
+    box-shadow: var(--k-elev-1);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__name::before,
+body[data-k-layout="rails"] .k-sprite-slot__name::after {
+    color: var(--k-select);
+    font: 900 18px/1 var(--k-font-ui);
+    margin-top: -3px;
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__name::before {
+    content: '‹';
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__name::after {
+    content: '›';
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__button {
+    border: 1px solid color-mix(in srgb, #ffffff 85%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, #ffffff 60%, transparent);
+    color: var(--k-text);
+    font-weight: 700;
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__button--quiet {
+    border-style: dashed;
+    border-color: color-mix(in srgb, var(--k-chrome-border) 90%, transparent);
+    color: var(--k-text-dim);
+    background: transparent;
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__button:hover,
+body[data-k-layout="rails"] .k-sprite-slot__button:focus-within {
+    border-color: color-mix(in srgb, var(--k-primary-bg) 50%, #ffffff);
+    background: var(--k-lib-hover-fill);
+}
+
+body[data-k-layout="rails"] .k-sprite-framing {
+    border: 1px solid color-mix(in srgb, #ffffff 80%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, #ffffff 50%, transparent);
+    box-shadow: var(--k-elev-1);
+}
+
+/* ── 10. SCENE CAST PANEL: the turn-style switch's track ──────────────────────────────────────
+   Core paints it with var(--k-scrim) at 50%, which on any light pack is a grey-violet slab with
+   dim labels on it (V2 has it too). Wants: --k-cast-seg-fill. */
+body[data-k-layout="rails"] .k-cast-seg {
+    border: 1px solid color-mix(in srgb, #ffffff 80%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--k-chrome-border) 22%, color-mix(in srgb, #ffffff 40%, transparent));
+}
+
+body[data-k-layout="rails"] .k-cast-seg button {
+    border-radius: 999px;
+}
+
+body[data-k-layout="rails"] .k-cast-seg button.is-on {
+    background: #fffdf8;
+    color: var(--k-select);
+    box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--k-elevation-shadow) 30%, transparent);
+}

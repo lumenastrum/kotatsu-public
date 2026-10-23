@@ -34,6 +34,16 @@
 const CACHE_MODES = ['off', 'system', 'anchor', 'depth'];
 
 /**
+ * Cache-write tokens from an OpenAI-dialect `prompt_tokens_details`, under either spelling, or
+ * null when the provider reported none.
+ * @param {any} details `prompt_tokens_details`
+ * @returns {number?}
+ */
+function cacheWriteOf(details) {
+    return details.cache_write_tokens ?? details.cache_creation_tokens ?? null;
+}
+
+/**
  * @param {{usage?: object}} state the streaming generator's per-request state bag
  * @returns {Record<string, any>} its raw usage accumulator, created on first use
  */
@@ -94,8 +104,12 @@ export function foldStreamingUsage(state, frame) {
     // `normalizeUsage` is the only place that knows either spelling. Flattening it here is
     // exactly the drift this file exists to prevent (and did, live, before the arithmetic was
     // exercised end to end).
-    if (details && details.cached_tokens != null) {
-        accumulated.prompt_tokens_details = { cached_tokens: details.cached_tokens };
+    if (details && (details.cached_tokens != null || cacheWriteOf(details) != null)) {
+        accumulated.prompt_tokens_details = {
+            ...(details.cached_tokens != null ? { cached_tokens: details.cached_tokens } : {}),
+            ...(details.cache_write_tokens != null ? { cache_write_tokens: details.cache_write_tokens } : {}),
+            ...(details.cache_creation_tokens != null ? { cache_creation_tokens: details.cache_creation_tokens } : {}),
+        };
     }
     if (usage.prompt_cache_hit_tokens != null) accumulated.prompt_cache_hit_tokens = usage.prompt_cache_hit_tokens;
     if (usage.prompt_cache_miss_tokens != null) accumulated.prompt_cache_miss_tokens = usage.prompt_cache_miss_tokens;
@@ -145,7 +159,11 @@ export function normalizeUsage(usage) {
         // and omits every cache field entirely on a zero-cache turn, which correctly stays
         // `cacheKnown: false` rather than a fabricated verdict).
         const cached = (details && details.cached_tokens) || usage.prompt_cache_hit_tokens || usage.cached_tokens || 0;
+        // Cache WRITES in this dialect: OpenRouter's `cache_write_tokens` (Claude via OpenRouter),
+        // the Kotatsu Claude bridge's `cache_creation_tokens`. Both are already inside prompt_tokens.
+        const cacheWrite = details ? cacheWriteOf(details) : null;
         const cacheKnown = (details && details.cached_tokens != null)
+            || cacheWrite != null
             || usage.prompt_cache_hit_tokens != null
             || usage.prompt_cache_miss_tokens != null
             || usage.cached_tokens != null;
@@ -154,7 +172,7 @@ export function normalizeUsage(usage) {
             promptTokens: usage.prompt_tokens || 0,
             outputTokens: usage.completion_tokens || 0,
             cachedTokens: cached,
-            cacheCreationTokens: 0,
+            cacheCreationTokens: cacheWrite || 0,
             cacheKnown: !!cacheKnown,
             ...cacheMode,
         };

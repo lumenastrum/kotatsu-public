@@ -14,6 +14,7 @@
  * Pixels cross the wire as exact RGBA (`/api/kotatsu/sprites/pixels`); the browser never decodes a sprite through a
  * canvas and never reads pixels back from one (a canvas premultiplies alpha). `putImageData` is display only.
  * Light DOM; rules in css/sprites.css §6. Opens over Card Studio; `open` shows it, `touchup-close` fires when it is dismissed, `touchup-saved` after a save.
+ * `start` (a label or a file name) picks the sprite it opens on, once the set's files load; else the first.
  */
 
 import { LitElement, html, nothing, svg } from '../shell/lit.js';
@@ -57,6 +58,8 @@ export class KSpriteTouchup extends LitElement {
         folder: { type: String },
         /** Shown while true. */
         open: { type: Boolean, reflect: true },
+        /** The sprite to open on (a label, or a file name); '' = the first. */
+        start: { type: String },
         _files: { state: true },
         _skippedImages: { state: true },
         _cur: { state: true },
@@ -81,6 +84,7 @@ export class KSpriteTouchup extends LitElement {
         this.variant = 'sheet';
         this.folder = '';
         this.open = false;
+        this.start = '';
         /** @type {SetFile[]} */
         this._files = [];
         /** @type {string[]} */
@@ -160,6 +164,11 @@ export class KSpriteTouchup extends LitElement {
         if (changed.has('open') && this.open) {
             this._confirmClose = false;
         }
+        // Asked for another sprite while the set is already loaded: go there (a fresh load reads `start` itself).
+        if (changed.has('start') && this.open && this._set && this.start) {
+            const file = this._startFile();
+            if (file && file !== this._cur) void this._openDoc(file);
+        }
         if (changed.has('_bd')) this._applyBackdrop();
         if (['_cur', '_rev', '_maskView', '_compare', '_showSus', '_tol'].some(k => changed.has(k))) this._paint();
     }
@@ -178,10 +187,17 @@ export class KSpriteTouchup extends LitElement {
             this._skippedImages = body.skipped ?? [];
             this._set = new TouchupSet(this._files.map(f => f.file), file => this._loadSprite(file));
             if (!this._files.length) { this._error = 'No PNG sprites in this set yet.'; return; }
-            await this._openDoc(this._files[0].file);
+            await this._openDoc(this._startFile() ?? this._files[0].file);
         } catch (error) {
             this._error = String(/** @type {Error} */ (error)?.message ?? error);
         }
+    }
+
+    /** @returns {string | undefined} the file `start` names, when the set has it */
+    _startFile() {
+        const want = String(this.start ?? '').toLowerCase();
+        if (!want) return undefined;
+        return this._files.find(f => f.file.toLowerCase() === want || f.label.toLowerCase() === want)?.file;
     }
 
     /**

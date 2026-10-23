@@ -83,6 +83,7 @@ import { line } from '../brand/mascot/lines.js';
 import {
     BRIDGE_CHANGE_EVENT,
     BRIDGE_STATUS_EVENT,
+    doctorProblems,
     getBridgeModel,
     getDoctor,
     getHealth,
@@ -101,12 +102,12 @@ import { PROVIDERS } from '../connections/providers.js';
 import { CONNECT_ATTEMPT_EVENT } from '../connections/k-provider-cards.js';
 import '../connections/k-bridge-card.js';
 import '../connections/k-chatgpt-card.js';
-import { isOnChatGPT } from '../connections/chatgpt.js';
+import { CHATGPT_STATUS_EVENT, cardState, getStatus, isComputerOnly, isOnChatGPT } from '../connections/chatgpt.js';
 import { LANES, connectState, initialLane } from './connect-state.js';
 import { getUserAvatar, user_avatar } from '../../scripts/personas.js';
 import { SlashCommandParser } from '../../scripts/slash-commands/SlashCommandParser.js';
 import { effortWord } from '../shell/components/k-model-menu.js';
-import { NAME_LIMIT, initialForm, isNamed, personaPlan } from './persona-state.js';
+import { NAME_LIMIT, hasOwnPicture, initialForm, isNamed, personaPlan } from './persona-state.js';
 import { readySummary } from './ready-state.js';
 import {
     FLAG_DONE,
@@ -186,6 +187,8 @@ const STUDIO_CREATE_WAIT_MS = 20000;
 
 /** First card's tile icons: inline stroke SVG, 16px, currentColor (house rule: no emoji as icons). */
 const tileIcon = (/** @type {unknown} */ body) => html`<svg class="k-onb-tile-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+/** The Persona portrait before anyone picks a picture: a person, and a plus to add one. */
+const PORTRAIT_EMPTY = html`<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="8.5" r="3.6"/><path d="M4 19.5a7 7 0 0 1 11.2-5.6"/><path d="M18.5 15v5M16 17.5h5"/></svg>`;
 const TILE_ICONS = Object.freeze({
     file: tileIcon(svg`<path d="M8 10.5v-8M4.5 6L8 2.5 11.5 6M3 13.5h10"/>`),
     link: tileIcon(svg`<path d="M6.5 9.5a3 3 0 0 0 4.2 0l2.3-2.3a3 3 0 0 0-4.2-4.2l-.8.8"/><path d="M9.5 6.5a3 3 0 0 0-4.2 0L3 8.8A3 3 0 0 0 7.2 13l.8-.8"/>`),
@@ -255,6 +258,17 @@ export class KOnboarding extends LitElement {
     #browse = null;
     /** Re-renders on connection news while the tour is up. */
     #onConnectionNews = () => this.requestUpdate();
+    /** Whether the person picked a lane on this visit to Connect; until they do, news may re-pick it. */
+    #laneChosen = false;
+    /** The doctor or the ChatGPT status answered: re-pick the first lane, unless someone already chose. */
+    #onLaneNews = () => {
+        if (this.step === 'connect' && !this.#laneChosen) this._lane = this.#firstLane();
+    };
+    /** A press or a key on the Connect step: the person is at work there, so the lane stays put.
+     * Not focus: the tour moves focus itself on every step. */
+    #onHands = () => {
+        if (this.step === 'connect') this.#laneChosen = true;
+    };
     /** @param {Event} event `k-connect-attempt` from an embedded provider card. */
     #onAttempt = (event) => {
         const detail = /** @type {CustomEvent} */ (event).detail ?? {};
@@ -336,6 +350,10 @@ export class KOnboarding extends LitElement {
         document.addEventListener(PROMPT_LIST_TOGGLED_EVENT, this.#onConnectionNews);
         document.addEventListener(BRIDGE_STATUS_EVENT, this.#onConnectionNews);
         document.addEventListener(BRIDGE_CHANGE_EVENT, this.#onConnectionNews);
+        document.addEventListener(BRIDGE_STATUS_EVENT, this.#onLaneNews);
+        document.addEventListener(CHATGPT_STATUS_EVENT, this.#onLaneNews);
+        this.addEventListener('pointerdown', this.#onHands);
+        this.addEventListener('keydown', this.#onHands);
         this.addEventListener(CONNECT_ATTEMPT_EVENT, this.#onAttempt);
     }
 
@@ -346,6 +364,10 @@ export class KOnboarding extends LitElement {
         document.removeEventListener(PROMPT_LIST_TOGGLED_EVENT, this.#onConnectionNews);
         document.removeEventListener(BRIDGE_STATUS_EVENT, this.#onConnectionNews);
         document.removeEventListener(BRIDGE_CHANGE_EVENT, this.#onConnectionNews);
+        document.removeEventListener(BRIDGE_STATUS_EVENT, this.#onLaneNews);
+        document.removeEventListener(CHATGPT_STATUS_EVENT, this.#onLaneNews);
+        this.removeEventListener('pointerdown', this.#onHands);
+        this.removeEventListener('keydown', this.#onHands);
         this.removeEventListener(CONNECT_ATTEMPT_EVENT, this.#onAttempt);
         if (this.#onKeydown) {
             window.removeEventListener('keydown', this.#onKeydown, { capture: true });
@@ -398,15 +420,27 @@ export class KOnboarding extends LitElement {
         this._failed = '';
         this._warned = false;
         this.#lineSig = '';
-        this._lane = initialLane({
-            // Either plan opens the subscription lane, where both cards live.
-            onBridge: isOnBridge() || isOnChatGPT(),
+        this.#laneChosen = false;
+        this._lane = this.#firstLane();
+        // The doctor spawns the claude CLI, so it is never on the boot path; someone on the Connect
+        // step is exactly when it is worth asking (bridge.js shares the answer). Whether Claude
+        // Code is set up decides which lane comes first, so it is asked whichever lane opened, and
+        // #onLaneNews re-picks when it answers.
+        if (!getDoctor().doctor && !getDoctor().pending) void loadDoctor();
+    }
+
+    /** @returns {import('./connect-state.js').Lane} The lane the Connection tab's order puts first. */
+    #firstLane() {
+        const { doctor } = getDoctor();
+        return initialLane({
+            onBridge: isOnBridge(),
+            onChatGPT: isOnChatGPT(),
+            doctorKnown: Boolean(doctor),
+            problems: doctorProblems(doctor),
+            chatgptFace: cardState({ status: getStatus(), computerOnly: isComputerOnly(), waiting: false }),
             source: main_api === 'openai' ? String(oai_settings?.chat_completion_source ?? '') : '',
             providerSources: PROVIDERS.map(provider => provider.source),
         });
-        // The doctor spawns the claude CLI, so it is never on the boot path; someone looking at
-        // the Claude Code lane is exactly when it is worth asking (bridge.js shares the answer).
-        if (this._lane === 'claude' && !getDoctor().doctor && !getDoctor().pending) void loadDoctor();
     }
 
     /** @returns {string} What the live connection is, as a person says it. */
@@ -561,15 +595,18 @@ export class KOnboarding extends LitElement {
     #renderPersona() {
         const now = this.#personaNow();
         const named = isNamed(now);
-        // The slot's own picture, named or not: a new profile's is the default avatar.
-        const picture = this._pAvatar || (now.exists && now.avatarId ? getUserAvatar(now.avatarId) : 'img/user-default.png');
+        // The slot's own picture, or a soft empty frame while it is still core's stock silhouette.
+        // The frame is a second label for the same file input, so a tap on it picks a picture too.
+        const ownPicture = hasOwnPicture(now, this._pAvatar);
         return html`
             <div class="k-onb-persona">
                 <div class="k-onb-portrait">
-                    <img class="k-onb-portrait-img" src=${picture} alt="" draggable="false">
+                    ${ownPicture
+        ? html`<img class="k-onb-portrait-img" src=${this._pAvatar || getUserAvatar(now.avatarId)} alt="" draggable="false">`
+        : html`<label class="k-onb-portrait-img k-onb-portrait-empty" for="k-onb-persona-file" aria-hidden="true">${PORTRAIT_EMPTY}</label>`}
                     <label class="k-onb-button k-onb-portrait-pick" data-kind="ghost">
-                        ${this._pAvatar || named ? 'Change picture' : 'Add a picture'}
-                        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="k-onb-file"
+                        ${ownPicture ? 'Change picture' : 'Add a picture'}
+                        <input id="k-onb-persona-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="k-onb-file"
                             @change=${(/** @type {Event} */ event) => this.#pickAvatar(event)}>
                     </label>
                 </div>

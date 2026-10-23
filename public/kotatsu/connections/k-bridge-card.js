@@ -52,6 +52,7 @@ import {
     useClaudeCode,
 } from './bridge.js';
 import { mountChatGPTCard } from './k-chatgpt-card.js';
+import { claudeState } from './order.js';
 
 const SIGN_IN_COMMAND = 'claude auth login';
 
@@ -337,9 +338,16 @@ export class KBridgeCard extends LitElement {
         const effort = getBridgeEffort();
         const settings = health.settings ?? {};
         const endpoint = typeof health.listener === 'string' ? health.listener.replace(/^https?:\/\//, '').replace(/\/v1$/, '') : '';
+        // Resting: Claude Code is not set up and not the chosen connection (order.js decides, the
+        // same rule that seats this card below the ways that are). The card says what is missing
+        // and how to fix it, and nothing else: no lit "Use Claude Code" that cannot answer, no
+        // bridge pills, no model grid or settings for a bridge nobody can use yet (Andres,
+        // 2026-10-22: "it feels like we're giving it special treatment").
+        const resting = claudeState({ onBridge, doctorKnown: Boolean(doctor), problems }) === 'not-set-up';
+        const fixHere = problems.some(problem => problem.kind === 'not-installed' || problem.kind === 'not-signed-in');
 
         return html`
-            <section class="k-bc" aria-label="Claude Code" data-active=${onBridge ? 'true' : 'false'}>
+            <section class="k-bc" aria-label="Claude Code" data-active=${onBridge ? 'true' : 'false'} ?data-resting=${resting}>
                 <header class="k-bc__head">
                     <div class="k-bc__mark">${icons.prompt}</div>
                     <div class="k-bc__title">
@@ -348,7 +356,7 @@ export class KBridgeCard extends LitElement {
                             ${pill ? html`<span class="k-bc__pill" data-tone=${pill.tone}>${pill.tone ? html`<span class="k-bc__dot"></span>` : nothing}${pill.label}</span>` : nothing}
                         </div>
                         <p>Your Claude subscription, through the bridge built into Kotatsu. No API key, nothing billed per message.</p>
-                        <div class="k-bc__pills">
+                        ${resting ? (pending && !doctor ? html`<div class="k-bc__pills"><span class="k-bc__pill">Checking Claude Code…</span></div>` : nothing) : html`<div class="k-bc__pills">
                             <span class="k-bc__pill" data-tone=${health.listening ? 'success' : 'danger'}><span class="k-bc__dot"></span>${health.listening ? 'Bridge listening' : 'Bridge not running'}</span>
                             ${pending && !doctor
         ? html`<span class="k-bc__pill">Checking Claude Code…</span>`
@@ -357,11 +365,11 @@ export class KBridgeCard extends LitElement {
             : nothing}
                             ${doctor?.claudeCli?.version ? html`<span class="k-bc__pill k-bc__mono">Claude Code ${String(doctor.claudeCli.version).replace(/\s*\(.*\)$/, '')}</span>` : nothing}
                             ${endpoint ? html`<span class="k-bc__pill k-bc__mono">${endpoint}</span>` : nothing}
-                        </div>
+                        </div>`}
                     </div>
                     <div class="k-bc__headactions">
-                        ${onBridge ? nothing : html`<button type="button" class="k-bc__btn k-bc__btn--primary" ?disabled=${!health.listening || Boolean(this._busy)} @click=${() => this._run('use', () => useClaudeCode())}>${this._busy === 'use' ? 'Switching…' : 'Use Claude Code'}</button>`}
-                        <button type="button" class="k-bc__btn" ?disabled=${Boolean(this._busy)} @click=${() => this._run('check', async () => { await refreshHealth(); await loadDoctor(true); })}>${this._busy === 'check' ? 'Checking…' : 'Run diagnostics'}</button>
+                        ${onBridge || resting ? nothing : html`<button type="button" class="k-bc__btn k-bc__btn--primary" ?disabled=${!health.listening || Boolean(this._busy)} @click=${() => this._run('use', () => useClaudeCode())}>${this._busy === 'use' ? 'Switching…' : 'Use Claude Code'}</button>`}
+                        ${resting && fixHere ? nothing : html`<button type="button" class="k-bc__btn" ?disabled=${Boolean(this._busy)} @click=${() => this._run('check', async () => { await refreshHealth(); await loadDoctor(true); })}>${this._busy === 'check' ? 'Checking…' : 'Run diagnostics'}</button>`}
                     </div>
                 </header>
 
@@ -378,7 +386,7 @@ export class KBridgeCard extends LitElement {
                         </div>
                     </div>` : nothing}
 
-                ${health.listening && this.variant !== 'compact' ? html`
+                ${health.listening && this.variant !== 'compact' && !resting ? html`
                     <div class="k-bc__grid">
                         <div class="k-bc__field">
                             <span class="k-bc__cap" id="k-bc-model-label">Model</span>
@@ -415,7 +423,7 @@ export class KBridgeCard extends LitElement {
                         </div>
                     </div>` : nothing}
 
-                ${health.settings && this.variant !== 'compact' ? this._settings(health) : nothing}
+                ${health.settings && this.variant !== 'compact' && !resting ? this._settings(health) : nothing}
                 ${this._error ? html`<p class="k-bc__status" data-tone="danger" role="alert">${this._error}</p>`
         : this._note ? html`<p class="k-bc__status" role="status">${this._note}</p>` : nothing}
             </section>`;

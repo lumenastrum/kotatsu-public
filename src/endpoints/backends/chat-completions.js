@@ -2307,10 +2307,14 @@ router.post('/generate', async function (request, response) {
         const postProcessingType = request.body.custom_prompt_post_processing;
         if (Array.isArray(request.body.messages) && postProcessingType) {
             console.info('Applying custom prompt post-processing of type', postProcessingType);
+            const unprocessedMessages = request.body.messages;
             request.body.messages = postProcessPrompt(
                 request.body.messages,
                 postProcessingType,
                 getPromptNames(request));
+            // KOTATSU-PATCH (prompt cache v0): the client's anchor indexes the array it sent; merging
+            // re-indexes it, so the anchor would land on a later, possibly volatile, message. Fixed depth.
+            if (request.body.messages !== unprocessedMessages) delete request.body.kotatsu_cache_anchor;
         }
 
         if (request.body.json_schema?.value) {
@@ -2600,6 +2604,15 @@ router.post('/generate', async function (request, response) {
                     type: request.body.include_reasoning ? 'enabled' : 'disabled',
                 },
             };
+            // KOTATSU-PATCH 2026-10-23 (live-probed): kimi-k2.7-code only accepts thinking enabled ("only
+            // type=enabled is allowed"), and every thinking Kimi takes reasoning_effort low|medium|high|max.
+            if (/^kimi-k2\.7-code/.test(request.body.model)) {
+                bodyParams.thinking = { type: 'enabled' };
+            }
+            if (bodyParams.thinking.type === 'enabled') {
+                const kimiEffort = { min: 'low', low: 'low', medium: 'medium', high: 'high', max: 'max' }[request.body.reasoning_effort];
+                if (kimiEffort) bodyParams.reasoning_effort = kimiEffort;
+            }
             request.body.json_schema
                 ? setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema)
                 : addAssistantPrefix(request.body.messages, [], 'partial');

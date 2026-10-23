@@ -55,13 +55,12 @@ import { getRailStates, setRail, toggleRail } from './rail-collapse.js';
 import { installBaggage } from '../settings/baggage.js';
 import { installBridgeLink } from '../connections/bridge.js';
 import { installLocalAutoConnect } from '../connections/local-autoconnect.js';
-import { mountBridgeCard } from '../connections/k-bridge-card.js';
-import { mountProviderCards } from '../connections/k-provider-cards.js';
-import { mountConnectionMore } from '../connections/k-connection-more.js';
+import { seatConnectionCards } from '../connections/seat.js';
 import { installPresetBinding } from '../connections/preset-binding.js';
 import { installComposerReason } from '../connections/composer-reason.js';
 import { installOnboarding } from '../onboarding/k-onboarding.js';
 import { installWhatsNew } from '../whats-new/k-whats-new.js';
+import { installFeedback } from '../feedback/k-feedback.js';
 import { applyLayout, currentLayout, defineLayout, hasLayout } from './registry.js';
 
 export { setLayout } from './persistence.js';
@@ -161,15 +160,11 @@ export async function initKotatsuShell() {
     installPresetBinding();
     // Artboard 3's first-run half: the composer says why Claude Code isn't ready, and links the fix.
     installComposerReason();
-    // C1–C3: the Claude Code card, "Your API keys", then saved connections + more ways, first in
-    // core's #rm_api_block (the Connection tab adopts it). The Connection Manager inserts its
-    // profile block at the top of that block when extensions activate — after this — so all three
-    // re-seat once the app is ready.
-    const seatConnectionCards = () => {
-        mountBridgeCard();
-        mountProviderCards();
-        mountConnectionMore();
-    };
+    // C1–C3: the Claude Code card, ChatGPT, "Your API keys", then saved connections + more ways,
+    // first in core's #rm_api_block (the Connection tab adopts it), in the order the connections
+    // call for: in use, then set up, then not set up (connections/seat.js, 2026-10-22). The
+    // Connection Manager inserts its profile block at the top of that block when extensions
+    // activate — after this — so the cards re-seat once the app is ready.
     seatConnectionCards();
     eventSource.on(event_types.APP_READY, seatConnectionCards);
 
@@ -207,6 +202,9 @@ export async function initKotatsuShell() {
     // What's New: the release notes, once per update (whats-new/state.js decides). Registration
     // only — it reads the running version at APP_READY and answers Settings → System's door.
     installWhatsNew();
+    // Send feedback (docs/feedback-v0.md): keeps the last few page errors for a report, and answers
+    // Settings → System → Help. Registration only; nothing is sent from here.
+    installFeedback();
 
     const requested = readStoredLayout();
     const target = hasLayout(requested) ? requested : DEFAULT_LAYOUT;

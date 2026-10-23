@@ -6,13 +6,13 @@
 
 <p align="center"><strong>Kotatsu is SillyTavern for writing.</strong> It has the same characters, presets, extensions and data folder, behind a calm, fast interface, with a guide who sets it up alongside you.</p>
 
-<p align="center"><a href="https://youtu.be/9l3QbwZjmks"><strong>Watch the 60-second trailer</strong></a></p>
+<p align="center"><a href="https://lumenastrum.github.io/kotatsu-public/"><strong>Watch the trailer</strong></a> · <a href="https://github.com/lumenastrum/kotatsu-public/releases/latest"><strong>Download for Windows or Android</strong></a></p>
 
 | | |
 |:---:|:---:|
 | <img src=".github/screenshots/welcome.webp" alt="Mikan-chan's welcome tour: four steps from connecting a model to meeting your first character, every one skippable"> | <img src=".github/screenshots/connect.webp" alt="The Connect step: Claude Code in use through your Claude subscription, no API key, with ChatGPT one click away"> |
 | Mikan-chan walks you through setup | Use the subscription you already have |
-| <img src=".github/screenshots/library.webp" alt="The cast library: character posters under the heading Who are we meeting tonight?"> | <img src=".github/screenshots/reader.webp" alt="The reader: a chat with Wren Aldermoor. On the left, the characters and her chats, a pinned story above the recent ones by day; on the right, the preset's sections"> |
+| <img src=".github/screenshots/library.webp" alt="The cast library: character posters under the heading Who are we meeting tonight?"> | <img src=".github/screenshots/reader.webp" alt="The reader: Sable, a private investigator, taking a missing-person case in a rainy office. On the left, the scenes, characters and chats; on the right, the preset's sections"> |
 | Your cast, on one shelf | A reader made for long stories |
 
 ---
@@ -96,7 +96,7 @@ You can browse and import character cards from [Chub](https://chub.ai) without l
 
 ## Scenes: more than two at the table
 
-<p align="center"><img src=".github/screenshots/scenes.webp" alt="A scene called Last Train Home: four characters on a snowy station platform, each answering in their own colour, with the On stage strip and the Cast tab beside them" width="720"></p>
+<p align="center"><img src=".github/screenshots/scenes.webp" alt="A scene called Closing Time: a barista, a bookseller and a soaked pirate captain in a café after hours, each answering in their own colour, with the On stage strip and the Cast tab beside them" width="720"></p>
 
 A scene puts several characters in one chat. **New scene** in the library opens the studio: seat your cast (the numbers are the order they speak in when they take turns), name the scene, and set it in a line or two.
 
@@ -134,7 +134,7 @@ Still open: two extensions that dock panels into the same right margin can overl
 Copy your user data, and leave SillyTavern's code and `config.yaml` where they are. Kotatsu has its own.
 
 **Make it look like yours.**
-- **Themes are data.** A theme pack is a folder of colors, fonts, layout choices and art, with no code inside. Four ship in the box: Blue Hour, Sparkle, Natsumikan and Midnight Kissaten.
+- **Themes are data.** A theme pack is a folder of colors, fonts, layout choices and art, with no code inside. Six ship in the box: Natsumikan (the default), Natsumikan Classic, Natsumikan Manga, Blue Hour, Sparkle and Midnight Kissaten.
 - **Message styles.** Card, flat, bubble, script, split bubbles, portrait, portrait column and broadcast, plus a reading-size setting that keeps lines a comfortable length on any screen. Or **Sprites**: the cast stands on a stage beside the chat and each reply wears the face that fits it, from sprite sets you bring or Kotatsu draws for you.
 - **One settings window,** with tabs and search, instead of a dozen drawers.
 
@@ -157,6 +157,9 @@ Kotatsu rebuilt the parts of SillyTavern that slow down as your stories grow: th
 - **A layout that spends the screen:** a left rail for your cast and chats, a right rail for the live preset, a chat header where the title is the chat switcher. Collapse the left rail with `Ctrl+\` and the right with `Ctrl+Shift+\`.
 - **Connections that tell the truth:** the composer tells you *why* it can't send, and the top bar shows exactly which model and effort level you're on.
 - **Calm motion,** with no icons made of emoji and nothing that jumps.
+- **Pictures, in the chat:** draw *this moment*, a character's face or the place they're in, on your own ComfyUI or with your own OpenAI or Gemini key. The same tool draws a character's whole sprite set from one picture.
+- **Story lines:** fork any message and take the story somewhere else; the branch map keeps every line.
+- **Send feedback** (Settings → System → Help) opens a pre-filled GitHub issue. You see everything before it's sent, and it never includes your chats, names or keys.
 
 ## On your phone
 
@@ -164,7 +167,13 @@ Kotatsu rebuilt the parts of SillyTavern that slow down as your stories grow: th
 >
 > — *Mikan-chan*
 
-On a phone-sized screen the chat takes the whole screen and both rails become sheets you pull in from the edges. Reaching Kotatsu from your phone is a switch and a scan:
+On a phone-sized screen the chat takes the whole screen and both rails become sheets you pull in from the edges.
+
+**A visual novel in your pocket.** Set Messages to **Sprites** and the phone becomes a stage: the chat's backdrop, the speaker in the face that fits the line, and the reply in a textbox you tap through a page at a time. Tap the name for edit, copy and the rest; **History** brings the whole transcript back. Sprites and backdrops are drawn by **Pictures** on your own ComfyUI (Card Studio → How they look), or you can upload your own.
+
+**Kotatsu on Android.** The Android app runs the whole thing on the phone: the server, your characters and your chats. Get `Kotatsu-Android.apk` from the [latest release](https://github.com/lumenastrum/kotatsu-public/releases/latest), open it, and allow installs from your browser when Android asks. Connect it with an API key, or a model running on your network; Claude Code and ChatGPT plans need a computer, so use the pairing below for those.
+
+**Or use the one on your computer.** Reaching your computer's Kotatsu from your phone is a switch and a scan:
 
 1. On the computer running Kotatsu, open **Settings → System → Phone** ("Use Kotatsu on your phone") and turn it on. If Kotatsu asks for a restart, use **Restart now**. If it can't restart itself, close it and start it again.
 2. Scan the QR code with your phone's camera. The code works once and expires after 5 minutes. The card makes a fresh one when it does.
@@ -192,6 +201,8 @@ You don't need a Claude subscription to install or use Kotatsu. An API key, a Ch
 Your chats, characters and settings live in `Documents\Kotatsu\data`. Updates never touch them.
 
 For an unattended install, answer the question up front: `"Install-Kotatsu.bat" [folder] [/nolaunch] [/claude or /noclaude]`.
+
+**Android** (Android 9 or newer, 64-bit): download `Kotatsu-Android.apk` from the [latest release](https://github.com/lumenastrum/kotatsu-public/releases/latest) on the phone, open it, and allow installs from your browser when Android asks. The first start unpacks Kotatsu, which takes a moment; Mikan-chan keeps you company. Everything lives on the phone. See [On your phone](#on-your-phone) for what connects there.
 
 **macOS and Linux run from source** (below). There's no installer for them yet, but readers have it working on both: macOS against a local OpenAI-compatible server, and Linux out of the box. Your data lives in `data/` inside the clone.
 

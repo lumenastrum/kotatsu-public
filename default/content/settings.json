@@ -125,7 +125,7 @@
         "movingUIState": {},
         "movingUIPreset": "Default",
         "noShadows": false,
-        "theme": "Blue Hour (Native)",
+        "theme": "pack:natsumikan-v3",
         "border_color": "rgba(77, 82, 102, 0.35)",
         "toastr_position": "toast-top-center",
         "message_token_count_enabled": false,

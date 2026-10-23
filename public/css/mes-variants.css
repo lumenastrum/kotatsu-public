@@ -71,7 +71,7 @@
    variant — it is this plus a pack's typography tokens (recon §6.3).
    ═══════════════════════════════════════════════════════════════════════════ */
 
-#chat[data-k-mes-variant="flat"] {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="flat"] {
     --k-flat-pad: 6px;
     --k-flat-gap: 20px;
     /* Book rhythm: print prose separates paragraphs by first-line indent, not
@@ -85,13 +85,13 @@
     --k-flat-name-gap: 2px;
 }
 
-body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="flat"] .mes:not(.smallSysMes) {
     padding: var(--k-flat-gap) var(--k-flat-pad) 0;
     border: none;
     background-color: transparent;
 }
 
-body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_block {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_block {
     max-width: var(--k-flat-measure);
     margin-inline: auto;
 }
@@ -100,12 +100,12 @@ body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_block {
    first paragraph stays flush — print convention after a heading or break.
    Streaming is safe: the tail <p> updates in place (renderer slice D), and
    text-indent is static geometry on the node. */
-body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_text p {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_text p {
     margin-bottom: 0;
     text-indent: var(--k-flat-indent);
 }
 
-body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_text p:first-child {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_text p:first-child {
     text-indent: 0;
 }
 
@@ -113,7 +113,7 @@ body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_text p:first-c
    the substrate reserves on `.mes_text` goes with it, because a document has no pill for the
    arrow to sit on top of — `.swipeRightBlock` is absolutely positioned against `.mes` and
    lands in the row's right margin, outside the capped measure. */
-body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_block .mes_text {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_block .mes_text {
     padding: 0;
     border: none;
     border-radius: 0;
@@ -122,12 +122,12 @@ body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_block .mes_tex
 }
 
 /* A byline, not a nameplate. `.ch_name` keeps its box (the action bar lives in it). */
-body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_block .ch_name {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .mes_block .ch_name {
     min-height: 0;
     margin-bottom: var(--k-flat-name-gap);
 }
 
-body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .name_text {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .name_text {
     font-family: var(--k-font-prose);
     font-size: var(--k-flat-name-size);
     font-weight: 400;
@@ -135,8 +135,8 @@ body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .name_text {
     color: var(--k-text-muted);
 }
 
-body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .timestamp,
-body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .timestamp-icon {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .timestamp-icon {
     display: none;
     visibility: hidden;
     font-size: 0;
@@ -151,8 +151,8 @@ body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .timestamp-icon {
    copy that drifts).
    ═══════════════════════════════════════════════════════════════════════════ */
 
-#chat[data-k-mes-variant="bubble"],
-#chat[data-k-mes-variant="bubble-split"] {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"],
+:is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] {
     --k-bubble-max-w: 72%;
     --k-bubble-radius: 16px;
     /* The corner nearest the speaker's avatar. One token, mirrored by the two rules that
@@ -168,8 +168,8 @@ body #chat[data-k-mes-variant="flat"] .mes:not(.smallSysMes) .timestamp-icon {
     --k-bubble-border: color-mix(in srgb, var(--k-chrome-border) 22%, transparent);
 }
 
-body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes),
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes:not(.smallSysMes),
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) {
     padding-top: var(--k-bubble-gap);
     border: none;
     background-color: transparent;
@@ -181,8 +181,8 @@ body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) {
    Here the name rides at the top of the pill, messenger-style, and `bubble-split` gets a
    surface to switch OFF when the paragraphs take over. `nameplate="above"` is the axis that
    lifts the name back out; it works because the pill is `.mes_block` (see §8). */
-body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block,
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block {
     flex: 0 1 auto;
     width: fit-content;
     max-width: var(--k-bubble-max-w);
@@ -196,8 +196,8 @@ body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block 
 /* The text is now INSIDE a padded pill, so it carries no box of its own. This also retires
    the substrate's reserved swipe gutter: `.swipeRightBlock` is absolute against `.mes`, and
    a fit-content pill leaves the row's right edge empty for it. */
-body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block .mes_text,
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block .mes_text {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block .mes_text,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block .mes_text {
     max-width: 100%;
     padding: 0;
     margin: 0;
@@ -207,8 +207,8 @@ body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block 
     background-color: transparent;
 }
 
-body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block .ch_name,
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block .ch_name {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block .ch_name,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block .ch_name {
     min-height: 0;
     margin-bottom: 3px;
 }
@@ -217,13 +217,13 @@ body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block 
    is what lets a long character name refuse to ellipse — and inside a `fit-content` pill that
    is not a cosmetic problem, it is the name deciding how wide the bubble is. The substrate
    already zeroes these under rails; stated here so classic gets the same protection. */
-body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .ch_name .flex-container,
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .ch_name .flex-container {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .ch_name .flex-container,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .ch_name .flex-container {
     min-width: 0;
 }
 
-body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .name_text,
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .name_text {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .name_text,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .name_text {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -238,17 +238,17 @@ body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .name_text 
    the action bar never jumps under the pointer. It is also the declaration the substrate's
    `display` pin cannot touch. `:focus-within` is the keyboard twin (initDynamicStyles()
    would otherwise synthesize one late and reorder the cascade — shell-center header). */
-body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .timestamp,
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .timestamp {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .timestamp {
     visibility: hidden;
     transition: opacity var(--k-motion);
     opacity: 0;
 }
 
-body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes):hover .timestamp,
-body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes):focus-within .timestamp,
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes):hover .timestamp,
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes):focus-within .timestamp {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes:not(.smallSysMes):hover .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes:not(.smallSysMes):focus-within .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes):hover .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes):focus-within .timestamp {
     visibility: visible;
     opacity: 1;
 }
@@ -258,33 +258,33 @@ body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes):focus-withi
    `order` under rails; restating the same mechanism composes with it instead of double-
    flipping it, and it works identically under classic where no order rules exist at all. */
 
-body #chat[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .mes_block,
-body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_block {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .mes_block,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_block {
     order: 1;
     margin-left: auto;
     border-radius: var(--k-bubble-radius) var(--k-bubble-tail) var(--k-bubble-radius) var(--k-bubble-radius);
     background-color: var(--k-bubble-user-fill);
 }
 
-body #chat[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper,
-body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper {
     order: 2;
 }
 
-body #chat[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .mes_block .ch_name,
-body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_block .ch_name {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .mes_block .ch_name,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_block .ch_name {
     flex-direction: row-reverse;
 }
 
-body #chat[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .ch_name > .flex-container,
-body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .ch_name > .flex-container {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .ch_name > .flex-container,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .ch_name > .flex-container {
     justify-content: flex-end;
 }
 
 /* Signal's suppression: on your own turn the name is noise — the side of the column already
    says who is talking. Bot turns keep theirs. */
-body #chat[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .name_text,
-body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .name_text {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes[is_user="true"]:not(.smallSysMes) .name_text,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .name_text {
     display: none;
     visibility: hidden;
     font-size: 0;
@@ -298,7 +298,7 @@ body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSys
    single turn renders as a stack of messages.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-#chat[data-k-mes-variant="bubble-split"] {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] {
     --k-split-gap: 5px;
     --k-split-pad-x: var(--k-bubble-pad-x);
     --k-split-pad-y: var(--k-bubble-pad-y);
@@ -306,7 +306,7 @@ body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSys
 
 /* The container stops being a surface and goes back to being a column. `max-width` stays:
    it is the measure every pill inside is capped by. */
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block {
     padding: 0;
     border-color: transparent;
     background-color: transparent;
@@ -317,7 +317,7 @@ body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_block 
    Renderer slices B/D guarantee these are real, STABLE paragraph nodes (renderer-v0 §2.5
    mechanism #4), which is what makes streaming work — the growing tail paragraph is the same
    element from token 1, so its pill grows in place rather than remounting per tick. */
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_text > p {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_text > p {
     width: fit-content;
     max-width: 100%;
     margin: 0 0 var(--k-split-gap);
@@ -328,20 +328,20 @@ body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_text >
 }
 
 /* The tail corner belongs to the first pill of the stack, the way a messenger draws it. */
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_text > p:first-child {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_text > p:first-child {
     border-top-left-radius: var(--k-bubble-tail);
 }
 
-body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_text > p:last-child {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .mes_text > p:last-child {
     margin-bottom: 0;
 }
 
-body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_text > p {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_text > p {
     margin-left: auto;
     background-color: var(--k-bubble-user-fill);
 }
 
-body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_text > p:first-child {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSysMes) .mes_text > p:first-child {
     border-top-left-radius: var(--k-bubble-radius);
     border-top-right-radius: var(--k-bubble-tail);
 }
@@ -354,7 +354,7 @@ body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSys
    stage direction are the PROSE's job, not the sheet's.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-#chat[data-k-mes-variant="script"] {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="script"] {
     --k-script-measure: 58ch;
     --k-script-gap: 28px;
     --k-script-name-size: 0.72em;
@@ -362,7 +362,7 @@ body #chat[data-k-mes-variant="bubble-split"] .mes[is_user="true"]:not(.smallSys
     --k-script-name-gap: 10px;
 }
 
-body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="script"] .mes:not(.smallSysMes) {
     gap: 0;
     padding: var(--k-script-gap) 0 0;
     border: none;
@@ -373,7 +373,7 @@ body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) {
    the per-row art properties. The wrapper is collapsed rather than deleted from the box tree
    twice over (header note 2) — and its readouts go with `display: none`, which the substrate
    does not pin, so the collapse is total either way. */
-body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mesAvatarWrapper {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mesAvatarWrapper {
     display: none;
     visibility: hidden;
     width: 0;
@@ -383,7 +383,7 @@ body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mesAvatarWrapper
     overflow: hidden;
 }
 
-body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block {
     max-width: var(--k-script-measure);
     margin-inline: auto;
     padding-left: 0;
@@ -392,16 +392,16 @@ body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block {
 /* The slug line. `.ch_name` itself keeps `justify-content: space-between` so `.mes_buttons`
    stays parked at the right edge; only the NAME GROUP centres, which is what puts the
    speaker over the middle of the speech. */
-body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block .ch_name {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block .ch_name {
     min-height: 0;
     margin-bottom: var(--k-script-name-gap);
 }
 
-body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .ch_name > .flex-container {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="script"] .mes:not(.smallSysMes) .ch_name > .flex-container {
     justify-content: center;
 }
 
-body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .name_text {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="script"] .mes:not(.smallSysMes) .name_text {
     font-size: var(--k-script-name-size);
     font-weight: 600;
     letter-spacing: var(--k-script-name-track);
@@ -409,14 +409,14 @@ body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .name_text {
     color: var(--k-text-muted);
 }
 
-body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .timestamp,
-body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .timestamp-icon {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="script"] .mes:not(.smallSysMes) .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="script"] .mes:not(.smallSysMes) .timestamp-icon {
     display: none;
     visibility: hidden;
     font-size: 0;
 }
 
-body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block .mes_text {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block .mes_text {
     padding: 0;
     border: none;
     border-radius: 0;
@@ -463,7 +463,7 @@ body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block .mes_t
 
 /* ── Layout params (recon §3.3/§3.4: one derived set, no per-side clones) ─────────────── */
 
-#chat[data-k-mes-variant="portrait"] {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] {
     --k-portrait-art-w: 34%;
     --k-portrait-art-min-w: 120px;
     --k-portrait-art-gap: 14px;
@@ -487,7 +487,7 @@ body #chat[data-k-mes-variant="script"] .mes:not(.smallSysMes) .mes_block .mes_t
    properties on each `.mes` — declared on #chat this resolves to empty and the empty
    value is what inherits down (live-caught: pseudo rendered `background-image: none`,
    meaning the spike's perf verdict was priced with masks live but no art decode). */
-body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) {
     --k-portrait-art: var(--k-mes-avatar-original, var(--k-mes-avatar));
 }
 
@@ -499,36 +499,36 @@ body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) {
    (css/kotatsu-chrome.css:809-812) and `.mes_img_controls` against `.mes_img_container`
    (style.css). `.swipe_left` / `.swipeRightBlock` / `.mes_reasoning_arrow` are outside
    `.mes_text` and keep resolving against `.mes`. */
-#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_text {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_text {
     position: relative;
     min-height: var(--k-portrait-min-h);
 }
 
 /* An empty `.mes_text` is a real state — a streaming reply before its first token, or a
    message that is only a reasoning block. No art, no reserved height, no border-box lie. */
-#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_text:empty {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_text:empty {
     min-height: 0;
 }
 
 /* The text is padded off the art rather than layered under it, so nothing readable is ever
    obscured and the mask's soft inner edge feathers into empty padding. */
-#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes):not([is_user="true"]) .mes_text {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes):not([is_user="true"]) .mes_text {
     padding-right: calc(max(var(--k-portrait-art-w), var(--k-portrait-art-min-w)) + var(--k-portrait-art-gap));
 }
 
-#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes)[is_user="true"] .mes_text {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes)[is_user="true"] .mes_text {
     padding-left: calc(max(var(--k-portrait-art-w), var(--k-portrait-art-min-w)) + var(--k-portrait-art-gap));
 }
 
 /* §2.5 mechanism #5, the Voidlit lesson (recon §3.8): hide `.name_text` / `.timestamp`,
    NEVER `.ch_name` — the action bar is nested inside it. */
-#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .timestamp {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .timestamp {
     display: none;
 }
 
 /* ── The art panel ───────────────────────────────────────────────────────────────────── */
 
-#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_text:not(:empty)::before {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_text:not(:empty)::before {
     content: "";
     position: absolute;
     top: 0;
@@ -548,7 +548,7 @@ body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) {
 
 /* Bot / system turns: art on the outer (right) edge, dissolving left into the prose and up
    from the bottom. Moonlit style.css:1502-1516. */
-#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes):not([is_user="true"]) .mes_text:not(:empty)::before {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes):not([is_user="true"]) .mes_text:not(:empty)::before {
     right: 0;
     border-radius: 0 var(--k-portrait-radius) var(--k-portrait-radius) 0;
     -webkit-mask-image:
@@ -565,7 +565,7 @@ body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) {
 
 /* User turns: the exact mirror — one block, same tokens, opposite anchor (recon §4.6 is the
    warning against writing this as a second hand-tuned copy). Moonlit style.css:1440-1462. */
-#chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes)[is_user="true"] .mes_text:not(:empty)::before {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes)[is_user="true"] .mes_text:not(:empty)::before {
     left: 0;
     border-radius: var(--k-portrait-radius) 0 0 var(--k-portrait-radius);
     -webkit-mask-image:
@@ -593,16 +593,16 @@ body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) {
    These two rules disappear the day the substrate stops pinning `display` and this sheet is
    allowed the ordinary `.mes_block .mes_text` chain. */
 
-body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_block .mes_text {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_block .mes_text {
     min-height: var(--k-portrait-min-h);
 }
 
-body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_block .mes_text:empty {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .mes_block .mes_text:empty {
     min-height: 0;
 }
 
-body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .timestamp,
-body #chat[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .timestamp-icon {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="portrait"] .mes:not(.smallSysMes) .timestamp-icon {
     display: none;
     visibility: hidden;
     font-size: 0;
@@ -657,14 +657,14 @@ body:has(#chat[data-k-mes-variant="portrait-column"]) {
     --k-cc-track-extra: calc(var(--k-pcol-w) + 2 * var(--k-pcol-gap) - var(--k-cc-avatar-col, 40px) - 2 * var(--k-cc-row-gap, 12px));
 }
 
-#chat[data-k-mes-variant="portrait-column"] {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="portrait-column"] {
     /* `--k-pcol-w` / `--k-pcol-gap` inherit from the body rule above. */
     --k-avatar-aspect: 1.5;
     --k-pcol-top: 12px;
     --k-pcol-radius: var(--k-radius-lg);
 }
 
-body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) {
     /* §2.5 mechanism #3: the 168px column wants the original, not the 96px thumb.
        Row scope for the same reason as portrait's art var — see the note there. */
     --k-pcol-art: var(--k-mes-avatar-original, var(--k-mes-avatar));
@@ -678,7 +678,7 @@ body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) {
     background-color: transparent;
 }
 
-body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .mesAvatarWrapper {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .mesAvatarWrapper {
     position: sticky;
     top: var(--k-pcol-top);
     flex: 0 0 var(--k-pcol-w);
@@ -689,14 +689,14 @@ body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .mesAvat
 /* Core reserves a full avatar height of padding under the LAST message's wrapper
    (style.css `.last_mes .mesAvatarWrapper`), which at 252px would make the wrapper taller
    than most rows and kill the stick. Zeroed here, and only here. */
-body #chat[data-k-mes-variant="portrait-column"] .mes.last_mes:not(.smallSysMes) .mesAvatarWrapper {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="portrait-column"] .mes.last_mes:not(.smallSysMes) .mesAvatarWrapper {
     padding-bottom: 0;
 }
 
 /* The panel itself. Stated in `--avatar-base-*` rather than literals so the declaration
    above stays the single source — and stated at all because css/kotatsu-chrome.css §14 pins
    72x108 literals under `body.big-avatars`, which would otherwise win here. */
-body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .avatar {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .avatar {
     flex: 0 0 auto;
     width: var(--avatar-base-width);
     height: var(--avatar-base-height);
@@ -711,7 +711,7 @@ body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .avatar 
 /* The `<img>` is the thumbnail and the click target both. Kept in the box (so the avatar
    click that opens the character still works, and the a11y tree still has the image), made
    invisible so the full-res background is what the eye gets. */
-body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .avatar img {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .avatar img {
     width: var(--avatar-base-width);
     height: var(--avatar-base-height);
     border: none;
@@ -719,7 +719,7 @@ body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .avatar 
     opacity: 0;
 }
 
-body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .mes_block {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .mes_block {
     flex: 1 1 auto;
     min-width: 0;
 }
@@ -734,7 +734,7 @@ body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .mes_blo
    only while it is actually transitioning.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-#chat[data-k-mes-variant="broadcast"] {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="broadcast"] {
     --k-broadcast-rail: 3px;
     --k-broadcast-dim: 0.55;
     --k-broadcast-pad: 14px;
@@ -745,7 +745,7 @@ body #chat[data-k-mes-variant="portrait-column"] .mes:not(.smallSysMes) .mes_blo
     --k-broadcast-rail-color: var(--k-rose);
 }
 
-body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) {
     padding: var(--k-broadcast-gap) var(--k-broadcast-pad) 0;
     border: none;
     border-left: var(--k-broadcast-rail) solid var(--k-broadcast-rail-color);
@@ -754,27 +754,27 @@ body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) {
     transition: opacity var(--k-motion);
 }
 
-body #chat[data-k-mes-variant="broadcast"] .mes[is_user="true"]:not(.smallSysMes) {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="broadcast"] .mes[is_user="true"]:not(.smallSysMes) {
     --k-broadcast-rail-color: var(--k-accent);
 }
 
-body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes):not(.last_mes) {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes):not(.last_mes) {
     opacity: var(--k-broadcast-dim);
 }
 
-body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes):not(.last_mes):hover,
-body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes):not(.last_mes):focus-within {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes):not(.last_mes):hover,
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes):not(.last_mes):focus-within {
     opacity: 1;
 }
 
-body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) .name_text {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) .name_text {
     font-size: 0.76em;
     font-weight: 600;
     letter-spacing: var(--k-broadcast-name-track);
     text-transform: uppercase;
 }
 
-body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) .mes_block .mes_text {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) .mes_block .mes_text {
     border: none;
     background-color: transparent;
 }
@@ -819,7 +819,7 @@ body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) .mes_block .me
       (today's shape) rather than eating it.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-#chat[data-k-mes-nameplate="above"] {
+:is(#chat, .k-chat-stage)[data-k-mes-nameplate="above"] {
     /* The row's reserved height. One token drives all three halves of the lift — the
        reservation, the label box and the clip margin — so a pack that wants a taller label
        line changes one number (recon §3.4). */
@@ -834,14 +834,14 @@ body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) .mes_block .me
    is the overflow core cares about (a wide table or code line); vertically it stays visible, so
    nothing above the block can ever be cut. No clip margin, no length that can fail to parse. */
 @supports (overflow-x: clip) {
-    body #chat[data-k-mes-nameplate="above"] .mes:not(.smallSysMes) .mes_block {
+    body :is(#chat, .k-chat-stage)[data-k-mes-nameplate="above"] .mes:not(.smallSysMes) .mes_block {
         position: relative;
         margin-top: calc(var(--k-nameplate-h) + var(--k-nameplate-gap));
         overflow-x: clip;
         overflow-y: visible;
     }
 
-    body #chat[data-k-mes-nameplate="above"] .mes:not(.smallSysMes) .mes_block .ch_name {
+    body :is(#chat, .k-chat-stage)[data-k-mes-nameplate="above"] .mes:not(.smallSysMes) .mes_block .ch_name {
         position: absolute;
         left: 0;
         right: 0;
@@ -882,23 +882,23 @@ body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes) .mes_block .me
    becomes clickable, it does.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-#chat[data-k-mes-metadata="hover"],
-#chat[data-k-mes-metadata="click"] {
+:is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"],
+:is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] {
     --k-meta-hidden-opacity: 0;
 }
 
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .timestamp,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .timestamp-icon,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .mesIDDisplay,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .mes_timer,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .tokenCounterDisplay,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) k-mes-metrics,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .timestamp,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .timestamp-icon,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .mesIDDisplay,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .mes_timer,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .tokenCounterDisplay,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) k-mes-metrics {
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .timestamp-icon,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .mesIDDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .mes_timer,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .tokenCounterDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) k-mes-metrics,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .timestamp-icon,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .mesIDDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .mes_timer,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .tokenCounterDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes) k-mes-metrics {
     opacity: var(--k-meta-hidden-opacity);
     pointer-events: none;
     transition: opacity var(--k-motion);
@@ -907,30 +907,30 @@ body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) k-mes-metrics {
 /* `hover` reveals on pointer or focus. `click` reveals on the row class slice B's delegated
    `#chat` handler toggles — and keeps the `:focus-within` reveal, because a keyboard user
    tabbing into a row's action bar must be able to see the row's chrome without a mouse. */
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .timestamp,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .timestamp-icon,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .mesIDDisplay,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .mes_timer,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .tokenCounterDisplay,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover k-mes-metrics,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .timestamp,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .timestamp-icon,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .mesIDDisplay,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .mes_timer,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .tokenCounterDisplay,
-body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within k-mes-metrics,
-body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .timestamp,
-body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .timestamp-icon,
-body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .mesIDDisplay,
-body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .mes_timer,
-body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .tokenCounterDisplay,
-body #chat[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) k-mes-metrics,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .timestamp,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .timestamp-icon,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .mesIDDisplay,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .mes_timer,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .tokenCounterDisplay,
-body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within k-mes-metrics {
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .timestamp-icon,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .mesIDDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .mes_timer,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover .tokenCounterDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):hover k-mes-metrics,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .timestamp-icon,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .mesIDDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .mes_timer,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within .tokenCounterDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes):focus-within k-mes-metrics,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .timestamp-icon,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .mesIDDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .mes_timer,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) .tokenCounterDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes.k-meta-open:not(.smallSysMes) k-mes-metrics,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .timestamp,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .timestamp-icon,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .mesIDDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .mes_timer,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within .tokenCounterDisplay,
+body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within k-mes-metrics {
     opacity: 1;
     pointer-events: auto;
 }
@@ -947,7 +947,7 @@ body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within k-me
    with no face keeps the card avatar untouched.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-#chat[data-k-mes-variant="sprite"] {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] {
     --k-sprite-card-fill: color-mix(in srgb, var(--k-surface) 84%, transparent);
     --k-sprite-card-fill-user: color-mix(in srgb, var(--k-surface-2) 76%, transparent);
     --k-sprite-card-blur: 6px;
@@ -961,19 +961,219 @@ body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes):focus-within k-me
    swipe pill and its anchors all apply); only the BUBBLE is frosted. A whole-row fill was
    tried first and drew an empty dark slab beside every user bubble, hiding the stage for
    nothing (eyes, 2026-10-10). */
-body #chat[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .mes_text:not(:empty) {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .mes_text:not(:empty) {
     background-color: var(--k-sprite-card-fill);
     -webkit-backdrop-filter: blur(var(--k-sprite-card-blur));
     backdrop-filter: blur(var(--k-sprite-card-blur));
 }
 
-body #chat[data-k-mes-variant="sprite"] .mes[is_user="true"]:not(.smallSysMes) .mes_text:not(:empty) {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes[is_user="true"]:not(.smallSysMes) .mes_text:not(:empty) {
     background-color: var(--k-sprite-card-fill-user);
+}
+
+/* ── The row's chrome over a stage ─────────────────────────────────────────────────────────
+   Everything outside the bubble stands on the backdrop (docs/stage-backdrop-v0.md), where a dark,
+   busy image swallows a coloured name and turns a readout to soup. So it wears the bubble's own
+   frost, in two states (Andres, on his iPhone, 2026-10-22: "VN mode could be argued to be an
+   immersive kind of experience"):
+   - AT REST a row is its name, on a small plate, and its prose. The date, #n, the … and pencil,
+     the timer and token readouts and the cache bar are tucked.
+   - REVEALED (that message tapped — metadata-reveal.js toggles `.k-meta-open` in this look —
+     hovered with a mouse, or holding keyboard focus) the name row becomes one frosted header
+     card: name and date at the left, the … and pencil as quiet glyphs at the right, and the cache
+     bar (metrics/bar.js always seats it right after `.ch_name`) as the card's second line. One
+     object, not four loose pills.
+   The revealed look is the default below and the rest state is written behind `:not()`s, so
+   there is nothing to restore; padding is the same in both, so nothing moves on a tap, only the
+   frost changes hands. Keyboard focus counts through `:has(:focus-visible)`, not `:focus-within`:
+   a tap focuses the reasoning `<summary>` too, and that woke the whole row up beside the thoughts
+   it opened (2026-10-22). */
+
+/* Revealed: the header card. */
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .ch_name {
+    align-items: center;
+    padding: 3px 4px 3px 12px;
+    border-radius: var(--k-radius-lg);
+    background-color: var(--k-sprite-card-fill);
+    -webkit-backdrop-filter: blur(var(--k-sprite-card-blur));
+    backdrop-filter: blur(var(--k-sprite-card-blur));
+}
+
+/* The cache bar continues the card: square where they meet, a hairline between. */
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .ch_name:has(+ k-mes-metrics) {
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+}
+
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .ch_name + k-mes-metrics {
+    margin: 0 0 6px;
+    padding: 4px 12px 6px;
+    border-block-start: 1px solid color-mix(in srgb, var(--k-chrome-border) 35%, transparent);
+    border-radius: 0 0 var(--k-radius-lg) var(--k-radius-lg);
+    background-color: var(--k-sprite-card-fill);
+    -webkit-backdrop-filter: blur(var(--k-sprite-card-blur));
+    backdrop-filter: blur(var(--k-sprite-card-blur));
+}
+
+/* On a phone the row is a two-column grid (kotatsu-phone.css §4): the face beside the name row,
+   everything else across the whole width. The cache bar takes the name row's column instead, so
+   the card's two halves share both edges, and the grid's 6px row gap is closed between them. */
+@media (max-width: 600px) {
+    /* At the phone grid's own weight (its `.mes_block > :not(.ch_name)` spans the row) plus one. */
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"]:not([data-k-mes-variant="bubble"]) .mes:not(.smallSysMes) .mes_block > .ch_name + k-mes-metrics {
+        grid-column: 2;
+        margin-block-start: -6px;
+    }
+
+    /* A user row is mirrored on a phone (its name in column 1, its face in column 2). */
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"]:not([data-k-mes-variant="bubble"]) .mes[is_user="true"]:not(.smallSysMes) .mes_block > .ch_name + k-mes-metrics {
+        grid-column: 1;
+    }
+}
+
+/* The name and date: one line inside the card; on a phone the date gives way, never the name. */
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .ch_name .flex-container.alignItemsBaseline {
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    padding: 2px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    border-radius: var(--k-radius-pill);
+}
+
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .ch_name .name_text {
+    flex: 0 0 auto;
+}
+
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .ch_name .timestamp {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The … and pencil: quiet glyphs in the card, no pill of their own. Their 36px finger targets
+   (kotatsu-phone.css §8) stay; the chunky plate around them is gone. */
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .mes_buttons {
+    padding: 0;
+    background: none;
+}
+
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .mes_buttons :is(.mes_button, .extraMesButtonsHint) {
+    color: var(--k-text-muted);
+    opacity: 1;
+}
+
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .mes_buttons :is(.mes_button, .extraMesButtonsHint):hover {
+    color: var(--k-accent-bright);
+}
+
+/* #n under the face: a small chip. */
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .mesIDDisplay {
+    inline-size: fit-content;
+    margin-inline: auto;
+    padding: 0 7px;
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-sprite-card-fill);
+    -webkit-backdrop-filter: blur(var(--k-sprite-card-blur));
+    backdrop-filter: blur(var(--k-sprite-card-blur));
+}
+
+/* "Thought for some time" is content, not chrome: always shown, on its own small plate. Core's
+   chevron is absolutely placed 7px from the right (style.css `.mes_reasoning_arrow`), so the pill
+   keeps that room on its right and anchors it; without it the title ran under the chevron and out
+   of the pill (Andres's iPhone, 2026-10-22). */
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .mes_reasoning_header {
+    position: relative;
+    inline-size: fit-content;
+    max-inline-size: 100%;
+    padding: 2px 26px 2px 10px;
+    border-radius: var(--k-radius-pill);
+    background-color: var(--k-sprite-card-fill);
+    -webkit-backdrop-filter: blur(var(--k-sprite-card-blur));
+    backdrop-filter: blur(var(--k-sprite-card-blur));
+}
+
+/* The thoughts, opened: their text stood on the backdrop too. The same frost, as a soft panel. */
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) .mes_reasoning_details[open] .mes_reasoning {
+    padding: 8px 12px;
+    border-radius: var(--k-radius-lg);
+    background-color: var(--k-sprite-card-fill);
+    -webkit-backdrop-filter: blur(var(--k-sprite-card-blur));
+    backdrop-filter: blur(var(--k-sprite-card-blur));
+}
+
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) :is(.ch_name, .ch_name .flex-container.alignItemsBaseline) {
+    transition: background-color var(--k-motion);
+}
+
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes) :is(.mesIDDisplay, .mes_timer, .tokenCounterDisplay, .mes_buttons) {
+    transition: opacity var(--k-motion);
+}
+
+/* At rest. Touch screens have no hover, so the rest state is written twice. */
+@media (hover: none) {
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes):not(.k-meta-open):not(:has(:focus-visible)) .ch_name {
+        background-color: transparent;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes):not(.k-meta-open):not(:has(:focus-visible)) .ch_name .flex-container.alignItemsBaseline {
+        padding-inline: 10px;
+        margin-inline-start: -10px;
+        background-color: var(--k-sprite-card-fill);
+        -webkit-backdrop-filter: blur(var(--k-sprite-card-blur));
+        backdrop-filter: blur(var(--k-sprite-card-blur));
+    }
+
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes):not(.k-meta-open):not(:has(:focus-visible)) :is(.ch_name .timestamp, .ch_name .timestamp-icon, k-mes-metrics) {
+        display: none;
+    }
+
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes):not(.k-meta-open):not(:has(:focus-visible)) .ch_name:has(+ k-mes-metrics) {
+        border-radius: var(--k-radius-lg);
+    }
+
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes):not(.k-meta-open):not(:has(:focus-visible)) :is(.mesIDDisplay, .mes_timer, .tokenCounterDisplay, .mes_buttons) {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
+@media (hover: hover) {
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes):not(.k-meta-open):not(:has(:focus-visible)):not(:hover) .ch_name {
+        background-color: transparent;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes):not(.k-meta-open):not(:has(:focus-visible)):not(:hover) .ch_name .flex-container.alignItemsBaseline {
+        padding-inline: 10px;
+        margin-inline-start: -10px;
+        background-color: var(--k-sprite-card-fill);
+        -webkit-backdrop-filter: blur(var(--k-sprite-card-blur));
+        backdrop-filter: blur(var(--k-sprite-card-blur));
+    }
+
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes):not(.k-meta-open):not(:has(:focus-visible)):not(:hover) :is(.ch_name .timestamp, .ch_name .timestamp-icon, k-mes-metrics) {
+        display: none;
+    }
+
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes):not(.k-meta-open):not(:has(:focus-visible)):not(:hover) .ch_name:has(+ k-mes-metrics) {
+        border-radius: var(--k-radius-lg);
+    }
+
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes:not(.smallSysMes):not(.k-meta-open):not(:has(:focus-visible)):not(:hover) :is(.mesIDDisplay, .mes_timer, .tokenCounterDisplay, .mes_buttons) {
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 
 /* The face. The `<img>` stays in the box (click target, a11y) and goes invisible, the
    portrait-column trick (§6), so the sprite crop under it is what the eye gets. */
-body #chat[data-k-mes-variant="sprite"] .mes[data-k-sprite]:not(.smallSysMes) .avatar {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes[data-k-sprite]:not(.smallSysMes) .avatar {
     background-color: var(--k-surface);
     background-image: var(--k-mes-sprite);
     background-position: 50% var(--k-sprite-face-y);
@@ -983,18 +1183,18 @@ body #chat[data-k-mes-variant="sprite"] .mes[data-k-sprite]:not(.smallSysMes) .a
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--k-speaker, var(--k-accent)) 55%, transparent);
 }
 
-body #chat[data-k-mes-variant="sprite"] .mes[data-k-sprite]:not(.smallSysMes) .avatar img {
+body :is(#chat, .k-chat-stage)[data-k-mes-variant="sprite"] .mes[data-k-sprite]:not(.smallSysMes) .avatar img {
     opacity: 0;
 }
 
 /* Motion opt-out. The only animated properties in this sheet are the two opacity fades
    above and broadcast's dim, and all three are affordances, not information. */
 @media (prefers-reduced-motion: reduce) {
-    body #chat[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes),
-    body #chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .timestamp,
-    body #chat[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .timestamp,
-    body #chat[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .timestamp,
-    body #chat[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .timestamp {
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="broadcast"] .mes:not(.smallSysMes),
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .timestamp,
+    body :is(#chat, .k-chat-stage)[data-k-mes-variant="bubble-split"] .mes:not(.smallSysMes) .timestamp,
+    body :is(#chat, .k-chat-stage)[data-k-mes-metadata="hover"] .mes:not(.smallSysMes) .timestamp,
+    body :is(#chat, .k-chat-stage)[data-k-mes-metadata="click"] .mes:not(.smallSysMes) .timestamp {
         transition: none;
     }
 }

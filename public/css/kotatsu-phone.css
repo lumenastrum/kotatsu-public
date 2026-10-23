@@ -222,13 +222,44 @@ body .k-rail-handle .k-rail-handle__phone {
         top: calc(var(--k-phone-bar) * 2 + 4px);
     }
 
+    /* The header keeps who you are talking to; the chat's date goes, and the switcher stays a
+       door as its caret (it carries an aria-label, so it keeps its name). Measured at 393 wide:
+       "Last Train H… / Oct 8 · 3:4…" became the whole scene name. */
+    body[data-k-layout="rails"] k-chat-header .k-ch__sep,
+    body[data-k-layout="rails"] k-chat-header .k-cs__title {
+        display: none;
+    }
+
+    body[data-k-layout="rails"] k-chat-header .k-cs__trigger {
+        padding-inline: 6px;
+    }
+
+    /* The Scene chip gives its word to the title on a phone; the glyph and its label stay. */
+    body[data-k-layout="rails"] .k-ch__scene-chip {
+        padding: 5px 7px;
+    }
+
+    body[data-k-layout="rails"] .k-ch__scene-chip span {
+        display: none;
+    }
+
+    /* The Scene peek, the same way: the screen's width, under the header strip. */
+    body[data-k-layout="rails"] .k-ch__scene-peek {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        top: calc(var(--k-phone-bar) * 2 + 4px);
+        inline-size: auto;
+        transform: none;
+    }
+
     /* ── 4. The message row: the bubble takes the width ───────────────────────────────────
        Card, flat, script, broadcast and the portraits paint `.mes_text` (or nothing), so the
        row becomes a two-line grid: a 36px avatar beside the nameplate, then the text across
        the whole row. `.mes_block` steps out of the way with `display: contents` — it paints
        nothing in these looks — which lets its children join the row's grid. Bubble and
        bubble-split PAINT `.mes_block`, so they keep the side column and only shrink it. */
-    body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes:not(.smallSysMes) {
         --k-cc-avatar: var(--k-phone-avatar);
         --k-cc-avatar-col: var(--k-phone-avatar);
         --avatar-base-width: var(--k-phone-avatar);
@@ -238,14 +269,14 @@ body .k-rail-handle .k-rail-handle__phone {
         padding: 10px 12px 0;
     }
 
-    body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .avatar,
-    body[data-k-layout="rails"] #chat .mes:not(.smallSysMes) .avatar img {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes:not(.smallSysMes) .avatar,
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes:not(.smallSysMes) .avatar img {
         width: var(--k-phone-avatar);
         height: var(--k-phone-avatar);
         object-fit: cover;
     }
 
-    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage):not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr);
         align-items: center;
@@ -253,14 +284,14 @@ body .k-rail-handle .k-rail-handle__phone {
         row-gap: 6px;
     }
 
-    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mes_block {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage):not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mes_block {
         display: contents;
     }
 
     /* One line, not a column: the readouts (`#0`, timer, tokens — user-toggled, so moved,
        never hidden) sit beside the avatar, and core's last-row swipe reservation under the
        avatar goes — the swipe pill lives on the bubble now. */
-    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mesAvatarWrapper {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage):not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mesAvatarWrapper {
         grid-column: 1;
         grid-row: 1;
         flex-direction: row;
@@ -272,35 +303,35 @@ body .k-rail-handle .k-rail-handle__phone {
         padding: 0;
     }
 
-    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mes_block > .ch_name {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage):not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mes_block > .ch_name {
         grid-column: 2;
         grid-row: 1;
         min-width: 0;
     }
 
-    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mes_block > :not(.ch_name) {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage):not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes:not(.smallSysMes) .mes_block > :not(.ch_name) {
         grid-column: 1 / -1;
         min-width: 0;
     }
 
     /* The user row mirrors: avatar on the right, name beside it, text right-aligned. */
-    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage):not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) {
         grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage):not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper {
         flex-direction: row-reverse;
     }
 
-    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage):not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mesAvatarWrapper {
         grid-column: 2;
     }
 
-    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mes_block > .ch_name {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage):not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mes_block > .ch_name {
         grid-column: 1;
     }
 
-    body[data-k-layout="rails"] #chat:not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mes_block > :not(.ch_name) {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage):not([data-k-mes-variant="bubble"], [data-k-mes-variant="bubble-split"]) .mes[is_user="true"]:not(.smallSysMes) .mes_block > :not(.ch_name) {
         justify-self: end;
         max-width: 92%;
     }
@@ -320,7 +351,8 @@ body .k-rail-handle .k-rail-handle__phone {
 
     body[data-k-layout="rails"] k-settings-modal {
         --k-set-width: 100vw;
-        --k-set-height: 100dvh;
+        /* What an open keyboard leaves (kotatsu/shell/keyboard.js); unset, the whole screen. */
+        --k-set-height: var(--k-vvh, 100dvh);
     }
 
     body[data-k-layout="rails"] .k-set-sheet {
@@ -333,12 +365,18 @@ body .k-rail-handle .k-rail-handle__phone {
         display: none;
     }
 
-    /* One scrolling row of sections instead of a wrapped block; the glide pill follows. */
+    /* One scrolling row of sections instead of a wrapped block; the glide pill follows. With no
+       scrollbar the row said nothing about the seven tabs past the edge (mobile pass 2026-10-22),
+       so its right end fades, and the padding lets the last tab scroll clear of the fade. The
+       modal scrolls the active tab into view (k-settings-modal.js `#revealTab`). */
     body[data-k-layout="rails"] .k-set-tabs {
         flex-wrap: nowrap;
         overflow-x: auto;
         overflow-y: hidden;
         scrollbar-width: none;
+        padding-inline-end: 28px;
+        -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent);
+        mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent);
     }
 
     body[data-k-layout="rails"] .k-set-tab {
@@ -360,13 +398,13 @@ body .k-rail-handle .k-rail-handle__phone {
 /* ── 8. Fingers, not cursors ──────────────────────────────────────────────────────────────
    On a touch screen the hit box grows; the glyph does not (rechrome contract 7). */
 @media (pointer: coarse) {
-    body[data-k-layout="rails"] #chat {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage) {
         --k-swipe-h: 34px;
         --k-swipe-arrow: 38px;
     }
 
-    body[data-k-layout="rails"] #chat .mes .mes_buttons .mes_button,
-    body[data-k-layout="rails"] #chat .mes .mes_buttons .extraMesButtonsHint {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes .mes_buttons .mes_button,
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes .mes_buttons .extraMesButtonsHint {
         /* Sizes only — never `display`: core shows and hides these buttons by display. */
         min-width: 36px;
         min-height: 36px;
@@ -376,7 +414,7 @@ body .k-rail-handle .k-rail-handle__phone {
        eight of them outgrow a phone-width message, and a right-aligned row that overflows
        spills off its LEFT edge: Translate (the first child) sat off-screen, out of reach.
        Wrapping keeps every button inside the message. */
-    body[data-k-layout="rails"] #chat .mes .mes_buttons .extraMesButtons {
+    body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes .mes_buttons .extraMesButtons {
         flex-wrap: wrap;
     }
 
@@ -389,5 +427,110 @@ body .k-rail-handle .k-rail-handle__phone {
 
     body[data-k-layout="rails"] .k-rl-row {
         min-height: 40px;
+    }
+}
+
+/* ── 7. Reading: the bars step aside (kotatsu/shell/reading-bar.js) ───────────────────────
+   On a phone the top bar and the header strip FLOAT over the story instead of taking rows: the
+   shell's bar row is zero, the centre column starts at the top of the screen, the strip sits
+   absolutely under the bar, and the transcript's top padding starts its first line below both.
+   Scrolling down through the story slides the two (and the rail handles on the strip's row) up
+   out of view; the first scroll up slides them back. Nothing in the layout moves, so nothing
+   under the reader's eye can jump: a version that collapsed real rows and corrected the scroll
+   fought the browser's own touch scrolling and flickered every 10px (probe, 2026-10-22).
+   The gallery keeps its old top under the bar. The strip wears the bar's surface so the two
+   read as one band. */
+@media (max-width: 600px) {
+    body[data-k-layout="rails"] #k-shell {
+        grid-template-rows: 0 minmax(0, 1fr);
+    }
+
+    /* Stacking, in #k-center's shared context: the story (#sheld, 30) < the strip floating on it
+       (31; at 30 the later #sheld won the tie and ate taps on the Scene chip) < the gallery, which
+       covers both when it opens over a chat (32) < the rail handles (40). */
+    body[data-k-layout="rails"] k-library {
+        top: var(--k-phone-bar);
+        z-index: 32;
+    }
+
+    body[data-k-layout="rails"] k-chat-header[variant="strip"] {
+        position: absolute;
+        top: var(--k-phone-bar);
+        left: 0;
+        right: 0;
+        z-index: 31;
+        background-color: var(--k-surface-2);
+        background-image: var(--k-material-topbar);
+    }
+
+    body[data-k-layout="rails"] #chat {
+        padding-top: calc(var(--k-phone-bar) * 2 + var(--k-cc-row-pad-y));
+        scroll-padding-top: calc(var(--k-phone-bar) * 2 + var(--k-cc-row-pad-y));
+    }
+
+    body[data-k-layout="rails"] #k-topbar,
+    body[data-k-layout="rails"] k-chat-header[variant="strip"],
+    body[data-k-layout="rails"] .k-rail-handle {
+        transition: transform var(--k-t2) var(--k-ease-out);
+    }
+
+    body[data-k-layout="rails"][data-k-reading-bar="hidden"] #k-topbar,
+    body[data-k-layout="rails"][data-k-reading-bar="hidden"] k-chat-header[variant="strip"],
+    body[data-k-layout="rails"][data-k-reading-bar="hidden"] .k-rail-handle {
+        transform: translateY(calc(var(--k-phone-bar) * -2));
+    }
+}
+
+/* ── Short screens: a phone on its side ────────────────────────────────────────────────────
+   601+ wide and 500 or less tall misses both the phone rules above and the desktop dock, and
+   got the whole desktop stack: on an iPhone 15 turned sideways (734x343 in Safari) the bar,
+   the header strip, the stage, the composer and its hint took 238 of 343px and left the story
+   105. layouts/rails.js docks the header into the bar here (HEADER_DOCK_QUERY); this makes
+   room for it in the bar and slims what sits under the story. */
+@media (min-width: 601px) and (max-height: 500px) {
+    body[data-k-layout="rails"] k-topbar .k-topbar__zone--left {
+        flex: 0 0 auto;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-topbar__zone--right {
+        min-inline-size: 0;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-pill--ctx,
+    body[data-k-layout="rails"] k-topbar .k-topbar__gear[aria-label="Open branch map"],
+    body[data-k-layout="rails"] .k-ch__count {
+        display: none;
+    }
+
+    body[data-k-layout="rails"] k-topbar .k-pill--model {
+        flex: 0 1 auto;
+        min-inline-size: 0;
+        overflow: hidden;
+    }
+
+    /* The keyboard hint is for a keyboard; a phone on its side has the room for neither. */
+    body[data-k-layout="rails"] #form_sheld::after {
+        display: none;
+    }
+
+    /* The stage as faces only: who is in the scene, not their names twice. */
+    body[data-k-layout="rails"] k-stage {
+        margin-bottom: 4px;
+    }
+
+    body[data-k-layout="rails"] .k-stage-bar {
+        min-height: 40px;
+        padding: 2px 6px 2px 8px;
+    }
+
+    body[data-k-layout="rails"] .k-stage-label,
+    body[data-k-layout="rails"] .k-stage-name,
+    body[data-k-layout="rails"] .k-stage-word {
+        display: none;
+    }
+
+    body[data-k-layout="rails"] .k-stage-seat {
+        height: 36px;
+        padding: 0 4px;
     }
 }

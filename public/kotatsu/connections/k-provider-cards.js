@@ -24,7 +24,7 @@ import { main_api, online_status } from '../../script.js';
 import { event_types, eventSource } from '../../scripts/events.js';
 import { oai_settings } from '../../scripts/openai.js';
 import { secret_state } from '../../scripts/secrets.js';
-import { BRIDGE_CHANGE_EVENT, isOnBridge, modelLabel, pressConnect } from './bridge.js';
+import { BRIDGE_CHANGE_EVENT, clearPostProcessing, isOnBridge, modelLabel, pressConnect } from './bridge.js';
 import { PROVIDERS } from './providers.js';
 
 export { PROVIDERS };
@@ -85,6 +85,9 @@ function commit(id, value, type) {
 export async function connectProvider(provider, key = '') {
     if (main_api !== 'openai') commit('main_api', 'openai', 'change');
     commit('chat_completion_source', provider.source, 'change');
+    // A hosted provider takes the prompt as built; a local server picked before may have left
+    // semi-strict merging behind (bridge.js `clearPostProcessing`).
+    if (provider.source !== 'custom') clearPostProcessing();
     if (key) commit(provider.keyField, key, 'input');
     await pressConnect();
     // Whatever Connect did with the typed key, it does not stay in the field.

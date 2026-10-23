@@ -1,0 +1,629 @@
+/*
+ * Natsumikan · Light (flagship-natsumikan-light): the Shoujo Manga frame (flagship-shoujo) in the
+ * palette of Sigrika's "Light" stage. Same tracked debt as Shoujo, block for block; what changed is
+ * marked LIGHT. Colours stay on tokens wherever they can: ink = var(--k-text) (indigo), paper =
+ * var(--k-surface) / var(--k-surface-2) (cream), mikan = var(--k-primary-bg), periwinkle (the colour
+ * of choosing) = var(--k-select), deep mikan text = var(--k-accent).
+ * The loader prefixes every rule with body[data-k-theme="flagship-natsumikan-light"].
+ */
+
+/* ── 1. LIBRARY HERO: the volume title ────────────────────────────────────────────────────────
+   The eyebrow becomes an ink chapter tag, tilted, with a sakura offset shadow; the title gets a
+   hard pink offset (zero blur) like a printed cover title.
+   Wants: --k-lib-eyebrow-fill / -ink / -tilt / -shadow (an "eyebrow as tag" variant) and
+   --k-lib-title-shadow (a text-shadow knob, also useful for every display title). */
+body[data-k-layout="rails"] .k-lib-eyebrow {
+    align-self: flex-start;
+    padding: 4px 12px 5px;
+    border-radius: 2px;
+    background: var(--k-text);
+    color: var(--k-surface);
+    transform: rotate(-2deg);
+    box-shadow: 3px 3px 0 var(--k-primary-bg);
+}
+
+/* LIGHT: a full mikan offset under indigo, like the "Light" logo printed over its own shadow. */
+body[data-k-layout="rails"] .k-lib-title {
+    margin-top: 6px;
+    text-shadow: 4px 4px 0 var(--k-primary-bg);
+}
+
+body[data-k-layout="rails"] .k-lib-sub {
+    font-weight: 500;
+}
+
+/* ── 2. INK BUTTONS: 2px ink line + hard offset shadow, pressed = shadow collapses ─────────────
+   Wants: --k-control-line-width (border width for every control), --k-control-shadow and
+   --k-control-shadow-pressed (a hard offset, separate from the soft --k-elev-* ramp). */
+body[data-k-layout="rails"] .k-lib-btn,
+body[data-k-layout="rails"] .k-sprite-studio__button {
+    border: 2px solid var(--k-text);
+    font-weight: 700;
+    box-shadow: 3px 3px 0 var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-btn:not(.k-lib-btn--primary),
+body[data-k-layout="rails"] .k-sprite-studio__button:not(.k-sprite-studio__button--primary) {
+    background-color: var(--k-surface-2);
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-btn:active,
+body[data-k-layout="rails"] .k-sprite-studio__button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-btn--ghost:hover,
+body[data-k-layout="rails"] .k-lib-btn--ghost:focus-visible,
+body[data-k-layout="rails"] .k-sprite-studio__button:not(.k-sprite-studio__button--primary):hover,
+body[data-k-layout="rails"] .k-sprite-studio__button:not(.k-sprite-studio__button--primary):focus-within {
+    border-color: var(--k-text);
+    background-color: var(--k-lib-hover-fill);
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-btn--primary,
+body[data-k-layout="rails"] .k-sprite-studio__button--primary,
+body[data-k-layout="rails"] .k-lib-btn--primary:hover,
+body[data-k-layout="rails"] .k-lib-btn--primary:focus-visible,
+body[data-k-layout="rails"] .k-sprite-studio__button--primary:hover,
+body[data-k-layout="rails"] .k-sprite-studio__button--primary:focus-within {
+    border-color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-sprite-studio__button--quiet {
+    box-shadow: none;
+    border-style: dashed;
+}
+
+/* ── 3. SEGMENTED SWITCHES: ink frame; chosen = plum tint + plum line + plum label ────────────
+   Selected ≠ primary ≠ resting: resting is paper, primary is solid sakura, chosen is plum.
+   Wants: --k-segment-line-width and --k-control-on-ring (an inset ring on the selected
+   segment; today only the fill can be themed). */
+body[data-k-layout="rails"] .k-lib-tabs,
+body[data-k-layout="rails"] .k-lib-views,
+body[data-k-layout="rails"] .k-studio-view {
+    border: 2px solid var(--k-text);
+    border-radius: 18px;
+    background: var(--k-surface-2);
+    box-shadow: 3px 3px 0 var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-tab,
+body[data-k-layout="rails"] .k-lib-view {
+    color: var(--k-text-dim);
+    font-weight: 700;
+}
+
+body[data-k-layout="rails"] .k-lib-tab.is-active,
+body[data-k-layout="rails"] .k-lib-view.is-active {
+    background: var(--k-control-on-bg);
+    color: var(--k-select);
+    box-shadow: inset 0 0 0 2px var(--k-select);
+}
+
+/* Card Studio v2's chapter bar and view switch take their states from knobs; only the ✦ before the
+   current chapter is still sheet. Wants: --k-label-mark (below). */
+body[data-k-layout="rails"] .k-studio-chapter-btn[aria-current="true"]::before {
+    content: '✦';
+    color: var(--k-primary-bg);
+}
+
+/* ── 4. FIELDS: ink-ruled boxes; focus = sakura hard shadow instead of a soft ring ────────────
+   Wants: --k-field-line-width and --k-focus-shadow (a hard-offset focus treatment). */
+body[data-k-layout="rails"] .k-lib-search,
+body[data-k-layout="rails"] .k-lib-sort {
+    border: 2px solid var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-search:focus-within,
+body[data-k-layout="rails"] .k-lib-sort:focus-visible {
+    border-color: var(--k-text);
+    box-shadow: 3px 3px 0 var(--k-primary-bg);
+}
+
+/* Card Studio v2 draws its fields with --k-studio-frame-line; the hard focus shadow is still sheet. */
+body[data-k-layout="rails"] .k-studio-control textarea:focus,
+body[data-k-layout="rails"] .k-studio-control input:focus,
+body[data-k-layout="rails"] .k-studio-control select:focus,
+body[data-k-layout="rails"] .k-studio-control textarea:focus-visible,
+body[data-k-layout="rails"] .k-studio-control input:focus-visible,
+body[data-k-layout="rails"] .k-studio-control select:focus-visible {
+    border-color: var(--k-text);
+    box-shadow: 4px 4px 0 var(--k-primary-bg);
+}
+
+/* ── 5. SECTION LABELS: a sakura sparkle before every section title ──────────────────────────
+   Wants: --k-label-mark (a decorative glyph before labels, '✦ ' here, none by default). */
+body[data-k-layout="rails"] .k-lib-sectiontitle::before,
+body[data-k-layout="rails"] .k-studio-label::before {
+    content: '✦ ';
+    color: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-lib-sectiontitle,
+body[data-k-layout="rails"] .k-studio-label {
+    color: var(--k-text);
+}
+
+/* ── 6. RECENTS + TOOLS ROW: small ink panels, a double page rule under the tools ─────────────
+   Wants: --k-lib-recent-line / -shadow and --k-lib-tools-rule (the rule under the tools row). */
+body[data-k-layout="rails"] .k-lib-recent {
+    border: 2px solid var(--k-text);
+    border-radius: 3px;
+    box-shadow: 3px 3px 0 var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-recent:hover,
+body[data-k-layout="rails"] .k-lib-recent:focus-visible {
+    border-color: var(--k-text);
+    box-shadow: 3px 3px 0 var(--k-primary-bg);
+}
+
+body[data-k-layout="rails"] .k-lib-recent-face {
+    box-sizing: border-box;
+    border: 1.5px solid var(--k-text);
+    border-radius: 2px;
+}
+
+/* LIGHT: the rule under the tools row is a music staff, five periwinkle lines, as along the bottom
+   of every "Light" shot. Wants the same --k-lib-tools-rule knob, taking a material, not a border. */
+body[data-k-layout="rails"] .k-lib-tools {
+    border-bottom: 0;
+    padding-bottom: 30px;
+    background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--k-select) 55%, transparent) 0 1.5px, transparent 1.5px 6px) left bottom / 100% 25.5px no-repeat;
+}
+
+/* ── 7. CAST CARD AS A VOLUME ON A SHELF: a spine, then the portrait ──────────────────────────
+   2.5px ink frame + hard offset shadow (mikan on hover). An ink-edged paper spine on the left
+   carries the Kotatsu K at the top under a short rule, then the name running down the rest; the
+   portrait owns the panel; a slim paper foot at the bottom carries the date, a scene's chat count
+   and Open chat, with the tags just above it. The kicker and the blurb are not drawn (Andres,
+   2026-10-19, after four treatments shot on his cast: the caption panel kept overtaking the
+   portrait, "and that's the whole point of a character gallery"). The K travels inside the pack
+   (`brand/k-mark.svg`): a pack sheet may only reference its own files.
+   Wants: --k-lib-card-line-width, --k-lib-card-shadow, --k-lib-card-shadow-hover, and a "spine"
+   card variant with --k-lib-spine-width + --k-lib-spine-imprint. */
+body[data-k-layout="rails"] .k-lib-card {
+    border-width: 2.5px;
+    box-shadow: 5px 5px 0 var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-card:hover,
+body[data-k-layout="rails"] .k-lib-card:focus-visible {
+    border-color: var(--k-text);
+    box-shadow: 7px 7px 0 var(--k-primary-bg);
+}
+
+/* The portrait, to the right of the spine. */
+body[data-k-layout="rails"] .k-lib-card-art {
+    inset: 0 0 0 54px;
+    border-left: 2.5px solid var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-lib-card-copy {
+    inset: 0;
+    display: block;
+    padding: 0;
+    background: none;
+}
+
+/* The spine's paper, with the imprint at the top under a short rule. */
+body[data-k-layout="rails"] .k-lib-card-copy::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 54px;
+    background:
+        url("brand/k-mark.svg") center 10px / 22px 22px no-repeat,
+        linear-gradient(var(--k-text), var(--k-text)) center 40px / 24px 1.5px no-repeat,
+        var(--k-surface);
+}
+
+body[data-k-layout="rails"] .k-lib-card-kicker,
+body[data-k-layout="rails"] .k-lib-card-body {
+    display: none;
+}
+
+/* The name down the spine: top to bottom, the way a spine on a shelf reads. */
+body[data-k-layout="rails"] .k-lib-card-name {
+    position: absolute;
+    left: 0;
+    top: 52px;
+    bottom: 36px;
+    width: 54px;
+    box-sizing: border-box;
+    padding: 0 0 0 12px;
+    display: block;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    color: var(--k-text);
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* The foot band over the portrait's bottom edge, to the right of the spine. */
+body[data-k-layout="rails"] .k-lib-card-foot {
+    position: absolute;
+    inset: auto 0 0 54px;
+    margin: 0;
+    padding: 5px 10px;
+    border-top: 2px solid var(--k-text);
+    background: var(--k-surface);
+    font-size: 11px;
+}
+
+body[data-k-layout="rails"] .k-lib-card-open {
+    color: var(--k-select);
+    font-weight: 700;
+}
+
+/* Tags, one row just above the foot. */
+body[data-k-layout="rails"] .k-lib-card-tags {
+    position: absolute;
+    inset: auto 0 30px 54px;
+    padding: 0 8px 4px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    justify-content: flex-start;
+}
+
+body[data-k-layout="rails"] .k-lib-card-tag {
+    border: 1.5px solid var(--k-text);
+    background: var(--k-surface);
+    color: var(--k-text);
+    font-size: 10px;
+    padding: 1px 7px;
+}
+
+body[data-k-layout="rails"] .k-lib-card-fav,
+body[data-k-layout="rails"] .k-lib-card-edit {
+    border: 2px solid var(--k-text);
+    background: var(--k-surface-2);
+    color: var(--k-text);
+    box-shadow: 2px 2px 0 var(--k-text);
+    backdrop-filter: none;
+}
+
+body[data-k-layout="rails"] .k-lib-card-fav.is-on {
+    border-color: var(--k-text);
+    background: var(--k-primary-bg);
+    color: var(--k-text);
+}
+
+/* A phone's card is narrower: a slimmer spine and a smaller face keep the portrait the panel. */
+@media (max-width: 700px) {
+    body[data-k-layout="rails"] .k-lib-card-art,
+    body[data-k-layout="rails"] .k-lib-card-foot,
+    body[data-k-layout="rails"] .k-lib-card-tags {
+        left: 42px;
+    }
+
+    body[data-k-layout="rails"] .k-lib-card-copy::before,
+    body[data-k-layout="rails"] .k-lib-card-name {
+        width: 42px;
+    }
+
+    body[data-k-layout="rails"] .k-lib-card-copy::before {
+        background-size: 18px 18px, 20px 1.5px, auto;
+        background-position: center 8px, center 32px, 0 0;
+    }
+
+    body[data-k-layout="rails"] .k-lib-card-name {
+        top: 42px;
+        padding-left: 9px;
+        font-size: 16px;
+    }
+}
+
+/* ── 8. CARD STUDIO v2: almost all knobs now (theme.json `--k-studio-*`) ──────────────────────
+   What is left here is what no knob reaches yet. The screentone over the dim behind the sheet
+   (wants --k-studio-scrim-material: the fill knob is a colour), the rings strip in the header
+   (wants --k-studio-head-material), and the core buttons the studio borrows (favourite, the
+   card-art thumbnail), which are core's markup and have no knobs of their own. */
+body[data-k-layout="rails"] .k-studio-scrim {
+    background: url("textures/tone-scrim.svg"), var(--k-studio-scrim-fill);
+}
+
+body[data-k-layout="rails"] .k-studio-head {
+    background:
+        linear-gradient(90deg, var(--k-surface) 45%, color-mix(in srgb, var(--k-surface) 0%, transparent) 92%),
+        url("textures/rings.svg");
+}
+
+body[data-k-layout="rails"] .k-studio-eyebrow {
+    box-shadow: 3px 3px 0 var(--k-primary-bg);
+}
+
+body[data-k-layout="rails"] .k-studio-slot--fav #favorite_button {
+    border: 2px solid var(--k-text);
+    box-shadow: 2px 2px 0 var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-studio-slot--portrait #avatar_div_div {
+    border: 2px solid var(--k-text);
+    background: var(--k-surface-2);
+    box-shadow: 2px 2px 0 var(--k-text);
+}
+
+/* The hero and the page scroll, which clips anything outside them: room for the hard shadows. */
+body[data-k-layout="rails"] .k-studio-hero,
+body[data-k-layout="rails"] .k-studio-page {
+    padding-right: 10px;
+    padding-left: 2px;
+}
+
+/* ── 9. SPRITE STUDIO: the volume counter ─────────────────────────────────────────────────────
+   `6 of 28` as a tilted ink volume badge. Wants: a count/badge variant on k-sprite-studio
+   (--k-sprite-count-fill / -ink / -font / -tilt) and, with markup, a counter per set. */
+body[data-k-layout="rails"] .k-sprite-studio__count {
+    padding: 5px 14px 6px;
+    border-radius: 2px;
+    background: var(--k-text);
+    color: var(--k-surface);
+    font: 400 15px var(--k-font-display);
+    letter-spacing: 0.02em;
+    transform: rotate(-3deg);
+    box-shadow: 3px 3px 0 var(--k-primary-bg);
+}
+
+body[data-k-layout="rails"] .k-sprite-studio__count::before {
+    content: '✦ ';
+    color: var(--k-primary-bg);
+}
+
+body[data-k-layout="rails"] .k-sprite-studio__sets b {
+    color: var(--k-select);
+    font-weight: 900;
+}
+
+/* ── 10. SPRITE SLOTS AS PANELS ───────────────────────────────────────────────────────────────
+   Each slot is an inked panel with a hard shadow; the art is an inner panel whose ground is a
+   pale manga backdrop chosen by FEELING (data-label is already on the slot): speed/focus lines
+   by default, screentone for neutral, sakura tone for love, sparkle-pink lines for joy, dense
+   lines for anger, falling rain lines for sadness. The checkerboard goes; the sprite is painted
+   first (on top), `contain` + bottom-centred as core draws it, so nothing is cropped.
+   Wants: --k-sprite-slot-line-width, --k-sprite-slot-shadow, --k-sprite-slot-backdrop (a material)
+   and per-feeling backdrops (--k-sprite-backdrop-<label>), which needs a lookup, not 28 knobs. */
+body[data-k-layout="rails"] .k-sprite-studio__grid {
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 18px 16px;
+    padding: 2px 6px 6px 2px;
+}
+
+/* LIGHT: on a phone the 132px minimum left one huge panel per row (the pane is ~275px); two per row
+   keeps a set readable at a glance. Wants --k-sprite-grid-min-narrow. */
+@media (max-width: 700px) {
+    body[data-k-layout="rails"] .k-sprite-studio__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px 12px;
+    }
+
+    body[data-k-layout="rails"] .k-sprite-slot__actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    body[data-k-layout="rails"] .k-sprite-slot__button {
+        min-width: 0;
+        padding-inline: 4px;
+        justify-content: center;
+        text-align: center;
+        font-size: 12px;
+    }
+}
+
+body[data-k-layout="rails"] .k-sprite-slot {
+    gap: 10px;
+    border: 2.5px solid var(--k-text);
+    border-radius: 3px;
+    background: var(--k-surface-2);
+    box-shadow: 4px 4px 0 var(--k-text);
+}
+
+/* LIGHT: every filled panel is a little "Light" stage. The figure stands on a checkered floor in two
+   marigolds (one 24px band, an indigo stage edge above it), in front of a backdrop chosen by feeling:
+   the sun dial's rays by default, the ring-and-dot border for neutral, mint tone for love, rays plus
+   cyan/pink confetti for joy, hot dense rays for anger, and the night-sky scene (indigo galaxy, a few
+   stars, a periwinkle staff for a floor) for sadness, grief and fear.
+   Wants: --k-sprite-slot-floor (a material for the bottom band) on top of Shoujo's backdrop knobs. */
+body[data-k-layout="rails"] .k-sprite-slot__art {
+    border: 2px solid var(--k-text);
+    border-radius: 2px;
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        linear-gradient(var(--k-text), var(--k-text)) left bottom 24px / 100% 1.5px no-repeat,
+        repeating-conic-gradient(#f9c46a 0 25%, #fde3a0 0 50%) left bottom / 24px 24px repeat-x,
+        radial-gradient(ellipse 44% 36% at 50% 42%, var(--k-surface-2) 30%, color-mix(in srgb, var(--k-surface-2) 0%, transparent) 100%),
+        repeating-conic-gradient(from 0deg at 50% 42%, color-mix(in srgb, var(--k-primary-bg) 28%, transparent) 0deg 6deg, transparent 6deg 30deg),
+        radial-gradient(circle at 50% 42%, #fff4c7, #fde3a0 70%);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-label="neutral"] .k-sprite-slot__art {
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        linear-gradient(var(--k-text), var(--k-text)) left bottom 24px / 100% 1.5px no-repeat,
+        repeating-conic-gradient(#f9c46a 0 25%, #fde3a0 0 50%) left bottom / 24px 24px repeat-x,
+        radial-gradient(ellipse 58% 50% at 50% 44%, var(--k-surface-2) 35%, color-mix(in srgb, var(--k-surface-2) 0%, transparent) 100%),
+        url("textures/rings.svg"),
+        var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-label="love"] .k-sprite-slot__art {
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        linear-gradient(var(--k-text), var(--k-text)) left bottom 24px / 100% 1.5px no-repeat,
+        repeating-conic-gradient(#f9c46a 0 25%, #fde3a0 0 50%) left bottom / 24px 24px repeat-x,
+        radial-gradient(ellipse 56% 48% at 50% 44%, var(--k-surface-2) 25%, color-mix(in srgb, var(--k-surface-2) 0%, transparent) 100%),
+        url("textures/tone-mint.svg"),
+        #f2faf2;
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-label="joy"] .k-sprite-slot__art,
+body[data-k-layout="rails"] .k-sprite-slot[data-label="amusement"] .k-sprite-slot__art {
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        linear-gradient(var(--k-text), var(--k-text)) left bottom 24px / 100% 1.5px no-repeat,
+        repeating-conic-gradient(#f9c46a 0 25%, #fde3a0 0 50%) left bottom / 24px 24px repeat-x,
+        radial-gradient(circle at 16% 18%, #4cc8e2 0 4px, transparent 4.5px),
+        radial-gradient(circle at 84% 26%, #ee5fae 0 3.5px, transparent 4px),
+        radial-gradient(circle at 80% 62%, #4cc8e2 0 3px, transparent 3.5px),
+        radial-gradient(circle at 20% 58%, #ee5fae 0 3px, transparent 3.5px),
+        radial-gradient(circle at 50% 8%, #5fbf9c 0 3px, transparent 3.5px),
+        radial-gradient(ellipse 40% 34% at 50% 42%, #fffbee 30%, color-mix(in srgb, #fffbee 0%, transparent) 100%),
+        repeating-conic-gradient(from 0deg at 50% 42%, color-mix(in srgb, var(--k-primary-bg) 45%, transparent) 0deg 5deg, transparent 5deg 15deg),
+        radial-gradient(circle at 50% 42%, #fff4c7, #fdcb75 75%);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-label="anger"] .k-sprite-slot__art,
+body[data-k-layout="rails"] .k-sprite-slot[data-label="annoyance"] .k-sprite-slot__art {
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        linear-gradient(var(--k-text), var(--k-text)) left bottom 24px / 100% 1.5px no-repeat,
+        repeating-conic-gradient(#f9c46a 0 25%, #fde3a0 0 50%) left bottom / 24px 24px repeat-x,
+        radial-gradient(ellipse 36% 30% at 50% 42%, #fff4e0 30%, color-mix(in srgb, #fff4e0 0%, transparent) 100%),
+        repeating-conic-gradient(from 0deg at 50% 42%, color-mix(in srgb, #e0562a 40%, transparent) 0deg 1.4deg, transparent 1.4deg 4deg),
+        radial-gradient(circle at 50% 42%, #fff1d6, #f7b46a 80%);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-label="sadness"] .k-sprite-slot__art,
+body[data-k-layout="rails"] .k-sprite-slot[data-label="grief"] .k-sprite-slot__art,
+body[data-k-layout="rails"] .k-sprite-slot[data-label="fear"] .k-sprite-slot__art,
+body[data-k-layout="rails"] .k-sprite-slot[data-label="nervousness"] .k-sprite-slot__art {
+    background:
+        var(--k-sprite-slot-art, none) center bottom / contain no-repeat,
+        repeating-linear-gradient(180deg, color-mix(in srgb, #b9b0f4 70%, transparent) 0 1px, transparent 1px 6px) left bottom 4px / 100% 25px no-repeat,
+        radial-gradient(circle at 18% 14%, #fff4c7 0 1.4px, transparent 2px),
+        radial-gradient(circle at 76% 22%, #fff4c7 0 1.1px, transparent 1.6px),
+        radial-gradient(circle at 86% 48%, #fff4c7 0 1.4px, transparent 2px),
+        radial-gradient(circle at 12% 56%, #fff4c7 0 1px, transparent 1.5px),
+        radial-gradient(circle at 60% 9%, #f2c230 0 2.4px, transparent 3px),
+        radial-gradient(ellipse 70% 40% at 40% 40%, color-mix(in srgb, #5b4584 70%, transparent), transparent 70%),
+        linear-gradient(180deg, #272456, #191837);
+}
+
+/* An empty slot is an unfinished panel: pencil-dashed frame, no shadow, faint pencil hatching. */
+body[data-k-layout="rails"] .k-sprite-slot[data-empty] {
+    border: 2px dashed color-mix(in srgb, var(--k-text) 50%, transparent);
+    background: color-mix(in srgb, var(--k-surface-2) 60%, transparent);
+    box-shadow: none;
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-empty] .k-sprite-slot__art {
+    border: 1.5px dashed color-mix(in srgb, var(--k-text) 40%, transparent);
+    background:
+        repeating-linear-gradient(-45deg, color-mix(in srgb, var(--k-text) 6%, transparent) 0 1px, transparent 1px 9px),
+        var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__standin {
+    color: var(--k-text-dim);
+    font-weight: 700;
+}
+
+/* ── 11. THE NAME AS A SPEECH BUBBLE, written as a flipper ‹ joy › ────────────────────────────
+   The bubble is the name div; the tail is drawn by the art panel's two pseudo-elements (ink
+   triangle, then a paper triangle over it that opens the bubble's top line), because the name's
+   own pseudos carry the ‹ › flipper marks. Real markup would make ‹ › buttons that step through
+   alternates. Wants: a bubble variant for the slot name (--k-sprite-name-shape: bubble) and
+   --k-sprite-name-flipper (the glyph pair). */
+body[data-k-layout="rails"] .k-sprite-slot__name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-height: 22px;
+    padding: 2px 10px 3px;
+    border: 2px solid var(--k-text);
+    border-radius: 999px;
+    background: var(--k-surface-2);
+    color: var(--k-text);
+    font: 700 13px var(--k-font-ui);
+    text-transform: none;
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__name::before,
+body[data-k-layout="rails"] .k-sprite-slot__name::after {
+    color: var(--k-select);
+    font: 900 19px/1 var(--k-font-ui);
+    margin-top: -3px;
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__name::before {
+    content: '‹';
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__name::after {
+    content: '›';
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__art::before,
+body[data-k-layout="rails"] .k-sprite-slot__art::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+    clip-path: polygon(0 100%, 58% 100%, 100% 0);
+}
+
+/* Geometry: art bottom border ends 2px under the art box, the slot gap is 10px, so the bubble's
+   top line sits 12–14px under it. The ink wedge runs from the panel line into the bubble; the paper
+   wedge, 2.5px inside it, erases the bubble's top line so the tail opens into the bubble. */
+body[data-k-layout="rails"] .k-sprite-slot__art::before {
+    top: calc(100% + 1px);
+    left: 22%;
+    width: 24px;
+    height: 14px;
+    background: var(--k-text);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__art::after {
+    top: calc(100% + 8px);
+    left: calc(22% + 4.4px);
+    width: 11.9px;
+    height: 7px;
+    background: var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-empty] .k-sprite-slot__name {
+    border: 2px dashed color-mix(in srgb, var(--k-text) 50%, transparent);
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-sprite-slot[data-empty] .k-sprite-slot__art::before {
+    background: color-mix(in srgb, var(--k-text) 50%, var(--k-surface-2));
+}
+
+/* Slot buttons: small ink pills; Delete is the quiet dashed one. */
+body[data-k-layout="rails"] .k-sprite-slot__button {
+    border: 1.5px solid var(--k-text);
+    border-radius: 999px;
+    background: var(--k-surface-2);
+    color: var(--k-text);
+    font-weight: 700;
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__button--quiet {
+    border-style: dashed;
+    color: var(--k-text-dim);
+    background: transparent;
+}
+
+body[data-k-layout="rails"] .k-sprite-slot__button:hover,
+body[data-k-layout="rails"] .k-sprite-slot__button:focus-within {
+    border-color: var(--k-text);
+    background: var(--k-lib-hover-fill);
+}
+
+/* The framing panel under the grid: same ink panel language. Wants the same slot-line knobs. */
+body[data-k-layout="rails"] .k-sprite-framing {
+    border: 2px solid var(--k-text);
+    border-radius: 3px;
+    background: var(--k-surface-2);
+    box-shadow: 4px 4px 0 var(--k-text);
+}

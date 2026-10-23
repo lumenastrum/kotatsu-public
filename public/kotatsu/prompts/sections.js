@@ -124,9 +124,11 @@ const LEGACY_SUBHEADER_PATTERN = /^<\s*(.+?)\s*>$/;
 /**
  * A cleaned banner label matching this marks its section exclusive (decision 6). Authors say it
  * several ways: `Pick one POV`, `Length (Toggle Only One)` (Pura), `// choose only one` (Megumin),
- * `PICK: AGENCY` (Deus Ex Machina). `Choose two max` is not one of them.
+ * `PICK: AGENCY` (Deus Ex Machina). `Choose two max` is not one of them, and neither is a title
+ * that merely contains the words: `The Only One` is a banner, not an instruction (the bare
+ * `only one` / `just one` form of 2026-10 made it a radio group; 2026-10-19 wants the verb).
  */
-const PICK_ONE_PATTERN = /\bpick\s+(?:one|1)\b|\b(?:only|just)\s+(?:one|1)\b|^[^\p{L}\p{N}]*pick\s*:/iu;
+const PICK_ONE_PATTERN = /\bpick\s+(?:one|1)\b|\b(?:pick|choose|select|toggle|use)\s+(?:only|just)\s+(?:one|1)\b|^[^\p{L}\p{N}]*pick\s*:/iu;
 /**
  * A banner written as glyphs, then a rule glued to a literal `+`, then a title:
  * `🐈‍⬛─+ Narration Voice`, `🐈‍⬛ ─+ Length (Toggle Only One)` (Pura's Director). A cousin of the

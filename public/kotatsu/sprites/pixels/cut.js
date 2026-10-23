@@ -25,11 +25,16 @@ export function hasTransparency(img) {
  *    A dark band pixel with no key chroma is line art and may be F: a 1–2 px outline lies wholly inside the band, and
  *    barring it repainted the line as the skin behind it. A thin strand with no interior in reach uses the band pixel
  *    farthest from the key's hue as F.
+ * 6. Protected region (`o.protect`, the face's features: eyes, brows, mouth): a key-coloured pixel there is background
+ *    only when the key around it reaches the canvas edge, and a pixel there with no background within 4 px is solid,
+ *    un-mixing included. Step 2 alone took the lit half of a green iris (Mara, 2026-10-23: her highlight was the key).
  * @param {Img} raw
- * @returns {{ image: Img, key: number[], tol: number, spread: number, busy: number, shadowed: number }}
- *   busy = share of the border far (> 40) from the key, figure included; shadowed = cast-shadow pixels taken as key
+ * @param {{ protect?: Uint8Array }} [o] protect: W × H, non-zero = protected
+ * @returns {{ image: Img, key: number[], tol: number, spread: number, busy: number, shadowed: number, held: number }}
+ *   busy = share of the border far (> 40) from the key, figure included; shadowed = cast-shadow pixels taken as key;
+ *   held = key-coloured pixels kept as paint by the protected region
  */
-export function keyCut(raw) {
+export function keyCut(raw, o = {}) {
     const { width: W, height: H, data: d } = raw;
     const N = W * H;
     const { key: B, spread, dists } = borderStats(raw);
@@ -60,6 +65,15 @@ export function keyCut(raw) {
             else if (shadow(r)) reach[r] = 2;
             else continue;
             queue[tail++] = r;
+        }
+    }
+    const protect = o.protect;
+    let held = 0;
+    if (protect) {
+        for (let p = 0; p < N; p++) {
+            if (!protect[p] || !isKey[p] || reach[p] === 1) continue;
+            isKey[p] = 0;
+            held++;
         }
     }
     const paint = new Uint8Array(N);
@@ -94,6 +108,7 @@ export function keyCut(raw) {
     for (let p = 0; p < N; p++) {
         const i = p * 4;
         if (isKey[p]) { out[i] = d[i]; out[i + 1] = d[i + 1]; out[i + 2] = d[i + 2]; out[i + 3] = 0; continue; }
+        if (protect?.[p] && near[p] > REACH) { out[i] = d[i]; out[i + 1] = d[i + 1]; out[i + 2] = d[i + 2]; out[i + 3] = 255; continue; }
         const k = chroma(d[i], d[i + 1], d[i + 2]);
         if (k.perp <= KEY_PERP && (k.ratio >= 0.45 || (near[p] <= REACH && k.ratio > 0.1))) {
             const a = Math.max(0, Math.min(1, 1 - k.ratio / 0.8));
@@ -141,6 +156,7 @@ export function keyCut(raw) {
         spread: Math.round(spread * 10) / 10,
         busy: dists.filter(v => v > 40).length / dists.length,
         shadowed,
+        held,
     };
 }
 
@@ -351,9 +367,10 @@ export function keepFigure(cut, reach = 6) {
 /**
  * The key-colour stack: keyCut → keepFigure.
  * @param {Img} raw
+ * @param {{ protect?: Uint8Array }} [o] see keyCut
  */
-export function cutKey(raw) {
-    const k = keyCut(raw);
+export function cutKey(raw, o = {}) {
+    const k = keyCut(raw, o);
     const kept = keepFigure(k.image);
     return { ...k, dropped: kept.dropped };
 }

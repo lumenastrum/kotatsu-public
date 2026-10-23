@@ -10,15 +10,15 @@
    against those. Card paints its bubble on .mes_text, bubble paints it on .mes_block; the
    other looks are bubble-less (flat, script, broadcast) or carry art (portraits), so the lamp
    stays off them. */
-#chat[data-k-mes-variant="card"] .mes:not(.smallSysMes) .mes_text:not(:empty),
-#chat[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block {
+:is(#chat, .k-chat-stage)[data-k-mes-variant="card"] .mes:not(.smallSysMes) .mes_text:not(:empty),
+:is(#chat, .k-chat-stage)[data-k-mes-variant="bubble"] .mes:not(.smallSysMes) .mes_block {
     background-image: linear-gradient(180deg,
             color-mix(in srgb, var(--k-accent) 8%, transparent),
             transparent 10em);
 }
 
 /* Missing token: a nameplate face. Speaker names are written by hand, like the menu. */
-#chat .mes .name_text {
+:is(#chat, .k-chat-stage) .mes .name_text {
     font-family: var(--k-font-display);
     font-weight: var(--k-display-weight);
 }

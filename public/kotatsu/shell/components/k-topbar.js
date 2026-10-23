@@ -6,9 +6,14 @@
  *
  * Three zones, left to right:
  *   left    glow dot + `kotatsu` wordmark
- *   center  the command pill — INERT in v0. It is rendered, it is pretty, it opens
- *           nothing. Not focusable, not a form control, `aria-disabled`. The palette
- *           itself is an explicit non-goal of v0.
+ *   center  empty in this component's own markup. Above 820px layouts/rails.js docks
+ *           `<k-chat-header variant="bar">` here, so the open chat's title shares this
+ *           row instead of taking a second strip off the reader. It held an inert
+ *           command pill until 2026-10-22; the palette it promised is still a non-goal,
+ *           and a placeholder in the bar's best spot was a promise nothing kept.
+ *           The zone must stay binding-free: Lit never touches the children of an
+ *           element with no parts, which is what lets the docked header survive
+ *           every re-render of the bar.
  *   right   `<k-model-menu>` (the model pill grown into the compact picker — that
  *           component owns the pill, the status dot and the popover; see its
  *           header), `<k-update-pill>` (ship-v0 slice B — hidden unless the release
@@ -70,12 +75,6 @@ const REFRESH_EVENTS = [
 ];
 
 /**
- * The mockup ships the macOS glyph pair. Kotatsu is Windows-first, so the hint follows
- * the platform it is actually being read on. Cosmetic either way — the pill is inert.
- */
-const COMMAND_HINT = /mac|iphone|ipad|ipod/i.test(navigator.userAgent || '') ? '⌘K' : 'Ctrl K';
-
-/**
  * Compact token count for the context pill: 200000 → `200k`, 8192 → `8.2k`, 900 → `900`.
  * The exact figure stays on the pill's `title`, so the rounding never hides the truth.
  * @param {number} n Token count.
@@ -105,19 +104,6 @@ function readContextLimit() {
         // NovelAI's branch dereferences `nai_settings.model_novel` — undefined pre-settings.
         return null;
     }
-}
-
-/**
- * @returns {unknown} Magnifier glyph.
- */
-function searchIcon() {
-    return html`
-        <svg class="k-topbar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false">
-            <circle cx="10.6" cy="10.6" r="6.4"></circle>
-            <line x1="15.4" y1="15.4" x2="20" y2="20"></line>
-        </svg>
-    `;
 }
 
 /**
@@ -231,9 +217,7 @@ export class KTopBar extends LitElement {
                 <span class="k-topbar__glow" aria-hidden="true"></span>
                 <span class="k-topbar__wordmark">kotatsu</span>
             </div>
-            <div class="k-topbar__zone k-topbar__zone--center">
-                ${this._renderCommandPill()}
-            </div>
+            <div class="k-topbar__zone k-topbar__zone--center"></div>
             <div class="k-topbar__zone k-topbar__zone--right">
                 <k-model-menu></k-model-menu>
                 <k-update-pill variant="rail"></k-update-pill>
@@ -242,22 +226,6 @@ export class KTopBar extends LitElement {
                     title="Branch map (Ctrl+Shift+B)" @click=${() => this._openBranchMap()}>${branchIcon()}</button>
                 <button type="button" class="k-topbar__gear" aria-label="Open settings"
                     title="Settings" @click=${() => this._openSettings()}>${gearIcon()}</button>
-            </div>
-        `;
-    }
-
-    /**
-     * The centerpiece. Deliberately not an `<input>` and deliberately not focusable —
-     * v0 has no command palette and the bar must not pretend otherwise.
-     * @returns {unknown} Command pill.
-     */
-    _renderCommandPill() {
-        return html`
-            <div class="k-cmd" role="button" aria-disabled="true"
-                title="Command palette — coming soon">
-                ${searchIcon()}
-                <span class="k-cmd__placeholder">Jump to chat, branch, preset, or /command</span>
-                <span class="k-cmd__hint">${COMMAND_HINT}</span>
             </div>
         `;
     }

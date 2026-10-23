@@ -122,6 +122,21 @@ export const LINES = Object.freeze({
     whatsNewTouchup: Object.freeze([
         'A little green left on someone’s shoes? Hand me the wand. One tap, and it’s gone from the whole set.',
     ]),
+    whatsNewNatsumikan: Object.freeze([
+        'Summer came early! I put on my best mikan colours. Your old look is still in the closet, don’t worry.',
+    ]),
+    whatsNewTheatre: Object.freeze([
+        'On your phone the story gets a stage. Tap to turn the page, like a picture book. I’ll do the voices. Kidding. Mostly.',
+    ]),
+    whatsNewStudio: Object.freeze([
+        'Everyone gets their own page now: who they are, how they look, how they talk. I made the bookmarks myself.',
+    ]),
+    whatsNewBackdrop: Object.freeze([
+        'Every stage needs a set. Paint a place or bring a photo, and I’ll hang it up behind the cast.',
+    ]),
+    whatsNewAndroid: Object.freeze([
+        'I fit in your Android now! The whole kotatsu, in your pocket. The blanket stays home, sorry.',
+    ]),
     whatsNewAgain: Object.freeze([
         'Missed something? Here\'s the latest again. I saved you a mikan.',
     ]),

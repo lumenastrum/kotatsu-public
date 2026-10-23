@@ -1,0 +1,7 @@
+.gradle/
+build/
+local.properties
+# CI fills these in (.github/workflows/android.yml); a local build copies them from a run's artifacts.
+app/src/main/jniLibs/
+app/src/main/assets/kotatsu.zip
+out/

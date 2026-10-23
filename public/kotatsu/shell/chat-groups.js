@@ -76,24 +76,51 @@ export function rowTime(ms, now = new Date(), locale = undefined) {
 }
 
 /**
+ * What core puts in `mes` for a chat with nothing to show (`src/endpoints/chats.js` `getChatInfo`: an empty
+ * file, a header-only file, an unreadable last line). Not a line anyone wrote, so not a preview.
+ */
+const CORE_PLACEHOLDERS = new Set(['[The chat is empty]', '[The message is empty]']);
+
+/** How much of the last message core keeps behind "..." in a scene's `preview_message` (`chats.js` `getPreviewMessage`). */
+const CORE_PREVIEW_CHARS = 400;
+
+/**
  * A message as one plain line for a row: tags and markdown emphasis dropped, whitespace collapsed, cut at a word.
  * @param {unknown} raw The message text (`mes`, or a scene's `preview_message`).
  * @param {number} [max] Characters kept before the ellipsis (the row clamps visually too).
+ * @param {object} [options]
+ * @param {boolean} [options.tail] The text is the TAIL of a message behind "..." (`scenePreviewText`). Off for a
+ *   whole message, which may well open with an ellipsis of its own ("...fine.").
  * @returns {string}
  */
-export function previewText(raw, max = 140) {
+export function previewText(raw, max = 140, { tail = false } = {}) {
     let text = String(raw ?? '')
         .replace(/<[^>]*>/g, ' ')
         .replace(/[*_~`]+/g, '')
         .replace(/\s+/g, ' ')
         .trim();
-    // A scene's preview is the TAIL of the message, cut mid-word behind "...": start at the next whole word.
-    const tail = /^(?:\.\.\.|…)\s*\S*\s+/.exec(text);
-    if (tail) text = `…${text.slice(tail[0].length)}`;
+    if (CORE_PLACEHOLDERS.has(text)) return '';
+    if (tail) {
+        // Cut mid-word: start at the next whole word. Cut on a space: the first word is whole and stays.
+        const cut = /^(?:\.\.\.|…)(?:\s+|\S*\s+)/.exec(text);
+        if (cut) text = `…${text.slice(cut[0].length)}`;
+    }
     if (text.length > max) {
         const cut = text.slice(0, max);
         const space = cut.lastIndexOf(' ');
         text = `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,;:.-]+$/, '')}…`;
     }
     return text;
+}
+
+/**
+ * A scene's `preview_message` as one line. Core sends a message of up to 400 characters whole and a longer one as
+ * "..." plus its last 400, so only the longer shape is read as a tail.
+ * @param {unknown} raw
+ * @param {number} [max]
+ * @returns {string}
+ */
+export function scenePreviewText(raw, max = 140) {
+    const text = String(raw ?? '');
+    return previewText(text, max, { tail: text.startsWith('...') && text.length > CORE_PREVIEW_CHARS });
 }

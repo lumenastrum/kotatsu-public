@@ -39,10 +39,12 @@
  * stated non-goal.
  *
  * ── Walk-backs (contract 5) ─────────────────────────────────────────────────
- * Two, both documented at their rule:
+ * Three, each documented at its rule:
  *   - style.css:3653-3661 `.red_button, .redWarningBG { background-color: ...
  *     !important }` and its `:hover` twin.
  *   - css/st-tailwind.css:230-234 `.redOverlayGlow { opacity: 0.8 !important }`.
+ *   - style.css:2642 `textarea::placeholder { color: … !important }`, for select2's
+ *     inline search only (§2g).
  * Nothing else in this sheet carries `!important`.
  *
  * ── Discipline (docs/rechrome-v0.md §Contracts) ─────────────────────────────
@@ -96,7 +98,8 @@ body[data-k-layout="rails"] {
     --k-rc-btn-pad-x: 14px;
     --k-rc-btn-icon-pad: 6px;
     --k-rc-btn-gap: 6px;
-    --k-rc-btn-min-h: 30px;
+    /* Kept for readers outside this sheet (css/preset-dock.css); the height is --k-rc-btn-h. */
+    --k-rc-btn-min-h: var(--k-rc-btn-h);
     --k-rc-btn-size: 12.5px;
     --k-rc-btn-weight: 600;
     /* Same recipe as `--k-lib-hairline` / `--k-studio-hairline`, restated rather
@@ -109,6 +112,47 @@ body[data-k-layout="rails"] {
        border. `--k-ghost-hover` (css/kotatsu-chrome.css §2) is the one accent
        tint every ghost control in this codebase already shares. */
     --k-rc-btn-fill: transparent;
+
+    /* ── The house button, everywhere (settings polish, 2026-10-22) ──────────
+       Settings had eight button heights and five radii: stock's `.menu_button`
+       restyled here, then squared again by settings rows, and every Kotatsu card
+       (bridge, phone, pictures) with a button of its own. These knobs are the ONE
+       recipe all of them read, so a pack dresses every button in the app by setting
+       them once (Natsumikan V3: frosted glass and a lit primary). Geometry is fixed
+       across packs on purpose; only the material is a pack's to change. The
+       defaults are this sheet's existing ghost pill. */
+    --k-rc-btn-h: 32px;
+    --k-rc-btn-radius: var(--k-radius-pill);
+    --k-rc-btn-line: var(--k-rc-hairline);
+    --k-rc-btn-ink: var(--k-text);
+    --k-rc-btn-shadow: none;
+    --k-rc-btn-fill-hover: color-mix(in srgb, var(--k-accent) 12%, transparent);
+    --k-rc-btn-line-hover: var(--k-accent);
+    --k-rc-btn-ink-hover: var(--k-text-strong);
+    --k-rc-btn-shadow-hover: var(--k-rc-btn-shadow);
+    --k-rc-btn-lift: 0px;
+    /* Primary follows the core primary contract (tokens.css § Control states), with
+       `.k-lib-btn--primary`'s fallback for packs that unset it. */
+    --k-rc-btn-primary-fill: var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 18%, transparent));
+    --k-rc-btn-primary-fill-hover: var(--k-primary-hover-bg, color-mix(in srgb, var(--k-accent) 30%, transparent));
+    --k-rc-btn-primary-line: var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 55%, transparent));
+    --k-rc-btn-primary-ink: var(--k-primary-text, var(--k-text-strong));
+    --k-rc-btn-primary-shadow: none;
+    --k-rc-btn-primary-shadow-hover: var(--k-rc-btn-primary-shadow);
+
+    /* ── The house segmented switch ──────────────────────────────────────────
+       A track with the options inside it; the chosen one is a raised pill. The
+       track lands on --k-rc-btn-h (option + 2 × pad + 2 × 1px border), so a switch
+       sits level with the buttons beside it. */
+    --k-rc-seg-pad: 2px;
+    --k-rc-seg-option-h: calc(var(--k-rc-btn-h) - 2 * var(--k-rc-seg-pad) - 2px);
+    --k-rc-seg-fill: var(--k-rc-field-fill);
+    --k-rc-seg-line: var(--k-rc-hairline);
+    --k-rc-seg-ink: var(--k-text-dim);
+    --k-rc-seg-ink-hover: var(--k-text-strong);
+    --k-rc-seg-on-fill: var(--k-surface);
+    --k-rc-seg-on-ink: var(--k-text-strong);
+    --k-rc-seg-on-shadow: inset 0 0 0 1px var(--k-rc-hairline);
 
     /* ── Danger ──────────────────────────────────────────────────────────────
        `--k-danger` tinted the way `.k-lib-btn--primary` tinted `--k-accent` until
@@ -197,12 +241,25 @@ body[data-k-layout="rails"] {
    are already correct and already token-driven. */
 body[data-k-layout="rails"] .menu_button {
     gap: var(--k-rc-btn-gap);
-    min-height: var(--k-rc-btn-min-h);
+    min-height: var(--k-rc-btn-h);
     padding: var(--k-rc-btn-pad-y) var(--k-rc-btn-pad-x);
-    border-color: var(--k-rc-hairline);
-    border-radius: var(--k-radius-pill);
+    border-color: var(--k-rc-btn-line);
+    border-radius: var(--k-rc-btn-radius);
     background-color: var(--k-rc-btn-fill);
+    box-shadow: var(--k-rc-btn-shadow);
     filter: none;
+}
+
+/* Hover, restated at stock's own weight. Stock's rule is
+   `.menu_button:not(.disabled):not([disabled]):hover` (style.css:3876), (0,4,0), which
+   outranks a plain gated `:hover`; this one repeats its `:not()`s and adds the gate.
+   The danger trio is fenced out: it keeps its own hover in §1 Danger below. */
+body[data-k-layout="rails"] .menu_button:not(.disabled):not([disabled]):not(.red_button):not(.redWarningBG):not(.redOverlayGlow):hover,
+body[data-k-layout="rails"] .menu_button:not(.disabled):not([disabled]):not(.red_button):not(.redWarningBG):not(.redOverlayGlow):focus-visible {
+    border-color: var(--k-rc-btn-line-hover);
+    background-color: var(--k-rc-btn-fill-hover);
+    box-shadow: var(--k-rc-btn-shadow-hover);
+    translate: 0 calc(-1 * var(--k-rc-btn-lift));
 }
 
 /* Type, for the buttons that carry type. Fenced off Font Awesome: a button whose
@@ -227,6 +284,7 @@ body[data-k-layout="rails"] .menu_button:not([class*="fa-"]) {
    radius reads as a circle. `.menu_button_icon` is excluded because that class
    means icon PLUS label and it needs the horizontal pad from the base rule. */
 body[data-k-layout="rails"] .menu_button[class*="fa-"]:not(.menu_button_icon) {
+    min-width: var(--k-rc-btn-h);
     padding: var(--k-rc-btn-icon-pad);
 }
 
@@ -238,6 +296,14 @@ body[data-k-layout="rails"] .menu_button[class*="fa-"]:not(.menu_button_icon) {
    the quick-reply set controls), the span inherits "Font Awesome 6 Free" from its
    parent and the label renders in the icon font. Naming the UI face here costs
    nothing and closes it. */
+/* An icon + label button centres on its own height instead of padding to it: the glyph's
+   Font Awesome line box is taller than the label's, which pushed these a pixel past
+   --k-rc-btn-h and out of line with every other button in a row. */
+body[data-k-layout="rails"] .menu_button.menu_button_icon {
+    align-items: center;
+    padding-block: 0;
+}
+
 body[data-k-layout="rails"] .menu_button_icon span {
     font-family: var(--k-font-ui);
     font-size: var(--k-rc-btn-size);
@@ -383,6 +449,13 @@ body[data-k-layout="rails"] select {
     /* A 40%-width bar full of model names truncates instead of clipping mid-glyph. */
     text-overflow: ellipsis;
     cursor: pointer;
+}
+
+/* The chevron, on every select box: native, and select2's (§2g), which paints a box of its own
+   where core swaps a <select> for a searchable picker. `:where()` keeps select2's half from
+   adding weight, so this lands at (0,1,2), the same as the rule above, and the studio's
+   (0,2,2) field recipe still outranks it. */
+body[data-k-layout="rails"] :is(select, :where(.select2-container .select2-selection--single)) {
     /* The chevron. Replaces `/img/down-arrow.svg`'s frozen `#888888` triangle —
        see the header for why this is gradients and not a data: URI, and the
        parameters block for why the recipe is declared HERE, on the control, and
@@ -498,3 +571,70 @@ body[data-k-layout="rails"] .k-studio-control select:focus-visible {
    (style.css:3068-3082) are NOT restyled. The native dropdown MENU is OS-owned
    and a stated non-goal (docs/rechrome-v0.md §Non-goals); on the platforms where
    those declarations do anything at all they paint the popup, not the bar. */
+
+/* The lift is motion; under reduced motion the hover keeps its colours and stays put. */
+@media (prefers-reduced-motion: reduce) {
+    body[data-k-layout="rails"] .menu_button:hover,
+    body[data-k-layout="rails"] .menu_button:focus-visible {
+        translate: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2g. SELECT2 — the searchable pickers (World Info, the prompt manager…)
+   ═══════════════════════════════════════════════════════════════════════════
+   Core swaps some <select>s for select2, which draws its own closed box from
+   css/select2-overrides.css: a `--black30a` slab with SmartTheme ink (a grey bar in
+   teal type on a light pack). Under rails that box is the house field, at the house
+   height, with the native select's chevron (above) in place of select2's triangle.
+   The dropdown list is not touched here. */
+body[data-k-layout="rails"] .select2-container .select2-selection--single,
+body[data-k-layout="rails"] .select2-container .select2-selection--multiple {
+    min-height: var(--k-rc-btn-h);
+    border: 1px solid var(--k-rc-field-line);
+    border-radius: var(--k-rc-field-radius);
+    background-color: var(--k-rc-field-fill);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    font-size: var(--k-rc-field-size);
+}
+
+body[data-k-layout="rails"] .select2-container .select2-selection--single {
+    height: var(--k-rc-btn-h);
+    padding-right: var(--k-rc-select-gutter);
+}
+
+body[data-k-layout="rails"] .select2-container .select2-selection--single .select2-selection__rendered {
+    padding-left: var(--k-rc-field-pad-x);
+    color: var(--k-text);
+    line-height: calc(var(--k-rc-btn-h) - 2px);
+}
+
+body[data-k-layout="rails"] .select2-container .select2-selection__placeholder {
+    color: var(--k-text-faint);
+}
+
+/* WALK-BACK, the same one css/rechrome-fields.css makes for `.text_pole`: style.css:2642 pins
+   `textarea::placeholder { color: var(--SmartThemeEmColor) !important }`, and select2's inline
+   search is a bare <textarea>, so a multi picker's "No Worlds active" read in the accent like a
+   filled-in value. Only `!important` reaches past it. */
+body[data-k-layout="rails"] .select2-container .select2-search__field::placeholder {
+    /* walks back style.css:2643 */
+    color: var(--k-text-faint) !important;
+}
+
+body[data-k-layout="rails"] .select2-container .select2-selection--single .select2-selection__arrow {
+    display: none;
+}
+
+body[data-k-layout="rails"] .select2-container:hover .select2-selection,
+body[data-k-layout="rails"] .select2-container.select2-container--focus .select2-selection {
+    --k-rc-chevron-ink: var(--k-rc-chevron-ink-active);
+    background-color: var(--k-rc-field-fill-hover);
+}
+
+body[data-k-layout="rails"] .select2-container .select2-search--inline .select2-search__field {
+    background: transparent;
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+}

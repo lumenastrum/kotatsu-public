@@ -1,0 +1,216 @@
+# The Android APK (#17), in three jobs:
+#
+# - node: cross-compiles the official Node release with the NDK and names it libnode.so for jniLibs
+#   (Android 10+ only lets an app exec what ships there). Cached per version, so only a Node bump
+#   pays for the long compile.
+# - payload: the server as it runs on the phone: tracked files, the prebuilt frontend lib bundle and
+#   production node_modules, zipped for assets/.
+# - apk: android/ with both of those inside, one APK for arm64 phones and the x86_64 emulator.
+#
+# Runs on pushes to the android-apk branch that touch the app, and by hand to rebuild a chosen Node.
+# The version floor is the patched line of each supported major, so the APK can never embed a Node
+# with a known security hole: raise FLOORS whenever Node ships a security release.
+name: Android APK
+
+on:
+  push:
+    branches: [android-apk]
+    paths:
+      - .github/workflows/android.yml
+      - android/**
+      - src/**
+      - public/**
+      - package-lock.json
+  workflow_dispatch:
+    inputs:
+      node:
+        description: Node version to build, e.g. 24.22.1
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: ${{ inputs.node || '24.22.1' }}
+  # Lowest Node each major may ship as (2026-10-21 security release). Odd and EOL majors are refused.
+  FLOORS: '22=22.23.4 24=24.22.1 26=26.12.1'
+  # minSdk of the APK. Node's android-configure needs 24+; 28 matches what the app targets.
+  ANDROID_API: 28
+
+jobs:
+  node:
+    name: node ${{ inputs.node || '24.22.1' }} / ${{ matrix.arch }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    env:
+      # The build runs tools it makes for itself (torque, mksnapshot) on the runner. Without these
+      # they get compiled with the NDK's clang against bionic, which has no backtrace() below API 33.
+      CC_host: gcc
+      CXX_host: g++
+      LINK_host: g++
+      AR_host: ar
+    strategy:
+      fail-fast: false
+      matrix:
+        # arm64 = real phones, x86_64 = the emulator on the dev box
+        arch: [arm64, x86_64]
+    steps:
+      - name: Check the version against the patched floor
+        run: |
+          major="${NODE_VERSION%%.*}"
+          floor=""
+          for pair in $FLOORS; do [ "${pair%%=*}" = "$major" ] && floor="${pair#*=}"; done
+          if [ -z "$floor" ]; then echo "::error::Node $major is not a supported line (have: $FLOORS)"; exit 1; fi
+          lowest="$(printf '%s\n%s\n' "$floor" "$NODE_VERSION" | sort -V | head -1)"
+          if [ "$lowest" != "$floor" ]; then echo "::error::Node $NODE_VERSION is below the patched floor $floor"; exit 1; fi
+          echo "Node $NODE_VERSION clears the floor $floor"
+
+      - name: Reuse an earlier build of this version
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: dist
+          key: android-node-${{ env.NODE_VERSION }}-${{ matrix.arch }}-api${{ env.ANDROID_API }}-v1
+
+      - name: Fetch and verify the Node source
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          base="https://nodejs.org/dist/v$NODE_VERSION"
+          curl -fsSLO "$base/node-v$NODE_VERSION.tar.xz"
+          curl -fsSL "$base/SHASUMS256.txt" | grep " node-v$NODE_VERSION.tar.xz\$" | sha256sum -c -
+          tar -xJf "node-v$NODE_VERSION.tar.xz"
+
+      - name: Point zlib's arm64 CPU check at getauxval
+        if: steps.cache.outputs.cache-hit != 'true' && matrix.arch == 'arm64'
+        working-directory: node-v${{ env.NODE_VERSION }}
+        run: |
+          # The bundled zlib asks the NDK's cpufeatures helper on Android, and nothing links it (undefined
+          # android_getCpuFeatures at the openssl-cli link). Bionic has getauxval since API 18: take the Linux path.
+          printf '%s\n' '#if defined(ARMV8_OS_ANDROID) && defined(__aarch64__)' '#undef ARMV8_OS_ANDROID' '#define ARMV8_OS_LINUX' '#endif' > "$RUNNER_TEMP/zlib-android.h"
+          sed -i "/#include \"zutil.h\"/r $RUNNER_TEMP/zlib-android.h" deps/zlib/cpu_features.c
+          grep -n -A5 '#include "zutil.h"' deps/zlib/cpu_features.c
+
+      - name: Configure for Android
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: node-v${{ env.NODE_VERSION }}
+        run: |
+          ndk="$ANDROID_NDK_LATEST_HOME"
+          echo "NDK: $ndk ($(grep Pkg.Revision "$ndk/source.properties"))"
+          ./android-configure patch
+          ./android-configure "$ndk" "$ANDROID_API" "${{ matrix.arch }}"
+
+      - name: Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: node-v${{ env.NODE_VERSION }}
+        # A cross build compiles V8 twice (the build machine's own tools, then the phone's). The first x86_64 run went
+        # silent for over an hour inside the host V8 heap sources, most likely memory: one fewer job than cores, the
+        # memory logged every minute so the next stall says why, and a cap so a hang can't burn the job's whole budget.
+        timeout-minutes: 150
+        run: |
+          free -h
+          (while sleep 60; do echo "[mem] $(free -m | awk '/Mem:/ {print $3 "/" $2 " MB used"}') $(free -m | awk '/Swap:/ {print "swap " $3 " MB"}')"; done) &
+          make -j"$(( $(nproc) > 2 ? $(nproc) - 1 : 2 ))"
+
+      - name: Package libnode.so
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          ndk="$ANDROID_NDK_LATEST_HOME"
+          llvm="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          case "${{ matrix.arch }}" in
+            arm64) abi=arm64-v8a; triple=aarch64-linux-android ;;
+            x86_64) abi=x86_64; triple=x86_64-linux-android ;;
+          esac
+          mkdir -p "dist/$abi"
+          "$llvm/llvm-strip" -o "dist/$abi/libnode.so" "node-v$NODE_VERSION/out/Release/node"
+          # Ship libc++ beside it only if the binary asks for it.
+          if "$llvm/llvm-readelf" -d "dist/$abi/libnode.so" | grep -q 'libc++_shared.so'; then
+            cp "$ndk/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$triple/libc++_shared.so" "dist/$abi/"
+          fi
+          {
+            echo "node $NODE_VERSION, $abi, API $ANDROID_API, $(grep Pkg.Revision "$ndk/source.properties")"
+            file "dist/$abi/libnode.so"
+            "$llvm/llvm-readelf" -d "dist/$abi/libnode.so" | grep -E 'NEEDED|RUNPATH|RPATH' || true
+            ls -l "dist/$abi"
+            (cd "dist/$abi" && sha256sum *.so)
+          } | tee "dist/$abi/BUILD.txt"
+
+      - name: Report
+        run: cat dist/*/BUILD.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libnode-${{ env.NODE_VERSION }}-${{ matrix.arch }}
+          path: dist
+          if-no-files-found: error
+
+  payload:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install, build the frontend lib bundle, keep production deps only
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build:lib
+          npm prune --omit=dev --no-audit --no-fund
+      - name: Zip the server
+        run: |
+          mkdir payload
+          git archive --format=tar HEAD | tar -x -C payload
+          rm -rf payload/{.github,android,tests,docs}
+          cp -r node_modules payload/
+          rsync -a --exclude .webpack-cache dist/ payload/dist/
+          (cd payload && zip -qr -9 ../kotatsu.zip .)
+          {
+            echo "### Payload"
+            echo "- kotatsu.zip: $(du -h kotatsu.zip | cut -f1) (unpacked $(du -sh payload | cut -f1), node_modules $(du -sh payload/node_modules | cut -f1))"
+            echo "- native addons left in node_modules (each one breaks on Android unless it is optional):"
+            find payload/node_modules -name '*.node' -printf '  - %P\n' | head -20
+            echo "- largest packages:"
+            du -s payload/node_modules/* payload/node_modules/@*/* 2>/dev/null | sort -rn | head -12 | awk '{ printf "  - %s %.1f MB\n", $2, $1/1024 }' | sed 's#payload/node_modules/##'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: payload
+          path: kotatsu.zip
+          compression-level: 0
+
+  apk:
+    needs: [node, payload]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: libnode-*
+          path: android/app/src/main/jniLibs
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: payload
+          path: android/app/src/main/assets
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
+      - name: Build the APK
+        run: |
+          rm -f android/app/src/main/jniLibs/*/BUILD.txt
+          version="$(node -p "require('./package.json').version")"
+          gradle -p android assembleDebug -PkotatsuVersionName="$version-android.${{ github.run_number }}" -PkotatsuVersionCode="${{ github.run_number }}"
+          apk="kotatsu-$version-android.${{ github.run_number }}.apk"
+          mv android/app/build/outputs/apk/debug/app-debug.apk "$apk"
+          echo "### APK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- $apk: $(du -h "$apk" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+          unzip -l "$apk" | grep -E 'lib/|assets/' >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: kotatsu-*.apk
+          compression-level: 0

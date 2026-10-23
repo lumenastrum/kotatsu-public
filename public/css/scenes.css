@@ -29,7 +29,7 @@ body[data-k-layout="rails"] {
     --k-scene-narrator: color-mix(in srgb, var(--k-text-dim) 78%, var(--k-accent));
 
     --k-scene-width: min(1180px, calc(100vw - 48px));
-    --k-scene-height: min(820px, calc(100dvh - 48px));
+    --k-scene-height: min(820px, calc(var(--k-vvh, 100dvh) - 48px));
     --k-scene-panel-w: 420px;
     --k-scene-pad: clamp(16px, 1.8vw, 28px);
     --k-scene-gap: clamp(12px, 1.2vw, 18px);
@@ -828,7 +828,7 @@ body[data-k-layout="rails"] .k-scene-save.is-blocked {
 @media (max-width: 600px) {
     body[data-k-layout="rails"] {
         --k-scene-width: 100vw;
-        --k-scene-height: 100dvh;
+        --k-scene-height: var(--k-vvh, 100dvh);
         --k-scene-tile-min: 116px;
         --k-scene-tile-h: 164px;
     }
@@ -1701,8 +1701,12 @@ body[data-k-layout="rails"] .k-stage-mentions-hint {
 }
 
 /* ═══ 8. The scene banner (G7) ═══════════════════════════════════════════════
-   <k-scene-banner> sits between <k-chat-header> and #sheld in #k-center's flex column, capped
-   at the reading width like the header row, the messages and the composer. */
+   <k-scene-banner> opens the transcript like a chapter's epigraph: the first child of #chat,
+   scrolling away with the story instead of pinned over it (reader-chrome, 2026-10-22; pinned,
+   it cost 71px of a 900px desktop reader and 117px of a phone). `order: -1` keeps it first in
+   #chat's flex column when core puts older messages or its show-more sentinel at the top.
+   Capped at the reading width like the messages and the composer. The header's Scene chip
+   peeks at it from anywhere in the chat (shell-center.css §1). */
 
 body[data-k-layout="rails"] {
     --k-scene-banner-w: 760px;
@@ -1718,9 +1722,10 @@ body:not([data-k-layout="rails"]) k-scene-banner {
 body[data-k-layout="rails"] k-scene-banner {
     display: block;
     flex: 0 0 auto;
+    order: -1;
     box-sizing: border-box;
     width: min(var(--k-scene-banner-w), calc(100% - 32px));
-    margin: 12px auto 0;
+    margin: 4px auto 14px;
 }
 
 body[data-k-layout="rails"] k-scene-banner[hidden] {
@@ -1978,7 +1983,7 @@ body[data-k-layout="rails"] .k-banner-btn:disabled {
 
     body[data-k-layout="rails"] k-scene-banner {
         width: calc(100% - 16px);
-        margin-top: 8px;
+        margin-bottom: 10px;
     }
 
     body[data-k-layout="rails"] .k-cast-icon {

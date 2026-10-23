@@ -13,6 +13,10 @@
  * only matches that class under `#chat[data-k-mes-metadata="click"]`.
  *
  * This absorbs Moonlit's ~100-line `enableMessageDetails` checkbox (renderer v0 §2.5).
+ *
+ * The Sprite look uses the same tap (2026-10-22): a visual novel is read, so a row's controls
+ * and readouts stay tucked until the person taps that message (mes-variants.css §8), whatever the
+ * metadata axis says. See {@link revealActive}.
  */
 import { getVariantAxis } from '../../scripts/message-rows.js';
 
@@ -57,11 +61,21 @@ export function revealTargetRow(target, hasSelection) {
 }
 
 /**
+ * Whether a tap on a row toggles its chrome: under `metadata=click`, and always in the Sprite look,
+ * which tucks a row's controls and readouts for immersion (Andres, on his iPhone, 2026-10-22).
+ * @param {{ metadata: string, message: string }} axes The live metadata and message axes.
+ * @returns {boolean}
+ */
+export function revealActive({ metadata, message }) {
+    return metadata === 'click' || message === 'sprite';
+}
+
+/**
  * @param {MouseEvent} event Delegated click.
  * @returns {void}
  */
 function onChatClick(event) {
-    if (getVariantAxis('metadata') !== 'click') return;
+    if (!revealActive({ metadata: getVariantAxis('metadata'), message: getVariantAxis('message') })) return;
 
     const selection = typeof document.getSelection === 'function' ? document.getSelection() : null;
     const hasSelection = Boolean(selection && !selection.isCollapsed);

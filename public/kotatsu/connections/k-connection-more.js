@@ -31,7 +31,7 @@
 import { LitElement, html, nothing } from '../shell/lit.js';
 import { online_status } from '../../script.js';
 import { event_types, eventSource } from '../../scripts/events.js';
-import { BRIDGE_CHANGE_EVENT, BRIDGE_STATUS_EVENT, getBridgeListener, isKotatsuBridgeUrl, useSavedConnection } from './bridge.js';
+import { BRIDGE_CHANGE_EVENT, BRIDGE_STATUS_EVENT, clearPostProcessing, getBridgeListener, isKotatsuBridgeUrl, useSavedConnection } from './bridge.js';
 import { getStatus as getChatGPTStatus } from './chatgpt.js';
 import { oai_settings } from '../../scripts/openai.js';
 import { extension_settings } from '../../scripts/extensions.js';
@@ -223,6 +223,9 @@ export class KConnectionMore extends LitElement {
             // Ollama doing it: it writes "assistant" into the reply (4/4; 0/4 folded, 2026-10-14).
             // Semi-strict folds late system messages into the user's; this variant keeps tools.
             commit('custom_prompt_post_processing', 'semi_tools');
+        } else {
+            // The setting is global: a hosted way takes the prompt as built (bridge.js).
+            clearPostProcessing();
         }
         this._toggleStock(true);
         // Core shows the API's block in the same task as the change; wait a frame for layout.

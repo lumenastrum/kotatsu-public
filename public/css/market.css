@@ -205,10 +205,48 @@ body[data-k-layout="rails"] k-market-preview {
 
 body[data-k-layout="rails"] .k-studio-sheet.k-mkt-preview {
     width: min(820px, calc(100vw - 64px));
+    /* The studio's sheet is a fixed-height page since Card Studio v2; this one still
+       fits its card, as the studio's did before (css/studio.css §1 at `cd46e7175`). */
+    height: fit-content;
+    max-height: var(--k-studio-max-h);
 }
 
-body[data-k-layout="rails"] .k-mkt-preview-head {
+/* The head, copy column, eyebrow and title are the studio's v1 rules, kept here when
+   v2 rewrote them for its own header (the preview's head never wraps, keeps its
+   hairline, and names the card in the display face). */
+body[data-k-layout="rails"] .k-studio-head.k-mkt-preview-head {
     align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 12px;
+    padding: var(--k-studio-pad) var(--k-studio-pad) calc(var(--k-studio-pad) * 0.6);
+    border-bottom: 1px solid var(--k-studio-hairline);
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview .k-studio-eyebrow {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--k-accent);
+    white-space: normal;
+    transform: none;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview .k-studio-title {
+    margin: 0;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: var(--k-studio-title-size);
+    line-height: var(--k-studio-title-lh);
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
 }
 
 body[data-k-layout="rails"] .k-mkt-preview-art {

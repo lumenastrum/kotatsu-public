@@ -58,6 +58,40 @@ const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
 const GROUP_FILTER_SELECTOR = '#rm_group_add_members_header ~ .rm_tag_controls .rm_tag_filter';
 const GROUP_MEMBERS_FILTER_SELECTOR = '#rm_group_members_header ~ .rm_tag_controls .rm_tag_filter';
 const TAG_TEMPLATE = $('#tag_template .tag');
+
+/** @type {Map<string, string>} */
+const readableTextCache = new Map();
+
+/**
+ * Kotatsu: the text colour a tag wears when it sets a background but no text colour. Stock left
+ * `color` empty, so the tag inherited the theme's ink: cream on a dark theme, readable, and the
+ * light themes' indigo on the same dark fill, not ("ST Default", rgba(108, 32, 32, 1), in Card
+ * Studio on Natsumikan V3, 2026-10-22). This picks near-black or near-white by the fill's
+ * luminance (WCAG relative luminance, split at 0.179); a translucent fill (alpha < 0.5) still shows
+ * the theme behind it, so it keeps the theme's ink. A tag that sets its own text colour keeps it.
+ * @param {string | undefined} background The tag's `color`.
+ * @returns {string} A CSS colour, or '' to inherit.
+ */
+function readableTextOn(background) {
+    if (!background) return '';
+    const cached = readableTextCache.get(background);
+    if (cached !== undefined) return cached;
+    const probe = document.createElement('span');
+    probe.style.color = background;
+    document.body.append(probe);
+    const channels = (getComputedStyle(probe).color.match(/[\d.]+/g) ?? []).map(Number);
+    probe.remove();
+    let text = '';
+    if (channels.length >= 3 && (channels[3] ?? 1) >= 0.5) {
+        const [r, g, b] = channels.slice(0, 3).map(v => {
+            const c = v / 255;
+            return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        });
+        text = 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.179 ? '#1b1b1f' : '#f7f4ef';
+    }
+    readableTextCache.set(background, text);
+    return text;
+}
 const FOLDER_TEMPLATE = $('#bogus_folder_template .bogus_folder_select');
 const VIEW_TAG_TEMPLATE = $('#tag_view_template .tag_view_item');
 
@@ -510,7 +544,7 @@ function getTagBlock(tag, entities, hidden = 0, isUseless = false) {
     const template = FOLDER_TEMPLATE.clone();
     template.addClass(tagFolder.class);
     template.attr({ 'tagid': tag.id, 'id': `BogusFolder${tag.id}` });
-    template.find('.avatar').css({ 'background-color': tag.color, 'color': tag.color2 }).attr('title', `[Folder] ${tag.name}`);
+    template.find('.avatar').css({ 'background-color': tag.color, 'color': tag.color2 || readableTextOn(tag.color) }).attr('title', `[Folder] ${tag.name}`);
     template.find('.ch_name').text(tag.name).attr('title', `[Folder] ${tag.name}`);
     template.find('.bogus_folder_hidden_counter').text(hidden > 0 ? `${hidden} hidden` : '');
     template.find('.bogus_folder_counter').text(`${count} ` + (count != 1 ? t`characters` : t`character`));
@@ -1303,7 +1337,7 @@ function appendTagToList(listElement, tag, { removable = false, isFilter = false
 
     //tagElement.css('color', 'var(--SmartThemeBodyColor)');
     tagElement.css('background-color', tag.color);
-    tagElement.css('color', tag.color2);
+    tagElement.css('color', tag.color2 || readableTextOn(tag.color));
 
     tagElement.find('.tag_name').text(tag.name);
     const removeButton = tagElement.find('.tag_remove');
@@ -2009,7 +2043,7 @@ function appendViewTagToList(list, tag, count) {
     template.find('.tag_view_name').addClass('tag');
 
     template.find('.tag_view_name').css('background-color', tag.color);
-    template.find('.tag_view_name').css('color', tag.color2);
+    template.find('.tag_view_name').css('color', tag.color2 || readableTextOn(tag.color));
 
     const tagAsFolderId = tag.id + '-tag-folder';
     const colorPickerId = tag.id + '-tag-color';
