@@ -1,0 +1,385 @@
+/* Kotatsu site. Two looks from one set of rules, the way Kotatsu's theme packs work:
+   Natsumikan V3 (default, the flagship) and Blue Hour. Tokens come from the packs
+   (public/themes/natsumikan-v3/theme.json, docs/brand.md). The quilt is Mikan-chan's own
+   fabric, so it keeps its colours in both. */
+
+@font-face { font-family: "Fraunces"; src: url(assets/fonts/fraunces-soft-latin.woff2) format("woff2"); font-weight: 300 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url(assets/fonts/fraunces-soft-italic-latin.woff2) format("woff2"); font-weight: 300 800; font-style: italic; font-display: swap; }
+
+/* ---------- fabric (both themes) ---------- */
+:root {
+  --quilt: #2a3150;
+  --quilt-deep: #222842;
+  --quilt-dot: #e2ae9f;
+  --quilt-trim: #9aa4d2;
+  --mikan: #f39a3c;
+  --cream: #f4ead9;
+
+  --measure: 34rem;
+  --page: 72rem;
+  --gutter: clamp(1rem, 4vw, 2.5rem);
+  --scallop: 22px;
+  --ui: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", system-ui, sans-serif;
+}
+
+/* ---------- Blue Hour ---------- */
+:root, [data-theme="bluehour"] {
+  --page-bg: #11131a;
+  --ink: #ebe8f3;
+  --ink-strong: #f4ead9;
+  --muted: #a6abc6;
+  --link: #b6bee2;
+  --link-hover: #f4ead9;
+  --rule: rgba(154, 164, 210, 0.14);
+  --display: var(--ui);
+  --display-weight: 900;
+  --wm-stroke: #b6bee2;
+  --wm-dot: #e2ae9f;
+  --panel-bg: rgba(17, 19, 26, 0.78);
+  --panel-ink: #ebe8f3;
+  --frame: #f4ead9;
+  --phone-bezel: #232838;
+  --frame-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.7);
+  --btn-fill: radial-gradient(120% 140% at 30% 20%, #ffb965 0%, #f39b3c 45%, #d97f22 100%);
+  --btn-ink: #2b1606;
+  --btn-shadow: 0 8px 24px -8px rgba(243, 155, 60, 0.55), inset 0 -3px 0 rgba(120, 60, 10, 0.25);
+  --btn-shadow-hover: 0 12px 28px -8px rgba(243, 155, 60, 0.7), inset 0 -3px 0 rgba(120, 60, 10, 0.25);
+  --says-ink: #b6bee2;
+  --says-line: #e2ae9f;
+  --marker: #e2ae9f;
+  --shot-ring: 0 0 0 1px rgba(154, 164, 210, 0.22), 0 16px 32px -14px rgba(0, 0, 0, 0.8);
+  --get-bg: #181b26;
+  --step-fill: #2a3150;
+  --step-ink: #f4ead9;
+  --step-ring: inset 0 0 0 2px #9aa4d2;
+  --seg-fill: rgba(154, 164, 210, 0.12);
+  --seg-on-fill: #2a3150;
+  --seg-on-ink: #f4ead9;
+  --focus: #f39a3c;
+}
+
+/* ---------- Natsumikan V3 ---------- */
+[data-theme="natsumikan"] {
+  --page-bg:
+    url(assets/brand/glow.svg) no-repeat,
+    radial-gradient(ellipse 46% 42% at 94% -4%, color-mix(in srgb, #fdcb75 55%, transparent), transparent 72%),
+    radial-gradient(ellipse 40% 36% at -4% 104%, color-mix(in srgb, #badcb6 40%, transparent), transparent 70%),
+    linear-gradient(180deg, #fef5e4, #fbecd2);
+  --ink: #2b2560;
+  --ink-strong: #2b2560;
+  --muted: color-mix(in srgb, #2b2560 66%, #fbecd2);
+  --link: #5546b0;
+  --link-hover: #2b2560;
+  --rule: color-mix(in srgb, #d9b98a 55%, transparent);
+  --display: "Fraunces", Georgia, serif;
+  --display-weight: 700;
+  --wm-stroke: #2b2560;
+  --wm-dot: #f39a3c;
+  --panel-bg: color-mix(in srgb, #fffaf1 92%, transparent);
+  --panel-ink: #2b2560;
+  --frame: #fffcf6;
+  --phone-bezel: #2b2560;
+  --frame-shadow: 0 28px 70px -16px color-mix(in srgb, #7a4a22 30%, transparent);
+  --btn-fill: linear-gradient(180deg, #f8b262, #f0902f);
+  --btn-ink: #2b2560;
+  --btn-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 55%, transparent), 0 8px 20px -8px color-mix(in srgb, #f0902f 80%, transparent);
+  --btn-shadow-hover: inset 0 1px 0 color-mix(in srgb, #ffffff 60%, transparent), 0 12px 26px -8px color-mix(in srgb, #f0902f 90%, transparent);
+  --says-ink: #5546b0;
+  --says-line: #f39a3c;
+  --marker: #f39a3c;
+  --shot-ring: 0 0 0 4px #fffcf6, 0 16px 40px -10px color-mix(in srgb, #7a4a22 24%, transparent);
+  --get-bg: color-mix(in srgb, #fffaf1 70%, transparent);
+  --step-fill: #fffdf8;
+  --step-ink: #5546b0;
+  --step-ring: inset 0 0 0 2px color-mix(in srgb, #5546b0 45%, transparent), 0 2px 8px -2px color-mix(in srgb, #7a4a22 30%, transparent);
+  --seg-fill: color-mix(in srgb, #d9b98a 22%, color-mix(in srgb, #ffffff 40%, transparent));
+  --seg-on-fill: #fffdf8;
+  --seg-on-ink: #5546b0;
+  --focus: #f39a3c;
+}
+
+/* ---------- base ---------- */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; background: #11131a; }
+html[data-theme="natsumikan"] { background: #fbecd2; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+  background-attachment: scroll;
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { max-width: 100%; display: block; }
+a { color: var(--link); text-underline-offset: 0.2em; }
+a:hover { color: var(--link-hover); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
+strong { color: var(--ink-strong); }
+
+h1, h2, h3 {
+  font-family: var(--display); font-weight: var(--display-weight);
+  line-height: 1.15; margin: 0 0 0.6em; text-wrap: balance; color: var(--ink-strong);
+}
+h1 { font-size: clamp(2.2rem, 5.2vw, 3.7rem); letter-spacing: -0.015em; }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.35rem); letter-spacing: -0.01em; }
+h3 { font-size: 1.3rem; }
+p { margin: 0 0 1em; max-width: var(--measure); }
+
+.wrap { max-width: var(--page); margin: 0 auto; padding: 0 var(--gutter); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- top bar ---------- */
+.bar {
+  position: absolute; inset: 0 0 auto 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem var(--gutter);
+}
+.wordmark { width: 128px; height: auto; }
+.wordmark .stroke { stroke: var(--wm-stroke); }
+.wordmark .dot { fill: var(--wm-dot); }
+.bar nav { display: flex; gap: 1.4rem; font-weight: 500; font-size: 0.95rem; }
+.bar nav a { text-decoration: none; }
+
+/* ---------- hero ---------- */
+.hero { position: relative; isolation: isolate; }
+.hero-copy .lede { font-size: 1.15rem; }
+.cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem 1.4rem; margin-top: 1.6rem; }
+.fine { font-size: 0.88rem; color: var(--muted); margin-top: 0.9rem; }
+.quiet-link { font-weight: 500; }
+
+/* Blue Hour: the scene fills the screen, words sit in its dark window */
+[data-theme="bluehour"] .hero {
+  min-height: min(92vh, 860px);
+  display: grid; align-items: center;
+}
+[data-theme="bluehour"] .hero-frame { position: absolute; inset: 0; z-index: -1; }
+[data-theme="bluehour"] .hero-art { width: 100%; height: 100%; object-fit: cover; }
+[data-theme="bluehour"] .hero-frame::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(17,19,26,0.6) 0, rgba(17,19,26,0) 6rem),
+    linear-gradient(90deg, rgba(17,19,26,0) 38%, rgba(17,19,26,0.72) 66%, rgba(17,19,26,0.9) 100%);
+}
+[data-theme="bluehour"] .hero-copy {
+  justify-self: end; width: min(30rem, 100%);
+  margin-right: max(var(--gutter), calc((100vw - var(--page)) / 2 + var(--gutter)));
+  padding: 6rem 0 5rem;
+}
+
+/* Natsumikan: a sunny page, and the kotatsu night framed like a window on it */
+[data-theme="natsumikan"] .hero {
+  max-width: calc(var(--page) + 6rem); margin: 0 auto;
+  display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: clamp(2rem, 4vw, 3.5rem); align-items: center;
+  padding: 6.5rem var(--gutter) 4.5rem;
+}
+[data-theme="natsumikan"] .hero-frame {
+  border-radius: 24px; overflow: hidden;
+  box-shadow: 0 0 0 7px var(--frame), var(--frame-shadow);
+  aspect-ratio: 3 / 2;
+}
+[data-theme="natsumikan"] .hero-art { width: 100%; height: 100%; object-fit: cover; }
+[data-theme="natsumikan"] h1 { font-size: clamp(2.2rem, 4.4vw, 3.5rem); }
+
+.btn-download {
+  display: inline-flex; align-items: center; gap: 0.7rem;
+  padding: 0.95rem 1.6rem 0.95rem 1.25rem;
+  border-radius: 999px;
+  background: var(--btn-fill);
+  color: var(--btn-ink); font-weight: 700; font-size: 1.08rem; text-decoration: none;
+  box-shadow: var(--btn-shadow);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.btn-download:hover { color: var(--btn-ink); transform: translateY(-2px); box-shadow: var(--btn-shadow-hover); }
+.btn-download svg { width: 1.3rem; height: 1.3rem; }
+.btn-download .ring { fill: var(--btn-ink); opacity: 0.16; }
+.btn-download .arrow { stroke: var(--btn-ink); }
+.btn-download .leaf { fill: #5b8a3a; }
+
+/* ---------- the quilt ---------- */
+.quilt {
+  position: relative;
+  background:
+    linear-gradient(180deg, var(--quilt-trim) 0 14px, transparent 14px),
+    radial-gradient(circle at 28px 28px, var(--quilt-dot) 0 7px, transparent 7.5px) 0 14px / 56px 56px,
+    radial-gradient(circle at 28px 28px, var(--quilt-dot) 0 7px, transparent 7.5px) 28px 42px / 56px 56px,
+    linear-gradient(180deg, var(--quilt) 0%, var(--quilt-deep) 100%);
+  padding: 4.5rem 0 calc(4.5rem + var(--scallop));
+  -webkit-mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--scallop)) no-repeat,
+    radial-gradient(circle at 50% 0, #000 calc(var(--scallop) - 0.5px), transparent var(--scallop)) bottom / calc(var(--scallop) * 2) var(--scallop) repeat-x;
+          mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--scallop)) no-repeat,
+    radial-gradient(circle at 50% 0, #000 calc(var(--scallop) - 0.5px), transparent var(--scallop)) bottom / calc(var(--scallop) * 2) var(--scallop) repeat-x;
+}
+.quilt-inner {
+  display: grid; gap: 2.5rem; align-items: center;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+}
+.quilt-note {
+  background: var(--panel-bg); color: var(--panel-ink);
+  border-radius: 18px; padding: 1.6rem 1.7rem;
+}
+.quilt-note h2 { color: var(--panel-ink); }
+.quilt-note p:last-child { margin-bottom: 0; }
+
+.trailer {
+  position: relative; aspect-ratio: 16 / 9; width: 100%;
+  border-radius: 18px; overflow: hidden; background: #000;
+  box-shadow: 0 0 0 6px var(--frame), var(--frame-shadow);
+}
+.trailer button { all: unset; cursor: pointer; position: absolute; inset: 0; display: grid; place-items: center; }
+.trailer img { width: 100%; height: 100%; object-fit: cover; }
+.trailer .play {
+  position: absolute; width: 84px; height: 84px; border-radius: 50%;
+  background: rgba(17,19,26,0.82); display: grid; place-items: center;
+  box-shadow: 0 0 0 3px var(--mikan);
+  transition: transform 160ms ease;
+}
+.trailer button:hover .play { transform: scale(1.06); }
+.trailer button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.trailer .play svg { width: 34px; height: 34px; margin-left: 5px; fill: var(--cream); }
+.trailer iframe, .trailer video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.trailer video { background: #000; object-fit: contain; }
+.trailer picture { display: contents; }
+/* On a phone the trailer is the vertical cut: the box turns 9:16 (site.js picks the file at the same width). */
+@media (max-width: 640px) {
+  .trailer[data-video-portrait] { aspect-ratio: 9 / 16; width: min(100%, calc(82svh * 9 / 16)); margin-inline: auto; }
+}
+
+/* ---------- what's inside ---------- */
+.inside { padding: 5.5rem 0 3rem; }
+.inside > .wrap > h2 { margin-bottom: 0.3em; }
+.inside > .wrap > p { color: var(--muted); }
+
+.row {
+  display: grid; align-items: center; gap: clamp(1.5rem, 4vw, 4rem);
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  padding: 2.6rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.row:last-child { border-bottom: 0; }
+.row:nth-child(even) { grid-template-columns: minmax(0, 1fr) minmax(0, 15rem); }
+.row:nth-child(even) .row-art { order: 2; }
+.row-art { justify-self: center; }
+.row-art img { max-height: 300px; width: auto; }
+.row ul { padding-left: 1.1rem; margin: 0 0 1em; max-width: var(--measure); }
+.row li { margin-bottom: 0.35em; }
+.row li::marker { color: var(--marker); }
+.says { font-size: 0.98rem; color: var(--says-ink); border-left: 3px solid var(--says-line); padding-left: 0.9rem; margin-top: 1rem; }
+
+/* the theme switch: Kotatsu's segmented control */
+.theme-try { margin-top: 1.2rem; }
+.theme-try p { font-size: 0.95rem; color: var(--muted); margin-bottom: 0.5rem; }
+.seg {
+  display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px;
+  background: var(--seg-fill);
+}
+.seg button {
+  font: inherit; font-weight: 700; font-size: 0.95rem;
+  border: 0; border-radius: 999px; padding: 0.45rem 1.05rem; cursor: pointer;
+  background: transparent; color: var(--muted);
+}
+.seg button[aria-pressed="true"] {
+  background: var(--seg-on-fill); color: var(--seg-on-ink);
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.25);
+}
+
+/* ---------- the phone stage: real phone screenshots in a phone's corners ---------- */
+.stage { padding: 5rem 0 1rem; }
+.stage .lede-sm { color: var(--muted); max-width: var(--measure); }
+.phones {
+  display: flex; justify-content: center; gap: clamp(1rem, 3vw, 2.5rem);
+  padding: 2rem var(--gutter) 1rem; overflow-x: auto; scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+}
+.phone { margin: 0; flex: 0 0 auto; width: min(17rem, 70vw); scroll-snap-align: center; text-align: center; }
+.phone img {
+  width: 100%; height: auto; border-radius: 34px;
+  box-shadow: 0 0 0 8px var(--phone-bezel), 0 0 0 9px var(--rule), 0 24px 50px -24px rgba(43, 37, 96, 0.45);
+}
+.phone figcaption { font-size: 0.92rem; color: var(--muted); margin-top: 1.4rem; }
+
+/* ---------- look closer: one feature, one real screenshot ---------- */
+.closer { padding: 4rem 0 2rem; }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.5rem clamp(1.5rem, 3vw, 3rem); margin-top: 2rem; }
+.tile a { display: block; border-radius: 12px; }
+.tile a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.tile img { display: block; width: 100%; height: auto; border-radius: 12px; box-shadow: var(--shot-ring); }
+.tile h3 { margin: 1.1rem 0 0.35rem; }
+.tile p { color: var(--muted); margin: 0; max-width: 34rem; }
+
+/* ---------- screenshots ---------- */
+.shelf { padding: 2rem 0 5rem; }
+.shelf-track {
+  display: grid; grid-auto-flow: column; grid-auto-columns: min(78%, 34rem);
+  gap: 1.5rem; overflow-x: auto; scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+  padding: 0.75rem var(--gutter) 1.5rem;
+}
+.shelf figure { margin: 0; scroll-snap-align: start; }
+.shelf a { display: block; border-radius: 12px; }
+.shelf a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.shelf img { border-radius: 12px; width: 100%; height: auto; box-shadow: var(--shot-ring); }
+.shelf figcaption { font-size: 0.92rem; color: var(--muted); margin-top: 0.7rem; }
+
+/* ---------- download ---------- */
+.get { background: var(--get-bg); border-top: 1px solid var(--rule); padding: 5rem 0; }
+.get-inner {
+  display: grid; gap: clamp(1.5rem, 4vw, 4rem); align-items: center;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+}
+.get ol { padding: 0; margin: 1.5rem 0 0; list-style: none; counter-reset: step; max-width: 36rem; }
+.get li { counter-increment: step; position: relative; padding: 0 0 1.1rem 2.9rem; }
+.get li::before {
+  content: counter(step);
+  position: absolute; left: 0; top: 0.05rem;
+  width: 1.9rem; height: 1.9rem; border-radius: 50%;
+  background: var(--step-fill); color: var(--step-ink); box-shadow: var(--step-ring);
+  display: grid; place-items: center; font-weight: 700; font-size: 0.95rem;
+}
+.get .other { margin-top: 1.2rem; color: var(--muted); }
+
+/* ---------- footer ---------- */
+footer { padding: 3.5rem 0 3rem; color: var(--muted); font-size: 0.95rem; }
+.foot { display: flex; flex-wrap: wrap; gap: 1.5rem 3rem; align-items: center; justify-content: space-between; }
+.foot-sign { display: flex; align-items: center; gap: 1rem; }
+.foot-sign img { width: 72px; height: auto; }
+.foot-sign p { margin: 0; }
+.foot nav { display: flex; flex-wrap: wrap; gap: 0.6rem 1.4rem; }
+
+/* a switched theme eases in; nothing moves on its own */
+body.theme-easing, body.theme-easing * { transition: background-color 280ms ease, color 280ms ease, border-color 280ms ease !important; }
+@media (prefers-reduced-motion: reduce) {
+  .btn-download, .btn-download:hover, .trailer .play { transition: none; transform: none; }
+  body.theme-easing, body.theme-easing * { transition: none !important; }
+}
+
+/* ---------- small screens ---------- */
+@media (max-width: 760px) {
+  .bar nav a:not(.bar-dl) { display: none; }
+
+  [data-theme="bluehour"] .hero { align-items: end; min-height: auto; }
+  [data-theme="bluehour"] .hero-frame { inset: 0 0 auto 0; height: 58vh; }
+  [data-theme="bluehour"] .hero-art { object-position: 24% 0; }
+  [data-theme="bluehour"] .hero-frame::after {
+    background: linear-gradient(180deg, rgba(17,19,26,0.55) 0, rgba(17,19,26,0) 5.5rem, rgba(17,19,26,0) 62%, #11131a 100%);
+  }
+  [data-theme="bluehour"] .hero-copy { justify-self: stretch; width: auto; margin: 0 var(--gutter); padding: 54vh 0 3rem; }
+
+  [data-theme="natsumikan"] .hero { grid-template-columns: 1fr; padding-top: 5rem; }
+  [data-theme="natsumikan"] .hero-frame { border-radius: 18px; box-shadow: 0 0 0 5px var(--frame), var(--frame-shadow); }
+
+  .quilt-inner { grid-template-columns: 1fr; }
+  .phones { justify-content: flex-start; }
+  .tiles { grid-template-columns: 1fr; }
+  .row, .row:nth-child(even), .get-inner { grid-template-columns: 1fr; }
+  .row:nth-child(even) .row-art { order: 0; }
+  .row-art img { max-height: 220px; }
+  .foot { flex-direction: column; align-items: flex-start; }
+}

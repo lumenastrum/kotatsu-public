@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en" data-theme="natsumikan">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kotatsu</title>
+  <meta name="description" content="Kotatsu is SillyTavern for writing: your characters, presets and extensions behind a calm, fast interface, with Mikan-chan to set it up alongside you. Free and open source.">
+  <meta name="theme-color" content="#fbecd2">
+  <meta property="og:title" content="Kotatsu">
+  <meta property="og:description" content="The warm table you don't want to leave. SillyTavern for writing, free and open source.">
+  <meta property="og:image" content="assets/art/og.png">
+  <link rel="icon" href="assets/brand/favicon.ico">
+  <script>
+    // Pick the look before first paint: ?theme= wins, then the last one tried here.
+    (function () {
+      var t = new URLSearchParams(location.search).get('theme');
+      if (!t) { try { t = localStorage.getItem('kotatsu-site-theme'); } catch (e) {} }
+      if (t === 'bluehour' || t === 'natsumikan') document.documentElement.dataset.theme = t;
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="preload" href="assets/fonts/fraunces-soft-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="bar">
+  <a href="#top" aria-label="Kotatsu home">
+    <svg class="wordmark" viewBox="0 0 236 64" width="128" height="35" role="img" aria-label="Kotatsu">
+      <g class="stroke" fill="none" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 12 v40 M14 34 l20 -18 M19.5 29.5 l16 22.5"/>
+        <path d="M68 18 v27 a7 7 0 0 0 7 7 M58 30 h19"/>
+        <circle cx="98" cy="42" r="9"/>
+        <path d="M107 33 v19"/>
+        <path d="M126 18 v27 a7 7 0 0 0 7 7 M116 30 h19"/>
+        <path d="M162 34 a8 7 0 0 0 -15 2.5 c0 7 15 3 15 10.5 a8 7 0 0 1 -15 2.5"/>
+        <path d="M178 30 v13 a9 9 0 0 0 18 0 v-13 M196 43 v9"/>
+      </g>
+      <circle class="dot" cx="45" cy="42" r="7"/>
+    </svg>
+  </a>
+  <nav aria-label="Site">
+    <a href="#inside">What's inside</a>
+    <a href="https://github.com/lumenastrum/kotatsu-public">GitHub</a>
+    <a class="bar-dl" href="#get">Download</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-frame">
+      <img class="hero-art" src="assets/art/site-hero.webp" width="1536" height="1024" alt="Mikan-chan, a girl with orange hair in an indigo polka-dot jacket, tucked under a kotatsu at night with a laptop, a bowl of mikans and snow outside the window">
+    </div>
+    <div class="hero-copy">
+      <h1 id="hero-title">The warm table you don’t want to leave.</h1>
+      <p class="lede"><strong>Kotatsu is SillyTavern for writing.</strong> Your characters, presets and extensions, behind a calm, fast interface, with Mikan-chan to set it up alongside you. It's free, open source, and runs on your own computer or phone.</p>
+      <div class="cta-row">
+        <a class="btn-download" href="https://github.com/lumenastrum/kotatsu-public/releases/latest/download/Install-Kotatsu.bat">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle class="ring" cx="12" cy="13.5" r="8.5"/><path class="arrow" d="M12 9v8m-3.5-3.5L12 17l3.5-3.5" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path class="leaf" d="M12.4 4.6c1.6-1.7 3.9-1.9 5.1-1.5-.4 1.3-2.2 3-4.6 2.9z"/></svg>
+          Download for Windows
+        </a>
+        <a class="quiet-link" href="https://github.com/lumenastrum/kotatsu-public/releases/latest/download/Kotatsu-Android.apk">Get the Android app</a>
+        <a class="quiet-link" href="https://github.com/lumenastrum/kotatsu-public#running-from-source">Mac or Linux? Run it from source</a>
+      </div>
+      <p class="fine">Version <span data-version>0.8.0</span>. Edge will ask whether to keep a .bat file. That's normal for an installer like this one; choose Keep.</p>
+    </div>
+  </section>
+
+  <section class="quilt" aria-labelledby="trailer-title">
+    <div class="wrap quilt-inner">
+      <div class="trailer" data-video="assets/video/kotatsu-trailer-v3.mp4" data-video-portrait="assets/video/kotatsu-trailer-v3-vertical.mp4">
+        <button type="button" aria-label="Play the Kotatsu trailer">
+          <picture>
+            <source media="(max-width: 640px)" srcset="assets/art/trailer-v3-poster-v.webp" width="720" height="1280">
+            <img src="assets/art/trailer-v3-poster.webp" alt="" width="1280" height="720" loading="lazy">
+          </picture>
+          <span class="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg></span>
+        </button>
+      </div>
+      <div class="quilt-note">
+        <h2 id="trailer-title">See it in a minute</h2>
+        <p>The stage on your desk, the whole cast, every face from one drawing, story lines that branch, and the phone version to take with you. Mikan-chan does the introductions.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="stage" aria-labelledby="stage-title">
+    <div class="wrap">
+      <h2 id="stage-title">On your phone, it's a visual novel</h2>
+      <p class="lede-sm">Turn on sprites and the phone becomes a stage: the chat's own backdrop, the speaker in the face that fits the line, and the reply in a textbox you tap through a page at a time. Tap their name for the details. History brings the whole transcript back.</p>
+    </div>
+    <div class="phones" tabindex="0" aria-label="Phone screenshots, scroll sideways on small screens">
+      <figure class="phone"><img src="assets/shots/v08/phone-vn-rin-page1.webp" width="600" height="1298" alt="Rin in a sunlit bookshop, holding a book, with her reply in a textbox at the bottom of the screen and a small arrow saying there is more" loading="lazy"><figcaption>One line at a time, a page at a time</figcaption></figure>
+      <figure class="phone"><img src="assets/shots/v08/phone-vn-group.webp" width="600" height="1298" alt="A scene in a rainy café: Mara the pirate captain on stage, the cast of three in a row under her line" loading="lazy"><figcaption>Scenes: whoever speaks steps forward</figcaption></figure>
+      <figure class="phone"><img src="assets/shots/v08/phone-vn-history.webp" width="600" height="1298" alt="The History view: the bookshop scene dimmed behind the whole conversation" loading="lazy"><figcaption>History, when you want the whole story</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="inside" id="inside" aria-labelledby="inside-title">
+    <div class="wrap">
+      <h2 id="inside-title">Everything SillyTavern let you shape, made cozy</h2>
+      <p>Same characters, presets, extensions and data folder. A calmer page around them.</p>
+
+      <div class="rows">
+        <article class="row">
+          <div class="row-art"><img src="assets/art/teach.webp" alt="Mikan-chan at a little chalkboard, pointing with chalk" width="300" height="450" loading="lazy"></div>
+          <div>
+            <h3>A guide who sets it up with you</h3>
+            <p>Mikan-chan walks you from hello to your first message in five steps: connect a model, pick a preset, say who you are, choose a character, and start writing. Skip any step, or the whole tour, and replay it later from Settings.</p>
+            <p class="says">“First time? Perfect. I'll walk you from hello to your first message. Skip anything you like; I'll only sulk a little.”</p>
+          </div>
+        </article>
+
+        <article class="row">
+          <div class="row-art"><img src="assets/art/connect.webp" alt="Mikan-chan holding up a chunky power plug" width="300" height="450" loading="lazy"></div>
+          <div>
+            <h3>Use the subscription you already have</h3>
+            <ul>
+              <li>Claude Code with your Claude plan, or your ChatGPT Plus or Pro plan. No API key to manage.</li>
+              <li>An API key from Anthropic, OpenAI, Google AI Studio, DeepSeek, xAI or OpenRouter. Keys stay on your computer.</li>
+              <li>A local model, NanoGPT, Mistral or any custom endpoint.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="row">
+          <div class="row-art"><img src="assets/art/sauce.webp" alt="Mikan-chan taste-testing a little pot with a wooden ladle" width="300" height="450" loading="lazy"></div>
+          <div>
+            <h3>Presets you can actually read</h3>
+            <p>The prompt list comes in sections, toggles say what they do, and every reply keeps a receipt of the exact prompt the model saw. Your own presets load unchanged.</p>
+            <p>Kotatsu Nabe is the house preset. Sola, Freaky Frankenstein and Nemo Vivarium ship beside it, with their authors' permission and credit.</p>
+          </div>
+        </article>
+
+        <article class="row">
+          <div class="row-art"><img src="assets/art/site-phone.webp" alt="Mikan-chan holding up a phone that shows a little visual-novel stage" width="349" height="900" loading="lazy"></div>
+          <div>
+            <h3>It comes with you</h3>
+            <p>Scan one QR code and your phone joins in, at home on your Wi-Fi or anywhere on your tailnet. Same chats, same characters, same connections. On a phone the story takes the whole screen, and with sprites on, your cast stands on a little visual-novel stage above it.</p>
+            <p class="says">“Yes, I fit in your pocket too.”</p>
+          </div>
+        </article>
+
+        <article class="row">
+          <div class="row-art"><img src="assets/art/site-themes.webp" alt="Mikan-chan winking with a paint palette and a brush, a dab of orange on her cheek" width="442" height="900" loading="lazy"></div>
+          <div>
+            <h3>Make it look like yours</h3>
+            <p>Natsumikan leads six themes in the box, with Natsumikan Classic and Manga, Blue Hour, Sparkle and Midnight Kissaten beside her. Pick a message style, from bubbles to script to broadcast, or put your cast on stage with sprites you bring or Kotatsu draws for you.</p>
+            <div class="theme-try">
+              <p id="theme-try-label">Try two of them on this page:</p>
+              <div class="seg" role="group" aria-labelledby="theme-try-label">
+                <button type="button" data-set-theme="natsumikan" aria-pressed="true">Natsumikan</button>
+                <button type="button" data-set-theme="bluehour" aria-pressed="false">Blue Hour</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="closer" aria-labelledby="closer-title">
+    <div class="wrap">
+      <h2 id="closer-title">Look closer</h2>
+      <div class="tiles">
+        <article class="tile">
+          <a href="assets/shots/v08/desk-studio-looks.webp"><picture><source media="(max-width: 760px)" srcset="assets/shots/v08/tile-studio-m.webp" width="800" height="820"><img src="assets/shots/v08/tile-studio.webp" width="1200" height="750" alt="The Card Studio's Looks chapter: a character's sprite and her faces side by side, neutral, joy and more" loading="lazy"></picture></a>
+          <h3>Every face, from one drawing</h3>
+          <p>The Card Studio keeps a character's whole look in one place: card art, a full-body sprite, a bust, and every expression big enough to judge.</p>
+        </article>
+        <article class="tile">
+          <a href="assets/shots/v08/master-pick.webp"><picture><source media="(max-width: 760px)" srcset="assets/shots/v08/tile-generate-m.webp" width="800" height="586"><img src="assets/shots/v08/tile-generate.webp" width="1200" height="750" alt="The sprite generator showing four drawings of Juno, a pink-haired netrunner, each marked clean, waiting for one to be picked" loading="lazy"></picture></a>
+          <h3>Kotatsu draws the set</h3>
+          <p>Pick the drawing you like and Kotatsu paints every expression from it, cut out and ready for the stage. Your own ComfyUI does the drawing.</p>
+        </article>
+        <article class="tile">
+          <a href="assets/shots/v08/picture-in-chat.webp"><picture><source media="(max-width: 760px)" srcset="assets/shots/v08/tile-pictures-m.webp" width="800" height="738"><img src="assets/shots/v08/tile-pictures.webp" width="1200" height="750" alt="A noir chat with Sable the detective, and a picture of her at a rain-streaked window drawn into the conversation" loading="lazy"></picture></a>
+          <h3>Pictures of the story</h3>
+          <p>Draw this moment, a character, yourself or the place. Kotatsu writes the prompt from the scene, you can edit it, and the picture lands in the chat. Also on your own ComfyUI.</p>
+        </article>
+        <article class="tile">
+          <a href="assets/shots/v08/story-lines.webp"><picture><source media="(max-width: 760px)" srcset="assets/shots/v08/tile-branches-m.webp" width="800" height="500"><img src="assets/shots/v08/tile-branches.webp" width="1200" height="750" alt="Story lines: one story drawn as a transit map, the main line with two branches forking off at different messages" loading="lazy"></picture></a>
+          <h3>Every branch, on one map</h3>
+          <p>Fork any message and keep both endings. Story lines draws a whole story as a transit map, so you can always find the way back.</p>
+        </article>
+        <article class="tile">
+          <a href="assets/shots/v08/receipt-chart.webp"><picture><source media="(max-width: 760px)" srcset="assets/shots/v08/tile-receipt-m.webp" width="800" height="670"><img src="assets/shots/v08/tile-receipt.webp" width="1200" height="750" alt="A prompt receipt: 2,415 tokens split into chat history, preset and character, with a bar for every part of the preset" loading="lazy"></picture></a>
+          <h3>See what you sent</h3>
+          <p>Every reply keeps a receipt of the exact prompt the model saw, by source and in order, and every reply shows its tokens and cache hits.</p>
+        </article>
+        <article class="tile">
+          <a href="assets/shots/v08/card-success.webp"><picture><source media="(max-width: 760px)" srcset="assets/shots/v08/tile-pairing-m.webp" width="800" height="604"><img src="assets/shots/v08/tile-pairing.webp" width="1200" height="750" alt="Settings, Phone: an iPhone has just paired, and Mikan-chan is cheering about it" loading="lazy"></picture></a>
+          <h3>Your phone, in one scan</h3>
+          <p>Turn on phone access, scan the code, done. Only phones you pair can connect, and the code works once.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="shelf" aria-labelledby="shelf-title">
+    <div class="wrap"><h2 id="shelf-title">A look around</h2></div>
+    <div class="shelf-track" tabindex="0" aria-label="Screenshots, scroll sideways">
+      <figure><a href="assets/shots/v08/welcome.webp"><img src="assets/shots/v08/welcome.webp" width="1600" height="1000" alt="Mikan-chan's welcome tour, every step skippable" loading="lazy"></a><figcaption>Mikan-chan walks you through setup</figcaption></figure>
+      <figure><a href="assets/shots/v08/connect.webp"><img src="assets/shots/v08/connect.webp" width="1600" height="1000" alt="The Connect step with Claude Code in use through a Claude subscription, and ChatGPT one click away" loading="lazy"></a><figcaption>Use the subscription you already have</figcaption></figure>
+      <figure><a href="assets/shots/v08/library.webp"><img src="assets/shots/v08/library.webp" width="1600" height="1000" alt="The cast library under the heading Who are we meeting tonight?, a shelf of character posters" loading="lazy"></a><figcaption>Your cast, on one shelf</figcaption></figure>
+      <figure><a href="assets/shots/v08/reader.webp"><img src="assets/shots/v08/reader.webp" width="1600" height="1000" alt="The reader: a noir chat with Sable, the characters and chats on the left, the preset's sections on the right" loading="lazy"></a><figcaption>A reader made for long stories</figcaption></figure>
+      <figure><a href="assets/shots/v08/scenes.webp"><img src="assets/shots/v08/scenes.webp" width="1600" height="1000" alt="A scene called Closing Time: Kaito, Mara and Rin in one chat, with the On stage strip under it" loading="lazy"></a><figcaption>Scenes: more than two at the table</figcaption></figure>
+      <figure><a href="assets/shots/v08/desk-stage-group.webp"><img src="assets/shots/v08/desk-stage-group.webp" width="1600" height="1000" alt="The same scene in the Sprite look on a computer: Rin and Kaito on the left, Mara on the right, over the café backdrop" loading="lazy"></a><figcaption>The stage on a big screen</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="get" id="get" aria-labelledby="get-title">
+    <div class="wrap get-inner">
+      <div class="row-art"><img src="assets/art/site-download.webp" alt="Mikan-chan hugging a big soft cushion shaped like a download arrow" width="411" height="900" loading="lazy"></div>
+      <div>
+        <h2 id="get-title">Get Kotatsu</h2>
+        <p>You don't need a Claude subscription. An API key, a ChatGPT plan or a local model works just as well.</p>
+        <a class="btn-download" href="https://github.com/lumenastrum/kotatsu-public/releases/latest/download/Install-Kotatsu.bat">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle class="ring" cx="12" cy="13.5" r="8.5"/><path class="arrow" d="M12 9v8m-3.5-3.5L12 17l3.5-3.5" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path class="leaf" d="M12.4 4.6c1.6-1.7 3.9-1.9 5.1-1.5-.4 1.3-2.2 3-4.6 2.9z"/></svg>
+          Download for Windows
+        </a>
+        <ol>
+          <li>Double-click <strong>Install-Kotatsu.bat</strong>. It installs Node.js and git if they're missing. No admin rights needed.</li>
+          <li>It asks whether you want to use a Claude Pro or Max plan. Say yes to set up Claude Code, or no to skip it. Either way the install finishes.</li>
+          <li>Kotatsu opens in your browser, with Mikan-chan waiting. A shortcut lands on your Desktop.</li>
+        </ol>
+        <p class="other"><strong>On Android</strong> (9 or newer): <a href="https://github.com/lumenastrum/kotatsu-public/releases/latest/download/Kotatsu-Android.apk">download the app</a> on your phone and open it; allow installs from your browser when Android asks. Everything runs on the phone. Connect it with an API key or a model on your network; Claude Code and ChatGPT plans need a computer.</p>
+        <p class="other">On macOS or Linux, <a href="https://github.com/lumenastrum/kotatsu-public#running-from-source">run it from source</a>. Coming from SillyTavern? Copy your <code>data</code> folder in and everything carries over.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div class="foot-sign">
+      <img src="assets/art/chibi.webp" alt="" width="72" height="90" loading="lazy">
+      <p>Kotatsu is a fork of SillyTavern,<br>free and open source under AGPL-3.0.</p>
+    </div>
+    <nav aria-label="Project">
+      <a href="https://github.com/lumenastrum/kotatsu-public">GitHub</a>
+      <a href="https://github.com/lumenastrum/kotatsu-public/releases">Releases</a>
+      <a href="https://github.com/lumenastrum/kotatsu-public/wiki">Wiki</a>
+      <a href="https://github.com/lumenastrum/kotatsu-public/issues/new">Report a bug</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="site.js" defer></script>
+</body>
+</html>

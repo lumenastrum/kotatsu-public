@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <!-- No viewBox and no width/height on purpose (as V2's bg/light.svg): the picture covers the
+       surface once, and the sun hangs from the top-right corner via a nested svg at x=100%.
+       V3: V2's sun dial, leaner. Two thin rings and no rays; three sparkles instead of confetti. -->
+  <defs>
+    <path id="s" d="M0 -10 Q1.4 -1.4 10 0 Q1.4 1.4 0 10 Q-1.4 1.4 -10 0 Q-1.4 -1.4 0 -10Z"/>
+    <style>
+      @media (max-width: 700px) {
+        .cluster { transform: translate(-6px, 0) scale(0.55); }
+        /* Scaled down, this one lands in the phone's header row, behind the Scene chip. */
+        .s-top { display: none; }
+      }
+    </style>
+  </defs>
+  <svg x="100%" y="0" overflow="visible">
+    <g class="cluster">
+      <g transform="translate(-1610 0)">
+        <g transform="translate(1440 40)" fill="none" stroke="#e8952f">
+          <circle r="140" stroke-width="1.5" stroke-opacity="0.28"/>
+          <circle r="112" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="3 9"/>
+        </g>
+        <use class="s-top" href="#s" fill="#f39a3c" fill-opacity="0.5" transform="translate(1300 120) scale(1.1)"/>
+        <use href="#s" fill="#5fbf9c" fill-opacity="0.45" transform="translate(1560 250) scale(0.8)"/>
+        <use href="#s" fill="#6a5fc8" fill-opacity="0.35" transform="translate(1250 260) scale(0.7)"/>
+      </g>
+    </g>
+  </svg>
+</svg>
