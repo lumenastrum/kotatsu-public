@@ -1,6 +1,6 @@
 services:
   kotatsu:
-    image: ghcr.io/lumenastrum/kotatsu:latest   # or pin a release: ghcr.io/lumenastrum/kotatsu:0.7.7
+    image: ghcr.io/lumenastrum/kotatsu:latest   # or pin a release: ghcr.io/lumenastrum/kotatsu:0.8.1
     container_name: kotatsu
     restart: unless-stopped
     # Run as the owner of ./kotatsu on the host. Find yours with `id -u` and `id -g`.

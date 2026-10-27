@@ -102,6 +102,7 @@ if /i "%CLAUDE_MODE%"=="yes" goto claude_setup
 echo   [3/5] Optional: connect a Claude Pro or Max plan.
 echo         Kotatsu can write through your Claude plan using Claude Code. You do not need
 echo         this for API keys, a ChatGPT plan or local models, and you can add it later.
+echo         It needs a paid Claude account. No account, or not sure? Press N.
 echo.
 choice /c YN /n /m "Set up Claude Code now? [Y/N] " 2>nul
 if errorlevel 2 goto claude_skip
@@ -127,7 +128,17 @@ for /f "delims=" %%v in ('claude --version 2^>nul') do echo         %%v
 claude auth status 2>nul | findstr /C:"\"loggedIn\": true" >nul
 if not errorlevel 1 goto claude_signed_in
 echo.
-echo   Claude Code needs to sign in to your Claude subscription. A browser window will open.
+echo   Claude Code needs to sign in to your Claude subscription. Signing in opens a browser window.
+REM "claude auth login" waits for the sign-in with no timeout (#23): someone without an account
+REM is stuck there, and closing the window kills the install before Kotatsu is downloaded.
+REM So ask first, and say how to back out. An unattended /claude run goes straight on.
+if /i "%CLAUDE_MODE%"=="yes" goto claude_login_run
+choice /c YN /n /m "  Sign in now? [Y/N] " 2>nul
+if errorlevel 2 goto claude_login_failed
+if not errorlevel 1 goto claude_login_failed
+:claude_login_run
+echo   Changed your mind? Close the browser tab, press Ctrl+C here, then answer N to
+echo   "Terminate batch job". Kotatsu still installs.
 echo.
 call claude auth login
 claude auth status 2>nul | findstr /C:"\"loggedIn\": true" >nul

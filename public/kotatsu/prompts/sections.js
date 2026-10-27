@@ -179,6 +179,8 @@ const VARIATION_SELECTORS = new RegExp('[' + String.fromCodePoint(0xFE0E, 0xFE0F
 const ZERO_WIDTH_JOINER = String.fromCodePoint(0x200D);
 
 const MAX_SLUG_LENGTH = 64;
+/** Blank glyph-led rows needed before the fallback reads them as headers ({@link blankHeaderKind}). */
+const MIN_BLANK_HEADERS = 2;
 
 /**
  * @typedef {object} PromptRecord
@@ -281,7 +283,10 @@ const MAX_SLUG_LENGTH = 64;
  * @property {boolean} builtin
  * @property {Classification} cls
  * @property {'banner'|'subgroup'|'separator'|null} authored What an author-made marker is
- *   ({@link authoredMarkerKind}); null for every other row.
+ *   ({@link authoredMarkerKind}); null for every other row. The blank-header fallback fills it
+ *   in from `blankHeader` when it fires.
+ * @property {'banner'|'subgroup'|null} blankHeader What the row would be if the preset's headers
+ *   are blank prompts ({@link blankHeaderKind}).
  */
 
 /**
@@ -305,6 +310,37 @@ function authoredMarkerKind(prompt) {
     if (!sendsNothing) return null;
     const name = typeof prompt.name === 'string' ? prompt.name.trim() : '';
     if (!/\p{L}/u.test(name)) return 'separator';
+    return glyphHeaderKind(name);
+}
+
+/**
+ * What an ordinary prompt saved empty is, when a preset has nothing else to read as a header.
+ *
+ * Voyage writes its headers this way (`✏️ Point of View`, `📍TTRPG`: `marker: false`,
+ * `content: ""`); core sends nothing for them. But a blank glyph-led row is also how a toggle with
+ * nothing in it yet looks (`🌈 Colored Dialogue` under a pick-one banner), so this is only a
+ * FALLBACK: {@link deriveSections} uses it when no sigil, legacy banner or authored marker
+ * spoke, and only when at least {@link MIN_BLANK_HEADERS} rows read this way. Limits: the content
+ * must be an empty STRING (a prompt with no content key is not a header anyone saved), a core
+ * built-in (Main, Post-History, …) never counts, and a letterless one is a row, never a separator.
+ * @param {PromptRecord} prompt The prompt.
+ * @returns {'banner'|'subgroup'|null}
+ */
+function blankHeaderKind(prompt) {
+    if (prompt.marker === true || prompt.system_prompt === true) return null;
+    if (typeof prompt.content !== 'string' || prompt.content.trim() || prompt.injection_position === 1) return null;
+    const name = typeof prompt.name === 'string' ? prompt.name.trim() : '';
+    if (!/\p{L}/u.test(name)) return null;
+    return glyphHeaderKind(name);
+}
+
+/**
+ * The shared tail of the two header readers: a name opening with a glyph is a banner, or a
+ * pick-one sub-group when its unwrapped label says pick; anything else is no header.
+ * @param {string} name Trimmed name, holding at least one letter.
+ * @returns {'banner'|'subgroup'|null}
+ */
+function glyphHeaderKind(name) {
     const first = Array.from(name)[0] ?? '';
     if ((first.codePointAt(0) ?? 0) < 0x80 || /[\p{L}\p{N}]/u.test(first)) return null;
     return PICK_ONE_PATTERN.test(unwrapLabel(name)) ? 'subgroup' : 'banner';
@@ -1259,6 +1295,7 @@ export function deriveSections({ prompts, promptOrder, override = null, extraPat
             builtin: prompt.system_prompt === true && prompt.marker !== true,
             cls: classifySigil(name),
             authored: authoredMarkerKind(prompt),
+            blankHeader: blankHeaderKind(prompt),
         });
     }
 
@@ -1275,6 +1312,14 @@ export function deriveSections({ prompts, promptOrder, override = null, extraPat
         const type = row.cls.type;
         if (type === 'banner' || type === 'subgroup' || type === 'span-open' || type === 'span-close') sigilSignals++;
         if (row.authored === 'banner' || row.authored === 'subgroup' || matchLegacyBanner(row.name, bannerPattern)) legacySignals++;
+    }
+    // Nothing else reads as a header: blank glyph-led prompts are the headers (Voyage).
+    if (sigilSignals < 2 && legacySignals === 0) {
+        const blankHeaders = rows.filter(row => row.blankHeader !== null);
+        if (blankHeaders.length >= MIN_BLANK_HEADERS) {
+            for (const row of blankHeaders) row.authored = row.blankHeader;
+            legacySignals = blankHeaders.length;
+        }
     }
 
     /** @type {'override'|'sigil'|'legacy'|'flat'} */
