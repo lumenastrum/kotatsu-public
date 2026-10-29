@@ -537,7 +537,16 @@ function buildLegacyBannerPattern(extraPatterns) {
 function matchLegacyBanner(rawName, pattern) {
     const name = String(rawName ?? '').trim();
     const direct = pattern.exec(name);
-    if (direct) return { lead: '', body: name, token: direct[0] };
+    if (direct) {
+        // Sola V4 puts one more rule in front of a title-then-rule banner: `━🧠 00. SOLA'S MIND ══════════`.
+        // A closing rule of a different stroke than the opening one means the title sits between them.
+        const ruled = TRAILING_RULE_BANNER.exec(name);
+        if (ruled && !direct[0].includes(ruled[2])) {
+            const label = ruled[1].slice(direct[0].length).trim();
+            if (/\p{L}/u.test(label)) return { lead: '', body: name, token: direct[0], label };
+        }
+        return { lead: '', body: name, token: direct[0] };
+    }
 
     // Glyphs, a rule glued to a `+`, a title: `🐈‍⬛ ─+ Narration Voice`. The glyphs stay in front.
     const plus = PLUS_RULE_BANNER.exec(name);
@@ -569,8 +578,9 @@ function matchLegacyBanner(rawName, pattern) {
  * - `adjacent`: `(Pick 1)`, Sola V2 — the set is every tagged row next to it.
  * - `keyed`: `[PICK 1: MIND]`, Sola V3 — the set is the rows next to it with the same key.
  * - `down` / `up`: `[PICK 1: ↓]` / `[PICK 1: ↑]`, Sola V3 — a pair, the arrows pointing at each other.
+ * - `mid`: `[PICK 1: ↕]`, Sola V4 — a middle option between the two ends of such a pair.
  * @param {OrderRow} row Order row.
- * @returns {{kind: 'adjacent'|'keyed'|'down'|'up', key: string}|null} `key` is empty unless keyed.
+ * @returns {{kind: 'adjacent'|'keyed'|'down'|'mid'|'up', key: string}|null} `key` is empty unless keyed.
  */
 function pickTagOf(row) {
     if (row.marker) return null;
@@ -579,6 +589,7 @@ function pickTagOf(row) {
         const key = keyed[1].trim();
         if (key === '↓') return { kind: 'down', key: '' };
         if (key === '↑') return { kind: 'up', key: '' };
+        if (key === '↕') return { kind: 'mid', key: '' };
         return { kind: 'keyed', key };
     }
     return PICK_ONE_TAG.test(row.name) ? { kind: 'adjacent', key: '' } : null;
@@ -594,9 +605,12 @@ function pickTagOf(row) {
 function taggedRunEnd(rows, start) {
     const first = pickTagOf(rows[start]);
     if (!first) return start;
-    if (first.kind === 'up') return start + 1;
+    if (first.kind === 'up' || first.kind === 'mid') return start + 1;
     if (first.kind === 'down') {
-        return start + 1 < rows.length && pickTagOf(rows[start + 1])?.kind === 'up' ? start + 2 : start + 1;
+        // ↓, any ↕ in between, then ↑. Without the closing ↑ the ↓ stands alone.
+        let end = start + 1;
+        while (end < rows.length && pickTagOf(rows[end])?.kind === 'mid') end++;
+        return end < rows.length && pickTagOf(rows[end])?.kind === 'up' ? end + 1 : start + 1;
     }
     const key = first.key.toLowerCase();
     let end = start + 1;

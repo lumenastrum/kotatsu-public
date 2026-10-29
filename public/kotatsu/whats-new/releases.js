@@ -15,9 +15,9 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
     // Summer is the headline of the 0.8 line, so each 0.8.x carries 0.8.0's cards and clips (media
-    // moved along, now 0.8.1/) with its own lines on top, the way 0.7.x carried Sprites below.
+    // moved along, now 0.8.2/) with its own lines on top, the way 0.7.x carried Sprites below.
     Object.freeze({
-        version: '0.8.1',
+        version: '0.8.2',
         title: 'Summer',
         cards: [
             {
@@ -58,6 +58,8 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'New sauces: Sola V4 · Flame and Sola · Kindling V2 by Pyrxpia, regex included. Already playing with Sola V3? Your copy stays where it is.',
+            'The preset dock reads Sola V4’s sections and its three-way pick in Core: Agency-Lite, Embellished User or Director Mode.',
             'Presets that mark their sections with empty, named prompts (Voyage Universal v6 does) get those sections in the preset dock instead of one long list.',
             'The Windows installer asks before signing in to Claude, and Kotatsu installs fine without a Claude account.',
             'Sprite sets come out truer to the character: a confident grin stays on the neutral face instead of following her into sadness, sad and angry faces can change the mouth, and a green-eyed character keeps her eyes when the background is cut.',
