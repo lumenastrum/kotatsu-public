@@ -1621,6 +1621,12 @@ body[data-k-layout="rails"][data-k-view="home"] k-jump-latest {
     display: none;
 }
 
+/* A message open for editing: the reader is working here, not catching up, and the pill would sit
+   on the text being edited. */
+body[data-k-layout="rails"]:has(#chat :is(.edit_textarea, .reasoning_edit_textarea)) k-jump-latest {
+    display: none;
+}
+
 body[data-k-layout="rails"] .k-jl__button {
     display: inline-flex;
     align-items: center;
@@ -1629,7 +1635,11 @@ body[data-k-layout="rails"] .k-jl__button {
     padding: 0 12px 0 14px;
     border: 1px solid color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
     border-radius: var(--k-radius-pill);
-    background-color: var(--k-cc-composer-fill);
+    /* The knob may be a colour or a gradient (Natsumikan V3), and `background-color` can't hold a
+       gradient: the pill painted nothing. The opaque surface under it is because the pill floats on
+       prose, and text showing through a translucent fill still fights its label. */
+    background: var(--k-cc-composer-fill);
+    background-color: var(--k-surface-2);
     color: var(--k-text);
     font-family: var(--k-font-ui);
     font-size: 12px;
@@ -1643,7 +1653,7 @@ body[data-k-layout="rails"] .k-jl__button:hover,
 body[data-k-layout="rails"] .k-jl__button:focus-visible {
     color: var(--k-accent-bright);
     border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
-    background-color: color-mix(in srgb, var(--k-accent) 10%, var(--k-cc-composer-fill));
+    background-color: color-mix(in srgb, var(--k-accent) 10%, var(--k-surface-2));
 }
 
 body[data-k-layout="rails"] .k-jl__button:focus-visible {

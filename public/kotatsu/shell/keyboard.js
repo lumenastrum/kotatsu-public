@@ -34,10 +34,24 @@
  * the window. The overlays read the same `--k-vvh` (studio.css, scenes.css, kotatsu-phone.css).
  * Only taps count: a touch that travelled more than {@link TAP_SLOP}px was a scroll.
  *
+ * Those fields are sized when the tap focuses them, never inside the touchend: the browser has not
+ * hit-tested the tap yet, so a shell that moves there moves the field out from under the finger. The
+ * tap landed on the background, the field lost focus, no keyboard opened, and the settle timer dropped
+ * the shell back (public issue #3; Pixel 7 profile with real touch events, then Andres's iPhone).
+ *
+ * All of that tap handling is iOS only ({@link isIOS}): Android has no pan to get ahead of.
+ *
+ * A message opened for editing puts its caret at the end, and that end belongs just above the
+ * composer. Left alone, iOS's own reveal overshot it and showed the top of the next message (Andres,
+ * 2026-10-30). So for {@link SETTLE_MS} after the editor first takes focus, each resize of the viewport
+ * re-places it ({@link placeEditEnd}), until the reader's finger comes down. After that it is theirs.
+ *
  * Putting it away again, the messaging-app way: while the keyboard is up, a plain tap on the
  * transcript (not on a button, link or field) or a drag that pulls the story down by
  * {@link DISMISS_PULL}px blurs the field. iOS gives a web page no swipe on the keyboard itself
- * (Andres tried it, 2026-10-22: nothing), so the story is where the gesture lives.
+ * (Andres tried it, 2026-10-22: nothing), so the story is where the gesture lives. The pull stands
+ * down for a field inside the transcript (a message being edited): there, dragging the story is how
+ * you read what you are editing.
  *
  * Armed only on a coarse pointer: on a desktop a trackpad pinch also shrinks `visualViewport`,
  * and that must never shrink the shell. Where the layout viewport itself resizes (Android) the
@@ -61,6 +75,9 @@ const BOTTOM_SLACK = 48;
 
 /** After a predicted open, re-read the real viewport once the keyboard has had time to land. */
 const SETTLE_MS = 800;
+
+/** Px of air between the end of a message being edited and the composer. */
+const EDIT_END_GAP = 12;
 
 /** localStorage key for the last keyboard height, per viewport shape (a per-device convenience). */
 const HEIGHTS_KEY = 'kotatsu.keyboardHeights';
@@ -91,6 +108,11 @@ function isControl(target) {
     return false;
 }
 
+/** @returns {boolean} Whether this is iOS, iPads asking for the desktop site included. */
+function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
 /** Input types that raise the text keyboard. */
 const TEXT_INPUTS = new Set(['text', 'search', 'email', 'url', 'tel', 'number', 'password', '']);
 
@@ -99,6 +121,21 @@ let onTouchStart = null;
 
 /** @type {((event: TouchEvent) => void) | null} */
 let onTouchEnd = null;
+
+/** @type {((event: FocusEvent) => void) | null} */
+let onFocusIn = null;
+
+/** The field a tap is about to focus, to be sized when it does. */
+let tappedField = /** @type {HTMLElement | null} */ (null);
+
+/** The message editor still being placed, null once that is over. */
+let placingEdit = /** @type {HTMLElement | null} */ (null);
+
+/** Pending end of the placing window, 0 when idle. */
+let placeTimer = 0;
+
+/** Editors already placed: a later focus on one is the reader coming back to it. */
+const placedEdits = new WeakSet();
 
 /** Where the current single-finger touch began, and whether it began on the transcript. */
 let touchFrom = { x: 0, y: 0, onStory: false };
@@ -194,6 +231,27 @@ function applyVisible(visible) {
 }
 
 /**
+ * Puts the end of the message being edited just above the composer, unless all of it already shows.
+ * @returns {void}
+ */
+function placeEditEnd() {
+    const chatElement = visibleChat();
+    if (!placingEdit?.isConnected || !chatElement || !viewport) return;
+    const view = chatElement.getBoundingClientRect();
+    const box = placingEdit.getBoundingClientRect();
+    const composerTop = document.getElementById('form_sheld')?.getBoundingClientRect().top ?? Infinity;
+    const limit = Math.min(view.bottom, composerTop, viewport.offsetTop + viewport.height) - EDIT_END_GAP;
+    if (box.bottom > limit || box.top < view.top) chatElement.scrollTop += box.bottom - limit;
+}
+
+/** Ends the placing window, whether it ran out or the reader took over. */
+function stopPlacingEdit() {
+    if (placeTimer !== 0) clearTimeout(placeTimer);
+    placeTimer = 0;
+    placingEdit = null;
+}
+
+/**
  * Applies what the visual viewport says now. Runs at most once a frame.
  * @returns {void}
  */
@@ -207,6 +265,7 @@ function sync() {
     } else {
         applyVisible(null);
     }
+    placeEditEnd();
 }
 
 /**
@@ -237,6 +296,8 @@ function presize() {
 function noteTouchStart(event) {
     const touch = event.touches[0];
     const target = event.target instanceof Element ? event.target : null;
+    tappedField = null;
+    stopPlacingEdit();
     if (touch) touchFrom = { x: touch.clientX, y: touch.clientY, onStory: Boolean(target?.closest('#chat')) };
 }
 
@@ -252,7 +313,7 @@ function dismissFromStory(event) {
     const lifted = event.changedTouches[0];
     if (!lifted) return false;
     const travelled = Math.hypot(lifted.clientX - touchFrom.x, lifted.clientY - touchFrom.y);
-    const pulledDown = lifted.clientY - touchFrom.y >= DISMISS_PULL;
+    const pulledDown = lifted.clientY - touchFrom.y >= DISMISS_PULL && !active.closest('#chat');
     const target = event.target instanceof Element ? event.target : null;
     const plainTap = travelled <= TAP_SLOP && !isControl(target);
     if (!pulledDown && !plainTap) return false;
@@ -267,6 +328,7 @@ function dismissFromStory(event) {
  */
 function takeFieldTap(event) {
     if (dismissFromStory(event)) return;
+    if (!isIOS()) return;
     // The field touched, not `getElementById`'s answer (see visibleChat for why an id can lie).
     const field = event.target;
     if (!isTextField(field)) return;
@@ -281,8 +343,9 @@ function takeFieldTap(event) {
 
     const composer = field instanceof HTMLTextAreaElement && field.id === 'send_textarea';
     if (!composer) {
-        // Size only. The browser focuses it and puts the caret under the finger.
-        presize();
+        // The browser focuses it and puts the caret under the finger; size it when that happens.
+        // A field already focused fires nothing: its keyboard's own resize sizes the shell.
+        tappedField = field;
         return;
     }
     if (!event.cancelable) return;
@@ -310,6 +373,22 @@ export function installKeyboard() {
     viewport.addEventListener('scroll', onViewportChange);
     onTouchStart = noteTouchStart;
     onTouchEnd = takeFieldTap;
+    onFocusIn = (event) => {
+        const field = event.target;
+        if (field instanceof HTMLElement && field.id === 'curEditTextarea' && !placedEdits.has(field)) {
+            placedEdits.add(field);
+            stopPlacingEdit();
+            placingEdit = field;
+            placeTimer = window.setTimeout(() => {
+                placeEditEnd();
+                stopPlacingEdit();
+            }, SETTLE_MS);
+        }
+        if (field !== tappedField) return;
+        tappedField = null;
+        presize();
+    };
+    document.addEventListener('focusin', onFocusIn, { capture: true });
     document.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
     // Not passive: cancelling the touch is what stops Safari's own focus-and-scroll.
     document.addEventListener('touchend', onTouchEnd, { capture: true, passive: false });
@@ -328,8 +407,12 @@ export function uninstallKeyboard() {
     }
     if (onTouchStart) document.removeEventListener('touchstart', onTouchStart, { capture: true });
     if (onTouchEnd) document.removeEventListener('touchend', onTouchEnd, { capture: true });
+    if (onFocusIn) document.removeEventListener('focusin', onFocusIn, { capture: true });
     onTouchStart = null;
     onTouchEnd = null;
+    onFocusIn = null;
+    tappedField = null;
+    stopPlacingEdit();
     if (settleTimer !== 0) clearTimeout(settleTimer);
     settleTimer = 0;
     if (frame !== 0) cancelAnimationFrame(frame);

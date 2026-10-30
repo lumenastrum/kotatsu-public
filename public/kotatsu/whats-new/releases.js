@@ -15,9 +15,9 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
     // Summer is the headline of the 0.8 line, so each 0.8.x carries 0.8.0's cards and clips (media
-    // moved along, now 0.8.2/) with its own lines on top, the way 0.7.x carried Sprites below.
+    // moved along, now 0.8.3/) with its own lines on top, the way 0.7.x carried Sprites below.
     Object.freeze({
-        version: '0.8.2',
+        version: '0.8.3',
         title: 'Summer',
         cards: [
             {
@@ -58,6 +58,9 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'On a phone, the message edit box works the way it should: tap it and the keyboard comes up with the cursor where you tapped, scrolling through the message keeps the keyboard up, and the editor opens on the end of the message instead of the top of the next one.',
+            'On Android, a tap in the message box puts the cursor where you tapped.',
+            'The Latest pill steps aside while you edit a message, and stays readable over the story in Natsumikan.',
             'New sauces: Sola V4 · Flame and Sola · Kindling V2 by Pyrxpia, regex included. Already playing with Sola V3? Your copy stays where it is.',
             'The preset dock reads Sola V4’s sections and its three-way pick in Core: Agency-Lite, Embellished User or Director Mode.',
             'Presets that mark their sections with empty, named prompts (Voyage Universal v6 does) get those sections in the preset dock instead of one long list.',

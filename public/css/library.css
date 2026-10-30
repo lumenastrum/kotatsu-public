@@ -1021,7 +1021,9 @@ body[data-k-layout="rails"] .k-lib-jump-btn {
     padding: 0 14px 0 12px;
     border: 1px solid color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
     border-radius: var(--k-radius-pill);
-    background-color: var(--k-cc-composer-fill, var(--k-surface-2));
+    /* Same two lines as `.k-jl__button`, shell-center.css §6, for the same reason. */
+    background: var(--k-cc-composer-fill, var(--k-surface-2));
+    background-color: var(--k-surface-2);
     color: var(--k-text);
     font-family: inherit;
     font-size: var(--k-lib-ui-size);
@@ -1044,7 +1046,7 @@ body[data-k-layout="rails"] .k-lib-jump-btn:hover,
 body[data-k-layout="rails"] .k-lib-jump-btn:focus-visible {
     color: var(--k-accent-bright);
     border-color: color-mix(in srgb, var(--k-accent) 45%, transparent);
-    background-color: color-mix(in srgb, var(--k-accent) 10%, var(--k-cc-composer-fill, var(--k-surface-2)));
+    background-color: color-mix(in srgb, var(--k-accent) 10%, var(--k-surface-2));
 }
 
 body[data-k-layout="rails"] .k-lib-jump-btn:focus-visible {
