@@ -15,9 +15,9 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
     // Summer is the headline of the 0.8 line, so each 0.8.x carries 0.8.0's cards and clips (media
-    // moved along, now 0.8.3/) with its own lines on top, the way 0.7.x carried Sprites below.
+    // moved along, now 0.8.4/) with its own lines on top, the way 0.7.x carried Sprites below.
     Object.freeze({
-        version: '0.8.3',
+        version: '0.8.4',
         title: 'Summer',
         cards: [
             {
@@ -58,6 +58,9 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'In presets with named groups, like Kotatsu Nabe, you can drag a prompt into another group or onto a group’s header, and it stays there. What the preset dock shows is now the order prompts are sent in.',
+            'A prompt on the Unlisted shelf has a drag handle: drag it straight into the list, and it arrives switched off. Append no longer sends a new prompt ahead of everything else.',
+            'If a preset’s send order no longer matches its groups, the preset dock says so and offers Match the list.',
             'On a phone, the message edit box works the way it should: tap it and the keyboard comes up with the cursor where you tapped, scrolling through the message keeps the keyboard up, and the editor opens on the end of the message instead of the top of the next one.',
             'On Android, a tap in the message box puts the cursor where you tapped.',
             'The Latest pill steps aside while you edit a message, and stays readable over the story in Natsumikan.',

@@ -30,6 +30,8 @@ export { PROMPT_LIST_MOUNTED_EVENT, RECOUNT_COMMAND } from './render-seam.js';
 import {
     enforceStorageKey,
     indexTree,
+    alignOrderToSections,
+    moveAcrossGroups,
     moveOrderBlock,
     planMasterToggle,
     planRadioEnable,
@@ -291,6 +293,9 @@ export class KPromptList extends LitElement {
      */
     #caps = new Map();
 
+    /** Whether authored groups show a different sequence than the order sends. Never auto-fixed. */
+    #drifted = false;
+
     /** @type {Set<string>} Collapsed container keys for the CURRENT preset. */
     #collapsed = new Set();
 
@@ -320,11 +325,11 @@ export class KPromptList extends LitElement {
     /**
      * The live drag, or null. ONE of these exists at a time — decision 8's "one sortable surface"
      * expressed as one piece of state rather than one jQuery plugin instance.
-     * @type {{pointerId: number, block: string[], set: Set<string>, x: number, y: number, active: boolean}|null}
+     * @type {{pointerId: number, block: string[], unlisted: boolean, set: Set<string>, x: number, y: number, active: boolean}|null}
      */
     #drag = null;
 
-    /** @type {{identifier: string, edge: 'before'|'after'}|null} Where the block would land. */
+    /** @type {{identifier: string, edge: 'before'|'after', section?: string}|null} Where the block would land. */
     #dropAt = null;
 
     /** @type {((event: PointerEvent) => void)|null} */
@@ -517,6 +522,7 @@ export class KPromptList extends LitElement {
             // Slice C's lookups ride the same re-derive: the tree is the only thing they
             // describe, so they are stale exactly when it is.
             this.#index = indexTree(this.#tree.sections);
+            this.#drifted = this.#tree.tier === 'override' && alignOrderToSections(order, this.#tree.sections).moved;
         }
 
         // The badge authority, not `counts`: see view-model.js's header on the eight legacy
@@ -1010,12 +1016,14 @@ export class KPromptList extends LitElement {
         if (!grip) return;
         const identifier = grip.getAttribute('data-drag');
         if (!identifier) return;
-        const block = this.#index.blocks.get(identifier);
+        const unlisted = this.#isUnlisted(identifier);
+        const block = unlisted ? [identifier] : this.#index.blocks.get(identifier);
         if (!block || block.length === 0) return;
         event.preventDefault();
         this.#drag = {
             pointerId: event.pointerId,
             block,
+            unlisted,
             set: new Set(block),
             x: event.clientX,
             y: event.clientY,
@@ -1049,7 +1057,8 @@ export class KPromptList extends LitElement {
         const slot = this.#slotAt(event.clientX, event.clientY);
         const current = this.#dropAt;
         const same = slot === current
-            || (slot && current && slot.identifier === current.identifier && slot.edge === current.edge);
+            || (slot && current && slot.identifier === current.identifier && slot.edge === current.edge
+                && slot.section === current.section);
         // Re-render only when the slot actually moves. A render per pointermove would rebuild ~93
         // template results at pointer frequency for a picture that did not change.
         if (same) return;
@@ -1060,7 +1069,8 @@ export class KPromptList extends LitElement {
     /**
      * Drops. The write is one splice of the LIVE array — same entries, same count, unknown-order
      * entries riding along untouched — then one save and one re-derive (the tree's shape changed,
-     * which a toggle's `refresh(false)` would not pick up).
+     * which a toggle's `refresh(false)` would not pick up). Authored groups write their bag in the
+     * same pass, and a row off the shelf enters the order the way core's Append adds it: switched off.
      * @param {PointerEvent} event Pointer up or cancel.
      * @param {boolean} commit Whether to write; false for cancel paths.
      * @returns {void}
@@ -1081,8 +1091,19 @@ export class KPromptList extends LitElement {
         const manager = this.manager;
         if (!manager?.activeCharacter) return;
         const order = this.#order;
-        const result = moveOrderBlock(order, drag.block, slot);
-        if (!result.moved) return;
+        const settings = this.#settings;
+        const working = drag.unlisted ? [...order, { identifier: drag.block[0], enabled: false }] : order;
+        const grouped = this.#tree?.tier === 'override';
+        const result = grouped
+            ? moveAcrossGroups({
+                order: working,
+                prompts: settings.prompts,
+                bag: settings.extensions?.kotatsu?.sections,
+                block: drag.block,
+                anchor: slot,
+            })
+            : moveOrderBlock(working, drag.block, slot);
+        if (!result.moved && !drag.unlisted) return;
         // In place: the array object is the one `serviceSettings.prompt_order` holds and core's
         // `getPromptOrderForCharacter` hands out, and every element is an entry that was already
         // in it. Core's own drag instead REPLACES the list through `removePromptOrderForCharacter`
@@ -1090,16 +1111,53 @@ export class KPromptList extends LitElement {
         // re-objects every entry and cheerfully stores whatever `undefined`s its DOM-id map
         // produced.
         order.splice(0, order.length, ...result.next);
+        // Written where it sits, like the order: both are the live preset's until it is saved.
+        if (grouped) settings.extensions.kotatsu.sections = /** @type {any} */ (result).bag;
         save(manager);
         this.refresh(true);
         document.dispatchEvent(new CustomEvent(PROMPT_LIST_REORDERED_EVENT, {
             detail: {
                 block: drag.block.slice(),
                 anchor: slot.identifier,
+                section: slot.section,
                 edge: slot.edge,
                 length: order.length,
             },
         }));
+    }
+
+    /**
+     * @param {string} identifier Prompt identifier.
+     * @returns {boolean} Whether the row sits on the unlisted shelf.
+     */
+    #isUnlisted(identifier) {
+        return Boolean(this.#model?.unlisted.some(row => row.identifier === identifier));
+    }
+
+    /**
+     * Footer Append. Core puts the entry at the very top of the order, which is the top of the
+     * WIRE too. With authored groups the row renders in the implicit bucket, so the order is lined
+     * up behind it or the prompt would send ahead of everything while the list shows it lower.
+     * @param {MouseEvent} event Click.
+     * @returns {void}
+     */
+    #appendSelected(event) {
+        const manager = this.manager;
+        const length = this.#order.length;
+        manager.handleAppendPrompt(event);
+        if (this.#order.length === length) return;
+        this.refresh(true);
+        if (this.#tree?.tier === 'override') this.#lineUpOrder();
+    }
+
+    /** Lines the send order up with the groups shown: one write, one save, one re-derive. */
+    #lineUpOrder() {
+        const order = this.#order;
+        const { next, moved } = alignOrderToSections(order, this.#tree?.sections ?? []);
+        if (!moved) return;
+        order.splice(0, order.length, ...next);
+        save(this.manager);
+        this.refresh(true);
     }
 
     /** Clears the drag state and the indicator without writing anything. */
@@ -1134,10 +1192,11 @@ export class KPromptList extends LitElement {
      *
      * Header rows carry `data-identifier` too, so dropping onto a section banner or a group
      * header lands the block at that BOUNDARY in the order — decision 8's cross-section drop,
-     * with no special case for it anywhere.
+     * with no special case for it anywhere. An authored group's header has no prompt behind it,
+     * so it answers with its section id instead: the top of that group.
      * @param {number} x Client X.
      * @param {number} y Client Y.
-     * @returns {{identifier: string, edge: 'before'|'after'}|null} The slot.
+     * @returns {{identifier: string, edge: 'before'|'after', section?: string}|null} The slot.
      */
     #slotAt(x, y) {
         const drag = this.#drag;
@@ -1147,6 +1206,8 @@ export class KPromptList extends LitElement {
         const row = element.closest('[data-identifier]');
         if (!(row instanceof HTMLElement) || !this.contains(row)) return null;
         const identifier = row.dataset.identifier ?? '';
+        const section = row.dataset.section ?? '';
+        if (!identifier && section) return { identifier, edge: 'after', section };
         if (!identifier || drag.set.has(identifier)) return null;
         // The shelf holds prompts with no order entry; there is no position in the order to drop
         // beside. (`moveOrderBlock` would answer `anchor-missing`; refusing here keeps the
@@ -1158,12 +1219,15 @@ export class KPromptList extends LitElement {
 
     /**
      * @param {string} identifier Prompt identifier.
+     * @param {string} [section] Section id, on an authored group's header.
      * @returns {string} Class suffix marking the drag block and the drop edge.
      */
-    #dragClasses(identifier) {
+    #dragClasses(identifier, section = '') {
         let classes = '';
         if (this.#drag?.active && this.#drag.set.has(identifier)) classes += ' is-dragging';
-        if (this.#dropAt?.identifier === identifier) classes += ` is-drop-${this.#dropAt.edge}`;
+        const drop = this.#dropAt;
+        const hit = drop?.section ? drop.section === section : Boolean(identifier) && drop?.identifier === identifier;
+        if (hit && drop) classes += ` is-drop-${drop.edge}`;
         return classes;
     }
 
@@ -1403,10 +1467,12 @@ export class KPromptList extends LitElement {
     #renderSection(section) {
         const open = this.#isOpen(section.key);
         const identifier = section.row?.identifier ?? '';
+        const dropSection = this.#tree?.tier === 'override' && !identifier ? section.id : '';
         return html`
             <section class="k-pl-section${open ? ' is-open' : ''}" role="listitem">
-                <div class="k-pl-head-row k-pl-head-row--section${this.#headState(section.key, section.row)}${this.#dragClasses(identifier)}"
-                    data-identifier=${identifier}>
+                <div class="k-pl-head-row k-pl-head-row--section${this.#headState(section.key, section.row)}${this.#dragClasses(identifier, dropSection)}"
+                    data-identifier=${identifier}
+                    data-section=${dropSection || nothing}>
                     ${this.#renderTwist(section.key, open, section.label || 'section')}
                     <span class="k-pl-head-label" title=${section.label || ''}>${this.#renderLabel(section.label || '(unnamed section)')}</span>
                     ${section.exclusive ? this.#renderExclusiveChip(section.key, section.label) : nothing}
@@ -1564,6 +1630,11 @@ export class KPromptList extends LitElement {
      * @returns {unknown} The grip.
      */
     #renderGrip(identifier, label) {
+        if (identifier && this.#isUnlisted(identifier)) {
+            return html`
+                <span class="k-pl-grip" data-drag=${identifier} title="Drag into the list to add it to this preset"
+                    role="button" tabindex="-1" aria-label=${`Add ${label} to the list`}>${icons.grip}</span>`;
+        }
         if (!identifier || !this.#index.blocks.has(identifier)) {
             return html`<span class="k-pl-grip k-pl-grip--fixed" aria-hidden="true"></span>`;
         }
@@ -1742,8 +1813,8 @@ export class KPromptList extends LitElement {
 
     /**
      * The unlisted shelf. `prompts[]` entries with no order entry — both acceptance fixtures
-     * ship exactly one on purpose. They are NOT sent, and the UI never invents an order entry
-     * for them (slice A's rule).
+     * ship exactly one on purpose. They are NOT sent, and rendering never invents an order entry
+     * for them (slice A's rule); only dragging one into the list does.
      * @param {import('./view-model.js').ListModel} model Render model.
      * @returns {unknown} The shelf, or nothing.
      */
@@ -1773,9 +1844,13 @@ export class KPromptList extends LitElement {
      * @returns {unknown} The notes, or nothing.
      */
     #renderNotes(model) {
-        if (model.unknownOrder.length === 0 && model.duplicateOrder.length === 0) return nothing;
+        if (!this.#drifted && model.unknownOrder.length === 0 && model.duplicateOrder.length === 0) return nothing;
         return html`
             <div class="k-pl-notes">
+                ${this.#drifted ? html`
+                    <p class="k-pl-note-line">${icons.warning}<span>These prompts are sent in a different sequence than the groups show.</span>
+                        <button type="button" class="k-pl-btn" title="Reorder what gets sent to match this list"
+                            @click=${() => this.#lineUpOrder()}>Match the list</button></p>` : nothing}
                 ${model.unknownOrder.length > 0 ? html`
                     <p class="k-pl-note-line">${icons.warning}<span>${model.unknownOrder.length} order entr${model.unknownOrder.length === 1 ? 'y has' : 'ies have'} no matching prompt and cannot be rendered.</span></p>` : nothing}
                 ${model.duplicateOrder.length > 0 ? html`
@@ -1836,7 +1911,7 @@ export class KPromptList extends LitElement {
                     ${selectable.map((/** @type {any} */ prompt) => html`<option value=${prompt.identifier}>${prompt.name}</option>`)}
                 </select>
                 <button type="button" class="k-pl-btn" title="Append the selected prompt to this preset's order"
-                    @click=${(/** @type {MouseEvent} */ e) => manager.handleAppendPrompt(e)}>Append</button>
+                    @click=${(/** @type {MouseEvent} */ e) => this.#appendSelected(e)}>Append</button>
                 <button type="button" class="k-pl-btn" title="Create a new prompt"
                     @click=${(/** @type {MouseEvent} */ e) => manager.handleNewPrompt(e)}>New</button>
                 <button type="button" class="k-pl-btn" title="Import a prompt set"

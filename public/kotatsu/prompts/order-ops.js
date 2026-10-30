@@ -41,7 +41,7 @@
  * everything else under this banner" on a preset whose "pick one" banner ran on past its options.
  */
 
-import { exclusiveGroups } from './sections.js';
+import { deriveSections, exclusiveGroups, orderedIdentifiers, validateSectionsOverride } from './sections.js';
 
 /**
  * `accountStorage` key prefix for relaxed groups. One key per preset holding a JSON array of
@@ -489,4 +489,109 @@ export function moveOrderBlock(order, block, anchor) {
     const next = residual.slice(0, insertAt).concat(entries, residual.slice(insertAt));
     const moved = next.some((entry, at) => entry !== source[at]);
     return { next, moved, reason: moved ? 'ok' : 'noop' };
+}
+
+/**
+ * Lines the order up with what a section tree renders, so the list and the wire agree.
+ *
+ * Still a permutation: the rendered entries trade places among the slots they already hold, so
+ * entries the tree never rendered (an unknown prompt, a duplicated identifier's later copies)
+ * keep their exact index.
+ * @param {unknown} order The LIVE order array. Not mutated.
+ * @param {Array<any>} sections A derived section tree.
+ * @returns {{next: any[], moved: boolean}} The lined-up order and whether it differs.
+ */
+export function alignOrderToSections(order, sections) {
+    const source = Array.isArray(order) ? order : [];
+    const index = firstIndexOf(source);
+    const taken = orderedIdentifiers(sections)
+        .map(identifier => index.get(identifier))
+        .filter(at => at !== undefined);
+    const slots = taken.slice().sort((a, b) => Number(a) - Number(b));
+    const next = source.slice();
+    slots.forEach((slot, at) => {
+        next[Number(slot)] = source[Number(taken[at])];
+    });
+    return { next, moved: next.some((entry, at) => entry !== source[at]) };
+}
+
+/**
+ * Where a block lands in a preset with authored groups: beside a row, or at the top of a group
+ * by its section id (the only way into an empty one).
+ * @typedef {object} GroupAnchor
+ * @property {string} [identifier] A rendered identifier to land beside.
+ * @property {'before'|'after'} [edge] Which side of it.
+ * @property {string} [section] Or: the section whose top to land at.
+ */
+
+/**
+ * The drag write for a preset with an `extensions.kotatsu.sections` bag. Membership lives in the
+ * bag and sequence in the order, so a move has to write both or the row snaps back on re-derive
+ * while the wire quietly changes (public issue #4).
+ *
+ * The block joins the anchor's section (no section claims it: the implicit bucket, which means
+ * leaving the bag), then the order is lined up with the resulting tree.
+ * @param {object} input Move input.
+ * @param {unknown} input.order The LIVE order array. Not mutated.
+ * @param {any} input.prompts The preset's `prompts[]`.
+ * @param {any} input.bag The raw bag. Not mutated; keys this does not own are carried over.
+ * @param {string[]} input.block Identifiers to move.
+ * @param {GroupAnchor} input.anchor Where to land.
+ * @returns {{next: any[], bag: any, moved: boolean, reason: string}} The new order and bag.
+ */
+export function moveAcrossGroups({ order, prompts, bag, block, anchor }) {
+    const source = Array.isArray(order) ? order : [];
+    const unchanged = (/** @type {string} */ reason) => ({ next: source.slice(), bag, moved: false, reason });
+    const validation = validateSectionsOverride(bag);
+    if (!validation.ok || !validation.value) return unchanged('no-bag');
+    const authored = validation.value.sections;
+    const moving = new Set(block);
+    if (moving.size === 0) return unchanged('empty-block');
+
+    const before = deriveSections({ prompts, promptOrder: source, override: bag });
+    const sectionOfRow = (/** @type {string} */ identifier) => before.sections
+        .find(section => orderedIdentifiers([section]).includes(identifier))?.id;
+    const targetId = anchor?.section ?? sectionOfRow(anchor?.identifier ?? '');
+    if (targetId === undefined) return unchanged('no-anchor');
+    const target = Object.prototype.hasOwnProperty.call(authored, targetId) ? targetId : null;
+
+    /** @type {Record<string, any>} */
+    const sections = {};
+    let regrouped = false;
+    for (const key of Object.keys(bag.sections)) {
+        if (key === '__proto__') continue;
+        const spec = bag.sections[key];
+        const raw = spec?.members;
+        if (!Array.isArray(raw)) {
+            sections[key] = spec;
+            continue;
+        }
+        const joins = key === target;
+        // Already in the target is not a regrouping: the array's sequence means nothing.
+        if (joins && block.every(member => raw.includes(member))) {
+            sections[key] = spec;
+            continue;
+        }
+        const members = raw.filter(member => !moving.has(member));
+        if (joins) members.push(...block);
+        if (joins || members.length !== raw.length) regrouped = true;
+        sections[key] = joins || members.length !== raw.length ? { ...spec, members } : spec;
+    }
+    const nextBag = { ...bag, sections };
+
+    let spliced = source.slice();
+    if (anchor?.section) {
+        const first = orderedIdentifiers(before.sections.filter(section => section.id === targetId))
+            .find(identifier => !moving.has(identifier));
+        if (first) spliced = moveOrderBlock(source, block, { identifier: first, edge: 'before' }).next;
+    } else {
+        const landed = moveOrderBlock(source, block, /** @type {DropAnchor} */ (anchor));
+        if (landed.reason === 'anchor-in-block' || landed.reason === 'anchor-missing') return unchanged(landed.reason);
+        spliced = landed.next;
+    }
+
+    const after = deriveSections({ prompts, promptOrder: spliced, override: nextBag });
+    const { next } = alignOrderToSections(spliced, after.sections);
+    const reordered = next.some((entry, at) => entry !== source[at]);
+    return { next, bag: nextBag, moved: regrouped || reordered, reason: regrouped || reordered ? 'ok' : 'noop' };
 }

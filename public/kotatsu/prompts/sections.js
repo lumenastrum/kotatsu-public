@@ -64,14 +64,16 @@
  *       "label": "Read me first",       // optional, defaults to ""
  *       "exclusive": false,             // optional; true = radio group (slice C enforcement)
  *       "collapsedDefault": false,      // optional
- *       "members": ["<identifier>", …]  // required array; THIS array is the member order
+ *       "members": ["<identifier>", …]  // required array; who belongs here, NOT their sequence
  *     }
  *   }
  * }
  * ```
  *
  * Rules: section ids are the object keys and are opaque strings (authored ids are uuids per
- * decision 4); members are prompt identifiers, never display names; a member claimed by an
+ * decision 4); members are prompt identifiers, never display names; inside a section rows follow
+ * the ORDER, because the order is what gets sent and the list must never show another sequence
+ * (`docs/prompt-manager-v0.md`, "Groups and the order"); a member claimed by an
  * earlier section is not claimed twice; members that are not in the order are dropped; and
  * identifiers no section claims land in an implicit trailing (or leading) section IN ORDER
  * SEQUENCE. There is deliberately no "hide" policy — a prompt is hidden by `enabled: false`,
@@ -1025,8 +1027,8 @@ function buildFlatSections(rows) {
 }
 
 /**
- * Override tier: authored sections, authored member order, unassigned rows in an implicit
- * bucket that keeps ORDER sequence.
+ * Override tier: authored sections in authored sequence, each holding its members in ORDER
+ * sequence, unassigned rows in an implicit bucket that keeps ORDER sequence too.
  * @param {NormalizedOverride} bag Normalized bag.
  * @param {OrderRow[]} rows Resolved order rows.
  * @returns {Section[]}
@@ -1043,12 +1045,20 @@ function buildOverrideSections(bag, rows) {
     /** @type {Section[]} */
     const sections = [];
     const used = new Set(bag.order);
+    /** @type {Map<string, number>} */
+    const position = new Map();
+    rows.forEach((row, at) => {
+        if (!position.has(row.identifier)) position.set(row.identifier, at);
+    });
     for (const sectionId of bag.order) {
         const spec = bag.sections[sectionId];
         if (!spec) continue;
         /** @type {SectionNode[]} */
         const children = [];
-        for (const identifier of spec.members) {
+        const members = spec.members
+            .filter(identifier => byIdentifier.has(identifier))
+            .sort((a, b) => Number(position.get(a)) - Number(position.get(b)));
+        for (const identifier of members) {
             const row = byIdentifier.get(identifier);
             if (!row || claimed.has(identifier)) continue;
             claimed.add(identifier);
