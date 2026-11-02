@@ -141,7 +141,8 @@ const MESSAGE_CHARS = 4000;
  * @returns {string}
  */
 export function plainMessageText(value) {
-    let out = String(value ?? '');
+    // Freaky Frankenstein 5.6 has the model write `$$` for spaces and decodes it in its regex.
+    let out = String(value ?? '').replace(/\$\$/g, ' ');
     out = out.replace(/<(think|thinking|reasoning)>[\s\S]*?<\/\1>/gi, ' ');
     out = out.replace(/```[\s\S]*?```/g, ' ');
     out = out.replace(/<[^>]+>/g, ' ');

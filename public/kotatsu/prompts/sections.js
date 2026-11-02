@@ -787,15 +787,25 @@ function buildSigilBody(rows, parentId, mint) {
  * positional, everything up to the next header, and Post-History Instructions parked after the
  * last real option is the same accident a marker is. An authored override names its members, so
  * there a built-in is an option if the author listed it.
+ *
+ * In a derived container a marker or built-in after the options also ends them: whatever follows
+ * is past the set. Freaky Frankenstein 5.6 keeps a jailbreak row, on by default, after Post-History
+ * Instructions under its CoT banner. As an option it put two members on, which left the CoT pick
+ * unenforced ({@link radioEnforcement} in order-ops.js).
  * @param {SectionNode[]} children Direct children.
  * @param {boolean} [swept] Whether membership came from position rather than an authored list.
  * @returns {void}
  */
 function promoteOptions(children, swept = true) {
+    let promoted = false;
     for (const child of children) {
-        if (child.kind !== 'leaf' || child.marker === true) continue;
-        if (swept && child.builtin === true) continue;
+        if (child.kind !== 'leaf') continue;
+        if (child.marker === true || (swept && child.builtin === true)) {
+            if (swept && promoted) break;
+            continue;
+        }
         child.kind = 'option';
+        promoted = true;
     }
 }
 

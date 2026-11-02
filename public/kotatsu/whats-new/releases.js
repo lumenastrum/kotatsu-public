@@ -15,9 +15,9 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
     // Summer is the headline of the 0.8 line, so each 0.8.x carries 0.8.0's cards and clips (media
-    // moved along, now 0.8.4/) with its own lines on top, the way 0.7.x carried Sprites below.
+    // moved along, now 0.8.5/) with its own lines on top, the way 0.7.x carried Sprites below.
     Object.freeze({
-        version: '0.8.4',
+        version: '0.8.5',
         title: 'Summer',
         cards: [
             {
@@ -58,6 +58,14 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'New sauces: Freaky Frankenstein 5.6 and Freaky Frankenstein 6 Micro by dptgreg, regex included. Already playing with 5.4? Your copy stays where it is.',
+            'Freaky Frankenstein 5.6 comes set up for Gemini, and the preset dock says what its author recommends for other models.',
+            'On the Connection tab, each big card folds to one line that says where it stands. Folded cards stay folded and sit below the open ones.',
+            'Switch to in the model menu lists what you actually use, newest first, and any provider with a key on file is on it.',
+            'Extensions with their own popups, like Guided Generations, no longer set off the “covering the page” warning.',
+            'Keep it and Disable now stick when an extension asks. Settings → Extensions lists your answers, with a switch and Ask again.',
+            'Guided Generations wears your theme.',
+            'Presets that write a fallback into a variable macro, like {{getvar::name::None}}, get the fallback instead of sending the macro to the model.',
             'In presets with named groups, like Kotatsu Nabe, you can drag a prompt into another group or onto a group’s header, and it stays there. What the preset dock shows is now the order prompts are sent in.',
             'A prompt on the Unlisted shelf has a drag handle: drag it straight into the list, and it arrives switched off. Append no longer sends a new prompt ahead of everything else.',
             'If a preset’s send order no longer matches its groups, the preset dock says so and offers Match the list.',

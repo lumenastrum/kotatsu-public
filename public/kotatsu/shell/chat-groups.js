@@ -95,6 +95,8 @@ const CORE_PREVIEW_CHARS = 400;
  */
 export function previewText(raw, max = 140, { tail = false } = {}) {
     let text = String(raw ?? '')
+        // Freaky Frankenstein 5.6 has the model write `$$` for spaces and decodes it in its regex.
+        .replace(/\$\$/g, ' ')
         .replace(/<[^>]*>/g, ' ')
         .replace(/[*_~`]+/g, '')
         .replace(/\s+/g, ' ')

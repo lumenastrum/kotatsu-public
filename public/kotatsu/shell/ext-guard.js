@@ -20,6 +20,11 @@
  *   are fine; anything else is a cover. Two of three points must agree, so a floating button
  *   at the centre does not count. Re-checked on body childlist changes, on view changes
  *   (`data-k-view`) and once extensions have loaded (`APP_READY`), debounced.
+ * - **An extension's own modal is not a cover (public issue #6).** Guided Generations opens its
+ *   popups as a full-page layer on `<body>`, some of them with no click (its update notice). A
+ *   layer that holds one centred panel with a control in it, or that says it is a dialog, is
+ *   something the reader can answer and close, so nothing is said. It is looked at again while it
+ *   is up, because a real cover can be waiting underneath it.
  *
  * **Who did it** is read from the extension's own stylesheet: a `<link>` under
  * `/scripts/extensions/third-party/<folder>/` whose rules match the node or something in it.
@@ -28,22 +33,46 @@
  *
  * The notice is `<k-ext-guard variant="banner">`, fixed under the top bar on stock's rung + 1
  * (3006), so the layer it is about cannot cover it. "Disable and reload" is core's own
- * `disableExtension(name, true)`. "Keep it" is remembered for the session.
+ * `disableExtension(name, true)`. Both answers are remembered in `power_user.kotatsu_ext_kept`, on
+ * the server, so a browser that clears its storage is not asked again (public issue #6), and
+ * `<k-ext-kept>` lists them in Settings → Extensions to change the answer.
  *
  * Console door: `window.kotatsu.extGuard` (`state`, `check()`).
  */
 
 import { LitElement, html, nothing } from './lit.js';
+import { saveSettingsDebounced } from '../../script.js';
 import { disableExtension } from '../../scripts/extensions.js';
 import { eventSource, event_types } from '../../scripts/events.js';
+import { power_user } from '../../scripts/power-user.js';
 
-/** `sessionStorage` key: the takers the reader chose to keep this session. */
-const DISMISSED_KEY = 'kotatsu.extguard.dismissed';
+/** `power_user` key: the takers the reader has answered for, see {@link KeptExtension}. */
+export const KEPT_KEY = 'kotatsu_ext_kept';
+
+/** Fired on `document` when the answers change, for a settings list that is already drawn. */
+export const KEPT_CHANGE_EVENT = 'k-ext-kept-change';
+
+/**
+ * @typedef {object} KeptExtension
+ * @property {string} key The folder, or the node's hint when no extension could be named.
+ * @property {string|null} folder `third-party/<folder>`, what core enables and disables.
+ * @property {string} name What to call it, as it was when the reader answered.
+ */
 
 /** Stock's `#top-bar` rung is 3005; the bar sits there; the notice sits just above it. */
 export const EXT_GUARD_Z = 3006;
 
 const CHECK_DEBOUNCE_MS = 250;
+/** How often to look again while a foreign modal hides whatever is under it. */
+const MODAL_RECHECK_MS = 2000;
+/** A child this much of its layer, both ways, is the layer's backdrop or wrapper, not a panel. */
+const FILLS_LAYER = 0.95;
+/** A panel taller than this share of the viewport is a page, not a modal. Width has no limit: on a phone a modal is rightly edge to edge. */
+const PANEL_MAX_HEIGHT = 0.92;
+/** How far off the viewport's centre a panel may sit, as a share of the viewport: across, down. */
+const PANEL_OFF_CENTRE = Object.freeze({ x: 0.05, y: 0.1 });
+const DIALOG_SELECTOR = '[role="dialog"], [role="alertdialog"], [aria-modal="true"]';
+const CONTROL_SELECTOR = 'button, a[href], input, select, textarea, [role="button"]';
 
 /**
  * @typedef {object} Finding
@@ -63,6 +92,8 @@ let centerWatch = null;
 let timer = 0;
 /** @type {Finding|null} */
 let current = null;
+/** The last look found a foreign modal over the centre. */
+let modalUp = false;
 /** @type {Map<string, string>} folder → display name, fetched once. */
 const names = new Map();
 
@@ -144,22 +175,35 @@ async function displayName(folder) {
     }
 }
 
-/** @returns {string[]} Takers kept this session. */
-function dismissed() {
-    try {
-        const raw = sessionStorage.getItem(DISMISSED_KEY);
-        const list = raw ? JSON.parse(raw) : [];
-        return Array.isArray(list) ? list : [];
-    } catch {
-        return [];
-    }
+/** @returns {KeptExtension[]} The takers the reader has answered for. */
+export function keptExtensions() {
+    const stored = /** @type {Record<string, unknown>} */ (power_user)[KEPT_KEY];
+    return Array.isArray(stored) ? stored.filter(entry => typeof entry?.key === 'string') : [];
 }
 
-/** @param {string} key Folder or hint. @returns {void} */
-function dismiss(key) {
-    try {
-        sessionStorage.setItem(DISMISSED_KEY, JSON.stringify([...new Set([...dismissed(), key])]));
-    } catch { /* private window */ }
+/**
+ * Remembers a reader's answer about a taker.
+ * @param {Finding} finding What was found.
+ * @returns {void}
+ */
+function remember(finding) {
+    const key = finding.folder ?? finding.hint;
+    const others = keptExtensions().filter(entry => entry.key !== key);
+    /** @type {Record<string, unknown>} */ (power_user)[KEPT_KEY] = [...others, { key, folder: finding.folder, name: finding.name }];
+    saveSettingsDebounced();
+    document.dispatchEvent(new CustomEvent(KEPT_CHANGE_EVENT));
+}
+
+/**
+ * Forgets an answer, so Kotatsu says something the next time that extension takes the page.
+ * @param {string} key The kept entry's key.
+ * @returns {void}
+ */
+export function forgetKept(key) {
+    /** @type {Record<string, unknown>} */ (power_user)[KEPT_KEY] = keptExtensions().filter(entry => entry.key !== key);
+    saveSettingsDebounced();
+    document.dispatchEvent(new CustomEvent(KEPT_CHANGE_EVENT));
+    schedule();
 }
 
 /** @returns {Finding|null} `#sheld` taken out of the centre, by whom. */
@@ -172,8 +216,58 @@ function findSheldTaken() {
     return { kind: 'sheld', node: taker, hint: hintFor(taker), folder: null, name: '' };
 }
 
+/**
+ * @param {Element} node Any element.
+ * @returns {boolean} Whether it takes up space on screen.
+ */
+function isPainted(node) {
+    const style = getComputedStyle(node);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+    const box = node.getBoundingClientRect();
+    return box.width > 0 && box.height > 0;
+}
+
+/**
+ * The one panel a layer holds, looking through a backdrop beside it and wrappers around it.
+ * @param {Element} layer The layer, or a wrapper inside it.
+ * @param {number} [depth] Wrappers walked so far.
+ * @returns {Element|null} The panel, or null when the layer holds nothing or several things.
+ */
+function panelIn(layer, depth = 0) {
+    const box = layer.getBoundingClientRect();
+    /** @param {Element} node @returns {boolean} */
+    const fills = node => {
+        const inner = node.getBoundingClientRect();
+        return inner.width >= box.width * FILLS_LAYER && inner.height >= box.height * FILLS_LAYER;
+    };
+    const held = [...layer.children].filter(child => isPainted(child) && !(fills(child) && child.childElementCount === 0));
+    if (held.length !== 1) return null;
+    const [only] = held;
+    if (!fills(only)) return only;
+    return depth < 3 ? panelIn(only, depth + 1) : null;
+}
+
+/**
+ * Whether a foreign layer is a modal: something the reader answers and closes, not a floor laid
+ * over the page. LandingPage's layer should fail this: its live control is a card at the bottom
+ * edge, not a panel at the centre.
+ * @param {Element} node A body-level node.
+ * @returns {boolean} True for a modal.
+ */
+function isModal(node) {
+    const panel = panelIn(node);
+    if (node.matches(DIALOG_SELECTOR) || panel?.matches(DIALOG_SELECTOR)) return true;
+    if (!panel || !panel.querySelector(CONTROL_SELECTOR)) return false;
+    const box = panel.getBoundingClientRect();
+    const { innerWidth: width, innerHeight: height } = window;
+    return box.height <= height * PANEL_MAX_HEIGHT
+        && Math.abs(box.left + box.width / 2 - width / 2) <= width * PANEL_OFF_CENTRE.x
+        && Math.abs(box.top + box.height / 2 - height / 2) <= height * PANEL_OFF_CENTRE.y;
+}
+
 /** @returns {Finding|null} A foreign layer over the centre, which one. */
 function findCover() {
+    modalUp = false;
     const center = document.getElementById('k-center');
     if (!center || typeof document.elementFromPoint !== 'function') return null;
     const box = center.getBoundingClientRect();
@@ -188,7 +282,12 @@ function findCover() {
         hits.set(top, (hits.get(top) ?? 0) + 1);
     }
     for (const [node, count] of hits) {
-        if (count >= 2) return { kind: 'cover', node, hint: hintFor(node), folder: null, name: '' };
+        if (count < 2) continue;
+        if (isModal(node)) {
+            modalUp = true;
+            continue;
+        }
+        return { kind: 'cover', node, hint: hintFor(node), folder: null, name: '' };
     }
     return null;
 }
@@ -216,11 +315,12 @@ async function check() {
             current = null;
             /** @type {any} */ (banner()).finding = null;
         }
+        if (modalUp) window.setTimeout(schedule, MODAL_RECHECK_MS);
         return;
     }
     finding.folder = attribute(finding.node);
     const key = finding.folder ?? finding.hint;
-    if (dismissed().includes(key)) {
+    if (keptExtensions().some(entry => entry.key === key)) {
         current = finding;
         /** @type {any} */ (banner()).finding = null;
         return;
@@ -317,6 +417,9 @@ export class KExtGuard extends LitElement {
         if (!this.finding?.folder || this._busy) return;
         this._busy = true;
         try {
+            // Remembered first: core's disable saves the settings and reloads, and this is how the
+            // reader finds the switch to turn it back on.
+            remember(this.finding);
             await disableExtension(this.finding.folder, true);
         } catch (error) {
             console.error('[k-ext-guard] disable failed', error);
@@ -324,10 +427,10 @@ export class KExtGuard extends LitElement {
         }
     }
 
-    /** Remembered for the session. @returns {void} */
+    /** Remembered until the reader changes it in Settings → Extensions. @returns {void} */
     #keep() {
         if (!this.finding) return;
-        dismiss(this.finding.folder ?? this.finding.hint);
+        remember(this.finding);
         this.finding = null;
     }
 

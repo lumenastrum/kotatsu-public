@@ -28,7 +28,8 @@ import { CHATGPT_CHANGE_EVENT, CHATGPT_STATUS_EVENT, cardState, getStatus, isCom
 import { mountBridgeCard } from './k-bridge-card.js';
 import { mountConnectionMore } from './k-connection-more.js';
 import { mountProviderCards } from './k-provider-cards.js';
-import { chatgptState, claudeState, connectionOrder, keysState, sameOrder } from './order.js';
+import { foldedCards } from './fold.js';
+import { chatgptState, claudeState, connectionOrder, foldedLast, keysState, sameOrder } from './order.js';
 import { PROVIDERS } from './providers.js';
 
 /** @type {Readonly<Record<import('./order.js').ConnectionCard, string>>} */
@@ -52,11 +53,11 @@ function wantedOrder() {
         && PROVIDERS.some(provider => provider.source === oai_settings?.chat_completion_source)
         && !isOnBridge()
         && online_status !== 'no_connection';
-    return connectionOrder({
+    return foldedLast(connectionOrder({
         claude: claudeState({ onBridge: isOnBridge(), doctorKnown: Boolean(doctor), problems: doctorProblems(doctor) }),
         chatgpt: chatgptState({ onChatGPT: isOnChatGPT(), face: cardState({ status: getStatus(), computerOnly: isComputerOnly(), waiting: false }) }),
         keys: keysState({ keyInUse }),
-    });
+    }), foldedCards());
 }
 
 /**

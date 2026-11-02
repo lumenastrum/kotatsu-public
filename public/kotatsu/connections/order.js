@@ -73,6 +73,16 @@ export function connectionOrder(states) {
 }
 
 /**
+ * Folded cards go below the open ones, each group keeping its order (public issue #5).
+ * @param {readonly ConnectionCard[]} order
+ * @param {readonly ConnectionCard[]} folded
+ * @returns {ConnectionCard[]}
+ */
+export function foldedLast(order, folded) {
+    return [...order.filter(card => !folded.includes(card)), ...order.filter(card => folded.includes(card))];
+}
+
+/**
  * The welcome tour's first lane. Its "Your subscription" lane holds both plans, so it opens there
  * only when one of them comes before the API keys; otherwise on the keys.
  * @param {Record<ConnectionCard, CardState>} states

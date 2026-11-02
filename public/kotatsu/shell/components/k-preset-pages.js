@@ -137,7 +137,7 @@ export class KPresetPages extends LitElement {
         this.variant = 'pills';
         /** @type {string} */
         this._active = readStoredPage();
-        /** @type {{text: string, author: string, url: string|null, support: string|null}|null} */
+        /** @type {{text: string, author: string, url: string|null, support: string|null, note: string|null}|null} */
         this._credit = null;
         /** @type {any} The credits manifest, once fetched. */
         this._manifest = null;
@@ -259,7 +259,8 @@ export class KPresetPages extends LitElement {
                     </a>` : ''}
                     ${this._credit.support ? html`<a class="k-pp-credit-support" href=${this._credit.support} target="_blank" rel="noopener noreferrer"
                         aria-label=${`Tip ${this._credit.author} on Ko-fi (opens in a new tab)`}>Ko-fi</a>` : ''}
-                </p>` : ''}`;
+                </p>
+                ${this._credit.note ? html`<p class="k-pp-credit-note" data-credit-note>${this._credit.note}</p>` : ''}` : ''}`;
     }
 }
 

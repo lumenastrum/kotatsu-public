@@ -52,6 +52,7 @@ import {
     useClaudeCode,
 } from './bridge.js';
 import { mountChatGPTCard } from './k-chatgpt-card.js';
+import { STATE_WORDS, foldButton, foldedRow, isFolded } from './fold.js';
 import { claudeState } from './order.js';
 
 const SIGN_IN_COMMAND = 'claude auth login';
@@ -346,6 +347,10 @@ export class KBridgeCard extends LitElement {
         const resting = claudeState({ onBridge, doctorKnown: Boolean(doctor), problems }) === 'not-set-up';
         const fixHere = problems.some(problem => problem.kind === 'not-installed' || problem.kind === 'not-signed-in');
 
+        if (isFolded(this, 'claude')) {
+            return foldedRow(this, 'claude', 'Claude Code', pending && !doctor ? 'Checking…' : STATE_WORDS[claudeState({ onBridge, doctorKnown: Boolean(doctor), problems })]);
+        }
+
         return html`
             <section class="k-bc" aria-label="Claude Code" data-active=${onBridge ? 'true' : 'false'} ?data-resting=${resting}>
                 <header class="k-bc__head">
@@ -371,6 +376,7 @@ export class KBridgeCard extends LitElement {
                         ${onBridge || resting ? nothing : html`<button type="button" class="k-bc__btn k-bc__btn--primary" ?disabled=${!health.listening || Boolean(this._busy)} @click=${() => this._run('use', () => useClaudeCode())}>${this._busy === 'use' ? 'Switching…' : 'Use Claude Code'}</button>`}
                         ${resting && fixHere ? nothing : html`<button type="button" class="k-bc__btn" ?disabled=${Boolean(this._busy)} @click=${() => this._run('check', async () => { await refreshHealth(); await loadDoctor(true); })}>${this._busy === 'check' ? 'Checking…' : 'Run diagnostics'}</button>`}
                     </div>
+                    ${this.variant === 'compact' ? nothing : foldButton(this, 'claude', 'Claude Code')}
                 </header>
 
                 ${problems.map(problem => this._problem(problem, health))}

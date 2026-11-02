@@ -19,6 +19,8 @@ export const CREDITS_URL = '/kotatsu/prompts/preset-credits.json';
  * @property {string|null} support Where to tip the author (their Ko-fi), or null. Only a link the
  *   author put up themselves.
  * @property {string} blurb One line about it.
+ * @property {string|null} note What the author says it needs to run, shown under the dock's credit
+ *   line, or null. Stands in for changing the author's file.
  * @property {boolean} own Whether Kotatsu made it (`permission.status === 'own'`).
  */
 
@@ -82,6 +84,7 @@ export function creditEntries(manifest) {
             url: typeof value.url === 'string' && /^https:\/\//i.test(value.url) ? value.url : null,
             support: typeof value.support === 'string' && /^https:\/\//i.test(value.support) ? value.support : null,
             blurb: typeof value.blurb === 'string' ? value.blurb : '',
+            note: typeof value.note === 'string' && value.note ? value.note : null,
             own: value.permission?.status === 'own',
         }));
     const first = entries.findIndex(entry => entry.name === manifest?.default);
@@ -94,10 +97,10 @@ export function creditEntries(manifest) {
  * Kotatsu's own and unknown presets (the person's own, imported ones, Default) get nothing.
  * @param {any} manifest The manifest.
  * @param {string} presetName The active Chat Completion preset.
- * @returns {{text: string, author: string, url: string|null, support: string|null}|null} The line, or null.
+ * @returns {{text: string, author: string, url: string|null, support: string|null, note: string|null}|null} The line, or null.
  */
 export function presetCredit(manifest, presetName) {
     const entry = creditEntries(manifest).find(candidate => candidate.name === presetName);
     if (!entry || entry.own || !entry.author) return null;
-    return { text: `${entry.title} by ${entry.author}`, author: entry.author, url: entry.url, support: entry.support };
+    return { text: `${entry.title} by ${entry.author}`, author: entry.author, url: entry.url, support: entry.support, note: entry.note };
 }

@@ -20,6 +20,8 @@
 
 import { LitElement, html, nothing } from '../shell/lit.js';
 import { BRIDGE_CHANGE_EVENT, getBridgeModel } from './bridge.js';
+import { STATE_WORDS, foldButton, foldedRow, isFolded } from './fold.js';
+import { chatgptState } from './order.js';
 import {
     CHATGPT_CHANGE_EVENT,
     CHATGPT_STATUS_EVENT,
@@ -235,6 +237,10 @@ export class KChatGPTCard extends LitElement {
             return html`<section class="k-gc" aria-label="ChatGPT"><p class="k-gc__hint">Checking for ChatGPT…</p></section>`;
         }
 
+        if (isFolded(this, 'chatgpt')) {
+            return foldedRow(this, 'chatgpt', 'ChatGPT', STATE_WORDS[chatgptState({ onChatGPT, face: state })]);
+        }
+
         const blurb = {
             'not-running': 'Your ChatGPT Plus or Pro plan, through the bridge built into Kotatsu.',
             'signed-out': COPY.signInLine,
@@ -264,6 +270,7 @@ export class KChatGPTCard extends LitElement {
                         <div class="k-gc__headactions">
                             <button type="button" class="k-gc__btn k-gc__btn--primary" ?disabled=${Boolean(this._busy)} @click=${() => this._signIn()}>${COPY.signInLabel}</button>
                         </div>` : nothing}
+                    ${this.variant === 'compact' ? nothing : foldButton(this, 'chatgpt', 'ChatGPT')}
                 </header>
 
                 ${state === 'not-running' ? html`

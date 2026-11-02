@@ -276,7 +276,11 @@
         "type": "openai_preset"
     },
     {
-        "filename": "presets/openai/Freaky Frankenstein 5.4 Internal States.json",
+        "filename": "presets/openai/Freaky Frankenstein 5.6 Internal States Argon Edition.json",
+        "type": "openai_preset"
+    },
+    {
+        "filename": "presets/openai/Freaky Frankenstein 6.0 Micro FrankenWIRE.json",
         "type": "openai_preset"
     },
     {

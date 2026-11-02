@@ -61,10 +61,10 @@ import {
     modelLabel,
     setBridgeEffort,
     setBridgeModel,
-    useClaudeCode,
     useSavedConnection,
 } from '../../connections/bridge.js';
 import { savedConnections } from '../../connections/saved.js';
+import { installRecents, switchRows, useRow } from '../../connections/switch-list.js';
 
 /** Sentinel `setOnlineStatus()` (script.js:7126) writes when nothing is connected. */
 const NO_CONNECTION = 'no_connection';
@@ -330,6 +330,7 @@ export class KModelMenu extends LitElement {
         if (!this.hasAttribute('variant')) {
             this.setAttribute('variant', this.variant);
         }
+        installRecents();
         for (const key of REFRESH_EVENTS) {
             const name = event_types ? event_types[key] : undefined;
             if (typeof name !== 'string' || this._boundEvents.includes(name)) {
@@ -531,6 +532,36 @@ export class KModelMenu extends LitElement {
     }
 
     /**
+     * Presses a "Switch to" row: a saved connection through its own path, anything else through
+     * the Connection tab's. Same spinner, same timeout. A row already live and connected is a no-op.
+     * @param {import('../../connections/switch-list.js').SwitchRow} row
+     * @returns {Promise<void>}
+     */
+    async _applyRow(row) {
+        if (row.id.startsWith('profile:')) {
+            await this._applyProfile(row.id.slice('profile:'.length));
+            return;
+        }
+        if (this._applyingId || (row.inUse && online_status && online_status !== NO_CONNECTION)) {
+            return;
+        }
+        this._applyingId = row.id;
+        if (this._applyTimer) {
+            clearTimeout(this._applyTimer);
+        }
+        const timer = window.setTimeout(() => this._settleApply(), APPLY_TIMEOUT_MS);
+        this._applyTimer = timer;
+        try {
+            await useRow(row.id);
+        } catch (error) {
+            console.warn('[k-model-menu] Connection could not be applied.', error);
+        } finally {
+            if (this._applyTimer === timer) this._settleApply();
+            else this.refresh();
+        }
+    }
+
+    /**
      * Clears the in-flight marker; state re-reads from the mirrors either way.
      * @returns {void}
      */
@@ -704,43 +735,32 @@ export class KModelMenu extends LitElement {
      * @returns {unknown}
      */
     _renderProfiles() {
-        if (!profileSelect()) {
+        const rows = switchRows();
+        if (!profileSelect() && rows.length === 0) {
             return nothing;
         }
-        const profiles = this._profiles;
         const applyingId = this._applyingId;
         const canSave = document.getElementById('create_connection_profile') !== null;
-        // Off the bridge with nothing saved pointing at it, Claude Code is still one click away.
-        const offerBridge = !isOnBridge() && getHealth()?.listening && !savedConnections().some((saved) => saved.bridge);
         return html`
             <div class="k-mm__label">Switch to</div>
-            ${offerBridge ? html`
-                <button type="button" class="k-mm__row" @click=${() => { this._close({ restoreFocus: false }); void useClaudeCode(); }}>
-                    <span class="k-mm__mark"></span>
-                    <span class="k-mm__copy">
-                        <span class="k-mm__name">Claude Code</span>
-                        <span class="k-mm__micro">Your Claude subscription, built in</span>
-                    </span>
-                </button>
-            ` : nothing}
-            ${profiles.length === 0 ? html`
+            ${rows.length === 0 ? html`
                 <div class="k-mm__empty">Nothing saved yet. A saved connection brings back API, model and preset in one click.</div>
-            ` : profiles.map((profile) => {
-        const isApplying = applyingId === profile.id;
-        const isSelected = applyingId === null && profile.inUse;
+            ` : html`<div class="k-mm__switch">${rows.map((row) => {
+        const isApplying = applyingId === row.id || applyingId === row.id.replace(/^profile:/, '');
+        const isSelected = applyingId === null && row.inUse;
         return html`
                     <button type="button"
                         class="k-mm__row ${isSelected || isApplying ? 'k-mm--selected' : ''} ${applyingId !== null && !isApplying ? 'k-mm--dimmed' : ''}"
                         aria-pressed=${isSelected ? 'true' : 'false'}
-                        @click=${() => this._applyProfile(profile.id)}>
+                        @click=${() => this._applyRow(row)}>
                         <span class="k-mm__mark">${isApplying ? spinnerIcon() : (isSelected ? checkIcon() : nothing)}</span>
                         <span class="k-mm__copy">
-                            <span class="k-mm__name">${profile.name}</span>
-                            <span class="k-mm__micro">${isApplying ? 'Applying — switching API and preset…' : (profile.micro || EM_DASH)}</span>
+                            <span class="k-mm__name">${row.name}</span>
+                            <span class="k-mm__micro">${isApplying ? 'Applying — switching API and preset…' : (row.micro || EM_DASH)}</span>
                         </span>
                     </button>
                 `;
-    })}
+    })}</div>`}
             ${canSave ? html`
                 <button type="button" class="k-mm__row k-mm__row--quiet" @click=${() => this._saveCurrent()}>
                     <span class="k-mm__mark">${plusIcon()}</span>

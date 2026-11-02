@@ -825,9 +825,9 @@ body.reduced-motion::before {
 
 /* [32] [33] Quick Replies is a built-in extension
    (scripts/extensions/quick-reply/), so its buttons are core-owned DOM and
-   belong to the compose pill's ghost-button vocabulary. The third-party
-   GuidedGenerations twins of these rules stay out — Kotatsu does not ship
-   selectors for DOM it does not own. */
+   belong to the compose pill's ghost-button vocabulary. Guided Generations'
+   twins of these rules live in css/compat-guided-generations.css, the one
+   third-party extension Kotatsu dresses. */
 #send_form .qr--button {
     background: transparent;
     border: none;

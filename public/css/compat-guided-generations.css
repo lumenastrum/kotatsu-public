@@ -1,0 +1,276 @@
+/*
+ * compat-guided-generations.css — Guided Generations in the house language.
+ *
+ * The one third-party extension Kotatsu dresses, because it is one of the most used there is
+ * (Andres, 2026-10-31). Without the extension every selector here matches nothing, so "if it is
+ * present" needs no code. The extension's own stylesheet loads after this one, so every rule sits
+ * under `body[data-k-layout="rails"]` to outrank it; classic stays exactly as the extension drew it.
+ *
+ * Tokens only, so every theme pack dresses it for free. `!important` appears for one reason each:
+ * the extension writes the value inline (`z-index` on its update notice, colours on the tracker
+ * popup's fields) or core pins it (placeholder colour).
+ */
+
+/* The extension reads variables that neither stock nor Kotatsu defines, so its hovers, accents and
+   tracker cards fell back to nothing. They are answered here, on its own surfaces only. */
+body[data-k-layout="rails"] :is(.gg-popup, .gg-tools-menu, #persistent-guides-menu, .gg-action-buttons-container, .situational-tracker-details, .custom-situational-tracker-details) {
+    --SmartThemeBg: var(--k-surface);
+    --SmartThemeHover: color-mix(in srgb, var(--k-accent) 10%, transparent);
+    --SmartThemeUi: var(--k-text-strong);
+    --SmartThemeAccentColor: var(--k-accent);
+    --SmartThemeActColor: var(--k-accent-bright);
+    --accent-color: var(--k-accent);
+    --gg-hairline: color-mix(in srgb, var(--k-chrome-border) var(--k-border-strength), transparent);
+}
+
+/* ── The compose row: the pill's ghost buttons, the same as Quick Replies ─────────────────────── */
+body[data-k-layout="rails"] .gg-action-buttons-container {
+    gap: 2px;
+    padding: 0 0 4px;
+}
+
+body[data-k-layout="rails"] :is(.gg-menu-buttons-container, .gg-regular-buttons-container) {
+    gap: 2px;
+}
+
+body[data-k-layout="rails"] :is(.gg-action-button, .gg-menu-button) {
+    padding: 6px 8px;
+    border: none;
+    border-radius: var(--k-radius-md);
+    background: transparent;
+    color: var(--k-text-muted);
+    font-size: 15px;
+    transition: color var(--k-motion), background-color var(--k-motion);
+}
+
+body[data-k-layout="rails"] :is(.gg-action-button, .gg-menu-button):hover,
+body[data-k-layout="rails"] :is(.gg-action-button, .gg-menu-button):focus-visible {
+    background: var(--SmartThemeHover);
+    color: var(--k-accent-bright);
+}
+
+body[data-k-layout="rails"] #pg_counter_badge {
+    background: var(--k-accent);
+    color: var(--k-primary-text, var(--k-surface));
+}
+
+/* ── The two menus ────────────────────────────────────────────────────────────────────────────── */
+body[data-k-layout="rails"] :is(.gg-tools-menu, #persistent-guides-menu) {
+    padding: 4px;
+    border: 1px solid var(--gg-hairline);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-surface);
+    box-shadow: var(--k-elev-2);
+    backdrop-filter: none;
+    font-family: var(--k-font-ui);
+    font-size: 13px;
+}
+
+body[data-k-layout="rails"] .gg-tools-menu > .interactable,
+body[data-k-layout="rails"] .gg-tools-menu .list-group-item,
+body[data-k-layout="rails"] #persistent-guides-menu .interactable {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--k-radius-md);
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .gg-tools-menu > .interactable:hover,
+body[data-k-layout="rails"] .gg-tools-menu .list-group-item:hover,
+body[data-k-layout="rails"] #persistent-guides-menu .interactable:hover {
+    background: var(--SmartThemeHover);
+    color: var(--k-text-strong);
+}
+
+/* ── The popups: the studio's sheet over the house scrim ──────────────────────────────────────── */
+body[data-k-layout="rails"] .gg-popup {
+    z-index: 4000 !important;
+    background: color-mix(in srgb, var(--k-scrim) 60%, transparent);
+}
+
+body[data-k-layout="rails"] .gg-popup-content {
+    width: min(600px, calc(100vw - 24px));
+    max-height: 85dvh;
+    padding: 18px;
+    border: 1px solid var(--gg-hairline);
+    border-radius: var(--k-radius-xl);
+    background: var(--k-surface);
+    box-shadow: var(--k-elev-4);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+    font-size: 13px;
+}
+
+body[data-k-layout="rails"] .gg-popup-header {
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom-color: var(--gg-hairline);
+}
+
+body[data-k-layout="rails"] .gg-popup-header h2 {
+    color: var(--k-text-strong);
+    font-family: var(--k-font-display);
+    font-size: 18px;
+    font-weight: 500;
+}
+
+body[data-k-layout="rails"] .gg-popup-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--k-radius-pill);
+    color: var(--k-text-muted);
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1;
+}
+
+body[data-k-layout="rails"] .gg-popup-close:hover {
+    background: var(--SmartThemeHover);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .gg-popup-section h3 {
+    margin-bottom: 8px;
+    padding-bottom: 0;
+    border-bottom: none;
+    color: var(--k-text-muted);
+    font-family: var(--k-font-ui);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Choices are chips. */
+body[data-k-layout="rails"] .gg-option {
+    padding: 6px 12px;
+    border-color: var(--gg-hairline);
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text);
+}
+
+body[data-k-layout="rails"] .gg-option:hover {
+    border-color: var(--k-accent);
+    background: var(--SmartThemeHover);
+}
+
+body[data-k-layout="rails"] .gg-option.selected {
+    border-color: var(--k-accent);
+    background: color-mix(in srgb, var(--k-accent) 18%, transparent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .gg-option-title {
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] .gg-suboptions {
+    padding: 4px;
+    border-color: var(--gg-hairline);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface);
+    box-shadow: var(--k-elev-2);
+}
+
+body[data-k-layout="rails"] .gg-suboption {
+    border-radius: var(--k-radius-sm, 6px);
+}
+
+body[data-k-layout="rails"] :is(.gg-suboption:hover, .gg-suboption.selected) {
+    background: color-mix(in srgb, var(--k-accent) 18%, transparent);
+    color: var(--k-text-strong);
+}
+
+/* Fields: the house field, over whatever the extension wrote inline. */
+body[data-k-layout="rails"] .gg-popup :is(textarea, input:not([type="checkbox"], [type="radio"]), select) {
+    border: 1px solid var(--gg-hairline) !important;
+    border-radius: var(--k-radius-md) !important;
+    background: var(--k-surface-2) !important;
+    color: var(--k-text) !important;
+    font-family: var(--k-font-ui);
+    font-size: 13px;
+}
+
+body[data-k-layout="rails"] .gg-popup :is(textarea, input):focus-visible {
+    border-color: var(--k-accent) !important;
+    outline: none;
+}
+
+body[data-k-layout="rails"] .gg-popup :is(textarea, input)::placeholder {
+    color: var(--k-text-muted) !important;
+}
+
+/* Buttons: the library's pills, ghost and primary. */
+body[data-k-layout="rails"] .gg-popup-footer {
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top-color: var(--gg-hairline);
+}
+
+body[data-k-layout="rails"] :is(.gg-popup-footer .gg-button, .gg-button-primary, .gg-button-secondary, .gg-fun-button, .gg-default-button) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    height: auto;
+    margin: 0;
+    padding: 8px 14px;
+    border: 1px solid var(--gg-hairline);
+    border-radius: var(--k-radius-pill);
+    background: transparent;
+    color: var(--k-text);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 1;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] :is(.gg-button-secondary, .gg-fun-button, .gg-default-button):hover,
+body[data-k-layout="rails"] :is(.gg-button-secondary, .gg-fun-button, .gg-default-button):focus-visible {
+    border-color: var(--k-accent);
+    background: var(--SmartThemeHover);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .gg-button-primary {
+    border-color: var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 55%, transparent));
+    background: var(--k-primary-bg, color-mix(in srgb, var(--k-accent) 18%, transparent));
+    color: var(--k-primary-text, var(--k-text-strong));
+}
+
+body[data-k-layout="rails"] .gg-button-primary:hover,
+body[data-k-layout="rails"] .gg-button-primary:focus-visible {
+    border-color: var(--k-primary-hover-bg, var(--k-accent-bright));
+    background: var(--k-primary-hover-bg, color-mix(in srgb, var(--k-accent) 30%, transparent));
+    color: var(--k-primary-text, var(--k-text-strong));
+}
+
+/* ── Tracker cards in the chat ────────────────────────────────────────────────────────────────── */
+body[data-k-layout="rails"] :is(.situational-tracker-details, .custom-situational-tracker-details) {
+    border-color: var(--gg-hairline);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-2);
+    box-shadow: none;
+}
+
+body[data-k-layout="rails"] :is(.situational-tracker-details, .custom-situational-tracker-details):hover {
+    border-color: var(--k-accent);
+    box-shadow: none;
+    transform: none;
+}
+
+body[data-k-layout="rails"] :is(.situational-tracker-details, .custom-situational-tracker-details) summary:hover {
+    text-shadow: none;
+}
+
+body[data-k-layout="rails"] :is(.situational-tracker-details, .custom-situational-tracker-details) > div {
+    border-left-width: 2px;
+    background: transparent;
+    box-shadow: none;
+}

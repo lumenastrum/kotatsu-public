@@ -242,6 +242,7 @@ export function hasConnectionManager() {
  * @property {boolean} selected The Connection Manager's own pick (its buttons act on this one)
  * @property {boolean} drifted Selected, same API, but the URL or model has moved since it was saved
  * @property {boolean} bridge It talks to the Claude Code bridge
+ * @property {string} source The Chat Completion source it goes to, '' for any other API
  */
 
 /** @returns {SavedConnection[]} Every saved connection, by name, with its live state. */
@@ -262,6 +263,7 @@ export function savedConnections() {
             selected: profile.id === selectedId,
             drifted: profile.id === selectedId && profile.id !== inUse && sameApi(profile, live, apiMap),
             bridge: apiMap[String(profile.api ?? '').toLowerCase()]?.source === 'custom' && isBridgeUrl(profile['api-url'], listener),
+            source: apiMap[String(profile.api ?? '').toLowerCase()]?.source ?? '',
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
 }

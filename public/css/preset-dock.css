@@ -153,6 +153,14 @@ k-preset-pages {
     color: var(--k-text-faint);
 }
 
+#left-nav-panel.k-docked .k-pp-credit-note {
+    margin: 4px 8px 0;
+    font-size: 11px;
+    line-height: 1.35;
+    text-align: center;
+    color: var(--k-text-faint);
+}
+
 #left-nav-panel.k-docked .k-pp-credit-link {
     display: inline-flex;
     align-items: center;

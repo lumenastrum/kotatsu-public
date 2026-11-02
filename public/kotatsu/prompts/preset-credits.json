@@ -30,15 +30,26 @@
             "blurb": "The full engine: pick one of five Sola minds, with trackers, the Easel director, HTML headers and review tools.",
             "permission": { "status": "granted", "date": "2026-10-03", "note": "Sola and its regex, updated with her releases. V4 Flame and Kindling V2 replaced V3 Flame and Kindling V1 on 2026-10-29. Ships her Complete edition: the Full regex pack embedded." }
         },
-        "Freaky Frankenstein 5.4 Internal States": {
-            "title": "Freaky Frankenstein 5.4",
+        "Freaky Frankenstein 5.6 Internal States Argon Edition": {
+            "title": "Freaky Frankenstein 5.6",
             "author": "dptgreg",
             "url": "https://rentry.org/freaky-frankenstein-presets",
-            "source": "default/presets-upstream/Freaky Frankenstein 5.4 Internal States.json",
-            "upstream": { "site": "https://rentry.org/freaky-frankenstein-presets", "path": "Freaky_Frankenstein_5.4_Internal_States (2).json (MediaFire, 2026-09-01)", "blob": "0dc9466b6fd98464e30ce84331c32a52ebcecf13" },
+            "source": "default/presets-upstream/Freaky Frankenstein 5.6 Internal States Argon Edition.json",
+            "upstream": { "site": "https://rentry.org/freaky-frankenstein-presets", "path": "Freaky_Frankenstein_5.6_Internal_States_Argon_Edition_(1).json (MediaFire, from r/SillyTavernAI post 1xlwk7j, 2026-11-02)", "blob": "f3384ae852026540f057e76d8df3d7152828c87b" },
             "support": "https://ko-fi.com/dptgreg",
-            "blurb": "Characters with inner lives: internal states, a choice of prose style and POV, and a realism mode.",
-            "permission": { "status": "granted", "date": "2026-10-13", "note": "dptgreg: \"yes please have it if you didnt already!\" Co-authors on his archive: u/leovarian, u/Ok_Strategy_2420. Its 25 regex scripts are embedded; the separate FF5 Regex 3.0 Suite is the same 25." }
+            "blurb": "Characters with inner lives: internal states, dice rolls, a choice of prose style and POV. Set up for Gemini.",
+            "note": "Set up for Gemini, and it needs its regex allowed. On other models, dptgreg says to turn off Gemini Money Shot and Gemini Policy Chad Prompt, and turn on Icebreaker.",
+            "permission": { "status": "granted", "date": "2026-10-13", "note": "dptgreg: \"yes please have it if you didnt already!\" Co-authors on his archive: u/leovarian, u/Ok_Strategy_2420. 5.6 replaced 5.4 on 2026-11-02. Its 26 regex scripts are embedded." }
+        },
+        "Freaky Frankenstein 6.0 Micro FrankenWIRE": {
+            "title": "Freaky Frankenstein 6 Micro",
+            "author": "dptgreg",
+            "url": "https://rentry.org/freaky-frankenstein-presets",
+            "source": "default/presets-upstream/Freaky Frankenstein 6.0 Micro FrankenWIRE.json",
+            "upstream": { "site": "https://rentry.org/freaky-frankenstein-presets", "path": "Freaky_Frankenstein_6.0_Micro_FrankenWIRE_(1).json (MediaFire, from r/SillyTavernAI post 1xlwk7j, 2026-11-02)", "blob": "da026d35bc82423c8c3399fb59af47bfbdcf3165" },
+            "support": "https://ko-fi.com/dptgreg",
+            "blurb": "The Freaky Frankenstein rulebook in a small preset, without internal states, for shorter, focused scenes.",
+            "permission": { "status": "granted", "date": "2026-10-13", "note": "dptgreg: \"yes please have it if you didnt already!\" Co-authors on his archive: u/leovarian, u/Ok_Strategy_2420. Added 2026-11-02. Its 26 regex scripts are embedded." }
         },
         "Nemo Vivarium v1.0 Beta": {
             "title": "Nemo Vivarium",

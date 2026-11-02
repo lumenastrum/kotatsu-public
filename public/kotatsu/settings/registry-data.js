@@ -109,7 +109,7 @@
  * within keep their own stock bindings, their own stock lanes — including DIE lanes — and get
  * no registry entries of their own, which is what keeps the "zero DIE-lane keys" assertion
  * honest rather than merely narrow.
- * @typedef {'select'|'checkbox'|'range'|'number'|'textarea'|'color'|'buttongroup'|'button'|'block'|'kotatsu-layout'|'kotatsu-rails'|'kotatsu-tour'|'kotatsu-whats-new'|'kotatsu-phone'|'kotatsu-pictures'|'kotatsu-feedback'} ControlKind
+ * @typedef {'select'|'checkbox'|'range'|'number'|'textarea'|'color'|'buttongroup'|'button'|'block'|'kotatsu-layout'|'kotatsu-rails'|'kotatsu-tour'|'kotatsu-whats-new'|'kotatsu-phone'|'kotatsu-pictures'|'kotatsu-feedback'|'kotatsu-ext-kept'} ControlKind
  */
 
 /** @typedef {import('./registry.js').Entry} Entry */
@@ -163,7 +163,7 @@ export const AFFECTS = Object.freeze([
 export const CONTROLS = Object.freeze([
     'select', 'checkbox', 'range', 'number', 'textarea', 'color', 'buttongroup', 'button',
     'block', 'kotatsu-layout', 'kotatsu-rails', 'kotatsu-tour', 'kotatsu-whats-new', 'kotatsu-phone',
-    'kotatsu-pictures', 'kotatsu-feedback',
+    'kotatsu-pictures', 'kotatsu-feedback', 'kotatsu-ext-kept',
 ]);
 
 /** Every legal `store` value. See the `EntryStore` typedef in `registry.js` for the lane rules. */
@@ -1996,6 +1996,22 @@ export const ENTRIES = Object.freeze([
         tier: 'advanced',
         // Vacuous — `keys: []`. Extension state lives in `extension_settings`, a SURVIVE lane
         // stock already owns end to end; the registry describes the surface, not the lane.
+        store: 'power_user',
+        surface: 'modal',
+    },
+    {
+        id: 'k-ext-kept',
+        keys: ['kotatsu_ext_kept'],
+        label: 'Extensions that cover the page',
+        section: 'extensions',
+        group: 'Page takeovers',
+        control: 'kotatsu-ext-kept',
+        // Public issue #6: the answers the extension guard remembers, with a switch to change each
+        // (shell/k-ext-kept.js). Drawn by the modal, no stock node. One leaf, like the pictures panel.
+        binding: { by: 'id', ref: 'k-ext-kept', runtime: true },
+        affects: ['startup'],
+        keywords: ['extension', 'cover', 'covering', 'keep it', 'disable', 'guard', 'takeover', 'bully', 'kotatsu_ext_kept'],
+        tier: 'advanced',
         store: 'power_user',
         surface: 'modal',
     },

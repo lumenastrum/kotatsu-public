@@ -51,6 +51,68 @@ body[data-k-layout="rails"] .k-eg-why {
     color: var(--k-text-muted);
 }
 
+/* Settings → Extensions: <k-ext-kept> (kotatsu/shell/k-ext-kept.js). */
+body[data-k-layout="rails"] .k-set-control:has(> k-ext-kept) {
+    flex: 1 1 100%;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-set-row:has(k-ext-kept) {
+    flex-wrap: wrap;
+}
+
+body[data-k-layout="rails"] k-ext-kept {
+    display: block;
+    width: 100%;
+}
+
+body[data-k-layout="rails"] .k-ek__list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+body[data-k-layout="rails"] .k-ek__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 8px 0;
+}
+
+body[data-k-layout="rails"] .k-ek__row + .k-ek__row {
+    border-top: 1px solid color-mix(in srgb, var(--k-chrome-border) 35%, transparent);
+}
+
+body[data-k-layout="rails"] .k-ek__copy {
+    display: flex;
+    flex: 1 1 180px;
+    flex-direction: column;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-ek__name {
+    color: var(--k-text);
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] :is(.k-ek__state, .k-ek__empty) {
+    margin: 0;
+    color: var(--k-text-muted);
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-ek__forget {
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-ek__switch {
+    margin: 0;
+    white-space: nowrap;
+}
+
 body[data-k-layout="rails"] .k-eg-actions {
     display: flex;
     gap: 8px;

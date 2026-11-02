@@ -60,7 +60,7 @@ const REFRESH_EVENTS = [
 ];
 
 /** Sources "Your API keys" already has a card for. */
-const FIRST_PARTY = Object.freeze(PROVIDERS.map(provider => provider.source));
+export const FIRST_PARTY = Object.freeze(PROVIDERS.map(provider => provider.source));
 
 const chevron = html`<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 4 4 4-4 4"/></svg>`;
 
@@ -122,6 +122,28 @@ function clearBridgeLeftovers() {
         if (!(field instanceof HTMLInputElement)) continue;
         field.value = '';
         field.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+}
+
+/**
+ * Selects a way through core's controls.
+ * @param {Way} way
+ * @returns {void}
+ */
+export function applyWay(way) {
+    commit('main_api', way.mainApi);
+    if (way.source) commit('chat_completion_source', way.source);
+    if (way.type) commit('textgen_type', way.type);
+    if (way.source === 'custom') {
+        clearBridgeLeftovers();
+        // A local server's chat template opens the reply's turn itself, and a system message
+        // after the last user message (Kotatsu Nabe's post-history note) stops llama3 on
+        // Ollama doing it: it writes "assistant" into the reply (4/4; 0/4 folded, 2026-10-14).
+        // Semi-strict folds late system messages into the user's; this variant keeps tools.
+        commit('custom_prompt_post_processing', 'semi_tools');
+    } else {
+        // The setting is global: a hosted way takes the prompt as built (bridge.js).
+        clearPostProcessing();
     }
 }
 
@@ -213,20 +235,7 @@ export class KConnectionMore extends LitElement {
      * @param {Way} way
      */
     _pick(way) {
-        commit('main_api', way.mainApi);
-        if (way.source) commit('chat_completion_source', way.source);
-        if (way.type) commit('textgen_type', way.type);
-        if (way.source === 'custom') {
-            clearBridgeLeftovers();
-            // A local server's chat template opens the reply's turn itself, and a system message
-            // after the last user message (Kotatsu Nabe's post-history note) stops llama3 on
-            // Ollama doing it: it writes "assistant" into the reply (4/4; 0/4 folded, 2026-10-14).
-            // Semi-strict folds late system messages into the user's; this variant keeps tools.
-            commit('custom_prompt_post_processing', 'semi_tools');
-        } else {
-            // The setting is global: a hosted way takes the prompt as built (bridge.js).
-            clearPostProcessing();
-        }
+        applyWay(way);
         this._toggleStock(true);
         // Core shows the API's block in the same task as the change; wait a frame for layout.
         requestAnimationFrame(() => {

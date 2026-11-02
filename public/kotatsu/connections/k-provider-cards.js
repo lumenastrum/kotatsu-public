@@ -25,6 +25,7 @@ import { event_types, eventSource } from '../../scripts/events.js';
 import { oai_settings } from '../../scripts/openai.js';
 import { secret_state } from '../../scripts/secrets.js';
 import { BRIDGE_CHANGE_EVENT, clearPostProcessing, isOnBridge, modelLabel, pressConnect } from './bridge.js';
+import { foldButton, foldedRow, isFolded } from './fold.js';
 import { PROVIDERS } from './providers.js';
 
 export { PROVIDERS };
@@ -44,13 +45,13 @@ let instances = 0;
  * @param {string} secret Secret key id
  * @returns {boolean} Whether a key is saved for it (never its value)
  */
-function hasKey(secret) {
+export function hasKey(secret) {
     const entry = /** @type {Record<string, unknown>} */ (secret_state)[secret];
     return Array.isArray(entry) ? entry.length > 0 : Boolean(entry);
 }
 
 /** @param {Provider} provider @returns {string} */
-function modelOf(provider) {
+export function modelOf(provider) {
     const model = String(/** @type {Record<string, unknown>} */ (oai_settings ?? {})[provider.modelKey] ?? '');
     return model === provider.placeholderModel ? '' : model;
 }
@@ -211,12 +212,23 @@ export class KProviderCards extends LitElement {
             </div>`;
     }
 
+    /** @returns {string} Where the keys stand, for the folded card: never a key, only that one is saved. */
+    _foldedStatus() {
+        const inUse = online_status === 'no_connection' ? undefined : PROVIDERS.find(isActive);
+        if (inUse) return `In use · ${inUse.name}`;
+        const saved = PROVIDERS.filter(provider => hasKey(provider.secret)).length;
+        if (saved === 0) return 'No keys yet';
+        return saved === 1 ? '1 key saved' : `${saved} keys saved`;
+    }
+
     render() {
+        if (isFolded(this, 'keys')) return foldedRow(this, 'keys', 'Your API keys', this._foldedStatus());
         return html`
             <section class="k-pc" aria-labelledby=${`${this._uid}-title`}>
                 <div class="k-pc__head">
                     <h3 class="k-bc__cap" id=${`${this._uid}-title`}>Your API keys</h3>
                     <span class="k-bc__hint">Billed by each provider. Keys stay on this computer.</span>
+                    ${foldButton(this, 'keys', 'Your API keys')}
                 </div>
                 <div class="k-pc__grid">${PROVIDERS.map(provider => this._card(provider))}</div>
             </section>`;

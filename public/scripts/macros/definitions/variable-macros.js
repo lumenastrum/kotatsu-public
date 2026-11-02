@@ -104,13 +104,22 @@ export function registerVariableMacros() {
                 type: MacroValueType.STRING,
                 description: 'The name of the local variable to get.',
             },
+            // KOTATSU-PATCH: presets in the Freaky Frankenstein family write `{{getvar::x::None}}`.
+            // The legacy engine blanks it; with one declared arg this engine sent it to the model raw.
+            {
+                name: 'fallback',
+                optional: true,
+                type: MacroValueType.STRING,
+                description: 'What to return when the variable is unset or empty.',
+            },
         ],
         description: 'Gets the value of a local variable.',
-        returns: 'The value of the local variable.',
+        returns: 'The value of the local variable, or the fallback if it has none.',
         returnType: [MacroValueType.STRING, MacroValueType.NUMBER],
-        exampleUsage: ['{{getvar::myvar}}', '{{getvar myintvar}}'],
-        handler: ({ unnamedArgs: [name], normalize }) => {
+        exampleUsage: ['{{getvar::myvar}}', '{{getvar myintvar}}', '{{getvar::myvar::None}}'],
+        handler: ({ unnamedArgs: [name, fallback], normalize }) => {
             const result = ctx.variables.local.get(name);
+            if (fallback !== undefined && (result === undefined || result === null || result === '')) return fallback;
             return normalize(result);
         },
     });

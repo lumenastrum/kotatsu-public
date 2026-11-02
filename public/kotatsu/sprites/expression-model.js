@@ -75,6 +75,8 @@ export const LABEL_PARENT = Object.freeze({
 export function cleanForClassify(text) {
     if (typeof text !== 'string' || !text) return '';
     let t = text
+        // Freaky Frankenstein 5.6 has the model write `$$` for spaces and decodes it in its regex.
+        .replace(/\$\$/g, ' ')
         .replace(/<!--[\s\S]*?-->/g, ' ')
         .replace(/```[\s\S]*?```/g, ' ')
         .replace(/<(style|script)\b[\s\S]*?<\/\1>/gi, ' ');

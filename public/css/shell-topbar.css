@@ -542,6 +542,14 @@ body[data-k-layout="rails"] k-model-menu .k-mm__filter-input::placeholder {
     color: var(--k-text-faint);
 }
 
+/* "Switch to": every key on file can be a row now, so the list scrolls like the models do. */
+body[data-k-layout="rails"] k-model-menu .k-mm__switch {
+    display: flex;
+    flex-direction: column;
+    max-block-size: var(--k-mm-models-max);
+    overflow: hidden auto;
+}
+
 body[data-k-layout="rails"] k-model-menu .k-mm__models {
     display: flex;
     flex-direction: column;

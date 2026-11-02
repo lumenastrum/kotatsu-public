@@ -90,6 +90,7 @@ import { OPEN_WHATS_NEW_EVENT } from '../whats-new/k-whats-new.js';
 import { OPEN_FEEDBACK_EVENT } from '../feedback/k-feedback.js';
 import '../phone/k-phone-card.js';
 import '../pictures/k-pictures-settings.js';
+import '../shell/k-ext-kept.js';
 
 /** @typedef {import('./registry.js').Entry} Entry */
 /** @typedef {import('./registry.js').Section} Section */
@@ -1278,6 +1279,9 @@ export class KSettingsModal extends LitElement {
         if (entry.control === 'kotatsu-pictures') {
             // Pictures v0 slice C (docs/pictures-v0.md §9): the whole `kotatsu_pictures` leaf.
             return html`<k-pictures-settings id=${entry.binding.ref} variant="panel"></k-pictures-settings>`;
+        }
+        if (entry.control === 'kotatsu-ext-kept') {
+            return html`<k-ext-kept id=${entry.binding.ref} variant="list"></k-ext-kept>`;
         }
         console.warn(`[k-settings-modal] "${entry.control}" is not a native control kind this modal can draw.`);
         return nothing;
