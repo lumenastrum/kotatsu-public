@@ -590,6 +590,66 @@ body[data-k-layout="rails"] .k-lib-sort:focus-visible {
     border-color: var(--k-accent);
 }
 
+/* ── Phone: two posters across, not one (2026-11-05) ────────────────────────────
+   At 240px minimum a 432px phone fits ONE column: every poster was the whole screen, and
+   browsing meant a full scroll per face. Andres's call: two at once. Tokens only, so the cast,
+   Your personas and Browse Characters all move together (one gallery idiom), plus two
+   rules for what a ~185px poster can't carry: the two-line blurb and the tag row. Kicker,
+   name, and the foot (Open chat / Wear) stay — they are what a small poster is for.
+   700px is the studio's phone breakpoint (css/studio.css). Desktop is untouched.
+
+   Theme packs set `--k-lib-name-size` and `--k-lib-grid-gap` in their theme.json, and a
+   pack's token outranks this sheet (measured: Natsumikan V3's 22px name survived a phone
+   override here). So those two are SCALED or CAPPED at the property, from whatever the pack
+   chose, never replaced. The copy band's padding is left to the pack entirely (V3's sheet
+   already sets a compact one). The tokens below are ones no pack sets. */
+@media (max-width: 700px) {
+    body[data-k-layout="rails"] {
+        --k-lib-grid-min: 140px;
+        --k-lib-card-min-h: 0px;
+        --k-lib-kicker-size: 10px;
+        --k-lib-foot-size: 11px;
+        --k-lib-chrome-size: 28px;
+    }
+
+    /* `.k-lib-sheet` for one more class: §6's base grid rule sits later in this file and
+       would win a tie on order. Every gallery grid (cast, personas, Browse) is inside it. */
+    body[data-k-layout="rails"] .k-lib-sheet .k-lib-grid {
+        gap: min(var(--k-lib-grid-gap), 10px);
+    }
+
+
+    body[data-k-layout="rails"] .k-lib-grid .k-lib-card-body,
+    body[data-k-layout="rails"] .k-lib-grid .k-lib-card-tags {
+        display: none;
+    }
+
+    /* One line of kicker, never three: a long epithet would eat the portrait. */
+    body[data-k-layout="rails"] .k-lib-grid .k-lib-card-kicker {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    /* Two lines of name at most. Browse Characters carries titles like "Is It Wrong to Try to
+       Pick Up Girls in a Dungeon? RPG", which ran five lines and buried the art (measured
+       at 432px). The full name is one tap away, on the sheet. */
+    body[data-k-layout="rails"] .k-lib-grid .k-lib-card-name {
+        font-size: calc(var(--k-lib-name-size) * 0.75);
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+    }
+
+    body[data-k-layout="rails"] .k-lib-grid .k-lib-card-chrome {
+        top: 8px;
+        right: 8px;
+        gap: 4px;
+    }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    6. THE GRID AND THE POSTER CARD (doc §1.3)
    ───────────────────────────────────────────────────────────────────────────
@@ -1052,6 +1112,197 @@ body[data-k-layout="rails"] .k-lib-jump-btn:focus-visible {
 body[data-k-layout="rails"] .k-lib-jump-btn:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--k-accent) 55%, transparent);
     outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8.5 YOUR PERSONAS (docs/persona-gallery-v0.md §1, slice P1a)
+   ───────────────────────────────────────────────────────────────────────────
+   `<k-persona-shelf>` reuses the cast's tools, grid and poster wholesale; these rules are only
+   what a persona is that a character is not. The poster box is untouched: one gallery idiom.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] k-persona-shelf {
+    display: flex;
+    flex-direction: column;
+    gap: var(--k-lib-block-gap);
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-ps-tied,
+body[data-k-layout="rails"] .k-ps-all {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-ps-count {
+    margin-left: auto;
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-lib-micro-size);
+}
+
+/* The full-res portrait sits OVER the initials tile, so a portrait that fails twice (full-res,
+   then thumbnail) hides itself and the tile is already there — never a broken image. */
+body[data-k-layout="rails"] .k-lib-card-art .k-lib-card-portrait--over {
+    position: absolute;
+    inset: 0;
+}
+
+/* State badges, not identity: quieter than the assistant spark's rose. */
+body[data-k-layout="rails"] .k-lib-card-badge--persona {
+    border-color: color-mix(in srgb, var(--k-chrome-border) 45%, transparent);
+    color: var(--k-text-muted);
+}
+
+/* The persona you're wearing: the accent border the others only get on hover, at rest. */
+body[data-k-layout="rails"] .k-lib-card--persona.is-current {
+    border-color: color-mix(in srgb, var(--card-accent) 70%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--card-accent) 35%, transparent);
+}
+
+body[data-k-layout="rails"] .k-lib-card-open--on {
+    color: var(--card-accent);
+}
+
+/* "3 variants · 1 here" in the poster's foot. Mono numbers, the "here" part in the accent. */
+body[data-k-layout="rails"] .k-lib-card-variants {
+    font-family: var(--k-font-mono);
+    font-size: var(--k-lib-micro-size);
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-lib-card-variants b {
+    color: var(--card-accent);
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] .k-ps-sheet-variants {
+    margin-top: 6px;
+}
+
+body[data-k-layout="rails"] .k-ps-foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+    border-top: 1px solid var(--k-lib-hairline);
+}
+
+body[data-k-layout="rails"] .k-ps-foot-hint {
+    color: var(--k-text-faint);
+    font-size: var(--k-lib-ui-size);
+}
+
+/* ── The persona sheet (slice P1b) ────────────────────────────────────────────
+   `<k-persona-sheet>` wears the studio's scrim + sheet (css/studio.css §1) and the market
+   preview's head / body / foot (css/market.css). Both load AFTER this file, so every rule here
+   carries `.k-ps-sheet` (or `.k-ps-sheet-*`) for one more class of specificity instead of
+   relying on order. */
+
+body[data-k-layout="rails"] k-persona-sheet {
+    display: contents;
+}
+
+body[data-k-layout="rails"] .k-studio-sheet.k-mkt-preview.k-ps-sheet {
+    width: min(760px, calc(100vw - 64px));
+}
+
+/* Focus lands on the dialog itself so ← / → and Escape work at once; it's not a control. */
+body[data-k-layout="rails"] .k-ps-sheet:focus {
+    outline: none;
+}
+
+body[data-k-layout="rails"] .k-mkt-preview-art.k-ps-sheet-art {
+    width: 150px;
+    border-color: color-mix(in srgb, var(--card-accent) 45%, var(--k-lib-card-border));
+}
+
+body[data-k-layout="rails"] .k-ps-sheet-tools {
+    display: flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+body[data-k-layout="rails"] .k-ps-sheet .k-ps-wearing {
+    align-self: flex-start;
+}
+
+body[data-k-layout="rails"] .k-ps-sheet-about {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: none;
+}
+
+body[data-k-layout="rails"] .k-ps-sheet-tokens {
+    color: var(--k-text-faint);
+    font-family: var(--k-font-mono);
+    font-size: var(--k-lib-micro-size);
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-ps-sheet-empty {
+    padding: 8px 0;
+}
+
+body[data-k-layout="rails"] .k-ps-sheet-facts {
+    display: grid;
+    gap: 14px;
+    flex: none;
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-ps-sheet-fact {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-ps-sheet-fact dd {
+    margin: 0;
+    color: var(--k-text);
+    font-size: var(--k-lib-ui-size);
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-ps-sheet-none,
+body[data-k-layout="rails"] .k-ps-sheet-hint {
+    color: var(--k-text-faint);
+    font-size: var(--k-lib-ui-size);
+}
+
+/* Phone: the sheet is the screen, the way the studio's is (css/studio.css, max-width 700px). */
+@media (max-width: 700px) {
+    body[data-k-layout="rails"] .k-studio-sheet.k-mkt-preview.k-ps-sheet {
+        width: 100vw;
+        height: var(--k-vvh, 100dvh);
+        max-height: none;
+        border-radius: 0;
+    }
+
+    body[data-k-layout="rails"] .k-studio-head.k-mkt-preview-head.k-ps-sheet-head {
+        flex-wrap: wrap;
+    }
+
+    body[data-k-layout="rails"] .k-mkt-preview-art.k-ps-sheet-art {
+        width: 96px;
+    }
+
+    body[data-k-layout="rails"] .k-ps-sheet-head .k-ps-sheet-tools {
+        order: -1;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    body[data-k-layout="rails"] .k-ps-sheet-hint {
+        display: none;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

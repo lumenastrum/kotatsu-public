@@ -1411,6 +1411,12 @@
     {
      "selector": "body[data-k-layout=\"rails\"]",
      "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 700px)"
+     ]
     }
    ]
   },
@@ -1456,6 +1462,12 @@
     {
      "selector": "body[data-k-layout=\"rails\"]",
      "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 700px)"
+     ]
     }
    ]
   },
@@ -1500,6 +1512,12 @@
     {
      "selector": "body[data-k-layout=\"rails\"]",
      "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 700px)"
+     ]
     }
    ]
   },
@@ -1533,6 +1551,12 @@
     {
      "selector": "body[data-k-layout=\"rails\"]",
      "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 700px)"
+     ]
     }
    ]
   },
@@ -1578,6 +1602,12 @@
     {
      "selector": "body[data-k-layout=\"rails\"]",
      "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 700px)"
+     ]
     }
    ]
   },

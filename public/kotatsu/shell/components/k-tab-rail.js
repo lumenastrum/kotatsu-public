@@ -88,6 +88,17 @@ import { event_types, eventSource } from '../../../scripts/events.js';
 import { selected_group } from '../../../scripts/group-chats.js';
 // Side-effect import: defines <k-cast-panel>, the Cast tab's view (group chat v0 G4).
 import '../../groups/k-cast-panel.js';
+import { getRailStates, setRail } from '../rail-collapse.js';
+
+/**
+ * The public door to a page of this rail: `document.dispatchEvent(new CustomEvent(
+ * SHOW_RAIL_TAB_EVENT, { cancelable: true, detail: { id: 'trackers' } }))`. The rail answers
+ * with `preventDefault()` when the page exists, opens itself if the reader had collapsed it,
+ * and brings the page forward. A string literal for the same reason `k-open-personas` is one:
+ * a sender (the persona studio's "See it in the last prompt") should not import a shell
+ * component to learn one name. `detail.ready` is set to this element's `updateComplete`.
+ */
+export const SHOW_RAIL_TAB_EVENT = 'k-show-rail-tab';
 
 /**
  * What a docked `.drawer-content` wears while it lives in the rail.
@@ -336,6 +347,8 @@ export class KTabRail extends LitElement {
          * @type {(event: Event) => void}
          */
         this._onDrawerOpener = (event) => this.#onDrawerOpener(event);
+        /** @type {(event: Event) => void} */
+        this._onShowTab = (event) => this.#onShowTab(event);
     }
 
     /** Light DOM: `public/css/shell-right.css` owns every rule. See the file header. */
@@ -349,6 +362,7 @@ export class KTabRail extends LitElement {
             this.setAttribute('variant', this.variant);
         }
         document.addEventListener('click', this._onDrawerOpener);
+        document.addEventListener(SHOW_RAIL_TAB_EVENT, this._onShowTab);
         for (const key of SCENE_EVENTS) {
             const name = event_types[key];
             if (typeof name === 'string') eventSource.on(name, this._onSceneChange);
@@ -360,6 +374,7 @@ export class KTabRail extends LitElement {
 
     disconnectedCallback() {
         document.removeEventListener('click', this._onDrawerOpener);
+        document.removeEventListener(SHOW_RAIL_TAB_EVENT, this._onShowTab);
         for (const key of SCENE_EVENTS) {
             const name = event_types[key];
             if (typeof name === 'string') eventSource.removeListener(name, this._onSceneChange);
@@ -540,6 +555,27 @@ export class KTabRail extends LitElement {
                 : null;
             record.parent.insertBefore(record.wrapper, before);
         }
+    }
+
+    /**
+     * Serves {@link SHOW_RAIL_TAB_EVENT}. An unknown page is left unanswered, so the sender
+     * knows nothing happened. Opening a collapsed rail is the reader's own request carried
+     * out (they asked to see this page), so it goes through `setRail()` like the chevron does.
+     * @param {Event} event The request.
+     * @returns {void}
+     */
+    #onShowTab(event) {
+        const detail = event instanceof CustomEvent && event.detail && typeof event.detail === 'object' ? event.detail : null;
+        const id = typeof detail?.id === 'string' ? detail.id : '';
+        if (!id || !this.#allTabs().some(tab => tab.id === id)) return;
+        event.preventDefault();
+        try {
+            if (getRailStates()?.right !== 'open') setRail('right', 'open');
+        } catch (error) {
+            console.warn('[k-tab-rail] could not open the rail', error);
+        }
+        this.#select(id);
+        if (detail) detail.ready = this.updateComplete;
     }
 
     /**

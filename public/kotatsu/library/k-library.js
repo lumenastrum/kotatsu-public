@@ -77,6 +77,16 @@ import { OPEN_STUDIO_EVENT } from '../studio/manifest.js';
 import { chatLabelText } from '../shell/chat-label.js';
 
 /** @typedef {import('./view-model.js').LibraryRow} LibraryRow */
+/** @typedef {import('./persona-view-model.js').PersonaRow} PersonaRow */
+
+/**
+ * The persona gallery's door (`docs/persona-gallery-v0.md` §0): opens the library on Your
+ * personas. Dispatched on `document`, CANCELABLE: the mounted gallery calls
+ * `preventDefault()` when it answers, so a sender (the rail's persona chip) knows whether to
+ * fall back to Settings → Personas. A string literal on purpose — the chip lives in the shell
+ * and must not import this 1600-line module to learn one name.
+ */
+export const OPEN_PERSONAS_EVENT = 'k-open-personas';
 
 /** The open request. Bubbling + composed, like `k-open-settings` and `k-open-branch-map`. */
 export const OPEN_LIBRARY_EVENT = 'k-open-library';
@@ -249,6 +259,34 @@ const icons = {
              aria-hidden="true" focusable="false">
             <path d="M10.6 3.4a1.5 1.5 0 0 1 2.1 2.1L6.4 11.8l-2.9.7.7-2.9z" /><path d="M9.4 4.6l2 2" />
         </svg>`,
+    /** Persona: core's default persona for new chats. A star, outlined like every badge. */
+    star: html`
+        <svg class="k-lib-icon" viewBox="0 0 16 16" width="13" height="13" fill="none"
+             stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <path d="m8 2.4 1.7 3.5 3.8.5-2.8 2.6.7 3.8L8 11l-3.4 1.8.7-3.8-2.8-2.6 3.8-.5z" />
+        </svg>`,
+    /** Persona: locked to this chat or to the open character. */
+    lock: html`
+        <svg class="k-lib-icon" viewBox="0 0 16 16" width="13" height="13" fill="none"
+             stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <rect x="3.5" y="7.25" width="9" height="6.25" rx="1.4" /><path d="M5.5 7.25V5.4a2.5 2.5 0 0 1 5 0v1.85" />
+        </svg>`,
+    /** Persona: the one you're wearing. */
+    check: html`
+        <svg class="k-lib-icon k-lib-icon--arrow" viewBox="0 0 16 16" width="12" height="12" fill="none"
+             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <path d="M3.2 8.4 6.4 11.6 12.8 4.8" />
+        </svg>`,
+    /** Your personas — one head, the person at this side of the table. */
+    you: html`
+        <svg class="k-lib-icon" viewBox="0 0 16 16" width="12" height="12" fill="none"
+             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <circle cx="8" cy="5.4" r="2.5" /><path d="M3.25 13.25a4.75 4.75 0 0 1 9.5 0" />
+        </svg>`,
     /** The assistant badge — core's own "welcome page assistant" mark, as a hearth spark. */
     assistant: html`
         <svg class="k-lib-icon" viewBox="0 0 16 16" width="13" height="13" fill="none"
@@ -340,6 +378,9 @@ export { toRelative } from '../shell/relative-time.js';
  * @returns {unknown} A Lit template.
  */
 export function renderCard(row, handlers = {}) {
+    if (row.type === 'persona') {
+        return renderPersonaCard(/** @type {PersonaRow} */ (row), handlers);
+    }
     const interactive = handlers.interactive !== false;
     const isGroup = row.type === 'group';
     const tags = row.tags.slice(0, CARD_TAG_MAX);
@@ -447,6 +488,98 @@ export function renderCard(row, handlers = {}) {
 }
 
 /**
+ * A persona poster — `docs/persona-gallery-v0.md` §1.1. Same box, same copy block, same
+ * accent rules as the cast card, so the two shelves read as one gallery. What differs is
+ * what a persona IS: no favourite heart (core has none for personas), state badges instead
+ * (default, locked), and the foot says Wear / Wearing instead of Open chat.
+ *
+ * The portrait is FULL-RES (`User Avatars/{id}`) and degrades twice, never to a broken image
+ * (doc §4 gate 5): a failed full-res load swaps to core's thumbnail once, and a failed
+ * thumbnail hides the `<img>`, uncovering the initials tile drawn underneath it.
+ * @param {PersonaRow} row The persona row.
+ * @param {CardHandlers} handlers Interaction hooks; `onOpen` wears, `onEdit` edits.
+ * @returns {unknown} A Lit template.
+ */
+function renderPersonaCard(row, handlers) {
+    const interactive = handlers.interactive !== false;
+    /** @param {Event} event */
+    const editClick = (event) => { event.stopPropagation(); handlers.onEdit?.(row, event); };
+    /** @param {KeyboardEvent} event */
+    const cardKey = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        handlers.onOpen?.(row);
+    };
+    /** @param {Event} event */
+    const artFailed = (event) => {
+        const img = event.currentTarget;
+        if (!(img instanceof HTMLImageElement)) return;
+        if (row.thumb && img.dataset.fallback !== 'thumb') {
+            img.dataset.fallback = 'thumb';
+            img.src = row.thumb;
+            return;
+        }
+        img.hidden = true;
+    };
+
+    const locked = row.chatLocked || row.charLocked;
+    const lockLabel = row.chatLocked && row.charLocked
+        ? 'Locked to this chat and this character'
+        : row.chatLocked ? 'Locked to this chat' : 'Locked to this character';
+    const badges = html`
+        ${row.isDefault ? html`<span class="k-lib-card-badge k-lib-card-badge--persona" title="Default for new chats" aria-label="Default for new chats">${icons.star}</span>` : nothing}
+        ${locked ? html`<span class="k-lib-card-badge k-lib-card-badge--persona" title=${lockLabel} aria-label=${lockLabel}>${icons.lock}</span>` : nothing}`;
+
+    const editButton = interactive && handlers.onEdit
+        ? html`<button type="button" class="k-lib-card-edit" title="Edit persona" aria-label=${`Edit ${row.name}`} @click=${editClick}>${icons.edit}</button>`
+        : nothing;
+
+    const foot = row.current
+        ? html`<span class="k-lib-card-open k-lib-card-open--on">Wearing${icons.check}</span>`
+        : html`<span class="k-lib-card-open">Wear${icons.arrow}</span>`;
+    const label = row.current ? `${row.name}, the persona you're wearing` : `Wear ${row.name}`;
+    // Variants, counted: "3 variants · 1 here" (here = would fold in for what's open).
+    const counted = row.variants?.items ?? 0;
+    const variantStat = counted
+        ? html`<span class="k-lib-card-variants" title=${row.variantsHere?.length ? `On here: ${row.variantsHere.join(', ')}` : 'None fold in for what is open'}>${counted} ${counted === 1 ? 'variant' : 'variants'}${row.variants.here ? html`<b> · ${row.variants.here} here</b>` : nothing}</span>`
+        : nothing;
+
+    return html`
+        <article
+            class="k-lib-card k-lib-card--persona${row.current ? ' is-current' : ''}"
+            style=${`--card-accent: hsl(${row.hue} var(--k-lib-accent-s) var(--k-lib-accent-l));`}
+            data-persona=${row.id}
+            role=${interactive ? 'button' : nothing}
+            tabindex=${interactive ? '0' : nothing}
+            aria-label=${interactive ? label : nothing}
+            aria-current=${row.current ? 'true' : nothing}
+            @click=${interactive ? () => handlers.onOpen?.(row) : nothing}
+            @keydown=${interactive ? cardKey : nothing}
+        >
+            <div class="k-lib-card-art">
+                <div class="k-lib-card-initials" aria-hidden="true">${row.initials}</div>
+                ${row.portrait ? html`<img class="k-lib-card-portrait k-lib-card-portrait--over" src=${row.portrait} alt="" loading="lazy" decoding="async" @error=${artFailed} />` : nothing}
+                <div class="k-lib-card-scrim" aria-hidden="true"></div>
+            </div>
+
+            <div class="k-lib-card-chrome">
+                ${badges}
+                ${editButton}
+            </div>
+
+            <div class="k-lib-card-copy">
+                ${row.kicker ? html`<span class="k-lib-card-kicker">${row.kicker}</span>` : nothing}
+                <h3 class="k-lib-card-name">${row.name}</h3>
+                <p class="k-lib-card-body">${row.body}</p>
+                <div class="k-lib-card-foot">
+                    <span class="k-lib-card-stat">${variantStat}</span>
+                    ${foot}
+                </div>
+            </div>
+        </article>`;
+}
+
+/**
  * The left rail: roster, chats, branches — no. The gallery.
  */
 export class KLibrary extends LitElement {
@@ -492,6 +625,9 @@ export class KLibrary extends LitElement {
     /** @type {((event: Event) => void)|null} */
     #onShowView = null;
 
+    /** @type {((event: Event) => void)|null} */
+    #onOpenPersonas = null;
+
     /** @type {number} `setTimeout` handle that ends the scrolling state, 0 = idle. */
     #scrollTimer = 0;
 
@@ -536,10 +672,11 @@ export class KLibrary extends LitElement {
          */
         this._hasChat = false;
         /**
-         * Which of the gallery's two sources is showing: the library, or a card site
-         * (`docs/character-marketplace-v0.md` §9). Not persisted: the gallery opens on the
-         * cast every time.
-         * @type {'cast'|'browse'}
+         * Which of the gallery's views is showing: the cast, a card site
+         * (`docs/character-marketplace-v0.md` §9), or your personas
+         * (`docs/persona-gallery-v0.md` §1). Not persisted: the gallery opens on the cast
+         * every time.
+         * @type {'cast'|'browse'|'you'}
          */
         this._view = 'cast';
         /** @type {boolean} The sheet is scrolled past {@link JUMP_THRESHOLD_PX}: the way back is offered. */
@@ -629,10 +766,17 @@ export class KLibrary extends LitElement {
         this.addEventListener('scroll', this.#onScroll, { capture: true, passive: true });
         this.#onShowView = (event) => {
             const detail = /** @type {CustomEvent<{ view?: string, top?: boolean }>} */ (event).detail ?? {};
-            const view = detail.view === 'browse' ? 'browse' : 'cast';
+            const view = detail.view === 'browse' || detail.view === 'you' ? detail.view : 'cast';
             void this.showView(view).then(() => { if (detail.top) this.scrollToTop(); });
         };
         this.addEventListener(SHOW_VIEW_EVENT, this.#onShowView);
+        // The persona chip's door. Answered (preventDefault) so the chip knows not to fall back.
+        this.#onOpenPersonas = (event) => {
+            event.preventDefault();
+            if (!this.open) this.openLibrary();
+            void this.showView('you').then(() => this.scrollToTop());
+        };
+        document.addEventListener(OPEN_PERSONAS_EVENT, this.#onOpenPersonas);
 
         this.#syncVisibility();
         this.#scheduleRefresh();
@@ -669,6 +813,10 @@ export class KLibrary extends LitElement {
         if (this.#onShowView) {
             this.removeEventListener(SHOW_VIEW_EVENT, this.#onShowView);
             this.#onShowView = null;
+        }
+        if (this.#onOpenPersonas) {
+            document.removeEventListener(OPEN_PERSONAS_EVENT, this.#onOpenPersonas);
+            this.#onOpenPersonas = null;
         }
         if (this.#scrollTimer !== 0) {
             clearTimeout(this.#scrollTimer);
@@ -734,12 +882,13 @@ export class KLibrary extends LitElement {
     }
 
     /**
-     * Switches between the cast and Browse Characters.
+     * Switches between the cast, Browse Characters and Your personas.
      *
      * The marketplace module is imported here, on the first switch, and nowhere else: a
      * gallery that never browses never loads it, and a card site that is down cannot touch
-     * the cast (doc §10). If the import itself fails the view stays where it was.
-     * @param {'cast'|'browse'} view The view to show.
+     * the cast (doc §10). The persona shelf rides the same lazy door. If an import fails the
+     * view stays where it was.
+     * @param {'cast'|'browse'|'you'} view The view to show.
      * @returns {Promise<void>}
      */
     async showView(view) {
@@ -748,6 +897,14 @@ export class KLibrary extends LitElement {
                 await import('../market/k-market.js');
             } catch (error) {
                 console.error('[k-library] Browse Characters could not be loaded.', error);
+                return;
+            }
+        }
+        if (view === 'you') {
+            try {
+                await import('./k-persona-shelf.js');
+            } catch (error) {
+                console.error('[k-library] Your personas could not be loaded.', error);
                 return;
             }
         }
@@ -942,6 +1099,8 @@ export class KLibrary extends LitElement {
             event.preventDefault();
             this._search = '';
             target.value = '';
+            // The persona shelf's box wears the same class and keeps its own state: tell it.
+            target.dispatchEvent(new Event('input', { bubbles: true }));
             return;
         }
         event.stopPropagation();
@@ -1222,6 +1381,19 @@ export class KLibrary extends LitElement {
                     </div>
                 </div>`;
         }
+        // Your personas: the shelf owns its tools and grid (docs/persona-gallery-v0.md §1).
+        if (this._view === 'you') {
+            return html`
+                <div class="k-lib-sheet" role="region" aria-label="Library">
+                    <div class="k-lib-page">
+                        ${this.#renderBrandRow()}
+                        ${this.#renderHero()}
+                        ${this.#renderViews()}
+                        <k-persona-shelf variant="gallery"></k-persona-shelf>
+                        ${this.#renderJump()}
+                    </div>
+                </div>`;
+        }
         const visible = filterRows(this._rows, { search: this._search, tab: this._tab });
         return html`
             <div class="k-lib-sheet" role="region" aria-label="Library">
@@ -1267,6 +1439,12 @@ export class KLibrary extends LitElement {
                     @click=${() => { void this.showView('cast'); }}
                 >Your cast</button>
                 <button
+                    type="button" role="tab" class="k-lib-view${this._view === 'you' ? ' is-active' : ''}"
+                    data-view="you"
+                    aria-selected=${this._view === 'you' ? 'true' : 'false'}
+                    @click=${() => { void this.showView('you'); }}
+                >Your personas</button>
+                <button
                     type="button" role="tab" class="k-lib-view${this._view === 'browse' ? ' is-active' : ''}"
                     data-view="browse"
                     aria-selected=${this._view === 'browse' ? 'true' : 'false'}
@@ -1295,6 +1473,9 @@ export class KLibrary extends LitElement {
 
     /** @returns {unknown} Hero: eyebrow, serif question, sub-line, and the actions. */
     #renderHero() {
+        if (this._view === 'you') {
+            return this.#renderPersonaHero();
+        }
         // The question is the same in both views. The eyebrow and the line under it say which
         // room the answer comes from.
         const browsing = this._view === 'browse';
@@ -1327,6 +1508,30 @@ export class KLibrary extends LitElement {
                         class="k-lib-btn k-lib-btn--primary"
                         @click=${() => this.#onCreateCharacter()}
                     >${icons.plus}<span>Create character</span></button>
+                </div>
+            </section>`;
+    }
+
+    /**
+     * Your personas' hero: the other side of the table asks the other question. One action:
+     * New persona is a REAL click on `#create_dummy_persona` (`personas.js:2926`), so core's
+     * own name + title popup, `initPersona()` and the default-avatar upload all run untouched.
+     * @returns {unknown} The persona hero.
+     */
+    #renderPersonaHero() {
+        return html`
+            <section class="k-lib-hero">
+                <div class="k-lib-hero-copy">
+                    <span class="k-lib-eyebrow">✦ Your personas</span>
+                    <h1 class="k-lib-title">Who are you tonight?</h1>
+                    <p class="k-lib-sub">Every face you bring to the table. Tap one to wear it.</p>
+                </div>
+                <div class="k-lib-hero-actions">
+                    <button
+                        type="button"
+                        class="k-lib-btn k-lib-btn--primary"
+                        @click=${() => this.#clickStock('create_dummy_persona')}
+                    >${icons.plus}<span>New persona</span></button>
                 </div>
             </section>`;
     }
@@ -1540,7 +1745,7 @@ export function closeLibrary() {
 /**
  * Opens the gallery on one of its views. The welcome tour's "Browse Characters" tile is the
  * caller that needs both at once.
- * @param {'cast'|'browse'} view The view to show.
+ * @param {'cast'|'browse'|'you'} view The view to show.
  * @returns {Promise<boolean>} False when the gallery is not mounted (classic layout).
  */
 export async function showLibraryView(view) {

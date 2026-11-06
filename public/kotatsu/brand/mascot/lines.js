@@ -134,6 +134,15 @@ export const LINES = Object.freeze({
     whatsNewBackdrop: Object.freeze([
         'Every stage needs a set. Paint a place or bring a photo, and I’ll hang it up behind the cast.',
     ]),
+    whatsNewPersonas: Object.freeze([
+        'You get a shelf too now! Pick who you are tonight. I always pick the one with the mandarins.',
+    ]),
+    whatsNewPersonaStudio: Object.freeze([
+        'Your persona has a page of its own. Write yourself in, and I’ll show you exactly what the story hears.',
+    ]),
+    whatsNewVariants: Object.freeze([
+        'A little different with every friend? Me too! Variants only show up where they belong.',
+    ]),
     whatsNewAndroid: Object.freeze([
         'I fit in your Android now! The whole kotatsu, in your pocket. The blanket stays home, sorry.',
     ]),

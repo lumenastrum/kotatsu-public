@@ -45,6 +45,9 @@ import {
 // path has to call `uninstallStudio()` SYNCHRONOUSLY, before `ctx.restoreAll()` — a module
 // handle captured from a dynamic import would not be guaranteed to exist by then.
 import { installStudio, uninstallStudio } from '../../studio/k-card-studio.js';
+// The persona studio (docs/persona-gallery-v0.md §2) holds core's persona controls the same way;
+// its uninstall is a synchronous close, called beside `uninstallStudio()`.
+import { uninstallPersonaStudio } from '../../studio/k-persona-studio.js';
 import { installSceneStudio, uninstallSceneStudio } from '../../groups/k-scene-studio.js';
 import { installStage, uninstallStage } from '../../groups/k-stage.js';
 import { installSpeakerHues, uninstallSpeakerHues } from '../../groups/speaker-hues.js';
@@ -367,6 +370,7 @@ export const railsLayout = {
         // up would hand classic two frozen blocks with holes in them. Same ordering lesson as
         // the tab rail's dock (`k-tab-rail.js:241-248`), one layer further out.
         uninstallStudio();
+        uninstallPersonaStudio();
         uninstallSceneStudio();
         // SECOND, and for exactly the same reason: an open settings modal is
         // HOLDING that tab's controls out of the drawer rack, and

@@ -14,6 +14,41 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
+    // Personas are the headline of 0.9 (kotatsu-public#7): the shelf, the studio, and variants.
+    Object.freeze({
+        version: '0.9.0',
+        title: 'Who you are',
+        cards: [
+            {
+                id: 'personas',
+                title: 'A shelf for every you',
+                body: 'Your personas get a shelf of their own, right beside your cast in the library: full portraits, a page for each one, and one tap to wear it. All personas… under the persona chip opens it.',
+                line: 'whatsNewPersonas',
+                wiki: 'Personas#your-personas',
+            },
+            {
+                id: 'persona-studio',
+                title: 'A page for you, too',
+                body: 'The persona you’re wearing opens as a page: who you are, what the model reads with your name filled in and what it costs, where it goes, and what it’s tied to. Change the picture or the name without leaving it.',
+                line: 'whatsNewPersonaStudio',
+                wiki: 'Personas#the-persona-studio',
+            },
+            {
+                id: 'variants',
+                title: 'You, but here',
+                body: 'Variants are extra lines that fold into your persona only where they belong: with certain characters, in certain chats, or when a card mentions something. Switch them on and off from the persona chip. Your description itself never changes.',
+                line: 'whatsNewVariants',
+                wiki: 'Personas#variants',
+            },
+        ],
+        notes: [
+            'Variants can live in groups, and in Advanced a joiner and a wrapper decide how they’re put together.',
+            'Switching a variant on or off partway through a chat asks first, because your next reply then sends the whole chat to your provider fresh.',
+            'Duplicating a persona brings its variants along.',
+            'Replace a persona’s picture and the new one shows everywhere straight away.',
+            'On a phone, the library shows two posters across, for your cast too.',
+        ],
+    }),
     // Summer is the headline of the 0.8 line, so each 0.8.x carries 0.8.0's cards and clips (media
     // moved along, now 0.8.5/) with its own lines on top, the way 0.7.x carried Sprites below.
     Object.freeze({

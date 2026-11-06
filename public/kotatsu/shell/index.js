@@ -62,6 +62,8 @@ import { installOnboarding } from '../onboarding/k-onboarding.js';
 import { installWhatsNew } from '../whats-new/k-whats-new.js';
 import { installFeedback } from '../feedback/k-feedback.js';
 import { applyLayout, currentLayout, defineLayout, hasLayout } from './registry.js';
+import { installPersonaVariants } from '../library/persona-variants-runtime.js';
+import { installPortraitWatch } from '../library/persona-portraits.js';
 
 export { setLayout } from './persistence.js';
 
@@ -139,6 +141,14 @@ export async function initKotatsuShell() {
     // store retries on the same events — wiring here is registration only.
     initKotatsuPromptList();
     initPromptReceipts();
+
+    // Persona variants (docs/persona-gallery-v0.md §7). Registration only: one composer on
+    // core's `getActivePersonaDescription()` seam, read at prompt time. Here rather than in
+    // a layout because variants are data on the persona and must apply under classic too.
+    installPersonaVariants();
+    // Persona portraits are replaced under the same filename; this busts the cache for the one
+    // that changed (docs/persona-gallery-v0.md §1.4). Watches core's file input + stock grid.
+    installPortraitWatch();
 
     // Preset dock v0 (docs/preset-dock-v0.md). Mounts the Sauce/Dials/Rack
     // strip into #left-nav-panel; inert under classic, filters only when the

@@ -45,7 +45,7 @@ export const CARD_TAG_MAX = 3;
 
 /**
  * @typedef {object} LibraryRow
- * @property {'character'|'group'} type Entity kind. Tag folders never reach here.
+ * @property {'character'|'group'|'persona'} type Entity kind. Tag folders never reach here; personas come from `persona-view-model.js`.
  * @property {string|number} id The id `selectCharacterById()` / `openGroupById()` expects —
  *   a character INDEX or a group id string.
  * @property {string} key Stable identity for keyed rendering: `character.<avatar>` / `group.<id>`.

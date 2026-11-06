@@ -1272,6 +1272,56 @@ body[data-k-layout="rails"] k-persona-menu .k-pm__mark {
     color: var(--k-rose);
 }
 
+/* Variants (docs/persona-gallery-v0.md §7): quick switches for the persona you're wearing.
+   A mini switch, the name, a "N in group" tag, and an accent dot when it folds in here. */
+body[data-k-layout="rails"] k-persona-menu .k-pm__vswitch {
+    position: relative;
+    flex: 0 0 auto;
+    width: 26px;
+    height: 15px;
+    border: 1px solid var(--k-control-border);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-control-bg);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__vswitch > span {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__vrow[aria-checked="true"] .k-pm__vswitch {
+    border-color: var(--k-accent);
+    background: color-mix(in srgb, var(--k-accent) 30%, var(--k-control-bg));
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__vrow[aria-checked="true"] .k-pm__vswitch > span {
+    left: 13px;
+    background: var(--k-accent);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__vrow[aria-checked="false"] .k-pm__name {
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__vtag {
+    display: block;
+    color: var(--k-text-faint);
+    font-size: 10.5px;
+}
+
+body[data-k-layout="rails"] k-persona-menu .k-pm__vhere {
+    flex: 0 0 auto;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--k-accent);
+}
+
 body[data-k-layout="rails"] k-persona-menu .k-pm__divider {
     block-size: 1px;
     margin: 4px 8px;

@@ -108,6 +108,17 @@ A scene puts several characters in one chat. **New scene** in the library opens 
 
 On disk a scene is an ordinary SillyTavern group chat, so stock SillyTavern still opens it. The [wiki](https://github.com/lumenastrum/kotatsu-public/wiki/Scenes) has the details.
 
+## Personas: who you are at the table
+
+<p align="center"><img src=".github/screenshots/personas.webp" alt="The library's Your personas shelf: five full-portrait posters (a baker in an orange hoodie, a desert cartographer, a swordsman, a book restorer and a freighter pilot), the first one marked Wearing with 3 variants" width="720"></p>
+
+Your personas get a shelf of their own, right beside your cast: full portraits, a page for each one, and one tap to wear it.
+
+- **A page for you, too.** The persona you're wearing opens in a studio: who you are, what the model reads (macros filled in, with the token count), where it goes, and what it's tied to.
+- **Variants.** Extra lines that fold into your persona only where they belong: with certain characters, in certain chats, or when a card matches. Flip them from the persona chip. Your description itself never changes, and Kotatsu tells you before a mid-chat switch makes the next reply cost more.
+
+Personas are stored where SillyTavern keeps them, so stock SillyTavern still reads them. The [wiki](https://github.com/lumenastrum/kotatsu-public/wiki/Personas) has the details.
+
 ## Everything SillyTavern let you shape
 
 <img align="right" width="128" src="public/kotatsu/brand/mascot/card-bust.webp" alt="Mikan-chan presenting a blank card">

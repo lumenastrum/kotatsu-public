@@ -455,6 +455,13 @@ Three properties, all contractual:
 Frequently assumed to be top-level, actually nested:
 
 - `personas` and `persona_descriptions` → **inside `power_user`** (`power-user.js:286`, `:288`)
+  - **Kotatsu addition (2026-11-05):** a descriptor may carry `kotatsu_variants`, an array of
+    persona variants (`docs/persona-gallery-v0.md` §7). `power_user` is a SURVIVE lane (§5), so the
+    key round-trips with no registration; core's persona Backup / Restore carries it because it
+    serializes descriptors whole. Absent on any persona that never used variants (an emptied list
+    deletes the key). Alongside it, `kotatsu_variant_format` (`{ joiner, wrapper }`), absent while
+    it's the default. Core's Duplicate copies known descriptor fields only; Kotatsu copies both
+    keys onto the duplicate from `PERSONA_CREATED`'s `duplicatedFromAvatarId`.
 - `instruct`, `context`, `sysprompt`, `reasoning` → **inside `power_user`** (`power-user.js:218`, `:247`, `:267`, `:274`) — these are the *live* copies of the four preset folders
 - `movingUI`, `movingUIState`, `movingUIPreset` → **inside `power_user`** (`power-user.js:173-175`)
 - `disabledExtensions` → **inside `extension_settings`**

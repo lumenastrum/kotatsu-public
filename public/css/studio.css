@@ -1729,3 +1729,408 @@ body[data-k-layout="rails"] .k-studio-link {
             filter var(--k-motion);
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. THE PERSONA STUDIO (docs/persona-gallery-v0.md §2, slice P2)
+   ───────────────────────────────────────────────────────────────────────────
+   `<k-persona-studio>` wears this whole sheet: scrim, sheet, head, view switch, the sticky hero
+   and stage, chapters, labelled fields and the borrowed-input skin. These rules are only what a
+   persona page has that a card page doesn't. Everything is `.k-pstudio*`-scoped.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body[data-k-layout="rails"] k-persona-studio {
+    display: contents;
+}
+
+/* §0's attribute rule, for this element: `[hidden]` alone loses to the `display` the studio
+   classes carry. Kotatsu's own classes only; a borrowed control's `hidden` is core's. */
+body[data-k-layout="rails"] k-persona-studio :is(.k-studio-chapter, .k-studio-field, .k-studio-control, .k-studio-btn, .k-pvar-format)[hidden] {
+    display: none;
+}
+
+body[data-k-layout="rails"] .k-pstudio-tokens {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border: var(--k-studio-frame-line) solid var(--k-studio-frame-color);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-control-bg);
+    color: var(--k-text-muted);
+    font-size: var(--k-studio-hint-size);
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-pstudio-tokens b {
+    color: var(--k-text-strong);
+    font-family: var(--k-font-mono);
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] .k-pstudio-wearing {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--k-text-muted);
+    font-size: var(--k-studio-hint-size);
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-pstudio-wearing .k-lib-icon {
+    color: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-pstudio-hero-actions,
+body[data-k-layout="rails"] .k-pstudio-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-pstudio-hero-name {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-pstudio-name {
+    margin: 0;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: 26px;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+
+body[data-k-layout="rails"] .k-pstudio-title,
+body[data-k-layout="rails"] .k-pstudio-quiet {
+    margin: 0;
+    color: var(--k-text-muted);
+    font-size: var(--k-studio-ui-size);
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-pstudio-preview {
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-pstudio-placement {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin: 0;
+    color: var(--k-text);
+    font-size: var(--k-studio-ui-size);
+    line-height: 1.5;
+}
+
+body[data-k-layout="rails"] .k-pstudio-lorebook {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 4px;
+    color: var(--k-text);
+    font-size: var(--k-studio-ui-size);
+}
+
+body[data-k-layout="rails"] .k-studio-btn.k-pstudio-danger {
+    color: var(--k-danger);
+}
+
+body[data-k-layout="rails"] .k-studio-btn.k-pstudio-danger:hover,
+body[data-k-layout="rails"] .k-studio-btn.k-pstudio-danger:focus-visible {
+    border-color: var(--k-danger);
+}
+
+/* A field that only carries actions has an empty control row; don't let it take a gap. */
+body[data-k-layout="rails"] .k-pstudio .k-studio-control:empty {
+    display: none;
+}
+
+/* Core's borrowed checkboxes and lock buttons keep core's own look; give them air in a slot. */
+body[data-k-layout="rails"] .k-pstudio .k-studio-slot .range-block {
+    margin: 0;
+}
+
+/* ── Persona variants (docs/persona-gallery-v0.md §7) ─────────────────────────
+   One card per variant: switch · name · "On here" · move/delete, then its text, its trigger,
+   and a one-line summary. Kotatsu-owned fields wear the borrowed-input skin via
+   `.k-studio-control`, so a variant's textarea reads like the description above it. */
+
+body[data-k-layout="rails"] .k-pvar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+body[data-k-layout="rails"] .k-pvar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    border: var(--k-studio-frame-line) solid var(--k-studio-frame-color);
+    border-radius: var(--k-studio-panel-radius);
+    background: color-mix(in srgb, var(--k-studio-field-fill) 60%, transparent);
+}
+
+body[data-k-layout="rails"] .k-pvar[data-on] {
+    border-color: color-mix(in srgb, var(--k-accent) 55%, var(--k-studio-frame-color));
+}
+
+body[data-k-layout="rails"] .k-pvar[data-off] .k-pvar-text,
+body[data-k-layout="rails"] .k-pvar[data-off] .k-pvar-title {
+    opacity: 0.6;
+}
+
+body[data-k-layout="rails"] .k-pvar-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-pvar-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 4px 2px;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    background: transparent;
+    color: var(--k-text-strong);
+    font-family: var(--k-font-display);
+    font-size: 17px;
+    font-weight: var(--k-display-weight);
+}
+
+body[data-k-layout="rails"] .k-pvar-title:focus,
+body[data-k-layout="rails"] .k-pvar-title:hover {
+    border-bottom-color: var(--k-accent);
+    outline: none;
+}
+
+body[data-k-layout="rails"] .k-pvar-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+body[data-k-layout="rails"] .k-pvar-tools .k-studio-iconbtn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+/* The switch: a pill with a knob. aria-checked is the state; nothing else is. */
+body[data-k-layout="rails"] .k-pvar-switch {
+    position: relative;
+    flex: 0 0 auto;
+    width: 34px;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--k-control-border);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-control-bg);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-pvar-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--k-text-faint);
+}
+
+body[data-k-layout="rails"] .k-pvar-switch[aria-checked="true"] {
+    border-color: var(--k-accent);
+    background: color-mix(in srgb, var(--k-accent) 30%, var(--k-control-bg));
+}
+
+body[data-k-layout="rails"] .k-pvar-switch[aria-checked="true"] .k-pvar-knob {
+    left: 16px;
+    background: var(--k-accent);
+}
+
+body[data-k-layout="rails"] .k-pvar-switch:focus-visible {
+    outline: 2px solid var(--k-accent);
+    outline-offset: 2px;
+}
+
+body[data-k-layout="rails"] .k-pvar-when {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px 12px;
+}
+
+body[data-k-layout="rails"] .k-pvar-when > :nth-child(n + 3) {
+    grid-column: 2;
+}
+
+body[data-k-layout="rails"] .k-pvar-targets {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-pvar-add-target {
+    flex: 1 1 160px;
+}
+
+body[data-k-layout="rails"] .k-pvar-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    padding: 0 8px;
+    border: 1px solid var(--k-studio-frame-color);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-control-bg);
+    color: var(--k-text);
+    font-size: var(--k-studio-hint-size);
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-pvar-chip.is-here {
+    flex: 0 0 auto;
+    border-color: var(--k-accent);
+    color: var(--k-accent);
+    font-weight: 700;
+}
+
+body[data-k-layout="rails"] .k-pvar-chip-x {
+    display: inline-flex;
+    margin: 0 -4px 0 0;
+    padding: 2px;
+    border: 0;
+    background: none;
+    color: var(--k-text-faint);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-pvar-chip-x:hover,
+body[data-k-layout="rails"] .k-pvar-chip-x:focus-visible {
+    color: var(--k-danger);
+}
+
+body[data-k-layout="rails"] .k-pvar-chip-x .k-lib-icon {
+    width: 11px;
+    height: 11px;
+}
+
+body[data-k-layout="rails"] .k-pvar-summary {
+    margin: 0;
+    color: var(--k-text-muted);
+    font-size: var(--k-studio-hint-size);
+}
+
+/* The heads-up (per-message macros ahead of the chat): warm, readable, not an error. */
+body[data-k-layout="rails"] .k-pstudio .k-pstudio-note {
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid color-mix(in srgb, var(--k-warning, var(--k-accent)) 45%, transparent);
+    border-radius: var(--k-studio-field-radius);
+    background: color-mix(in srgb, var(--k-warning, var(--k-accent)) 10%, transparent);
+    color: var(--k-text);
+    font-size: var(--k-studio-hint-size);
+    line-height: 1.5;
+}
+
+/* Groups: the card that gates others. Its children sit on a rail so the nesting reads at a
+   glance, one level only (the model allows no deeper). */
+body[data-k-layout="rails"] .k-pvar--group {
+    background: color-mix(in srgb, var(--k-control-bg) 70%, transparent);
+}
+
+body[data-k-layout="rails"] .k-pvar--group[data-folded] {
+    gap: 4px;
+}
+
+body[data-k-layout="rails"] .k-pvar-children {
+    margin-left: 8px;
+    padding-left: 12px;
+    border-left: 2px solid color-mix(in srgb, var(--k-accent) 30%, var(--k-studio-frame-color));
+}
+
+body[data-k-layout="rails"] .k-pvar--child {
+    background: var(--k-studio-field-fill);
+}
+
+body[data-k-layout="rails"] .k-pvar-fold {
+    flex: 0 0 auto;
+}
+
+body[data-k-layout="rails"] .k-pvar-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+}
+
+body[data-k-layout="rails"] .k-pvar-regroup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-pvar-regroup select {
+    width: auto;
+    min-width: 140px;
+}
+
+/* How they're joined: label · field, hint under the field. */
+body[data-k-layout="rails"] .k-pvar-format {
+    display: grid;
+    gap: 12px;
+}
+
+body[data-k-layout="rails"] .k-pvar-format-row {
+    display: grid;
+    grid-template-columns: 80px minmax(0, 1fr);
+    align-items: center;
+    gap: 4px 12px;
+}
+
+body[data-k-layout="rails"] .k-pvar-format-row .k-studio-hint {
+    grid-column: 2;
+    text-align: left;
+}
+
+body[data-k-layout="rails"] .k-pvar-joiner,
+body[data-k-layout="rails"] .k-pvar-wrapper {
+    font-family: var(--k-font-mono);
+}
+
+@media (max-width: 700px) {
+    body[data-k-layout="rails"] .k-pvar-when {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body[data-k-layout="rails"] .k-pvar-when > :nth-child(n + 3) {
+        grid-column: 1;
+    }
+
+    body[data-k-layout="rails"] .k-pvar-format-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body[data-k-layout="rails"] .k-pvar-format-row .k-studio-hint {
+        grid-column: 1;
+    }
+
+    body[data-k-layout="rails"] .k-pvar-children {
+        margin-left: 2px;
+        padding-left: 8px;
+    }
+}

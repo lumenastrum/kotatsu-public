@@ -33,8 +33,10 @@
  *     (`scripts/personas.js:177`). A failed thumbnail falls back to an inline
  *     glyph once and stays there for the session — never a broken `<img>`,
  *     same contract as `k-rail-left.js`'s `#thumbFailed` (`k-rail-left.js:456-462`).
- *   - The footer opens the settings modal on its Personas tab
- *     (`openSettings({ tab: 'personas' })`), imported exactly the way
+ *   - The footer opens the library on Your personas (`docs/persona-gallery-v0.md`
+ *     §0) by dispatching the cancelable `k-open-personas` on `document`; when no
+ *     gallery answers it (not mounted), it falls back to the settings modal on
+ *     its Personas tab (`openSettings({ tab: 'personas' })`), imported exactly the way
  *     `k-model-menu.js` imports it. `k-settings-modal.js`'s own `openSettings()`
  *     doc names `k-model-menu` as one of two current callers and predicts "a
  *     third will want it tomorrow" (`k-settings-modal.js:1404-1406`) — this is it.
@@ -69,6 +71,9 @@ import { setUserAvatar, user_avatar } from '../../../scripts/personas.js';
 import { power_user } from '../../../scripts/power-user.js';
 import { getThumbnailUrl } from '../../../script.js';
 import { openSettings } from '../../settings/k-settings-modal.js';
+import { isVariantActive } from '../../library/persona-variants.js';
+import { VARIANTS_CHANGED_EVENT, confirmVariantFlip, readVariantContext, readVariants, writeVariants } from '../../library/persona-variants-runtime.js';
+import { PORTRAIT_REPLACED_EVENT, bustedUrl } from '../../library/persona-portraits.js';
 
 /** The popover's DOM id, for `aria-controls`. */
 const POP_ID = 'k-persona-menu-pop';
@@ -88,6 +93,8 @@ const REFRESH_EVENTS = [
     'PERSONA_UPDATED',
     'PERSONA_RENAMED',
     'PERSONA_DELETED',
+    // The variant "here" dots depend on what is open.
+    'CHAT_CHANGED',
 ];
 
 /**
@@ -197,6 +204,8 @@ export class KPersonaMenu extends LitElement {
             this._boundEvents.push(name);
         }
         document.addEventListener('pointerdown', this._onOutsidePointer);
+        document.addEventListener(VARIANTS_CHANGED_EVENT, this._onCoreChange);
+        document.addEventListener(PORTRAIT_REPLACED_EVENT, this._onCoreChange);
         this.refresh();
     }
 
@@ -206,6 +215,8 @@ export class KPersonaMenu extends LitElement {
         }
         this._boundEvents = [];
         document.removeEventListener('pointerdown', this._onOutsidePointer);
+        document.removeEventListener(VARIANTS_CHANGED_EVENT, this._onCoreChange);
+        document.removeEventListener(PORTRAIT_REPLACED_EVENT, this._onCoreChange);
         super.disconnectedCallback();
     }
 
@@ -321,13 +332,70 @@ export class KPersonaMenu extends LitElement {
     }
 
     /**
-     * The escape hatch: the settings modal, on its Personas tab. Same one-call
-     * shape as `k-model-menu.js`'s `_openWizard()`.
+     * Flips one variant's (or group's) switch for the persona you're wearing, from the popover.
+     * The popover stays open: a quick toggle is usually followed by another. Writes through
+     * the runtime, which saves and tells the studio and the gallery.
+     * A flip that would make the next reply re-send the whole chat asks first
+     * (`confirmVariantFlip`, docs/persona-gallery-v0.md §7.3).
+     * @param {string} variantId The variant or group.
+     * @returns {Promise<void>}
+     */
+    async _toggleVariant(variantId) {
+        const id = this._currentId;
+        if (!id) return;
+        if (!(await confirmVariantFlip(id, variantId))) return;
+        const next = readVariants(id).map(variant => (variant.id === variantId ? { ...variant, enabled: !variant.enabled } : variant));
+        writeVariants(id, next);
+        this.requestUpdate();
+    }
+
+    /**
+     * The popover's Variants section: one switch row per top-level variant or group of the
+     * persona you're wearing, with a dot when it folds in for what is open. Nothing when the
+     * persona has no variants.
+     * @returns {unknown}
+     */
+    _renderVariants() {
+        const variants = readVariants(this._currentId);
+        if (!variants.length) return nothing;
+        const context = readVariantContext();
+        return html`
+            <div class="k-pm__divider" role="presentation"></div>
+            <div class="k-pm__label">Variants</div>
+            <div class="k-pm__list k-pm__variants">
+                ${variants.map((variant) => {
+        const here = isVariantActive(variant, context);
+        const title = variant.title || (variant.kind === 'group' ? 'Untitled group' : 'Untitled');
+        return html`
+                    <button type="button" class="k-pm__row k-pm__vrow" role="switch" aria-checked=${variant.enabled ? 'true' : 'false'}
+                        title=${here ? `${title}: on here` : title}
+                        @click=${() => { void this._toggleVariant(variant.id); }}>
+                        <span class="k-pm__vswitch" aria-hidden="true"><span></span></span>
+                        <span class="k-pm__copy">
+                            <span class="k-pm__name">${title}</span>
+                            ${variant.kind === 'group' ? html`<span class="k-pm__vtag">${variant.children.length} in group</span>` : nothing}
+                        </span>
+                        ${here ? html`<span class="k-pm__vhere" aria-label="On here"></span>` : nothing}
+                    </button>`;
+    })}
+            </div>`;
+    }
+
+    /**
+     * The way to every persona: the library's Your personas view. The event is
+     * a string literal, not an import from `library/k-library.js` (that module
+     * imports the shell, not the other way round). `<k-library>` cancels it
+     * when it answers; an unanswered event means no gallery is mounted, and the
+     * reader still lands somewhere useful — the settings modal's Personas tab,
+     * the same one-call shape as `k-model-menu.js`'s `_openWizard()`.
      * @returns {void}
      */
-    _openPersonaSettings() {
+    _openPersonaGallery() {
         this._close({ restoreFocus: false });
-        openSettings({ tab: 'personas' });
+        const unanswered = document.dispatchEvent(new CustomEvent('k-open-personas', { cancelable: true }));
+        if (unanswered) {
+            openSettings({ tab: 'personas' });
+        }
     }
 
     /**
@@ -343,7 +411,7 @@ export class KPersonaMenu extends LitElement {
         }
         return html`
             <img class="k-pm__portrait ${sizeClass}" aria-hidden="true" alt=""
-                loading="lazy" src=${getThumbnailUrl('persona', id)}
+                loading="lazy" src=${bustedUrl(getThumbnailUrl('persona', id), id)}
                 @error=${() => { this.#thumbFailed.add(id); this.requestUpdate(); }}>
         `;
     }
@@ -391,10 +459,11 @@ export class KPersonaMenu extends LitElement {
     })}
                     </div>
                 `}
+                ${this._renderVariants()}
                 <div class="k-pm__divider" role="presentation"></div>
-                <button type="button" class="k-pm__foot" @click=${() => this._openPersonaSettings()}>
+                <button type="button" class="k-pm__foot" @click=${() => this._openPersonaGallery()}>
                     ${personIcon()}
-                    <span class="k-pm__foot-label">Persona settings…</span>
+                    <span class="k-pm__foot-label">All personas…</span>
                     ${chevronIcon()}
                 </button>
             </div>

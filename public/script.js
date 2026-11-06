@@ -94,6 +94,7 @@ import {
     applyPowerUserSettings,
     generatedTextFiltered,
     applyStylePins,
+    getActivePersonaDescription,
 } from './scripts/power-user.js';
 
 import {
@@ -3465,7 +3466,10 @@ function addPersonaDescriptionExtensionPrompt() {
     const INJECT_TAG = 'PERSONA_DESCRIPTION';
     setExtensionPrompt(INJECT_TAG, '', extension_prompt_types.IN_PROMPT, 0);
 
-    if (!power_user.persona_description || power_user.persona_description_position === persona_description_positions.NONE) {
+    // Kotatsu: read through the composer seam (persona variants), never the raw field.
+    const personaDescription = getActivePersonaDescription();
+
+    if (!personaDescription || power_user.persona_description_position === persona_description_positions.NONE) {
         return;
     }
 
@@ -3474,14 +3478,14 @@ function addPersonaDescriptionExtensionPrompt() {
     if (promptPositions.includes(power_user.persona_description_position) && shouldWIAddPrompt) {
         const originalAN = extension_prompts[NOTE_MODULE_NAME].value;
         const ANWithDesc = power_user.persona_description_position === persona_description_positions.TOP_AN
-            ? `${power_user.persona_description}\n${originalAN}`
-            : `${originalAN}\n${power_user.persona_description}`;
+            ? `${personaDescription}\n${originalAN}`
+            : `${originalAN}\n${personaDescription}`;
 
         setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
     if (power_user.persona_description_position === persona_description_positions.AT_DEPTH) {
-        setExtensionPrompt(INJECT_TAG, power_user.persona_description, extension_prompt_types.IN_CHAT, power_user.persona_description_depth, true, power_user.persona_description_role);
+        setExtensionPrompt(INJECT_TAG, personaDescription, extension_prompt_types.IN_CHAT, power_user.persona_description_depth, true, power_user.persona_description_role);
     }
 }
 
@@ -3670,7 +3674,7 @@ export function getCharacterCardFieldsLazy({ chid = undefined } = {}) {
 
     /** @type {Record<string, () => string|string[]>} */
     const resolvers = {
-        persona: () => baseChatReplace(power_user.persona_description?.trim()),
+        persona: () => baseChatReplace(getActivePersonaDescription()?.trim()),
         system: () => {
             if (!character) return '';
             const systemPrompt = chat_metadata.system_prompt || character.data?.system_prompt || '';

@@ -342,6 +342,49 @@ export const power_user = {
     image_overswipe: IMAGE_OVERSWIPE.GENERATE,
 };
 
+/**
+ * Kotatsu seam (docs/persona-gallery-v0.md §7, persona variants): functions that compose the
+ * persona description the PROMPT gets, at read time. Lives HERE, beside the field it reads,
+ * because every reader (script.js, openai.js) already imports this module: a new import edge
+ * into personas.js reordered core's module evaluation and broke boot (measured 2026-11-05). Registered from Kotatsu's side
+ * (kotatsu → core); core never imports Kotatsu. `power_user.persona_description` is never
+ * written by a composer: it stays the description you wrote, and so does everything saved.
+ * @type {Array<(description: string) => string>}
+ */
+const personaDescriptionComposers = [];
+
+/**
+ * Registers a composer for {@link getActivePersonaDescription}.
+ * @param {(description: string) => string} composer Gets the description so far, returns the next.
+ * @returns {() => void} Unregisters it.
+ */
+export function registerPersonaDescriptionComposer(composer) {
+    if (typeof composer !== 'function') return () => {};
+    personaDescriptionComposers.push(composer);
+    return () => {
+        const index = personaDescriptionComposers.indexOf(composer);
+        if (index >= 0) personaDescriptionComposers.splice(index, 1);
+    };
+}
+
+/**
+ * The persona description as the prompt should carry it: the stored one, passed through every
+ * registered composer. A composer that throws or returns a non-string is skipped.
+ * @returns {string} The description for the prompt.
+ */
+export function getActivePersonaDescription() {
+    let description = power_user.persona_description ?? '';
+    for (const composer of personaDescriptionComposers) {
+        try {
+            const next = composer(description);
+            if (typeof next === 'string') description = next;
+        } catch (error) {
+            console.error('Persona description composer failed; skipping it.', error);
+        }
+    }
+    return description;
+}
+
 let themes = [];
 let movingUIPresets = [];
 /** @type {ContextSettings[]} */

@@ -43,7 +43,7 @@ import {
     promptManagerDefaultPromptOrders,
 } from './PromptManager.js';
 
-import { forceCharacterEditorTokenize, getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
+import { forceCharacterEditorTokenize, getActivePersonaDescription, getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
 import { composeGroupNudge, isNarratorCard, resolveGroupNudge } from './group-nudge.js';
 import { isMimoFilterStop } from './mimo-filter.js';
 import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
@@ -1472,8 +1472,10 @@ async function preparePromptsForChatCompletion({ scenario, charPersonality, name
     });
 
     // Persona Description
-    if (power_user.persona_description && power_user.persona_description_position === persona_description_positions.IN_PROMPT) {
-        systemPrompts.push({ role: 'system', content: power_user.persona_description, identifier: 'personaDescription' });
+    // Kotatsu: read through the composer seam (persona variants), never the raw field.
+    const personaDescription = getActivePersonaDescription();
+    if (personaDescription && power_user.persona_description_position === persona_description_positions.IN_PROMPT) {
+        systemPrompts.push({ role: 'system', content: personaDescription, identifier: 'personaDescription' });
     }
 
     const knownExtensionPrompts = [
