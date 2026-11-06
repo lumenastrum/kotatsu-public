@@ -14,9 +14,10 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
-    // Personas are the headline of 0.9 (kotatsu-public#7): the shelf, the studio, and variants.
+    // Personas are the headline of the 0.9 line (kotatsu-public#7): each 0.9.x carries 0.9.0's cards and clips
+    // (media moved along, now 0.9.1/) with its own lines on top, the way 0.8.x carried Summer.
     Object.freeze({
-        version: '0.9.0',
+        version: '0.9.1',
         title: 'Who you are',
         cards: [
             {
@@ -42,6 +43,7 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'The Docker image includes git now, so extensions installed there can check for updates and switch branches.',
             'Variants can live in groups, and in Advanced a joiner and a wrapper decide how they’re put together.',
             'Switching a variant on or off partway through a chat asks first, because your next reply then sends the whole chat to your provider fresh.',
             'Duplicating a persona brings its variants along.',

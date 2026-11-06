@@ -89,6 +89,12 @@ jobs:
           [ -d "$RUNNER_TEMP/kotatsu/data/default-user" ] || fail "user data was not written under /config/data"
           [ "$(docker exec k1 printenv SILLYTAVERN_KOTATSU_UPDATE_ENABLED)" = false ] || fail "in-app updater is not disabled"
           docker exec k1 claude --version >/dev/null || fail "claude binary missing from PATH"
+          # Extensions are git checkouts: install, update check and branch switch all need git (public #8).
+          ext=/config/data/default-user/extensions/smoke-git
+          docker exec k1 git clone -q --depth 1 https://github.com/SillyTavern/Extension-WebSearch "$ext" || fail "git clone of an extension failed"
+          docker exec k1 git -C "$ext" fetch -q || fail "git fetch in an extension failed"
+          docker exec k1 git -C "$ext" status --porcelain >/dev/null || fail "git status in an extension failed"
+          docker exec k1 rm -rf "$ext"
 
           docker stop -t 30 k1
           [ "$(docker inspect -f '{{.State.ExitCode}}' k1)" = 0 ] || fail "server did not shut down cleanly on SIGTERM"

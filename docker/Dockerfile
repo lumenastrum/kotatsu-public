@@ -62,9 +62,12 @@ ENV NODE_ENV=production \
     SILLYTAVERN_KOTATSU_UPDATE_ENABLED=false \
     SILLYTAVERN_ENABLESERVERPLUGINSAUTOUPDATE=false
 
+# git: SillyTavern installs extensions as git checkouts, and their update check and branch
+# switch run git in them (kotatsu-public#8).
 RUN apt-get update \
- && apt-get install -y --no-install-recommends tini ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+ && apt-get install -y --no-install-recommends tini ca-certificates git \
+ && rm -rf /var/lib/apt/lists/* \
+ && git --version
 
 WORKDIR /app
 # Owned by root and read-only to the app: nothing under /app is written at runtime, which is what
