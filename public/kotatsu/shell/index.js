@@ -64,6 +64,9 @@ import { installFeedback } from '../feedback/k-feedback.js';
 import { applyLayout, currentLayout, defineLayout, hasLayout } from './registry.js';
 import { installPersonaVariants } from '../library/persona-variants-runtime.js';
 import { installPortraitWatch } from '../library/persona-portraits.js';
+import { installMangaToasts } from './manga-toasts.js';
+import { initToastScale } from './toast-scale.js';
+import { installGenWatch } from '../connections/gen-watch.js';
 
 export { setLayout } from './persistence.js';
 
@@ -116,6 +119,14 @@ function reconcileVariantAxes() {
 export async function initKotatsuShell() {
     if (initialized) return;
     initialized = true;
+
+    // Manga reaction toasts: first, so the boot's own toasts already wear them. Both layouts.
+    installMangaToasts();
+    initToastScale();
+
+    // Issue #28: stop waiting on a reply whose connection died while the screen was off.
+    // Both layouts; wraps fetch for the generate routes only.
+    installGenWatch();
 
     defineLayout('classic', classicLayout);
     defineLayout('rails', railsLayout);

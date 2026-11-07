@@ -9,8 +9,12 @@ import { router as phoneRouter } from './phone/index.js';
 import { router as chatgptBridgeRouter } from './chatgpt-bridge/index.js';
 import { router as picturesRouter } from './pictures/index.js';
 import { router as spritesRouter } from './sprites/index.js';
+import { router as genWatchRouter } from './gen-watch/index.js';
+
+export { genWatchMiddleware } from './gen-watch/index.js';
 
 export const router = express.Router();
+router.use('/gen-watch', genWatchRouter);
 
 router.use('/branches', branchesRouter);
 router.use('/themes', themesRouter);

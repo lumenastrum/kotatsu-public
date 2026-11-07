@@ -2180,6 +2180,108 @@
     }
    ]
   },
+  "--k-mt-ink": {
+   "group": "css/kotatsu-manga-toasts.css",
+   "file": "css/kotatsu-manga-toasts.css",
+   "default": "var(--k-text, #2b2560)",
+   "contexts": [
+    {
+     "selector": "body #toast-container > div.toast.k-manga-toast",
+     "at": []
+    }
+   ]
+  },
+  "--k-mt-jag": {
+   "group": "css/kotatsu-manga-toasts.css",
+   "file": "css/kotatsu-manga-toasts.css",
+   "default": "polygon(0% 18%, 6% 0%, 15% 12%, 26% 2%, 37% 14%, 49% 0%, 60% 13%, 71% 1%, 82% 12%, 93% 0%, 100% 20%, 94% 38%, 100% 55%, 94% 72%, 100% 92%, 88% 86%, 77% 100%, 66% 88%, 54% 100%, 43% 87%, 31% 100%, 20% 88%, 8% 100%, 0% 82%, 6% 64%, 0% 47%, 6% 30%)",
+   "contexts": [
+    {
+     "selector": "body #toast-container .k-manga-toast .k-mt-cut",
+     "at": []
+    }
+   ]
+  },
+  "--k-mt-paper": {
+   "group": "css/kotatsu-manga-toasts.css",
+   "file": "css/kotatsu-manga-toasts.css",
+   "default": "var(--k-surface-2, #fffcf6)",
+   "contexts": [
+    {
+     "selector": "body #toast-container > div.toast.k-manga-toast",
+     "at": []
+    }
+   ]
+  },
+  "--k-mt-tilt": {
+   "group": "css/kotatsu-manga-toasts.css",
+   "file": "css/kotatsu-manga-toasts.css",
+   "default": "-0.5deg",
+   "contexts": [
+    {
+     "selector": "body #toast-container > div.toast.k-manga-toast",
+     "at": []
+    },
+    {
+     "selector": "body #toast-container > div.toast.k-mt--error",
+     "at": []
+    },
+    {
+     "selector": "body #toast-container > div.toast.k-mt--warning",
+     "at": []
+    },
+    {
+     "selector": "body #toast-container > div.toast.k-mt--success",
+     "at": []
+    },
+    {
+     "selector": "body #toast-container > div.toast.k-mt--info",
+     "at": []
+    },
+    {
+     "selector": "body #toast-container > div.toast.k-mt--copied",
+     "at": []
+    }
+   ]
+  },
+  "--k-mt-tone": {
+   "group": "css/kotatsu-manga-toasts.css",
+   "file": "css/kotatsu-manga-toasts.css",
+   "default": "var(--k-info, #8c7fd6)",
+   "contexts": [
+    {
+     "selector": "body #toast-container > div.toast.k-manga-toast",
+     "at": []
+    },
+    {
+     "selector": "body #toast-container > div.toast.k-mt--error",
+     "at": []
+    },
+    {
+     "selector": "body #toast-container > div.toast.k-mt--warning",
+     "at": []
+    },
+    {
+     "selector": "body #toast-container > div.toast.k-mt--success",
+     "at": []
+    },
+    {
+     "selector": "body #toast-container > div.toast.k-mt--info",
+     "at": []
+    },
+    {
+     "selector": "body #toast-container > div.toast.k-mt--copied",
+     "at": []
+    }
+   ]
+  },
+  "--k-mt-zoom": {
+   "group": "css/kotatsu-manga-toasts.css",
+   "file": "css/kotatsu-manga-toasts.css",
+   "default": "0.9",
+   "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
+   "contexts": []
+  },
   "--k-nameplate-gap": {
    "group": "Message looks (wardrobe)",
    "file": "css/mes-variants.css",

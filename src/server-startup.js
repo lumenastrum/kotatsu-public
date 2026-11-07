@@ -12,7 +12,7 @@ import { router as imagesRouter } from './endpoints/images.js';
 import { router as quickRepliesRouter } from './endpoints/quick-replies.js';
 import { router as avatarsRouter } from './endpoints/avatars.js';
 import { router as themesRouter } from './endpoints/themes.js';
-import { router as kotatsuRouter } from './endpoints/kotatsu/index.js';
+import { router as kotatsuRouter, genWatchMiddleware } from './endpoints/kotatsu/index.js';
 import { router as openAiRouter } from './endpoints/openai.js';
 import { router as googleRouter } from './endpoints/google.js';
 import { router as anthropicRouter } from './endpoints/anthropic.js';
@@ -75,6 +75,9 @@ export function setupPrivateEndpoints(app) {
     app.use('/api/quick-replies', quickRepliesRouter);
     app.use('/api/avatars', avatarsRouter);
     app.use('/api/themes', themesRouter);
+    // Issue #28: counts bytes of generate requests the page tagged with X-Kotatsu-Gen-Id
+    // (a no-op for everything else). Must sit before the backend routers below.
+    app.use(genWatchMiddleware);
     app.use('/api/kotatsu', kotatsuRouter);
     app.use('/api/openai', openAiRouter);
     app.use('/api/google', googleRouter);

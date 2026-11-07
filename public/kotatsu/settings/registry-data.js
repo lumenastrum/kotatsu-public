@@ -535,6 +535,23 @@ export const ENTRIES = Object.freeze([
         surface: 'modal',
     },
     {
+        id: 'kotatsu_toast_scale',
+        keys: ['kotatsu_toast_scale'],
+        label: 'Notification size',
+        section: 'appearance',
+        group: 'Wardrobe & Shell',
+        control: 'range',
+        binding: { by: 'id', ref: 'kotatsu_toast_scale' },
+        // Manga reaction toasts (shell/manga-toasts.js, shell/toast-scale.js). The row carries the
+        // slider, its % readout and Reset, so all three travel together.
+        adopt: '#kotatsu_toast_scale_row',
+        affects: ['chrome'],
+        keywords: ['notification', 'notifications', 'toast', 'toasts', 'popup size', 'alert', 'mikan', 'manga', 'reaction', 'kotatsu_toast_scale'],
+        tier: 'advanced',
+        store: 'power_user',
+        surface: 'modal',
+    },
+    {
         id: 'k-layout-switch',
         keys: ['kotatsu_layout'],
         label: 'Layout',

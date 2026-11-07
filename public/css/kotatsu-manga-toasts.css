@@ -1,0 +1,217 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Manga reaction toasts (shell/manga-toasts.js, Andres 2026-11-06)
+   ───────────────────────────────────────────────────────────────────────────
+   A toast is a manga panel: ink border, a hard offset shadow, a slight tilt, screentone in the
+   corner. On the left, a jagged burst cut-out with Mikan-chan's eyes reacting; over its corner,
+   a sound effect. Only toasts the module decorated (`.k-manga-toast`) change; the colours are
+   the theme's own status tokens, so every pack (light or dark) keeps its palette.
+
+   Specificity: core and kotatsu-chrome.css §11 style `body #toast-container .toast-x` (1,2,0)
+   and toastr.min.css paints an icon as a background image; the selectors below sit above both.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The sound effects' face: Zen Maru Gothic Black (OFL, licence beside the file), subset to the
+   SFX glyphs only (2.6 KB). Its own family name, so a pack's Latin-only Zen Maru is never shadowed.
+   A new SFX line needs its characters added to the subset (Google Fonts css2 ?text=). */
+@font-face {
+    font-family: "Kotatsu SFX";
+    font-style: normal;
+    font-weight: 900;
+    font-display: swap;
+    src: url("../kotatsu/brand/fonts/zen-maru-gothic-900-sfx.woff2") format("woff2");
+}
+
+body #toast-container > div.toast.k-manga-toast {
+    --k-mt-ink: var(--k-text, #2b2560);
+    --k-mt-paper: var(--k-surface-2, #fffcf6);
+    --k-mt-tone: var(--k-info, #8c7fd6);
+    --k-mt-tilt: -0.5deg;
+
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 16px;
+    align-content: center;
+    width: min(460px, calc(100vw - 24px));
+    min-height: 96px;
+    margin: 0 auto 24px;
+    padding: 12px 18px 12px 12px;
+    background: var(--k-mt-paper);
+    background-image: none;
+    border: 3px solid var(--k-mt-ink);
+    border-radius: 4px;
+    box-shadow: 6px 6px 0 var(--k-mt-ink);
+    color: var(--k-text);
+    opacity: 1;
+    transform: rotate(var(--k-mt-tilt));
+    overflow: visible;
+    /* Andres 11/6: "juuust a tiny bit smaller", then a slider for it (shell/toast-scale.js writes
+       --k-mt-zoom on <body>). One knob scales burst, eyes, SFX, words and gaps together. */
+    zoom: var(--k-mt-zoom, 0.9);
+}
+
+body #toast-container > div.toast.k-manga-toast:hover {
+    box-shadow: 7px 7px 0 var(--k-mt-ink);
+    opacity: 1;
+    cursor: pointer;
+}
+
+/* screentone dots fading in from the bottom-right corner */
+body #toast-container > div.toast.k-manga-toast::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 140px;
+    height: 64px;
+    pointer-events: none;
+    background: radial-gradient(circle, color-mix(in srgb, var(--k-mt-ink) 20%, transparent) 1.2px, transparent 1.7px) 0 0 / 7px 7px;
+    -webkit-mask-image: linear-gradient(135deg, transparent 35%, #000 100%);
+    mask-image: linear-gradient(135deg, transparent 35%, #000 100%);
+}
+
+body #toast-container > div.toast.k-mt--error { --k-mt-tone: var(--k-danger, #e5484d); --k-mt-tilt: 0.7deg; }
+body #toast-container > div.toast.k-mt--warning { --k-mt-tone: var(--k-warning, #f39a3c); --k-mt-tilt: -0.8deg; }
+body #toast-container > div.toast.k-mt--success { --k-mt-tone: var(--k-success, #e8b83a); --k-mt-tilt: 0.5deg; }
+body #toast-container > div.toast.k-mt--info { --k-mt-tone: var(--k-info, #8c7fd6); --k-mt-tilt: -0.4deg; }
+body #toast-container > div.toast.k-mt--copied { --k-mt-tone: #f2a6b8; --k-mt-tilt: 0.9deg; }
+
+/* ── the cut-out ─────────────────────────────────────────────────────────── */
+
+body #toast-container .k-manga-toast .k-mt-cut {
+    --k-mt-jag: polygon(0% 18%, 6% 0%, 15% 12%, 26% 2%, 37% 14%, 49% 0%, 60% 13%, 71% 1%, 82% 12%, 93% 0%, 100% 20%, 94% 38%, 100% 55%, 94% 72%, 100% 92%, 88% 86%, 77% 100%, 66% 88%, 54% 100%, 43% 87%, 31% 100%, 20% 88%, 8% 100%, 0% 82%, 6% 64%, 0% 47%, 6% 30%);
+    grid-row: 1 / span 2;
+    position: relative;
+    width: 216px;
+    height: 84px;
+    transform: rotate(-3deg);
+    animation: k-mt-slam 260ms cubic-bezier(.2, 1.6, .4, 1) both;
+}
+
+body #toast-container .k-manga-toast .k-mt-cut > * {
+    position: absolute;
+    inset: 0;
+    clip-path: var(--k-mt-jag);
+}
+
+body #toast-container .k-manga-toast .k-mt-edge { inset: -4px; background: var(--k-mt-ink); }
+body #toast-container .k-manga-toast .k-mt-tone { background: var(--k-mt-tone); }
+body #toast-container .k-manga-toast .k-mt-lines {
+    background: repeating-conic-gradient(from 0deg at 50% 50%, rgb(255 255 255 / 0.55) 0 4deg, transparent 4deg 12deg);
+}
+
+/* the eye strip: a slanted window inside the burst */
+body #toast-container .k-manga-toast .k-mt-eyes {
+    inset: 10px 12px;
+    clip-path: polygon(3% 8%, 97% 0, 100% 92%, 0 100%);
+    background: #fffcf6;
+}
+
+body #toast-container .k-manga-toast .k-mt-eyes img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* ── the sound effect ────────────────────────────────────────────────────── */
+
+body #toast-container .k-manga-toast .k-mt-sfx {
+    position: absolute;
+    left: 150px;
+    top: -22px;
+    font-family: "Kotatsu SFX", "Zen Maru Gothic", var(--k-font-ui), sans-serif;
+    font-weight: 900;
+    font-size: 27px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: var(--k-mt-paper);
+    transform: rotate(-9deg);
+    pointer-events: none;
+    text-shadow:
+        2px 0 0 var(--k-mt-ink), -2px 0 0 var(--k-mt-ink), 0 2px 0 var(--k-mt-ink), 0 -2px 0 var(--k-mt-ink),
+        2px 2px 0 var(--k-mt-ink), -2px -2px 0 var(--k-mt-ink), 2px -2px 0 var(--k-mt-ink), -2px 2px 0 var(--k-mt-ink),
+        4px 5px 0 var(--k-mt-tone);
+    animation: k-mt-pop 320ms 60ms cubic-bezier(.2, 1.8, .4, 1) both;
+}
+
+/* ── the words ───────────────────────────────────────────────────────────── */
+
+body #toast-container .k-manga-toast .toast-title {
+    grid-column: 2;
+    align-self: end;
+    font-family: var(--k-font-ui);
+    font-weight: 800;
+    font-size: 1.05em;
+    line-height: 1.2;
+    color: var(--k-text);
+}
+
+body #toast-container .k-manga-toast .toast-message {
+    grid-column: 2;
+    align-self: center;
+    font-family: var(--k-font-ui);
+    font-size: 0.92em;
+    line-height: 1.35;
+    color: color-mix(in srgb, var(--k-text) 85%, transparent);
+    overflow-wrap: anywhere;
+}
+
+/* a message with no title ("Copied!") sits centred beside her eyes */
+body #toast-container .k-manga-toast:not(:has(> .toast-title)) > .toast-message { grid-row: 1 / span 2; }
+
+/* a title plus a message: the message sits under it instead of centred */
+body #toast-container .k-manga-toast .toast-title + .toast-message { align-self: start; margin-top: 2px; }
+
+body #toast-container .k-manga-toast .toast-close-button {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    color: var(--k-mt-ink);
+    opacity: 0.7;
+    text-shadow: none;
+}
+
+body #toast-container .k-manga-toast .toast-progress {
+    left: 0;
+    bottom: 0;
+    height: 5px;
+    background: var(--k-mt-tone);
+    opacity: 1;
+}
+
+/* ── motion ──────────────────────────────────────────────────────────────── */
+
+@keyframes k-mt-slam {
+    from { transform: rotate(-3deg) scale(0.6); }
+    to { transform: rotate(-3deg) scale(1); }
+}
+
+@keyframes k-mt-pop {
+    from { transform: rotate(-9deg) scale(0.3); opacity: 0; }
+    to { transform: rotate(-9deg) scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body #toast-container .k-manga-toast .k-mt-cut,
+    body #toast-container .k-manga-toast .k-mt-sfx { animation: none; }
+}
+
+/* ── phone: a narrower burst, the panel spans the screen ─────────────────── */
+
+@media (max-width: 520px) {
+    body #toast-container > div.toast.k-manga-toast {
+        column-gap: 12px;
+        min-height: 84px;
+        margin-bottom: 20px;
+        /* The phone layout has its own, tighter sizes; the slider scales them relative to its 90% default. */
+        zoom: calc(var(--k-mt-zoom, 0.9) / 0.9);
+        padding: 10px 14px 10px 10px;
+    }
+    body #toast-container .k-manga-toast .k-mt-cut { width: 150px; height: 64px; }
+    body #toast-container .k-manga-toast .k-mt-eyes { inset: 8px 9px; }
+    body #toast-container .k-manga-toast .k-mt-sfx { left: 100px; top: -18px; font-size: 22px; }
+}
