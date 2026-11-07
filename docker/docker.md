@@ -121,6 +121,18 @@ The same settings work as environment variables (`SILLYTAVERN_WHITELISTMODE=fals
 - **Uploads:** let large requests through (character cards, backgrounds, chat imports). For nginx: `client_max_body_size 100m;`.
 - **Timeouts:** replies stream for a while. Raise the proxy's read timeout (nginx: `proxy_read_timeout 600s;`) and leave response buffering off for Kotatsu (`proxy_buffering off;`).
 
+## On your phone
+
+Use your phone's browser. The Android app can't do this: it's a separate, self-contained Kotatsu that runs its own server on the phone, and it can't connect to another one.
+
+1. Publish port 8000 (`-p 8000:8000`, or `ports:` in compose).
+2. Add your phone to `whitelist` in `kotatsu/config.yaml` and `docker restart kotatsu` (the whitelist is read at startup). Your whole LAN (`192.168.1.0/24`) is easier than one phone's IP, because the router can give the phone a new address later.
+3. On the phone, open `http://<the server's LAN IP>:8000`. Kotatsu switches to its phone layout by itself. "Add to Home screen" in the browser menu makes it feel like an app.
+
+Away from home: put the server on [Tailscale](https://tailscale.com) and whitelist `100.64.0.0/10`, or use a login behind a reverse proxy (above).
+
+Settings → System → Phone (the QR pairing) is for desktop installs and can't be used here. It only works when opened on the machine Kotatsu runs on, which a container never counts as, so it keeps asking you to open it there. The whitelist does the same job.
+
 ## Model connections
 
 API keys and local models work as usual. Keys are kept in `/config/data`.
