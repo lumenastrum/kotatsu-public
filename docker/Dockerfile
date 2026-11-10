@@ -75,8 +75,9 @@ WORKDIR /app
 COPY --from=build /app /app
 
 # The Agent SDK ships a native `claude` binary per platform (x64 / arm64). Put it on PATH so the
-# bridge can be signed in with `docker exec -it kotatsu claude`.
-RUN ln -s /app/node_modules/@anthropic-ai/claude-agent-sdk-linux-*/claude /usr/local/bin/claude \
+# bridge can be signed in with `docker exec -it kotatsu claude`. From SDK 0.3.316 a -musl twin installs
+# beside each glibc one, so the glob matched two dirs and ln failed; this image is Debian (glibc).
+RUN ln -s "$(ls -d /app/node_modules/@anthropic-ai/claude-agent-sdk-linux-* | grep -v -- '-musl$' | head -n 1)/claude" /usr/local/bin/claude \
  && claude --version \
  && chmod 0755 /app/docker/entrypoint.sh \
  && mkdir -p /config/data /config/claude /config/home \
