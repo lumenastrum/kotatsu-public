@@ -241,6 +241,9 @@ GA on the Gemini API the day it was added; `models/gemini-4-argon` confirmed in 
 
 Also: a 1M entry in `getGeminiMaxContext`'s fallback map (the live model list wins when connected), `gemini-4-argon` in the image / video / audio inlining lists, an option in both Google selects under a new "Gemini 4" optgroup, and in both caption selects. Vertex: listed GA in Model Garden but **not live-verified** (no Vertex credentials here). `tests/prompt-converters.test.js` pins the thinking map, the prefill merge and the signature fallback. When upstream adds Argon, take theirs and drop these.
 
+#### C6 — gemini-4-carbon (2026-11-10)
+`models/gemini-4-carbon` is in the live `models.list` on our key (1,048,576 input, 32,768 output declared, thinking true). Its declared methods omit `streamGenerateContent`, but streaming answers anyway. Every C5 probe was re-run against Carbon, and it matches Argon on all of them: `thinkingLevel` low / medium / high = 200, minimal = **400**, a trailing model turn = **400**, a `functionCall` with no `thoughtSignature` = **400** and the bypass value = 200. Sampling, a system instruction, `thinkingBudget` 1024 and `maxOutputTokens` 65536 are all 200. So Carbon joins every Argon gate: each `gemini-4-argon` regex becomes `gemini-4-(?:argon|carbon)`, and the id joins the inlining lists, both Google selects and both caption selects. End to end: the real `convertGooglePrompt` + `calculateGoogleBudgetTokens` output was sent to Carbon for five cases (plain, effort min → low, max → high, trailing prefill, tool-call history), and all five came back 200. Vertex is not live-verified. When upstream adds Carbon, take theirs and drop these.
+
 #### C3 — Gemini ≥3.6 continuation-turn guard
 **File:** `src/prompt-converters.js:618-623`, at the end of `convertGooglePrompt` (`:432`), immediately before its `return`.
 
@@ -341,6 +344,15 @@ end to end through Kotatsu, reasoning on and off (`playwright-rig/scripts/kotats
 - **Known on Moonshot's side, not ours:** with thinking off, K3.1 Pro sometimes writes its reasoning into the reply
   (1 in 5 direct requests on launch day). Reasoning on is the steady way to run it.
 
+### 1.H MiniMax M3 (2026-11-10): every M2-era model is retired
+
+MiniMax's `/models` still lists M2 through M2.7, the highspeeds and M2-her, but every one of them now answers 404 `"The model … is no longer available. (2069)"`. Only `MiniMax-M3` and `MiniMax-M3.1-Flash` answer, live-checked one by one on the global endpoint. The CN endpoint was not checked (no key here). Before this fix, every Kotatsu MiniMax chat failed, because the default was `MiniMax-M2.7`.
+- **Picker:** `MiniMax-M3` and `MiniMax-M3.1-Flash`. The retired ids stay as `hidden` options labelled "(retired → M3)". The acceptance presets and the shipped Default / Kotatsu Nabe carry `MiniMax-M2.7`, and the preset select has to keep matching it so they round-trip byte-identically.
+- **Heal on the wire, not in settings:** `healMinimaxModel()` (openai.js) maps every retired id to `MiniMax-M3` where the request model is read. **No settings migration on purpose.** `migrateChatCompletionSettings` also runs on every preset load, and a migration entry broke 8 `preset-byte-identity` tests. A heal in the select's null branch did the same under jsdom. The default in `default_settings` is now `MiniMax-M3`.
+- **Reasoning:** with no flag, M3 writes `<think>…` straight into `content`, while M3.1-Flash already splits it into `reasoning_content`. The backend now always sends `reasoning_split: true`, and both models then put thinking in `reasoning_content`, streamed and non-streamed (live-checked). MiniMax joined the `reasoning_content` readers in `getStreamingReply` and `extractReasoningFromData`. Before this, MiniMax's reasoning was never shown.
+- Temperature 1.5, top_p, stop and a system message are all accepted on both. The M2-her 2048 `max_tokens` clamp and 64k context case are gone with the model. Context stays at 204,800: third-party listings give M3 512k–1M, but MiniMax's own page wasn't reachable to confirm it.
+- **Rest of the sweep, same day:** DeepSeek (`deepseek-flash`, `deepseek-v4-pro`), Kimi (K3.1 Pro is already the default), MiMo (v2.6 line) and GLM all match what we ship. GLM's new `glm-5.3-flashx-legal` is a legal-domain variant, not added.
+
 ---
 
 ## 2. Provider field notes
@@ -400,6 +412,7 @@ Its behavior is precisely specified and was asserted by the retired script on ev
 | `gemini-3.7-flash` | ✅ | prefill removed |
 | `gemini-3.8-flash` | ✅ | assumed same as 3.6/3.7 — NOT live-verified (no Google key in dev); guard is regex-covered |
 | `gemini-4-argon` | ✅ | live-verified 400 on a trailing model turn (2026-10-13); upstream-style `noPrefillModel` merges first, C3 is the fallback |
+| `gemini-4-carbon` | ✅ | live-verified 400 on a trailing model turn (2026-11-10); same gates as Argon (C6) |
 | `gemini-3.5-flash` | ❌ | still prefills — **must be spared** |
 | `gemini-3.1-pro-preview` | ❌ | still prefills — **must be spared** |
 

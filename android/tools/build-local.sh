@@ -129,6 +129,9 @@ rm -rf "$stage" && mkdir -p "$stage/app"
 git -C "$REPO" archive --format=tar HEAD | tar -x -C "$stage/app"
 (cd "$stage/app" && npm ci --no-audit --no-fund --loglevel=error && npm run build:lib --silent && npm prune --omit=dev --no-audit --no-fund --loglevel=error)
 rm -rf "$stage/app"/{.github,android,tests,docs} "$stage/app/dist/.webpack-cache"
+# The Agent SDK's per-platform Claude Code binaries match the BUILD host (linux-x64 + linux-x64-musl from 0.3.316 on),
+# never the phone, and Claude Code can't run on Android anyway (doctor.js / bridge.js). They were 613 MB of the 0.9.3 payload.
+rm -rf "$stage/app/node_modules/@anthropic-ai"/claude-agent-sdk-*
 find "$stage/app/node_modules" -name '*.node' -print | sed 's/^/native addon left: /' || true
 rm -f "$stage/kotatsu.zip"
 (cd "$stage/app" && zip -qr -9 ../kotatsu.zip .)

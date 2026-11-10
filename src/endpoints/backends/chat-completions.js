@@ -298,7 +298,7 @@ async function sendClaudeRequest(request, response) {
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
         // Unanchored to also match prefixed ids passed through proxies, e.g. 'anthropic/claude-fable-5'
         const isFableModel = /claude-fable/.test(request.body.model);
-        const useNativeJsonOutput = /claude-(fable-5-1|opus-5-5|sonnet-5-5)/.test(request.body.model);
+        const useNativeJsonOutput = /claude-(fable-5-[12]|mythos-5-[12]|opus-5-5|sonnet-5-5)/.test(request.body.model);
         const isClaude5Model = /claude-(opus-5|sonnet-5)/.test(request.body.model);
         const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model) || isFableModel || isClaude5Model;
         const useWebSearch = (/^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model) || isFableModel || isClaude5Model) && Boolean(request.body.enable_web_search);
@@ -347,7 +347,7 @@ async function sendClaudeRequest(request, response) {
             }
         }
 
-        // Fable 5.1, Opus 5.5 and Sonnet 5.5 reject forced tools, but support native JSON outputs.
+        // Fable 5.1/5.2, Opus 5.5 and Sonnet 5.5 reject forced tools, but support native JSON outputs.
         if (request.body.json_schema) {
             if (useNativeJsonOutput) {
                 requestBody.output_config = {
@@ -576,7 +576,7 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-3.1-flash-image',
         ];
 
-        const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3[.\d]*-(flash|pro)/.test(m)) || (/^gemini-4-argon/.test(m));
+        const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3[.\d]*-(flash|pro)/.test(m)) || (/^gemini-4-(?:argon|carbon)/.test(m));
         const isImageSizeModel = m => /^gemini-3/.test(m);
         // https://ai.google.dev/gemini-api/docs/latest-model#api-changes-and-parameter-updates
         const noSamplingModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite/.test(model);
@@ -1697,10 +1697,12 @@ async function sendMinimaxRequest(request, response) {
             'messages': messages,
             'model': request.body.model,
             'temperature': request.body.temperature,
-            'max_tokens': request.body.model === 'M2-her' ? Math.min(request.body.max_tokens, 2048) : request.body.max_tokens,
+            'max_tokens': request.body.max_tokens,
             'stream': request.body.stream,
             'top_p': request.body.top_p,
             'stop': request.body.stop,
+            // KOTATSU-PATCH 2026-11-10: M3 otherwise inlines <think> in content; split = reasoning_content (live-verified, stream + non-stream)
+            'reasoning_split': true,
             ...bodyParams,
         };
 

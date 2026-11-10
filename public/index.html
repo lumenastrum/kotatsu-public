@@ -3337,6 +3337,7 @@
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
                                     <optgroup label="Versions">
+                                        <option value="claude-fable-5-2">claude-fable-5-2</option>
                                         <option value="claude-fable-5-1">claude-fable-5-1</option>
                                         <option value="claude-fable-5">claude-fable-5</option>
                                         <option value="claude-opus-5-5">claude-opus-5-5</option>
@@ -3465,6 +3466,7 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
                                     <optgroup label="Gemini 4">
+                                        <option value="gemini-4-carbon">gemini-4-carbon</option>
                                         <option value="gemini-4-argon">gemini-4-argon</option>
                                     </optgroup>
                                     <optgroup label="Gemini 3.8">
@@ -3641,6 +3643,7 @@
                                 <select id="model_vertexai_select">
                                     <!-- data-mode="full" is for models that require a service account -->
                                     <optgroup label="Gemini 4">
+                                        <option value="gemini-4-carbon">gemini-4-carbon</option>
                                         <option value="gemini-4-argon">gemini-4-argon</option>
                                     </optgroup>
                                     <optgroup label="Gemini 3.8">
@@ -3754,14 +3757,17 @@
                             </select>
                             <h4 data-i18n="MiniMax Model">MiniMax Model</h4>
                             <select id="model_minimax_select">
-                                <option value="MiniMax-M2.7">MiniMax-M2.7</option>
-                                <option value="MiniMax-M2.7-highspeed">MiniMax-M2.7-highspeed</option>
-                                <option value="MiniMax-M2.5">MiniMax-M2.5</option>
-                                <option value="MiniMax-M2.5-highspeed">MiniMax-M2.5-highspeed</option>
-                                <option value="MiniMax-M2.1">MiniMax-M2.1</option>
-                                <option value="MiniMax-M2.1-highspeed">MiniMax-M2.1-highspeed</option>
-                                <option value="MiniMax-M2">MiniMax-M2</option>
-                                <option value="M2-her">M2-her</option>
+                                <option value="MiniMax-M3">MiniMax-M3</option>
+                                <option value="MiniMax-M3.1-Flash">MiniMax-M3.1-Flash</option>
+                                <!-- KOTATSU-PATCH 2026-11-10: retired M2-era ids stay as hidden options so presets carrying them load byte-identically; healMinimaxModel sends MiniMax-M3 -->
+                                <option value="MiniMax-M2.7" hidden>MiniMax-M2.7 (retired → M3)</option>
+                                <option value="MiniMax-M2.7-highspeed" hidden>MiniMax-M2.7-highspeed (retired → M3)</option>
+                                <option value="MiniMax-M2.5" hidden>MiniMax-M2.5 (retired → M3)</option>
+                                <option value="MiniMax-M2.5-highspeed" hidden>MiniMax-M2.5-highspeed (retired → M3)</option>
+                                <option value="MiniMax-M2.1" hidden>MiniMax-M2.1 (retired → M3)</option>
+                                <option value="MiniMax-M2.1-highspeed" hidden>MiniMax-M2.1-highspeed (retired → M3)</option>
+                                <option value="MiniMax-M2" hidden>MiniMax-M2 (retired → M3)</option>
+                                <option value="M2-her" hidden>M2-her (retired → M3)</option>
                             </select>
                         </div>
                         <div id="electronhub_form" data-source="electronhub">

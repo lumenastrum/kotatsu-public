@@ -15,9 +15,9 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
     // Personas are the headline of the 0.9 line (kotatsu-public#7): each 0.9.x carries 0.9.0's cards and clips
-    // (media moved along, now 0.9.2/) with its own lines on top, the way 0.8.x carried Summer.
+    // (media moved along, now 0.9.3/) with its own lines on top, the way 0.8.x carried Summer.
     Object.freeze({
-        version: '0.9.2',
+        version: '0.9.3',
         title: 'Who you are',
         cards: [
             {
@@ -43,6 +43,10 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'MiniMax works again. MiniMax retired every M2 model, so Kotatsu now talks to MiniMax M3 and M3.1 Flash and moves you over on its own, and their thinking shows up too.',
+            'Gemini 4 Carbon joins the Gemini models.',
+            'Claude Fable 5.2 joins the Claude models.',
+            'Typing a slash command on a phone no longer brings up a warning that an extension is covering the page.',
             'Lock your phone partway through a reply and the reply is still there when you come back, even if the connection dropped on the way.',
             'Mikan-chan reacts to your notifications, and a slider in Appearance sets how big they show up.',
             'The Docker image includes git now, so extensions installed there can check for updates and switch branches.',

@@ -296,6 +296,18 @@ export const MINIMAX_ENDPOINT = {
     CN: 'cn',
 };
 
+// KOTATSU-PATCH 2026-11-10: MiniMax retired every M2-era model ("no longer available", code 2069; /models
+// still lists them). Saved settings and shipped presets carry MiniMax-M2.7, so a retired id resolves to M3.
+const MINIMAX_RETIRED_MODEL = /^(MiniMax-M2(\.\d+)?(-highspeed)?|M2-her)$/;
+
+/**
+ * @param {string} model MiniMax model id from settings or a preset
+ * @returns {string} the id to send: retired M2-era ids become MiniMax-M3
+ */
+export function healMinimaxModel(model) {
+    return MINIMAX_RETIRED_MODEL.test(String(model ?? '')) ? 'MiniMax-M3' : model;
+}
+
 const sensitiveFields = [
     'reverse_proxy',
     'proxy_password',
@@ -461,7 +473,7 @@ const default_settings = {
     chutes_model: 'deepseek-ai/DeepSeek-V3-0324',
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     siliconflow_endpoint: SILICONFLOW_ENDPOINT.GLOBAL,
-    minimax_model: 'MiniMax-M2.7',
+    minimax_model: 'MiniMax-M3', // KOTATSU-PATCH 2026-11-10: every M2-era id is retired (404, code 2069); M3 + M3.1-Flash are live
     minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
     nanogpt_model: 'gpt-4o-mini',
@@ -1800,7 +1812,7 @@ export function getChatCompletionModel(settings = null) {
         case chat_completion_sources.SILICONFLOW:
             return settings.siliconflow_model;
         case chat_completion_sources.MINIMAX:
-            return settings.minimax_model;
+            return healMinimaxModel(settings.minimax_model);
         case chat_completion_sources.ELECTRONHUB:
             return settings.electronhub_model;
         case chat_completion_sources.CHUTES:
@@ -3420,7 +3432,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS, chat_completion_sources.XIAOMI].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS, chat_completion_sources.XIAOMI, chat_completion_sources.MINIMAX].includes(chat_completion_source)) {
         // KOTATSU-PATCH 2026-10-08: MiMo's safety filter arrives as content (mimo-filter.js).
         if (chat_completion_source === chat_completion_sources.XIAOMI && isMimoFilterStop(data)) {
             toastr.warning(t`MiMo's safety filter stopped this reply. The text before it is kept.`, t`Reply stopped`);
@@ -5372,7 +5384,7 @@ function getGeminiMaxContext(model, isUnlocked) {
         [/gemini-3\.1-flash-image/, max_128k],
         [/gemini-3-pro-image/, max_64k],
         [/gemini-(?:3[.\d]*|2\.(?:5|0))-(pro|flash)/, max_1mil],
-        [/gemini-4-argon/, max_1mil],
+        [/gemini-4-(?:argon|carbon)/, max_1mil],
         [/(gemini-exp|learnlm-2\.0-flash|gemini-robotics)/, max_1mil],
         [/gemma-3-27b-it/, max_128k],
         [/gemma-3n-e4b-it/, max_8k],
@@ -6233,7 +6245,7 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.MINIMAX) {
-        const maxContext = oai_settings.minimax_model === 'M2-her' ? 65536 : 204800;
+        const maxContext = 204800;
         $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
@@ -6503,6 +6515,7 @@ export function isImageInliningSupported() {
         'gemini-2.0',
         'gemini-2.5',
         'gemini-3',
+        'gemini-4-carbon',
         'gemini-4-argon',
         'gemini-exp-1206',
         'learnlm',
@@ -6623,6 +6636,7 @@ export function isVideoInliningSupported() {
         'gemini-2.5',
         'gemini-exp-1206',
         'gemini-3',
+        'gemini-4-carbon',
         'gemini-4-argon',
         'gemma-4',
         // Z.AI (GLM)
@@ -6662,6 +6676,7 @@ export function isAudioInliningSupported() {
         'gemini-2.0',
         'gemini-2.5',
         'gemini-3',
+        'gemini-4-carbon',
         'gemini-4-argon',
         'gemini-exp-1206',
         'gpt-4o-audio',

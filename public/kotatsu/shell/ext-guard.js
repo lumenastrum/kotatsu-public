@@ -73,6 +73,13 @@ const PANEL_MAX_HEIGHT = 0.92;
 const PANEL_OFF_CENTRE = Object.freeze({ x: 0.05, y: 0.1 });
 const DIALOG_SELECTOR = '[role="dialog"], [role="alertdialog"], [aria-modal="true"]';
 const CONTROL_SELECTOR = 'button, a[href], input, select, textarea, [role="button"]';
+/**
+ * Core's own layers that live on `<body>`. The slash-command autocomplete (`AutoComplete.getLayer()`)
+ * appends its list and its details pane to the body; on a phone they span the screen and sit right
+ * over the centre (public issue #10). Each is its own node, so they are named together: a "Keep it"
+ * for one would only have handed the warning to the other.
+ */
+const CORE_LAYERS = Object.freeze(['autoComplete-wrap', 'autoComplete-detailsWrap']);
 
 /**
  * @typedef {object} Finding
@@ -119,6 +126,7 @@ function isOurs(node) {
         || id === 'toast-container' || id === 'movingDivs' || id === 'sheld' || id === 'top-settings-holder' || id === 'top-bar'
         || id === 'bg1' || id === 'bg_custom' || id === 'character_popup' || id === 'shadow_popup' || id === 'dialogue_popup'
         || node.classList.contains('popup') || node.classList.contains('select2-container') || node.classList.contains('ui-widget')
+        || CORE_LAYERS.some(name => node.classList.contains(name))
         || node.classList.contains('k-onb-scrim') || node.classList.contains('k-studio-scrim');
 }
 

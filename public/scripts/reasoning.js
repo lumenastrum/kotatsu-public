@@ -147,6 +147,7 @@ export function extractReasoningFromData(data, {
                 case chat_completion_sources.AIMLAPI:
                 case chat_completion_sources.POLLINATIONS:
                 case chat_completion_sources.MOONSHOT:
+                case chat_completion_sources.MINIMAX: // KOTATSU-PATCH 2026-11-10: M3 family + reasoning_split → reasoning_content
                 case chat_completion_sources.XIAOMI:
                 case chat_completion_sources.CHUTES:
                 case chat_completion_sources.ELECTRONHUB:
