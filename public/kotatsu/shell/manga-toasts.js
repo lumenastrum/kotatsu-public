@@ -56,6 +56,46 @@ export function toastScaleLabel(scale) {
     return `${Math.round(normalizeToastScale(scale) * 100)}%`;
 }
 
+/**
+ * The switch (Andres 11/12: "a switch between Kotatsu toasts and stock toasts, in case anyone
+ * doesn't wanna use Mikan-chan's eyes"). `power_user.kotatsu_manga_toasts`, the string enum
+ * `'on'`/`'off'` like `kotatsu_metrics`, and unset means ON: the shipped look.
+ */
+export const MANGA_TOASTS_KEY = 'kotatsu_manga_toasts';
+
+/**
+ * @param {unknown} value The stored value.
+ * @returns {boolean} Whether toasts wear the manga panel. Only an explicit `'off'` turns it off.
+ */
+export function mangaToastsOn(value) {
+    return value !== 'off';
+}
+
+/** Whether new toasts get decorated. shell/toast-scale.js sets it from settings. */
+let enabled = true;
+
+/**
+ * Turns the manga look on or off. Off also strips it from toasts already on screen, so the one
+ * that was showing when settings loaded (or when the switch was flipped) goes plain too.
+ * @param {boolean} on
+ * @returns {void}
+ */
+export function setMangaToastsEnabled(on) {
+    enabled = Boolean(on);
+    if (enabled) return;
+    for (const el of globalThis.document?.querySelectorAll('#toast-container .k-manga-toast') ?? []) undecorateToast(el);
+}
+
+/**
+ * Takes the manga panel off one toast: what toastr built is left exactly as it was.
+ * @param {Element} el
+ * @returns {void}
+ */
+export function undecorateToast(el) {
+    for (const part of el.querySelectorAll(':scope > .k-mt-cut, :scope > .k-mt-sfx')) part.remove();
+    for (const name of [...el.classList]) if (name === 'k-manga-toast' || name.startsWith('k-mt--')) el.classList.remove(name);
+}
+
 const FACE_DIR = 'kotatsu/brand/mascot/reactions';
 const TYPES = /** @type {const} */ (['error', 'warning', 'success', 'info']);
 const COPIED = /\bcopied\b/i;
@@ -127,7 +167,7 @@ export function installMangaToasts() {
             const result = original.apply(this, args);
             try {
                 const el = result?.[0] ?? result;
-                if (el instanceof HTMLElement) decorateToast(el, type);
+                if (enabled && el instanceof HTMLElement) decorateToast(el, type);
             } catch (error) {
                 console.warn('[manga-toasts] could not decorate a toast; it shows plain.', error);
             }

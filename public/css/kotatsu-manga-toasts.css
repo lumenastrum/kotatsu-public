@@ -37,8 +37,12 @@ body #toast-container > div.toast.k-manga-toast {
     min-height: 96px;
     margin: 0 auto 24px;
     padding: 12px 18px 12px 12px;
-    background: var(--k-mt-paper);
-    background-image: none;
+    /* toastr.min.css paints its icon with `background-image … !important`, and only the rails
+       layout unwinds it (rechrome-popups.css §5.1). Anywhere else the icon survived, and the
+       `background` shorthand reset its repeat, so it tiled across the panel. Found and patched
+       by Targren (public #11). */
+    background-color: var(--k-mt-paper);
+    background-image: none !important;
     border: 3px solid var(--k-mt-ink);
     border-radius: 4px;
     box-shadow: 6px 6px 0 var(--k-mt-ink);

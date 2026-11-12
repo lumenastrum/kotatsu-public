@@ -535,6 +535,23 @@ export const ENTRIES = Object.freeze([
         surface: 'modal',
     },
     {
+        id: 'kotatsu_manga_toasts',
+        keys: ['kotatsu_manga_toasts'],
+        label: 'Mikan-chan reacts to notifications',
+        section: 'appearance',
+        group: 'Wardrobe & Shell',
+        control: 'checkbox',
+        binding: { by: 'id', ref: 'kotatsu_manga_toasts' },
+        // The switch between Kotatsu's manga panels and the notifications as SillyTavern draws
+        // them (Andres 2026-11-12). The string enum `'on'`/`'off'` and **unset means ON**, like
+        // `kotatsu_metrics`: shell/manga-toasts.js resolves that at read time.
+        affects: ['chrome'],
+        keywords: ['notification', 'notifications', 'toast', 'toasts', 'plain', 'stock', 'original', 'mikan', 'manga', 'reaction', 'eyes', 'kotatsu_manga_toasts'],
+        tier: 'advanced',
+        store: 'power_user',
+        surface: 'modal',
+    },
+    {
         id: 'kotatsu_toast_scale',
         keys: ['kotatsu_toast_scale'],
         label: 'Notification size',

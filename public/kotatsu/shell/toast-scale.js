@@ -14,7 +14,10 @@ import { saveSettingsDebounced } from '../../script.js';
 import { event_types, eventSource } from '../../scripts/events.js';
 import { power_user } from '../../scripts/power-user.js';
 import {
+    MANGA_TOASTS_KEY,
+    mangaToastsOn,
     normalizeToastScale,
+    setMangaToastsEnabled,
     TOAST_SCALE_DEFAULT,
     TOAST_SCALE_KEY,
     TOAST_SCALE_MAX,
@@ -25,6 +28,9 @@ import {
 
 const SLIDER_ID = 'kotatsu_toast_scale';
 const READOUT_ID = 'kotatsu_toast_scale_value';
+const RESET_ID = 'kotatsu_toast_scale_reset';
+/** The switch above the slider: Mikan-chan's panels, or the notifications as SillyTavern draws them. */
+const SWITCH_ID = 'kotatsu_manga_toasts';
 
 /** @type {any} The last sample toast, so a new one replaces it instead of stacking. */
 let sample = null;
@@ -66,12 +72,51 @@ export function setToastScale(value) {
     return scale;
 }
 
-/** @returns {void} */
-function showSample() {
+/**
+ * @returns {boolean} Whether notifications wear the manga panel (unset means yes).
+ */
+export function getMangaToasts() {
+    return mangaToastsOn(/** @type {Record<string, unknown>} */ (power_user)[MANGA_TOASTS_KEY]);
+}
+
+/**
+ * The switch as drawn: the checkbox, the module's own flag, and the size slider, which only
+ * sizes the manga panel and so has nothing to do while it is off.
+ * @param {boolean} on
+ * @returns {void}
+ */
+function renderSwitch(on) {
+    setMangaToastsEnabled(on);
+    const box = document.getElementById(SWITCH_ID);
+    if (box instanceof HTMLInputElement) box.checked = on;
+    for (const id of [SLIDER_ID, RESET_ID]) {
+        const control = document.getElementById(id);
+        if (control instanceof HTMLInputElement || control instanceof HTMLButtonElement) control.disabled = !on;
+    }
+}
+
+/**
+ * Persist and apply the switch.
+ * @param {unknown} on
+ * @returns {boolean} What was applied.
+ */
+export function setMangaToasts(on) {
+    const value = Boolean(on);
+    /** @type {Record<string, unknown>} */ (power_user)[MANGA_TOASTS_KEY] = value ? 'on' : 'off';
+    renderSwitch(value);
+    saveSettingsDebounced();
+    return value;
+}
+
+/**
+ * @param {string} [message]
+ * @returns {void}
+ */
+function showSample(message) {
     const toastr = /** @type {any} */ (globalThis).toastr;
     if (!toastr) return;
     if (sample) toastr.clear(sample);
-    sample = toastr.info(`Notifications show at ${toastScaleLabel(getToastScale())}.`, 'Like this?', { timeOut: 3500 });
+    sample = toastr.info(message ?? `Notifications show at ${toastScaleLabel(getToastScale())}.`, 'Like this?', { timeOut: 3500 });
 }
 
 /**
@@ -95,17 +140,29 @@ export function initToastScale() {
             showSample();
         });
     }
-    const reset = document.getElementById('kotatsu_toast_scale_reset');
+    const reset = document.getElementById(RESET_ID);
     reset?.addEventListener('click', () => {
         setToastScale(TOAST_SCALE_DEFAULT);
         showSample();
     });
+    const box = document.getElementById(SWITCH_ID);
+    if (box instanceof HTMLInputElement) {
+        box.addEventListener('change', () => {
+            const on = setMangaToasts(box.checked);
+            showSample(on ? 'Mikan-chan is watching your notifications again.' : 'Notifications are plain now.');
+        });
+    }
 
     render(getToastScale());
-    eventSource.on(event_types.SETTINGS_LOADED, () => render(getToastScale()));
+    renderSwitch(getMangaToasts());
+    eventSource.on(event_types.SETTINGS_LOADED, () => {
+        render(getToastScale());
+        renderSwitch(getMangaToasts());
+    });
 
     /** @type {Window & typeof globalThis & {kotatsu?: Record<string, unknown>}} */
     const targetWindow = window;
     if (!targetWindow.kotatsu || typeof targetWindow.kotatsu !== 'object') targetWindow.kotatsu = {};
     targetWindow.kotatsu.toastScale = { get: getToastScale, set: setToastScale };
+    targetWindow.kotatsu.mangaToasts = { get: getMangaToasts, set: setMangaToasts };
 }
