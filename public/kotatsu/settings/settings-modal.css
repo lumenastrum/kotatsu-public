@@ -1021,8 +1021,30 @@ body[data-k-layout="rails"] .k-set-control :is(#kotatsu_mes_variant_row,
     #kotatsu_mes_nameplate_row,
     #kotatsu_mes_metadata_row,
     #kotatsu_prose_scale_row,
-    #kotatsu_landing_row) > .flex-container > span {
+    #kotatsu_landing_row,
+    #kotatsu_toast_scale_row) > .flex-container > span {
     display: none;
+}
+
+/* The notification size row (Andres 2026-11-12: "Drop the inner label, make it read like Font
+   Scale"). Its caption goes with the five above; what is left (track, readout, Reset) is then
+   narrow enough to sit on the label's own line, so the wrapper stops asking for a whole line
+   and keeps its three parts together. The Reset button's own `<span>` is a grandchild of the
+   inner row, not a child, so the rule above never reaches it. */
+body[data-k-layout="rails"] .k-set-control #kotatsu_toast_scale_row {
+    flex: 0 1 auto;
+    width: auto;
+}
+
+body[data-k-layout="rails"] .k-set-control #kotatsu_toast_scale_row > .flex-container {
+    flex-wrap: nowrap;
+    width: auto;
+}
+
+body[data-k-layout="rails"] .k-set-control #kotatsu_toast_scale {
+    flex: 1 1 130px;
+    min-width: 90px;
+    width: 130px;
 }
 
 /* Pixel QA defect 5b: the adopted wrapper carries stock's own `flexFlowColumn` utility class

@@ -244,6 +244,9 @@ Also: a 1M entry in `getGeminiMaxContext`'s fallback map (the live model list wi
 #### C6 — gemini-4-carbon (2026-11-10)
 `models/gemini-4-carbon` is in the live `models.list` on our key (1,048,576 input, 32,768 output declared, thinking true). Its declared methods omit `streamGenerateContent`, but streaming answers anyway. Every C5 probe was re-run against Carbon, and it matches Argon on all of them: `thinkingLevel` low / medium / high = 200, minimal = **400**, a trailing model turn = **400**, a `functionCall` with no `thoughtSignature` = **400** and the bypass value = 200. Sampling, a system instruction, `thinkingBudget` 1024 and `maxOutputTokens` 65536 are all 200. So Carbon joins every Argon gate: each `gemini-4-argon` regex becomes `gemini-4-(?:argon|carbon)`, and the id joins the inlining lists, both Google selects and both caption selects. End to end: the real `convertGooglePrompt` + `calculateGoogleBudgetTokens` output was sent to Carbon for five cases (plain, effort min → low, max → high, trailing prefill, tool-call history), and all five came back 200. Vertex is not live-verified. When upstream adds Carbon, take theirs and drop these.
 
+#### C7 — gemini-4-hydrogen (2026-11-12)
+`models/gemini-4-hydrogen` answers `models.get` on our key: 1,048,576 input, 65,536 output, thinking true (its declared methods again omit `streamGenerateContent`, and streaming again answers anyway). Every C5 probe was re-run against Hydrogen and it matches Argon and Carbon on all of them: `thinkingLevel` low / medium / high = 200, minimal = **400** ("MINIMAL is not supported"), a trailing model turn = **400** ("ending with a model turn"), a `functionCall` with no `thoughtSignature` = **400** and the bypass value = 200. `thinkingBudget` 1024, `includeThoughts`, temperature 0 / 1.4 with topP and topK, a system instruction, `maxOutputTokens` 65536, an inline image with per-part `mediaResolution` and safety thresholds OFF are all 200. So Hydrogen joins every Argon gate: each `gemini-4-(?:argon|carbon)` becomes `gemini-4-(?:argon|carbon|hydrogen)`, and the id joins the inlining lists, both Google selects and both caption selects. The probes are now a script, so the next Gemini 4 is one command: `playwright-rig/scripts/kotatsu-gemini4-gates-probe.mjs --model <id>`. A `gemini-4-*` id still gets nothing for free: three in a row have matched, and each was still probed.
+
 #### C3 — Gemini ≥3.6 continuation-turn guard
 **File:** `src/prompt-converters.js:618-623`, at the end of `convertGooglePrompt` (`:432`), immediately before its `return`.
 
@@ -413,6 +416,7 @@ Its behavior is precisely specified and was asserted by the retired script on ev
 | `gemini-3.8-flash` | ✅ | assumed same as 3.6/3.7 — NOT live-verified (no Google key in dev); guard is regex-covered |
 | `gemini-4-argon` | ✅ | live-verified 400 on a trailing model turn (2026-10-13); upstream-style `noPrefillModel` merges first, C3 is the fallback |
 | `gemini-4-carbon` | ✅ | live-verified 400 on a trailing model turn (2026-11-10); same gates as Argon (C6) |
+| `gemini-4-hydrogen` | ✅ | live-verified 400 on a trailing model turn (2026-11-12); same gates as Argon and Carbon (C7) |
 | `gemini-3.5-flash` | ❌ | still prefills — **must be spared** |
 | `gemini-3.1-pro-preview` | ❌ | still prefills — **must be spared** |
 
