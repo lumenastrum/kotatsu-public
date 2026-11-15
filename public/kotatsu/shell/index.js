@@ -67,6 +67,7 @@ import { installPortraitWatch } from '../library/persona-portraits.js';
 import { installMangaToasts } from './manga-toasts.js';
 import { initToastScale } from './toast-scale.js';
 import { installGenWatch } from '../connections/gen-watch.js';
+import { installAndroidSave } from './android-save.js';
 
 export { setLayout } from './persistence.js';
 
@@ -127,6 +128,9 @@ export async function initKotatsuShell() {
     // Issue #28: stop waiting on a reply whose connection died while the screen was off.
     // Both layouts; wraps fetch for the generate routes only.
     installGenWatch();
+
+    // kotatsu-public#12: exports reach Android's "save as" screen. Only inside the APK.
+    installAndroidSave();
 
     defineLayout('classic', classicLayout);
     defineLayout('rails', railsLayout);

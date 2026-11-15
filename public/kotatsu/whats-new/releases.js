@@ -15,9 +15,9 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
     // Personas are the headline of the 0.9 line (kotatsu-public#7): each 0.9.x carries 0.9.0's cards and clips
-    // (media moved along, now 0.9.5/) with its own lines on top, the way 0.8.x carried Summer.
+    // (media moved along, now 0.9.6/) with its own lines on top, the way 0.8.x carried Summer.
     Object.freeze({
-        version: '0.9.5',
+        version: '0.9.6',
         title: 'Who you are',
         cards: [
             {
@@ -43,6 +43,7 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'On the Android app, the backup and every export now save: Android asks where the file should go, and you pick the folder. Thanks to Lazard96, who reported it.',
             'Gemini 4 Hydrogen joins the Gemini models.',
             'In Settings, Notification size sits on one line and says its name once.',
             'Prefer plain notifications? A switch in Appearance, “Mikan-chan reacts to notifications”, turns her panels off and brings the plain ones back.',

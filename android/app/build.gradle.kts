@@ -31,6 +31,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // A debug build is signed with a throwaway key, so Android will not install it over a release. Its own id
+            // lets it sit beside the real app instead (both serve the same port: stop one before opening the other).
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = false
             if (keystore != null) signingConfig = signingConfigs.getByName("release")
