@@ -26,7 +26,8 @@
  * `onDraw`, which the opener supplies.
  */
 
-import { LitElement, html, nothing } from '../shell/lit.js';
+import { LitElement, html, nothing, svg } from '../shell/lit.js';
+import { chat, getThumbnailUrl, user_avatar } from '../../script.js';
 import { isSettingsModalOpen, openSettings } from '../settings/k-settings-modal.js';
 import { characterArtUrl } from '../renderer/portrait-target.js';
 import { LANES, PURPOSES } from './contract.js';
@@ -35,9 +36,10 @@ import { listLoras, listModels, listRecipes } from './jobs-client.js';
 import {
     LORA_BASE_NAMES, MAX_LORAS, PURPOSE_LABELS, SHEET_STEPS, cardLorasFor, groupLoras, isKeyLane, isPurpose, joinNegatives, keyLaneRequest, keyLaneShapes, loraRequest,
     confirmedByFamily, familyName, needsLine, normalizeLoras, openingPick, openingStep, pairsWith, parseSize, pickRecipe, pipelineFor, pipelineLabel, pipelinesFor,
-    recipeBase, shapeLabel, sizesFor, stepOnSubject, withName, withTriggers, withoutTrigger,
+    recipeBase, sizesFor, stepOnSubject, withName, withTriggers, withoutTrigger,
 } from './picture-model.js';
 import { PRIVACY_LINES, serverKey } from './settings-model.js';
+import { momentIndex } from './writer.js';
 
 /** Largest seed the sheet rolls (ComfyUI accepts up to 2^64, every lane accepts this). */
 const SEED_CEILING = 2 ** 32;
@@ -47,7 +49,56 @@ function rollSeed() {
     return Math.floor(Math.random() * SEED_CEILING);
 }
 
+/**
+ * How a shape reads on its tile: a name for the proportion, the numbers under it, and the proportion itself.
+ * @param {string} shape `WxH`, `W:H` or `auto`
+ * @returns {{name: string, detail: string, ratio: number}} ratio 0 = unknown (auto)
+ */
+function shapeTile(shape) {
+    const match = /^(\d+)\s*[x:]\s*(\d+)$/i.exec(String(shape).trim());
+    if (!match) return { name: shape === 'auto' ? 'Auto' : String(shape), detail: shape === 'auto' ? 'the model picks' : '', ratio: 0 };
+    const ratio = Number(match[1]) / Number(match[2]);
+    let name = 'Square';
+    if (ratio < 0.98) name = ratio >= 0.62 ? 'Portrait' : 'Tall';
+    else if (ratio > 1.02) name = ratio <= 1.62 ? 'Landscape' : 'Wide';
+    return { name, detail: shape.includes(':') ? shape : `${match[1]} × ${match[2]}`, ratio };
+}
+
+/**
+ * A message's text as a short plain excerpt for the sheet (markup and tags dropped).
+ * @param {unknown} text
+ * @returns {string}
+ */
+function momentExcerpt(text) {
+    const plain = String(text ?? '').replace(/<[^>]*>/g, ' ').replace(/[*_`~#]+/g, '').replace(/\s+/g, ' ').trim();
+    return plain.length > 220 ? `${plain.slice(0, 220).replace(/\s+\S*$/, '')}…` : plain;
+}
+
+/** @param {unknown} paths SVG children of a 24-box subject icon */
+const subjectIcon = paths => html`
+    <svg class="k-pic-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+         stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths}</svg>`;
+
 const icons = {
+    pen: html`
+        <svg class="k-pic-icon" viewBox="0 0 16 16" width="16" height="16" fill="none"
+             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M10.5 2.5l3 3-8 8h-3v-3z" /><path d="M9 4l3 3" />
+        </svg>`,
+    brush: html`
+        <svg class="k-pic-icon" viewBox="0 0 16 16" width="16" height="16" fill="none"
+             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M13.5 2.5 7.5 8.5" /><path d="M7.5 8.5 6 8.3c-1.4 0-2.2 1-2.2 2.2 0 1-.5 1.7-1.5 2 2.6.6 5.2-.3 5.2-2.8z" />
+        </svg>`,
+    check: html`
+        <svg class="k-pic-icon" viewBox="0 0 16 16" width="12" height="12" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M3.5 8.5l3 3 6-7" />
+        </svg>`,
+    moment: subjectIcon(svg`<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z" /><path d="M12 7l.9 2.1L15 10l-2.1.9L12 13l-.9-2.1L9 10l2.1-.9z" />`),
+    person: subjectIcon(svg`<circle cx="12" cy="9" r="3.5" /><path d="M5 20c1.2-3.6 3.8-5.5 7-5.5s5.8 1.9 7 5.5" />`),
+    place: subjectIcon(svg`<path d="M3 19l5.5-8 3.5 5 2.5-3.5L21 19z" /><circle cx="16.5" cy="6.5" r="2" />`),
+    free: subjectIcon(svg`<path d="M4 16c2.5-5 4.5-7 6-6s-1.5 5 .5 5.5 3-3.5 5-3.5 1.5 3 4.5 3" /><path d="M4 20h16" />`),
     close: html`
         <svg class="k-pic-icon" viewBox="0 0 16 16" width="16" height="16" fill="none"
              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" focusable="false">
@@ -739,10 +790,10 @@ export class KPictureSheet extends LitElement {
     #renderPrimary() {
         if (this._step === SHEET_STEPS.WRITE) {
             return html`<button type="button" class="k-pic-btn k-pic-btn--primary k-pic-draw"
-                ?disabled=${!!this.#blocker} @click=${() => this.#draw()}>Draw</button>`;
+                ?disabled=${!!this.#blocker} @click=${() => this.#draw()}>${icons.brush}<span>Draw</span></button>`;
         }
         return html`<button type="button" class="k-pic-btn k-pic-btn--primary k-pic-write"
-            ?disabled=${!!this.#setupBlocker || this._drafting} @click=${() => void this.#write()}>Write scene</button>`;
+            ?disabled=${!!this.#setupBlocker || this._drafting} @click=${() => void this.#write()}>${icons.pen}<span>Write scene</span></button>`;
     }
 
     /** The two steps, under the title: where the sheet is. */
@@ -750,10 +801,13 @@ export class KPictureSheet extends LitElement {
         const steps = /** @type {const} */ ([[SHEET_STEPS.SETUP, 'Set up'], [SHEET_STEPS.WRITE, 'Write and draw']]);
         return html`
             <ol class="k-pic-steps" aria-label="Steps">
-                ${steps.map(([step, label], i) => html`
-                    <li class="k-pic-step${step === this._step ? ' is-on' : ''}" data-step=${step} aria-current=${step === this._step ? 'step' : nothing}>
-                        <span class="k-pic-step-n" aria-hidden="true">${i + 1}</span><span>${label}</span>
-                    </li>`)}
+                ${steps.map(([step, label], i) => {
+        const done = i === 0 && this._step === SHEET_STEPS.WRITE;
+        return html`
+                    <li class="k-pic-step${step === this._step ? ' is-on' : ''}${done ? ' is-done' : ''}" data-step=${step} aria-current=${step === this._step ? 'step' : nothing}>
+                        <span class="k-pic-step-n" aria-hidden="true">${done ? icons.check : i + 1}</span><span>${label}</span>
+                    </li>`;
+    })}
             </ol>`;
     }
 
@@ -762,10 +816,41 @@ export class KPictureSheet extends LitElement {
         const tags = this.#tongue === 'tags';
         const subject = withName(PURPOSE_LABELS[/** @type {keyof typeof PURPOSE_LABELS} */ (this.purpose)] ?? '', this.characterName);
         return html`
+            ${this.#renderMoment()}
             <p class="k-pic-hint k-pic-setup-note">
-                Choose what to draw and how. <b>Write scene</b> drafts the prompt for <b>${subject}</b> in
+                <b>Write scene</b> drafts the prompt for <b>${subject}</b> in
                 ${tags ? 'tags' : 'plain description'}, the way this ${this.#keyLane ? 'lane' : 'pipeline'} reads; you can edit it before you draw.
             </p>`;
+    }
+
+    /** This moment: the message the scene will be written from, quoted, so the subject is never a guess. */
+    #renderMoment() {
+        if (this.purpose !== PURPOSES.MOMENT || !Array.isArray(chat)) return nothing;
+        const message = chat[momentIndex(chat, this.messageIndex)];
+        const excerpt = momentExcerpt(message?.mes);
+        if (!excerpt) return nothing;
+        return html`
+            <blockquote class="k-pic-moment">
+                ${message?.name ? html`<cite class="k-pic-moment-who">${message.name}</cite>` : nothing}
+                <p class="k-pic-moment-text">${excerpt}</p>
+            </blockquote>`;
+    }
+
+    /**
+     * What a subject tile wears: the card's art for the character, the persona's for Me, a drawn icon otherwise.
+     * @param {string} purpose
+     */
+    #subjectArt(purpose) {
+        if (purpose === PURPOSES.CHAR && this.character?.avatar) {
+            return html`<img class="k-pic-chip-face" src=${getThumbnailUrl('avatar', this.character.avatar)} alt="" draggable="false">`;
+        }
+        if (purpose === PURPOSES.ME && user_avatar) {
+            return html`<img class="k-pic-chip-face" src=${getThumbnailUrl('persona', user_avatar)} alt="" draggable="false">`;
+        }
+        if (purpose === PURPOSES.MOMENT) return icons.moment;
+        if (purpose === PURPOSES.PLACE) return icons.place;
+        if (purpose === PURPOSES.FREE) return icons.free;
+        return icons.person;
     }
 
     #renderPurposes() {
@@ -774,8 +859,34 @@ export class KPictureSheet extends LitElement {
                 ${Object.values(PURPOSES).map(purpose => html`
                     <button type="button" class="k-pic-chip${purpose === this.purpose ? ' is-on' : ''}"
                             role="radio" aria-checked=${purpose === this.purpose ? 'true' : 'false'}
-                            data-purpose=${purpose}
-                            @click=${() => this.#choosePurpose(purpose)}>${withName(PURPOSE_LABELS[purpose], this.characterName)}</button>`)}
+                            data-purpose=${purpose} title=${withName(PURPOSE_LABELS[purpose], this.characterName)}
+                            @click=${() => this.#choosePurpose(purpose)}><span class="k-pic-chip-art" aria-hidden="true">${this.#subjectArt(purpose)}</span><span class="k-pic-chip-label">${withName(PURPOSE_LABELS[purpose], this.characterName)}</span></button>`)}
+            </div>`;
+    }
+
+    /**
+     * The shape picker: one tile per size, each drawn in its own proportion.
+     * @param {readonly string[]} shapes
+     * @param {string} label The group's name
+     */
+    #renderShapeTiles(shapes, label) {
+        return html`
+            <div class="k-pic-shapes k-pic-size" id="k-pic-size" role="radiogroup" aria-label=${label}>
+                ${shapes.map(shape => {
+        const tile = shapeTile(shape);
+        const on = shape === this._size;
+        // The glyph fits a 26px box in the tile's own proportion; an unknown one (auto) is a dashed square.
+        const w = tile.ratio ? Math.round(26 * Math.min(1, tile.ratio)) : 22;
+        const h = tile.ratio ? Math.round(26 * Math.min(1, 1 / tile.ratio)) : 22;
+        return html`
+                        <button type="button" class="k-pic-shape${on ? ' is-on' : ''}" role="radio" aria-checked=${on ? 'true' : 'false'}
+                                data-size=${shape} title=${tile.detail ? `${tile.name}, ${tile.detail}` : tile.name}
+                                @click=${() => { this._size = shape; }}>
+                            <span class="k-pic-shape-box" aria-hidden="true"><span class="k-pic-shape-glyph${tile.ratio ? '' : ' is-auto'}" style=${`width:${w}px;height:${h}px`}></span></span>
+                            <span class="k-pic-shape-name">${tile.name}</span>
+                            ${tile.detail ? html`<span class="k-pic-shape-detail">${tile.detail}</span>` : nothing}
+                        </button>`;
+    })}
             </div>`;
     }
 
@@ -793,10 +904,14 @@ export class KPictureSheet extends LitElement {
                         <button type="button" class="k-pic-link" ?disabled=${this._drafting}
                                 @click=${() => this.#draft({ force: true })}>${icons.redo}<span>Write it again</span></button>` : nothing}
                 </div>
-                <textarea id="k-pic-prompt" class="k-pic-prompt" rows="5"
-                          placeholder=${free ? 'What should the picture show?' : ''}
-                          aria-busy=${this._drafting ? 'true' : 'false'}
-                          .value=${this._prompt} @input=${this.#onPromptInput}></textarea>
+                <div class="k-pic-prompt-wrap">
+                    <textarea id="k-pic-prompt" class="k-pic-prompt" rows="5"
+                              placeholder=${free ? 'What should the picture show?' : ''}
+                              aria-busy=${this._drafting ? 'true' : 'false'}
+                              .value=${this._prompt} @input=${this.#onPromptInput}></textarea>
+                    ${this._drafting && !this._prompt.trim() ? html`
+                        <span class="k-pic-drafting" aria-hidden="true"><i></i><i></i><i></i></span>` : nothing}
+                </div>
                 ${hint ? html`<p class="k-pic-hint" aria-live="polite">${hint}</p>` : nothing}
                 ${this._rewriteOffer && !this._drafting && !free ? this.#renderRewriteOffer() : nothing}
                 ${this._retongue && !this._drafting ? this.#renderRetongue() : nothing}
@@ -860,11 +975,8 @@ export class KPictureSheet extends LitElement {
         const gemini = settings.lane === LANES.GEMINI;
         return html`
             <section class="k-pic-field">
-                <label class="k-pic-label" for="k-pic-size">${gemini ? `Shape · ${settings.gemini?.size ?? ''}` : 'Size'}</label>
-                <select id="k-pic-size" class="k-pic-select k-pic-size"
-                        @change=${(/** @type {Event} */ e) => { this._size = /** @type {HTMLSelectElement} */ (e.currentTarget).value; }}>
-                    ${shapes.map(shape => html`<option value=${shape} ?selected=${shape === this._size}>${shapeLabel(shape)}</option>`)}
-                </select>
+                <span class="k-pic-label">${gemini ? `Shape · ${settings.gemini?.size ?? ''}` : 'Size'}</span>
+                ${this.#renderShapeTiles(shapes, gemini ? 'Shape' : 'Size')}
             </section>`;
     }
 
@@ -1015,14 +1127,11 @@ export class KPictureSheet extends LitElement {
     #renderSizeAndSeed() {
         const sizes = sizesFor(this.#recipe);
         return html`
-            <div class="k-pic-pair">
-                <section class="k-pic-field">
-                    <label class="k-pic-label" for="k-pic-size">Size</label>
-                    <select id="k-pic-size" class="k-pic-select k-pic-size"
-                            @change=${(/** @type {Event} */ e) => { this._size = /** @type {HTMLSelectElement} */ (e.currentTarget).value; }}>
-                        ${sizes.map(size => html`<option value=${size} ?selected=${size === this._size}>${size.replace('x', ' × ')}</option>`)}
-                    </select>
-                </section>
+            <section class="k-pic-field">
+                <span class="k-pic-label">Size</span>
+                ${this.#renderShapeTiles(sizes, 'Size')}
+            </section>
+            <div class="k-pic-seed-field">
                 <section class="k-pic-field">
                     <span class="k-pic-label" id="k-pic-seed-label">Seed</span>
                     <div class="k-pic-seed" role="group" aria-labelledby="k-pic-seed-label">
@@ -1063,6 +1172,7 @@ export class KPictureSheet extends LitElement {
                            ?disabled=${!this.character?.avatar}
                            @change=${(/** @type {Event} */ e) => { this._useReference = /** @type {HTMLInputElement} */ (e.currentTarget).checked; }}>
                     <span class="k-pic-switch-track" aria-hidden="true"></span>
+                    ${this.character?.avatar ? html`<img class="k-pic-ref-thumb" src=${getThumbnailUrl('avatar', this.character.avatar)} alt="" draggable="false">` : nothing}
                     <span class="k-pic-switch-text">Use the card's art as reference</span>
                 </label>`);
         }

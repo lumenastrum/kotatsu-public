@@ -146,6 +146,18 @@ export const LINES = Object.freeze({
     whatsNewAndroid: Object.freeze([
         'I fit in your Android now! The whole kotatsu, in your pocket. The blanket stays home, sorry.',
     ]),
+    whatsNewWrapped: Object.freeze([
+        'I counted everything while you weren’t looking! Your week, your month, your favourites. Go on, show them off.',
+    ]),
+    whatsNewFaceoff: Object.freeze([
+        'Who swipes less, who waits longer, who keeps saying “knuckles turning white”? I kept score. I don’t judge. Much.',
+    ]),
+    whatsNewPictures: Object.freeze([
+        'Drawing got cozier! Tap what you want, pick a shape, and I’ll paint while you read.',
+    ]),
+    whatsNewPictureMenu: Object.freeze([
+        'Every picture remembers how it was made now. Found a lucky seed? Click it and keep it.',
+    ]),
     whatsNewAgain: Object.freeze([
         'Missed something? Here\'s the latest again. I saved you a mikan.',
     ]),

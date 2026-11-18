@@ -75,6 +75,8 @@ import {
 // would make the two a cycle. `studio/manifest.js` imports nothing at all.
 import { OPEN_STUDIO_EVENT } from '../studio/manifest.js';
 import { chatLabelText } from '../shell/chat-label.js';
+// The door's name only (no imports of its own): the sheet is mounted at the shell seam.
+import { OPEN_WRAPPED_EVENT } from '../wrapped/doors.js';
 
 /** @typedef {import('./view-model.js').LibraryRow} LibraryRow */
 /** @typedef {import('./persona-view-model.js').PersonaRow} PersonaRow */
@@ -236,6 +238,13 @@ const icons = {
              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
              aria-hidden="true" focusable="false">
             <circle cx="6" cy="5.5" r="2.4" /><path d="M1.75 13a4.25 4.25 0 0 1 8.5 0" /><path d="M10.5 3.4a2.4 2.4 0 0 1 0 4.2" /><path d="M11.4 9.1a4.25 4.25 0 0 1 2.85 3.9" />
+        </svg>`,
+    /** Kotatsu Wrapped — three bars: a tally of the time under the blanket. */
+    wrapped: html`
+        <svg class="k-lib-icon" viewBox="0 0 16 16" width="12" height="12" fill="none"
+             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+            <path d="M3.5 13V8.5" /><path d="M8 13V3" /><path d="M12.5 13V6" />
         </svg>`,
     /** Browse Characters — a compass: somebody out there, not yet here. */
     browse: html`
@@ -1503,6 +1512,13 @@ export class KLibrary extends LitElement {
                         title="Put two or more characters in one chat"
                         @click=${() => this.#onCreateScene()}
                     >${icons.cast}<span>New scene</span></button>
+                    <button
+                        type="button"
+                        class="k-lib-btn k-lib-btn--ghost"
+                        data-k-door="wrapped"
+                        title="Your day, week or month as cards you can save and post"
+                        @click=${() => window.dispatchEvent(new CustomEvent(OPEN_WRAPPED_EVENT))}
+                    >${icons.wrapped}<span>Wrapped</span></button>
                     <button
                         type="button"
                         class="k-lib-btn k-lib-btn--primary"

@@ -60,6 +60,8 @@ export class KPicturePending extends LitElement {
     jobId = '';
     /** Chat this picture belongs to (`getCurrentChatId()` when it started). */
     chatId = '';
+    /** Width over height of the picture being drawn; 0 = unknown. Set before the row is attached. */
+    aspect = 0;
 
     /** Latest frame not yet applied. */
     #nextFrame = '';
@@ -233,6 +235,8 @@ export class KPicturePending extends LitElement {
             frame = html`<span class="k-pic-pend-nopreview">${error ? '' : 'The preview appears here when the server sends one'}</span>`;
         }
         const frameClass = painter ? ' has-painter' : this._preview ? ' has-preview' : '';
+        // The frame takes the picture's own proportion, so the row does not jump when the picture lands.
+        const shaped = !painter && Number.isFinite(this.aspect) && this.aspect > 0 ? `aspect-ratio: ${this.aspect.toFixed(4)}` : '';
         return html`
             <div class="k-pic-pend" role="status" aria-live="polite">
                 <div class="k-pic-pend-ring${indeterminate ? ' is-indeterminate' : ''}" aria-hidden="true">
@@ -248,7 +252,7 @@ export class KPicturePending extends LitElement {
                 <div class="k-pic-pend-body">
                     <p class="k-pic-pend-line">${this.line}</p>
                     <p class="k-pic-pend-status${error ? ' is-error' : ''}">${this.#status()}</p>
-                    <div class="k-pic-pend-frame${frameClass}">${frame}</div>
+                    <div class="k-pic-pend-frame${frameClass}${shaped ? ' is-shaped' : ''}" style=${shaped}>${frame}</div>
                     <div class="k-pic-pend-actions">
                         ${error && this._help.keyLane ? html`
                             <button type="button" class="k-pic-btn k-pic-btn--primary k-pic-pend-keylane" @click=${() => this.#raise(PENDING_EVENTS.KEY_LANE)}>Draw with your ${this._help.keyLane.label} key</button>` : nothing}

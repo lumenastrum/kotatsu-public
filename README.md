@@ -119,6 +119,19 @@ Your personas get a shelf of their own, right beside your cast: full portraits, 
 
 Personas are stored where SillyTavern keeps them, so stock SillyTavern still reads them. The [wiki](https://github.com/lumenastrum/kotatsu-public/wiki/Personas) has the details.
 
+## Wrapped: your stories, in numbers
+
+<p align="center"><img src=".github/screenshots/wrapped.webp" alt="Four Wrapped cards in three themes: a week with Kimi K3 and 1,282 swipes, a November across three storytellers with Claude Opus 5.5 and Sola V4 Flame, a model report card rated in mikans, and a calendar of days played with a 22-day streak" width="720"></p>
+
+**Wrapped** in the library turns a day, a week or a month into cards you can save or copy: replies read, swipes, hours at the table, your cast, the models that wrote for you and the presets they wrote under, with arrows against the stretch before.
+
+- **Five cards.** The story card, a calendar of the days you played, a report card for your top model (or model and preset), a face-off between your top models, and the phrases spotted, per model, per 100 replies.
+- **Read where it lives.** Wrapped reads the chats already in Kotatsu. Nothing is uploaded, nothing new is written, and the cards wear whatever theme you run.
+- **Yours to share, or not.** Card names are on the cards; hide them or give each a nickname before you save.
+- **It counts, it doesn't judge.** The phrase list (the usual suspects) is counted in the story you read, not in the tracker blocks some presets add after it, and nothing is ever rewritten.
+
+Presets are known from 1.0 on: older replies never recorded which preset wrote them. The [wiki](https://github.com/lumenastrum/kotatsu-public/wiki/Wrapped) has the details.
+
 ## Everything SillyTavern let you shape
 
 <img align="right" width="128" src="public/kotatsu/brand/mascot/card-bust.webp" alt="Mikan-chan presenting a blank card">

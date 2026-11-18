@@ -43,7 +43,7 @@ const OPEN_CLASS = 'k-whats-new-open';
 const COVERING_CLASSES = Object.freeze(['k-settings-modal-open', 'k-studio-open', BROWSE_OPEN_CLASS, 'k-onboarding-open']);
 
 /** Which pose Mikan-chan wears beside each card. */
-const CARD_POSES = Object.freeze({ rooms: 'welcome', mentions: 'teach', talk: 'sauce', narrator: 'card' });
+const CARD_POSES = Object.freeze({ rooms: 'welcome', mentions: 'teach', talk: 'sauce', narrator: 'card', wrapped: 'ready', faceoff: 'teach', pictures: 'card', 'picture-menu': 'card' });
 
 /** Where the running version comes from (no git, no network: `src/endpoints/kotatsu/update.js`). */
 const VERSION_URL = '/api/kotatsu/update/version';
@@ -201,6 +201,14 @@ export class KWhatsNew extends LitElement {
      */
     #renderClip(release, card) {
         const base = `kotatsu/whats-new/media/${release.version}/${card.id}`;
+        // A card whose media is a picture, not a clip (1.0 shipped stills): no player, no sources
+        // to miss, nothing to start.
+        if (card.still) {
+            return html`
+                <figure class="k-wn-clip">
+                    <img class="k-wn-video" src=${`${base}.webp`} alt=${`A picture: ${card.title}`} draggable="false">
+                </figure>`;
+        }
         const still = reducedMotion();
         return html`
             <figure class="k-wn-clip">

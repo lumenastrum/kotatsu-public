@@ -28,6 +28,7 @@
  * @property {number} cacheCreationTokens prompt tokens written INTO the cache this turn
  * @property {boolean} cacheKnown whether the provider reported cache figures at all
  * @property {'off'|'system'|'anchor'|'depth'} [cacheMode] what Kotatsu asked to cache (prompt cache v0)
+ * @property {number} [cost] what the provider says the reply cost, as reported (OpenRouter: credits, which are US dollars); absent when it did not say
  */
 
 /** Values the server's `X-Kotatsu-Cache` header can carry (docs/prompt-cache-v0.md §4). */
@@ -114,6 +115,22 @@ export function foldStreamingUsage(state, frame) {
     if (usage.prompt_cache_hit_tokens != null) accumulated.prompt_cache_hit_tokens = usage.prompt_cache_hit_tokens;
     if (usage.prompt_cache_miss_tokens != null) accumulated.prompt_cache_miss_tokens = usage.prompt_cache_miss_tokens;
     if (usage.cached_tokens != null) accumulated.cached_tokens = usage.cached_tokens;
+    // What the reply cost, when the provider says so itself (OpenRouter: `usage.cost`).
+    if (usage.cost != null) accumulated.cost = usage.cost;
+}
+
+/**
+ * The provider's own price for a reply, when it reports one. OpenRouter puts `cost` (in
+ * credits, which are US dollars) on every response's `usage`; nobody else Kotatsu talks to
+ * does today. Kept exactly as reported: Kotatsu holds no price table and computes nothing.
+ * Zero is a real answer (a free model); anything that is not a finite, non-negative number is
+ * no answer at all, and then there is no key.
+ * @param {any} usage raw provider usage
+ * @returns {{cost: number}|{}}
+ */
+function costOf(usage) {
+    const cost = usage.cost;
+    return typeof cost === 'number' && Number.isFinite(cost) && cost >= 0 ? { cost } : {};
 }
 
 /**
@@ -175,6 +192,7 @@ export function normalizeUsage(usage) {
             cacheCreationTokens: cacheWrite || 0,
             cacheKnown: !!cacheKnown,
             ...cacheMode,
+            ...costOf(usage),
         };
     }
 

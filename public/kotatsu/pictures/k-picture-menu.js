@@ -39,7 +39,7 @@ const icons = {
     menu: html`
         <svg class="k-pic-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <path d="M8 2.5l1.3 3.2 3.2 1.3-3.2 1.3L8 11.5 6.7 8.3 3.5 7l3.2-1.3z" /><path d="M12.5 11v3M11 12.5h3" />
+            <circle cx="3.5" cy="8" r=".9" fill="currentColor" /><circle cx="8" cy="8" r=".9" fill="currentColor" /><circle cx="12.5" cy="8" r=".9" fill="currentColor" />
         </svg>`,
     again: html`
         <svg class="k-pic-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
@@ -191,7 +191,7 @@ export class KPictureMenu extends LitElement {
         const rect = button?.getBoundingClientRect();
         if (rect) {
             // Fixed, so the row's clipping never cuts it; flips above the button near the bottom.
-            const menuHeight = 280;
+            const menuHeight = 350;
             const below = rect.bottom + 6;
             const top = below + menuHeight > window.innerHeight ? Math.max(8, rect.top - 6 - menuHeight) : below;
             const left = Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - 248));
@@ -251,9 +251,49 @@ export class KPictureMenu extends LitElement {
     }
 
     render() {
+        const message = this.message;
         return html`
-            <button type="button" class="k-pic-tile-btn" aria-haspopup="menu" aria-expanded=${this._open ? 'true' : 'false'}
-                    aria-label="Picture options" title="Picture options" @click=${() => this.#toggle()}>${icons.menu}</button>`;
+            <div class="k-pic-tile-bar" role="group" aria-label="This picture">
+                <button type="button" class="k-pic-tile-quick" data-quick="again" aria-label="Draw it again" title="Draw it again"
+                        @click=${() => this.#run(() => rerollPicture(message, 'again'))}>${icons.again}</button>
+                <button type="button" class="k-pic-tile-quick" data-quick="edit" aria-label="Edit prompt" title="Edit prompt"
+                        @click=${() => this.#run(() => editPicturePrompt(message))}>${icons.edit}</button>
+                <button type="button" class="k-pic-tile-btn" aria-haspopup="menu" aria-expanded=${this._open ? 'true' : 'false'}
+                        aria-label="Picture options" title="Picture options" @click=${() => this.#toggle()}>${icons.menu}</button>
+            </div>`;
+    }
+
+    /** Copies the shown picture's seed. */
+    async #copySeed() {
+        const seed = provenanceFor(this.message, getMediaIndex(this.message))?.seed;
+        if (!Number.isFinite(Number(seed))) return;
+        try {
+            await navigator.clipboard.writeText(String(seed));
+            toast('success', 'Seed copied.');
+        } catch {
+            toast('info', `Seed ${seed}`);
+        }
+    }
+
+    /** What this picture was drawn with: model (or lane), size, seed. Nothing when it carries no record. */
+    #metaTemplate() {
+        const provenance = provenanceFor(this.message, getMediaIndex(this.message));
+        if (!provenance) return nothing;
+        const lanes = /** @type {Record<string, string>} */ ({ openai: 'OpenAI', gemini: 'Gemini', comfy: 'ComfyUI' });
+        const model = String(provenance.model || provenance.recipe || '').replace(/\.(safetensors|sft|ckpt|gguf)$/i, '');
+        const name = model || lanes[provenance.lane] || '';
+        const size = typeof provenance.size === 'string' && provenance.size.includes('x') ? provenance.size.replace('x', ' × ') : '';
+        const seed = Number.isFinite(Number(provenance.seed)) && provenance.lane !== 'openai' && provenance.lane !== 'gemini' ? String(provenance.seed) : '';
+        if (!name && !size && !seed) return nothing;
+        return html`
+            <div class="k-pic-menu-meta">
+                ${name ? html`<span class="k-pic-menu-model" title=${name}>${name}</span>` : nothing}
+                <span class="k-pic-menu-facts">
+                    ${size ? html`<span>${size}</span>` : nothing}
+                    ${seed ? html`<button type="button" class="k-pic-menu-seed" title="Copy the seed"
+                                          @click=${() => this.#run(() => this.#copySeed())}>seed ${seed}</button>` : nothing}
+                </span>
+            </div>`;
     }
 
     /**
@@ -264,6 +304,7 @@ export class KPictureMenu extends LitElement {
         return html`
                 <div class="k-pic-menu" role="menu" aria-label="Picture options"
                      style=${`top: ${this._place.top}px; left: ${this._place.left}px;`}>
+                    ${this.#metaTemplate()}
                     <button type="button" class="k-pic-menu-item" role="menuitem" data-action="again"
                             @click=${() => this.#run(() => rerollPicture(message, 'again'))}>${icons.again}<span>Again</span></button>
                     ${this._hires ? html`
@@ -277,6 +318,7 @@ export class KPictureMenu extends LitElement {
                             @click=${() => this.#run(() => this.#useAsBackdrop())}>${icons.backdrop}<span>Use as background</span></button>
                     <button type="button" class="k-pic-menu-item" role="menuitem" data-action="portrait" disabled
                             title="Coming in a later update">${icons.portrait}<span>Set as portrait</span><span class="k-pic-menu-later">Later</span></button>
+                    <hr class="k-pic-menu-sep">
                     <button type="button" class="k-pic-menu-item k-pic-menu-item--danger" role="menuitem" data-action="delete"
                             @click=${() => this.#run(() => deletePicture(message))}>${icons.delete}<span>Delete this picture</span></button>
                 </div>`;

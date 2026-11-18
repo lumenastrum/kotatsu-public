@@ -10,6 +10,7 @@ import { router as chatgptBridgeRouter } from './chatgpt-bridge/index.js';
 import { router as picturesRouter } from './pictures/index.js';
 import { router as spritesRouter } from './sprites/index.js';
 import { router as genWatchRouter } from './gen-watch/index.js';
+import { router as wrappedRouter } from './wrapped/index.js';
 
 export { genWatchMiddleware } from './gen-watch/index.js';
 
@@ -25,3 +26,4 @@ router.use('/phone', phoneRouter);
 router.use('/chatgpt-bridge', chatgptBridgeRouter);
 router.use('/pictures', picturesRouter);
 router.use('/sprites', spritesRouter);
+router.use('/wrapped', wrappedRouter);

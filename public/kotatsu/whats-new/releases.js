@@ -14,6 +14,55 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 
 /** @type {ReadonlyArray<import('./state.js').Release>} */
 export const RELEASES = Object.freeze([
+    // 1.0: Wrapped and the Pictures polish. Stills, not clips (Andres, 2026-11-18: "No need for video on
+    // these, we can use our captures"), composed by playwright-rig/scripts/kotatsu-whatsnew-stills-1.0.mjs.
+    Object.freeze({
+        version: '1.0.0',
+        title: 'Wrapped',
+        cards: [
+            {
+                id: 'wrapped',
+                title: 'Your stories, wrapped',
+                body: 'Wrapped turns a day, a week or a month of your stories into cards you can save or copy: replies read, swipes, hours at the table, your cast, the models that wrote for you and the presets they wrote under, and the days you played. Open it from the library. It reads the chats already in Kotatsu and sends nothing anywhere.',
+                line: 'whatsNewWrapped',
+                wiki: 'Wrapped',
+                still: true,
+            },
+            {
+                id: 'faceoff',
+                title: 'Who writes what',
+                body: 'The face-off sets your top models side by side: how often you kept the first try, swipes, words and the wait. Phrases spotted counts the usual suspects, like “knuckles turning white”, for each model. It only counts; it never changes what anyone writes.',
+                line: 'whatsNewFaceoff',
+                wiki: 'Wrapped#the-face-off-and-phrases',
+                still: true,
+            },
+            {
+                id: 'pictures',
+                title: 'Pick a picture, not a form',
+                body: 'The picture sheet starts with what to draw: this moment, the character, you, the place, or anything at all. Sizes are shapes you can see, and Write scene drafts the prompt from the story before you draw.',
+                line: 'whatsNewPictures',
+                wiki: 'Pictures#the-sheet',
+                still: true,
+            },
+            {
+                id: 'picture-menu',
+                title: 'Pictures that remember',
+                body: 'A drawn picture sits bigger in the chat, with a bar to draw it again or edit its prompt. Its menu opens on what it was drawn with: the model, the size and the seed. Click the seed to copy it.',
+                line: 'whatsNewPictureMenu',
+                wiki: 'Pictures#the-picture-menu',
+                still: true,
+            },
+        ],
+        notes: [
+            'Every reply now remembers the preset it was written under, so Wrapped can tell your presets apart. Replies from before 1.0 don’t know theirs.',
+            'Wrapped counts the story, not the trackers some presets write after it: a Sola or Freaky Frankenstein HUD doesn’t count as words.',
+            'Wrapped cards wear whatever theme you’re running.',
+            'Card names are on the cards. Hide them, or give each one a nickname, before you save.',
+            'On the Android app, Save picture opens Android’s save screen, and you pick where it goes.',
+            'While a picture draws, its frame already has the picture’s shape, so the chat doesn’t jump when it lands.',
+            'Kotatsu keeps the cost OpenRouter reports for each reply. Nothing shows it yet.',
+        ],
+    }),
     // Personas are the headline of the 0.9 line (kotatsu-public#7): each 0.9.x carries 0.9.0's cards and clips
     // (media moved along, now 0.9.6/) with its own lines on top, the way 0.8.x carried Summer.
     Object.freeze({

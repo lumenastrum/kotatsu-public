@@ -7051,6 +7051,24 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
      */
     function stampUsage(message) {
         if (usage) message.extra.mm_usage = usage;
+        stampPreset(message);
+    }
+
+    /**
+     * Kotatsu Wrapped (docs/wrapped/README.md): the preset a reply was written under, by name,
+     * beside the model and API that already ride every reply. Without it "which preset did I
+     * use" has no answer after the fact. Rides the four `stampUsage` call sites so there is one
+     * seam, and rides `swipe_info[].extra` with the clone, so each swipe keeps the preset that
+     * produced it (it is absent from the delete lists on purpose, like `mm_usage`).
+     *
+     * No preset selected means no key, the same spelling `mm_usage` uses for "nothing to say".
+     * @param {object} message the message being written
+     * @returns {void}
+     */
+    function stampPreset(message) {
+        const preset = getPresetManager()?.getSelectedPresetName() || '';
+        if (preset) message.extra.kotatsu_preset = preset;
+        else delete message.extra.kotatsu_preset;
     }
 
     if (type === 'swipe') {

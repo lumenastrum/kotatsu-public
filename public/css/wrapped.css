@@ -1,0 +1,377 @@
+/*
+ * wrapped.css — Kotatsu Wrapped, <k-wrapped> (wrapped/k-wrapped.js, docs/wrapped/README.md).
+ *
+ * The sheet is house chrome and follows the theme; the CARD inside it is a canvas with one
+ * fixed look (wrapped/draw.js), so nothing here styles the picture, only the frame around it.
+ * Same discipline as its siblings (whats-new.css):
+ * - Every rule is gated on `body[data-k-layout="rails"]`; classic never builds the element.
+ * - Colours, radii, shadows and motion come from `--k-*` only; slice parameters live in the
+ *   `--k-wr-*` namespace up top, never in tokens.css.
+ * - Every `:hover` has a `:focus-visible` twin. Type floor 11px.
+ *
+ * Stacking: scrim 4060 / sheet 4061, mirroring WRAPPED_Z: one rung under What's New (4070).
+ */
+
+body[data-k-layout="rails"] {
+    --k-wr-z-scrim: 4060;
+    --k-wr-z-sheet: 4061;
+    --k-wr-width: min(920px, calc(100vw - 32px));
+    --k-wr-height: min(860px, calc(100dvh - 32px));
+    --k-wr-pad: 24px;
+}
+
+body[data-k-layout="rails"] k-wrapped {
+    display: contents;
+}
+
+body[data-k-layout="rails"] .k-wr-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: var(--k-wr-z-scrim);
+    background: var(--k-scrim);
+}
+
+/* Centred with inset + margin, never a transform: see settings-modal.css "Centring". */
+body[data-k-layout="rails"] .k-wr-sheet {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    z-index: var(--k-wr-z-sheet);
+    box-sizing: border-box;
+    width: var(--k-wr-width);
+    height: var(--k-wr-height);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: var(--k-wr-pad);
+    overflow: hidden;
+    background: var(--k-surface);
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-xl);
+    box-shadow: var(--k-elev-4);
+    color: var(--k-text);
+    font-family: var(--k-font-ui);
+}
+
+/* ── Head ─────────────────────────────────────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-wr-head {
+    flex: none;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+body[data-k-layout="rails"] .k-wr-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-wr-eyebrow {
+    color: var(--k-text-muted);
+    font-family: var(--k-font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+body[data-k-layout="rails"] .k-wr-title {
+    margin: 0;
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: 26px;
+    line-height: 1.15;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] :is(.k-wr-close, .k-wr-icon-button) {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-pill);
+    background: none;
+    color: var(--k-text-muted);
+    cursor: pointer;
+    transition: color var(--k-dur-1) var(--k-ease-out), border-color var(--k-dur-1) var(--k-ease-out);
+}
+
+body[data-k-layout="rails"] :is(.k-wr-close, .k-wr-icon-button):hover,
+body[data-k-layout="rails"] :is(.k-wr-close, .k-wr-icon-button):focus-visible {
+    color: var(--k-text-strong);
+    border-color: var(--k-border-strong, var(--k-text-muted));
+}
+
+body[data-k-layout="rails"] .k-wr-icon-button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* ── The bar: span, walk back, which card ─────────────────────────────────── */
+
+body[data-k-layout="rails"] .k-wr-bar {
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+}
+
+body[data-k-layout="rails"] .k-wr-seg {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-pill);
+    background: var(--k-surface-2);
+}
+
+body[data-k-layout="rails"] .k-wr-seg:last-child {
+    margin-left: auto;
+    /* Five cards can be offered: on a narrow sheet the row scrolls sideways, never spills. */
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+body[data-k-layout="rails"] .k-wr-seg-button {
+    flex: none;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-wr-seg-button {
+    padding: 5px 14px;
+    border: 0;
+    border-radius: var(--k-radius-pill);
+    background: none;
+    color: var(--k-text);
+    font: 500 13px var(--k-font-ui);
+    cursor: pointer;
+    transition: background-color var(--k-dur-1) var(--k-ease-out), color var(--k-dur-1) var(--k-ease-out);
+}
+
+body[data-k-layout="rails"] .k-wr-seg-button:hover,
+body[data-k-layout="rails"] .k-wr-seg-button:focus-visible {
+    color: var(--k-text-strong);
+    background: var(--k-surface-3, var(--k-surface));
+}
+
+body[data-k-layout="rails"] .k-wr-seg-button[aria-pressed="true"] {
+    background: var(--k-accent);
+    color: var(--k-on-accent, var(--k-surface));
+    font-weight: 600;
+}
+
+body[data-k-layout="rails"] .k-wr-walk {
+    display: inline-flex;
+    gap: 6px;
+}
+
+/* ── Body: the card beside the "what's on the card" step ──────────────────── */
+
+body[data-k-layout="rails"] .k-wr-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    gap: 20px;
+}
+
+body[data-k-layout="rails"] .k-wr-body[data-status="loading"] .k-wr-canvas {
+    opacity: 0.55;
+}
+
+body[data-k-layout="rails"] .k-wr-stage {
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    place-items: center;
+    padding: 12px;
+    border-radius: var(--k-radius-lg);
+    background: var(--k-surface-2);
+}
+
+/* The canvas keeps its own shape (the inline aspect-ratio) and takes whichever of the stage's
+   width or height runs out first. */
+body[data-k-layout="rails"] .k-wr-canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    border-radius: 14px;
+    box-shadow: var(--k-elev-2);
+    transition: opacity var(--k-dur-1) var(--k-ease-out);
+}
+
+body[data-k-layout="rails"] .k-wr-stage[data-card="story"] .k-wr-canvas {
+    height: 100%;
+}
+
+body[data-k-layout="rails"] .k-wr-stage:not([data-card="story"]) .k-wr-canvas {
+    width: min(100%, 520px);
+}
+
+body[data-k-layout="rails"] .k-wr-message {
+    margin: 0;
+    color: var(--k-text-muted);
+    font-size: 14px;
+}
+
+body[data-k-layout="rails"] .k-wr-choices {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+}
+
+body[data-k-layout="rails"] .k-wr-choices-title {
+    margin: 0;
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    font-size: 18px;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] :is(.k-wr-choices-sub, .k-wr-note, .k-wr-names-hint, .k-wr-said) {
+    margin: 0;
+    color: var(--k-text-muted);
+    font-size: 12.5px;
+    line-height: 1.45;
+}
+
+body[data-k-layout="rails"] .k-wr-said {
+    min-height: 1.45em;
+}
+
+body[data-k-layout="rails"] .k-wr-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--k-text);
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-wr-check input {
+    flex: none;
+    margin: 0;
+}
+
+body[data-k-layout="rails"] .k-wr-names {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 24px;
+}
+
+body[data-k-layout="rails"] .k-wr-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-wr-name-rank {
+    flex: none;
+    width: 14px;
+    color: var(--k-text-muted);
+    font: 500 12px var(--k-font-mono);
+}
+
+body[data-k-layout="rails"] .k-wr-name-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 6px 10px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-md);
+    background: var(--k-surface-2);
+    color: var(--k-text);
+    font: 400 13px var(--k-font-ui);
+}
+
+body[data-k-layout="rails"] .k-wr-name-input:hover,
+body[data-k-layout="rails"] .k-wr-name-input:focus-visible {
+    border-color: var(--k-accent);
+    outline: none;
+}
+
+body[data-k-layout="rails"] .k-wr-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+body[data-k-layout="rails"] .k-wr-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-pill);
+    background: none;
+    color: var(--k-text);
+    font: 600 13px var(--k-font-ui);
+    cursor: pointer;
+    transition: background-color var(--k-dur-1) var(--k-ease-out), border-color var(--k-dur-1) var(--k-ease-out), color var(--k-dur-1) var(--k-ease-out);
+}
+
+body[data-k-layout="rails"] .k-wr-button[data-kind="primary"] {
+    background: var(--k-accent);
+    border-color: var(--k-accent);
+    color: var(--k-on-accent, var(--k-surface));
+}
+
+body[data-k-layout="rails"] .k-wr-button:hover,
+body[data-k-layout="rails"] .k-wr-button:focus-visible {
+    border-color: var(--k-text-strong);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-wr-button[data-kind="primary"]:hover,
+body[data-k-layout="rails"] .k-wr-button[data-kind="primary"]:focus-visible {
+    filter: brightness(1.06);
+    color: var(--k-on-accent, var(--k-surface));
+}
+
+/* ── Phone: one column, the card first ────────────────────────────────────── */
+
+@media (max-width: 720px) {
+    body[data-k-layout="rails"] {
+        --k-wr-pad: 16px;
+        --k-wr-height: calc(100dvh - 16px);
+        --k-wr-width: calc(100vw - 16px);
+    }
+
+    body[data-k-layout="rails"] .k-wr-body {
+        grid-template-columns: minmax(0, 1fr);
+        grid-auto-rows: max-content;
+        overflow-y: auto;
+    }
+
+    body[data-k-layout="rails"] .k-wr-choices {
+        overflow: visible;
+    }
+
+    body[data-k-layout="rails"] .k-wr-stage[data-card="story"] .k-wr-canvas {
+        height: auto;
+        width: min(100%, 340px);
+    }
+
+    /* On a phone the card row wraps onto a second line instead of scrolling: a card that has
+       scrolled out of sight is a card nobody finds. A wrapped row is a rounded box, not a pill. */
+    body[data-k-layout="rails"] .k-wr-seg:last-child {
+        margin-left: 0;
+        flex-wrap: wrap;
+        overflow: visible;
+        border-radius: var(--k-radius-lg);
+    }
+}

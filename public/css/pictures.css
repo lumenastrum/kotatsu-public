@@ -41,6 +41,8 @@ body[data-k-layout="rails"] {
     --k-pic-frame-fill: color-mix(in srgb, var(--k-surface-2) 70%, transparent);
     --k-pic-tile-btn-fill: color-mix(in srgb, var(--k-surface-2) 80%, transparent);
     --k-pic-tile-lift: 44px;
+    --k-pic-tile-max-h: min(56vh, 640px);
+    --k-pic-shimmer: color-mix(in srgb, var(--k-accent-bright) 55%, transparent);
     --k-pic-menu-fill: var(--k-surface);
     --k-pic-caption-color: var(--k-text-dim);
 }
@@ -223,13 +225,30 @@ body[data-k-layout="rails"] .k-pic-blocker {
 /* The two steps (issue #10): Set up → Write and draw, a quiet line under the title. */
 body[data-k-layout="rails"] .k-pic-steps {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
+    align-items: center;
     margin: 0;
-    padding: 2px var(--k-pic-pad) 4px;
+    padding: 2px var(--k-pic-pad) 6px;
     list-style: none;
     color: var(--k-text-dim);
     font-size: 13px;
+}
+
+/* The line between the two steps; it takes the accent once the first is done. */
+body[data-k-layout="rails"] .k-pic-step + .k-pic-step::before {
+    content: '';
+    width: 28px;
+    height: 1px;
+    margin: 0 10px;
+    background: var(--k-border);
+}
+
+body[data-k-layout="rails"] .k-pic-step.is-done + .k-pic-step::before {
+    background: var(--k-select-bright);
+}
+
+body[data-k-layout="rails"] .k-pic-step.is-done .k-pic-step-n {
+    border-color: var(--k-select-bright);
+    color: var(--k-select-bright);
 }
 
 body[data-k-layout="rails"] .k-pic-step {
@@ -287,22 +306,218 @@ body[data-k-layout="rails"] .k-pic-no-pipeline-why {
 }
 
 /* 4. SHEET FIELDS ──────────────────────────────────────────────────────────── */
+/* What to draw: five subject tiles, each wearing its subject (the card's art, the persona's, or a drawn icon). */
 body[data-k-layout="rails"] .k-pic-chips {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 6px;
 }
 
 body[data-k-layout="rails"] .k-pic-chip {
-    min-height: 36px;
-    padding: 0 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    min-height: 76px;
+    padding: 10px 2px 8px;
     border: 1px solid var(--k-pic-hairline);
-    border-radius: var(--k-radius-pill);
+    border-radius: var(--k-radius-md);
     background: transparent;
     color: var(--k-text-quote);
     font: inherit;
-    font-size: 13px;
+    font-size: 11.5px;
     cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-pic-chip-art {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    color: var(--k-text-dim);
+}
+
+body[data-k-layout="rails"] .k-pic-chip.is-on .k-pic-chip-art,
+body[data-k-layout="rails"] .k-pic-chip:hover .k-pic-chip-art {
+    color: inherit;
+}
+
+body[data-k-layout="rails"] .k-pic-chip-face {
+    display: block;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--k-radius-round);
+    object-fit: cover;
+    object-position: center top;
+}
+
+body[data-k-layout="rails"] .k-pic-chip.is-on .k-pic-chip-face {
+    outline: 2px solid var(--k-select-bright);
+    outline-offset: 1px;
+}
+
+body[data-k-layout="rails"] .k-pic-chip-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* This moment: the message the scene is written from, quoted. */
+body[data-k-layout="rails"] .k-pic-moment {
+    margin: 0;
+    padding: 10px 14px;
+    border: 0;
+    border-left: 2px solid var(--k-accent);
+    border-radius: 0 var(--k-radius-md) var(--k-radius-md) 0;
+    background: var(--k-pic-field-fill);
+}
+
+body[data-k-layout="rails"] .k-pic-moment-who {
+    display: block;
+    margin-bottom: 2px;
+    font-family: var(--k-font-name, var(--k-font-ui));
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 600;
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-pic-moment-text {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    font-family: var(--k-font-prose);
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--k-text-quote);
+}
+
+/* Size: one tile per shape, each drawn in its own proportion. */
+body[data-k-layout="rails"] .k-pic-shapes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+    gap: 6px;
+}
+
+body[data-k-layout="rails"] .k-pic-shape {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    padding: 8px 4px;
+    border: 1px solid var(--k-pic-hairline);
+    border-radius: var(--k-radius-md);
+    background: transparent;
+    color: var(--k-text-quote);
+    font: inherit;
+    cursor: pointer;
+}
+
+body[data-k-layout="rails"] .k-pic-shape:hover,
+body[data-k-layout="rails"] .k-pic-shape:focus-visible {
+    border-color: var(--k-accent);
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-pic-shape.is-on {
+    border-color: var(--k-control-on-border);
+    background: var(--k-pic-chip-on);
+    color: var(--k-control-on-text);
+}
+
+body[data-k-layout="rails"] .k-pic-shape-box {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    margin-bottom: 2px;
+}
+
+body[data-k-layout="rails"] .k-pic-shape-glyph {
+    box-sizing: border-box;
+    border: 1.5px solid currentColor;
+    border-radius: 3px;
+    opacity: 0.75;
+}
+
+body[data-k-layout="rails"] .k-pic-shape-glyph.is-auto {
+    border-style: dashed;
+}
+
+body[data-k-layout="rails"] .k-pic-shape.is-on .k-pic-shape-glyph {
+    background: color-mix(in srgb, currentColor 22%, transparent);
+    opacity: 1;
+}
+
+body[data-k-layout="rails"] .k-pic-shape-name {
+    font-size: 12px;
+}
+
+body[data-k-layout="rails"] .k-pic-shape-detail {
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--k-text-muted);
+}
+
+body[data-k-layout="rails"] .k-pic-shape.is-on .k-pic-shape-detail {
+    color: inherit;
+    opacity: 0.8;
+}
+
+/* The prompt box while the writer drafts: three lines of light where the words will be. */
+body[data-k-layout="rails"] .k-pic-prompt-wrap {
+    position: relative;
+    display: flex;
+}
+
+body[data-k-layout="rails"] .k-pic-drafting {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    pointer-events: none;
+}
+
+body[data-k-layout="rails"] .k-pic-drafting i {
+    height: 10px;
+    border-radius: var(--k-radius-pill);
+    background: linear-gradient(90deg, var(--k-pic-ring-track) 25%, var(--k-pic-shimmer) 50%, var(--k-pic-ring-track) 75%);
+    background-size: 200% 100%;
+    animation: k-pic-shimmer 1.4s linear infinite;
+}
+
+body[data-k-layout="rails"] .k-pic-drafting i:nth-child(2) {
+    width: 86%;
+}
+
+body[data-k-layout="rails"] .k-pic-drafting i:nth-child(3) {
+    width: 58%;
+}
+
+@keyframes k-pic-shimmer {
+    from { background-position: 100% 0; }
+    to { background-position: -100% 0; }
+}
+
+/* The step's one button carries its tool: a pen to write, a brush to draw. */
+body[data-k-layout="rails"] .k-pic-actions .k-pic-btn--primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    font-size: 15px;
 }
 
 body[data-k-layout="rails"] .k-pic-chip:hover,
@@ -412,6 +627,45 @@ body[data-k-layout="rails"] .k-pic-select,
 body[data-k-layout="rails"] .k-pic-seed-input {
     min-height: 40px;
     padding: 0 10px;
+}
+
+/* A select says it opens: its own chevron, drawn from the text colour. */
+body[data-k-layout="rails"] .k-pic-select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 34px;
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--k-text-dim) 50%),
+        linear-gradient(135deg, var(--k-text-dim) 50%, transparent 50%);
+    background-position: right 17px center, right 12px center;
+    background-size: 5px 5px;
+    background-repeat: no-repeat;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+/* Seed: the Random / Pinned switch, and the number beside it once pinned. */
+body[data-k-layout="rails"] .k-pic-seed-field .k-pic-seed {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+body[data-k-layout="rails"] .k-pic-seed-field .k-pic-segment {
+    flex: 0 0 200px;
+}
+
+body[data-k-layout="rails"] .k-pic-seed-field .k-pic-seed-row {
+    flex: 1 1 160px;
+    min-width: 0;
+}
+
+body[data-k-layout="rails"] .k-pic-switch .k-pic-ref-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--k-radius-round);
+    object-position: center top;
 }
 
 body[data-k-layout="rails"] .k-pic-prompt:focus-visible,
@@ -766,6 +1020,13 @@ body[data-k-layout="rails"] .k-pic-pend-frame.has-preview {
     border-style: solid;
 }
 
+/* The frame in the picture's own proportion, so the row keeps its place when the picture lands. */
+body[data-k-layout="rails"] .k-pic-pend-frame.is-shaped {
+    min-width: 0;
+    height: min(var(--k-pic-tile-max-h), 320px);
+    border-radius: var(--k-radius-lg);
+}
+
 /* Mikan-chan painting (k-mikan-painter.js): no box around her, she stands in the row. The cell
    ratio is the sprite sheet's (277 × 300); the sheet is 8 × 8 cells. */
 body[data-k-layout="rails"] .k-pic-pend-frame.has-painter {
@@ -838,33 +1099,118 @@ body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes_media_wrapper:empty +
     display: none;
 }
 
-body[data-k-layout="rails"] .k-pic-tile-btn {
+/* The bar on the picture: draw it again, edit its prompt, everything else. */
+body[data-k-layout="rails"] .k-pic-tile-bar {
     position: absolute;
     left: 8px;
     bottom: var(--k-pic-tile-lift);
     z-index: 2;
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
+    gap: 2px;
+    padding: 3px;
     border: 1px solid var(--k-pic-hairline);
-    border-radius: var(--k-radius-round);
+    border-radius: var(--k-radius-pill);
     background: var(--k-pic-tile-btn-fill);
-    color: var(--k-text);
     backdrop-filter: blur(var(--k-blur-panel));
     -webkit-backdrop-filter: blur(var(--k-blur-panel));
+    box-shadow: var(--k-elev-1);
+    opacity: 0.8;
+    transition: opacity var(--k-motion-duration, 150ms);
+}
+
+body[data-k-layout="rails"] .mes:hover .k-pic-tile-bar,
+body[data-k-layout="rails"] .k-pic-tile-bar:focus-within,
+body[data-k-layout="rails"] .k-pic-tile-bar:has([aria-expanded="true"]) {
+    opacity: 1;
+}
+
+body[data-k-layout="rails"] .k-pic-tile-btn,
+body[data-k-layout="rails"] .k-pic-tile-quick {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--k-radius-round);
+    background: transparent;
+    color: var(--k-text);
     cursor: pointer;
-    opacity: 0.85;
 }
 
 body[data-k-layout="rails"] .k-pic-tile-btn:hover,
 body[data-k-layout="rails"] .k-pic-tile-btn:focus-visible,
-body[data-k-layout="rails"] .k-pic-tile-btn[aria-expanded="true"] {
-    opacity: 1;
-    border-color: var(--k-accent);
+body[data-k-layout="rails"] .k-pic-tile-btn[aria-expanded="true"],
+body[data-k-layout="rails"] .k-pic-tile-quick:hover,
+body[data-k-layout="rails"] .k-pic-tile-quick:focus-visible {
+    background: var(--k-pic-chip-on);
     color: var(--k-text-strong);
+    outline: none;
+}
+
+/* A picture Pictures drew sits in the chat as a print: rounded, edged, lifted, and given room. */
+body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes_block:has(> k-picture-menu) .mes_img_container {
+    border-radius: var(--k-radius-lg);
+    box-shadow: var(--k-elev-2), 0 0 0 1px var(--k-pic-hairline);
+}
+
+body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes_block:has(> k-picture-menu) .mes_img {
+    display: block;
+    max-height: var(--k-pic-tile-max-h);
+}
+
+/* The menu opens on what the picture was drawn with. */
+body[data-k-layout="rails"] .k-pic-menu-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 260px;
+    margin-bottom: 4px;
+    padding: 6px 10px 9px;
+    border-bottom: 1px solid var(--k-pic-hairline);
+}
+
+body[data-k-layout="rails"] .k-pic-menu-model {
+    overflow: hidden;
+    color: var(--k-text-strong);
+    font-size: 13px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body[data-k-layout="rails"] .k-pic-menu-facts {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--k-text-dim);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+body[data-k-layout="rails"] .k-pic-menu-seed {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    cursor: copy;
+}
+
+body[data-k-layout="rails"] .k-pic-menu-seed:hover,
+body[data-k-layout="rails"] .k-pic-menu-seed:focus-visible {
+    color: var(--k-text-strong);
+}
+
+body[data-k-layout="rails"] .k-pic-menu-sep {
+    width: 100%;
+    height: 0;
+    margin: 4px 0;
+    border: 0;
+    border-top: 1px solid var(--k-pic-hairline);
 }
 
 body[data-k-layout="rails"] .k-pic-menu {
@@ -987,10 +1333,27 @@ body[data-k-layout="rails"] :is(#chat, .k-chat-stage) .mes_block:has(> k-picture
         grid-template-columns: minmax(0, 1fr);
     }
 
-    body[data-k-layout="rails"] .k-pic-tile-btn {
+    body[data-k-layout="rails"] .k-pic-tile-btn,
+    body[data-k-layout="rails"] .k-pic-tile-quick {
         width: 40px;
         height: 40px;
+    }
+
+    body[data-k-layout="rails"] .k-pic-tile-bar {
         opacity: 1;
+    }
+
+    body[data-k-layout="rails"] .k-pic-chip {
+        min-height: 72px;
+    }
+
+    /* "This moment" is the longest label: its tile takes the spare width. */
+    body[data-k-layout="rails"] .k-pic-chips {
+        grid-template-columns: minmax(0, 1.35fr) repeat(4, minmax(0, 1fr));
+    }
+
+    body[data-k-layout="rails"] .k-pic-seed-field .k-pic-segment {
+        flex: 1 1 100%;
     }
 }
 
@@ -1029,6 +1392,8 @@ body[data-k-layout="rails"] .k-pic-sheet {
     body[data-k-layout="rails"] .k-pic-sheet,
     body[data-k-layout="rails"] #chat > k-picture-pending,
     body[data-k-layout="rails"] .k-pic-pend-ring.is-indeterminate svg,
+    body[data-k-layout="rails"] .k-pic-drafting i,
+    body[data-k-layout="rails"] .k-pic-tile-bar,
     body[data-k-layout="rails"] .k-pic-pend-arc {
         animation: none;
         transition: none;

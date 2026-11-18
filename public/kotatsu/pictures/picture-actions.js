@@ -336,6 +336,7 @@ export function drawPicture(request, { target = null, initiator = INITIATORS.HAN
     row.setAttribute('variant', 'row');
     row.line = pendingLine(request.purpose, characterFor(target)?.name ?? name2);
     row.chatId = getCurrentChatId();
+    if (Number(request.width) > 0 && Number(request.height) > 0) row.aspect = Number(request.width) / Number(request.height);
     void picturesSettings().then(settings => { row.rawPreview = settings.rawPreview === true; });
     return new Promise(resolve => {
         /** @type {Job} */

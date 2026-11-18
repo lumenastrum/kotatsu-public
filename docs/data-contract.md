@@ -200,13 +200,24 @@ type MmUsage = {
     cacheCreationTokens: number;
     cacheKnown: boolean;
     cacheMode?: 'off' | 'system' | 'anchor' | 'depth'; // amended 2026-10-16, docs/prompt-cache-v0.md §4
+    cost?: number; // amended 2026-11-12, docs/wrapped/README.md
 };
 ```
+
+- **`cost`** (optional, amended 2026-11-12): what the provider itself says the reply cost, kept exactly as reported. Today that is OpenRouter's `usage.cost`, in credits (US dollars), which it sends on every response; no other provider Kotatsu talks to reports one. Kotatsu holds no price table and never computes this. Zero is a real value (a free model). Absent on every older message and on every provider that does not say; readers treat absent as "unknown", never as free, and a sum over replies must say how many of them it speaks for (Wrapped's engine only sums it for replies whose `extra.api` is `openrouter`).
 
 - **`cacheMode`** (optional, amended 2026-10-16): what Kotatsu asked the provider to cache, from the server's `X-Kotatsu-Cache` header. Absent on older messages and on providers Kotatsu doesn't steer; readers treat absent as "unknown", never as "off".
 
 - **Swipes:** `mm_usage` rides `swipe_info[].extra` on purpose and is deliberately absent from the `token_count` / `reasoning` delete lists (`script.js` finalize and `saveReply()`). Each swipe was its own generation with its own prompt and its own cache outcome, so per-swipe usage is correct, not leakage.
 - **Round trip:** an older or unrecognized shape (the extension's own, a hand-edit) is preserved verbatim like any other `extra.*` key. The reader treats a non-object as absent and paints nothing rather than a bar of `NaN`s. Stock SillyTavern ignores the key entirely, so the file stays openable there.
+
+**`extra.kotatsu_preset` — added 2026-11-12, Kotatsu Wrapped (docs/wrapped/README.md).** The name of the preset a reply was written under, a plain string, beside the `api` and `model` that already ride every reply. Nothing stamped a preset before this, so "which preset did I use" had no answer after the fact; replies older than the stamp simply lack the key, and readers treat absent as "unknown", never as a preset called nothing.
+
+- **Writer (core):** `public/script.js` `saveReply()`, through `stampPreset()` at the four `stampUsage` call sites, so streaming and non-streaming replies both get it at the moment `api` / `model` are written. The value is `getPresetManager()?.getSelectedPresetName()` for the main API in use. No preset selected: no key.
+- **Readers:** `src/endpoints/kotatsu/wrapped/engine.js`, and nothing else.
+- **It is a name, not an identity.** Renaming or editing a preset does not rewrite old replies, and two different presets that share a name count as one. Unsaved edits to the selected preset still stamp its name.
+- **Swipes:** rides `swipe_info[].extra` with the clone, like `mm_usage`, and is absent from the delete lists for the same reason: each swipe keeps the preset that produced it.
+- **Round trip:** stock SillyTavern ignores the key and preserves it, so the file stays openable there.
 
 ### 2.7 Naming
 

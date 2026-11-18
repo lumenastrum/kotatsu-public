@@ -286,6 +286,13 @@
     }
    ]
   },
+  "--k-border-strong": {
+   "group": "css/wrapped.css",
+   "file": "css/wrapped.css",
+   "default": "var(--k-text-muted)",
+   "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
+   "contexts": []
+  },
   "--k-broadcast-dim": {
    "group": "Message looks (wardrobe)",
    "file": "css/mes-variants.css",
@@ -2305,6 +2312,13 @@
     }
    ]
   },
+  "--k-on-accent": {
+   "group": "css/wrapped.css",
+   "file": "css/wrapped.css",
+   "default": "var(--k-surface)",
+   "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
+   "contexts": []
+  },
   "--k-onb-bubble-border": {
    "group": "Welcome tour",
    "file": "css/onboarding.css",
@@ -3138,6 +3152,17 @@
     }
    ]
   },
+  "--k-pic-shimmer": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "color-mix(in srgb, var(--k-accent-bright) 55%, transparent)",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
   "--k-pic-tile-btn-fill": {
    "group": "css/pictures.css",
    "file": "css/pictures.css",
@@ -3153,6 +3178,17 @@
    "group": "css/pictures.css",
    "file": "css/pictures.css",
    "default": "44px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-pic-tile-max-h": {
+   "group": "css/pictures.css",
+   "file": "css/pictures.css",
+   "default": "min(56vh, 640px)",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",
@@ -7384,6 +7420,13 @@
     }
    ]
   },
+  "--k-surface-3": {
+   "group": "css/wrapped.css",
+   "file": "css/wrapped.css",
+   "default": "var(--k-surface)",
+   "note": "Not declared anywhere: the sheet reads it with a built-in fallback, so setting it applies everywhere.",
+   "contexts": []
+  },
   "--k-swipe-arrow": {
    "group": "Phone",
    "file": "css/kotatsu-phone.css",
@@ -7949,6 +7992,79 @@
    "group": "css/whats-new.css",
    "file": "css/whats-new.css",
    "default": "4071",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-wr-height": {
+   "group": "css/wrapped.css",
+   "file": "css/wrapped.css",
+   "default": "min(860px, calc(100dvh - 32px))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 720px)"
+     ]
+    }
+   ]
+  },
+  "--k-wr-pad": {
+   "group": "css/wrapped.css",
+   "file": "css/wrapped.css",
+   "default": "24px",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 720px)"
+     ]
+    }
+   ]
+  },
+  "--k-wr-width": {
+   "group": "css/wrapped.css",
+   "file": "css/wrapped.css",
+   "default": "min(920px, calc(100vw - 32px))",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    },
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": [
+      "@media (max-width: 720px)"
+     ]
+    }
+   ]
+  },
+  "--k-wr-z-scrim": {
+   "group": "css/wrapped.css",
+   "file": "css/wrapped.css",
+   "default": "4060",
+   "contexts": [
+    {
+     "selector": "body[data-k-layout=\"rails\"]",
+     "at": []
+    }
+   ]
+  },
+  "--k-wr-z-sheet": {
+   "group": "css/wrapped.css",
+   "file": "css/wrapped.css",
+   "default": "4061",
    "contexts": [
     {
      "selector": "body[data-k-layout=\"rails\"]",

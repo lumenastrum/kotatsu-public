@@ -60,6 +60,7 @@ import { installPresetBinding } from '../connections/preset-binding.js';
 import { installComposerReason } from '../connections/composer-reason.js';
 import { installOnboarding } from '../onboarding/k-onboarding.js';
 import { installWhatsNew } from '../whats-new/k-whats-new.js';
+import { installWrapped } from '../wrapped/k-wrapped.js';
 import { installFeedback } from '../feedback/k-feedback.js';
 import { applyLayout, currentLayout, defineLayout, hasLayout } from './registry.js';
 import { installPersonaVariants } from '../library/persona-variants-runtime.js';
@@ -227,6 +228,9 @@ export async function initKotatsuShell() {
     // What's New: the release notes, once per update (whats-new/state.js decides). Registration
     // only — it reads the running version at APP_READY and answers Settings → System's door.
     installWhatsNew();
+    // Kotatsu Wrapped (docs/wrapped/README.md): answers the library's Wrapped button. Registration
+    // only; nothing is read until the sheet is opened.
+    installWrapped();
     // Send feedback (docs/feedback-v0.md): keeps the last few page errors for a report, and answers
     // Settings → System → Help. Registration only; nothing is sent from here.
     installFeedback();

@@ -25,6 +25,7 @@ export const MAX_RELEASES = 3;
  * @property {string} body What it is and how to reach it, in the UI's own words.
  * @property {string} line Mikan-chan's line key in `brand/mascot/lines.js`.
  * @property {string} [wiki] The wiki page (and anchor) that explains it.
+ * @property {boolean} [still] Its media is one picture (`<id>.webp`), not a clip.
  */
 
 /**
