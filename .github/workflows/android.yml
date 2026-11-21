@@ -142,6 +142,7 @@ jobs:
           name: libnode-${{ env.NODE_VERSION }}-${{ matrix.arch }}
           path: dist
           if-no-files-found: error
+          retention-days: 1
 
   payload:
     runs-on: ubuntu-24.04
@@ -177,6 +178,7 @@ jobs:
           name: payload
           path: kotatsu.zip
           compression-level: 0
+          retention-days: 1
 
   apk:
     needs: [node, payload]
@@ -214,3 +216,4 @@ jobs:
           name: apk
           path: kotatsu-*.apk
           compression-level: 0
+          retention-days: 7

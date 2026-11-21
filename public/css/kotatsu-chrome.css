@@ -1560,6 +1560,8 @@ body.big-avatars :is(#chat, .k-chat-stage) .mes[is_user="true"] .avatar img {
     color: var(--k-text-faint);
     opacity: 0.55;
     transition: opacity var(--k-motion), color var(--k-motion);
+    /* Tap shows model + preset (renderer/model-info.js). */
+    cursor: pointer;
 }
 
 :is(#chat, .k-chat-stage) .mes .timestamp-icon:hover,

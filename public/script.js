@@ -2185,9 +2185,10 @@ const CUSTOM_MODEL_ICON_PATTERNS = Object.freeze([
  *
  * @param {string} apiName - API identifier matching an SVG file in /img/ (e.g. 'openai', 'openrouter', 'claude')
  * @param {string} [modelName=''] - Model name shown in the tooltip
+ * @param {string} [presetName=''] - Kotatsu: the preset that wrote the reply (`extra.kotatsu_preset`), added to the tooltip
  * @returns {HTMLImageElement} The image element (not yet in the DOM)
  */
-export function createModelIcon(apiName, modelName = '') {
+export function createModelIcon(apiName, modelName = '', presetName = '') {
     const image = new Image();
     image.classList.add('icon-svg');
     const effectiveApi = (apiName === 'custom' && modelName)
@@ -2195,6 +2196,7 @@ export function createModelIcon(apiName, modelName = '') {
         : apiName;
     image.src = `/img/${effectiveApi}.svg`;
     image.title = modelName ? `${apiName} - ${modelName}` : apiName;
+    if (presetName) image.title += `\nPreset: ${presetName}`;
     return image;
 }
 
@@ -2225,7 +2227,7 @@ function insertSVGIcon(mes, extra) {
     };
 
     const insertIcon = (className, targetSelector, insertBefore) => {
-        const image = createModelIcon(apiName, extra?.model);
+        const image = createModelIcon(apiName, extra?.model, extra?.kotatsu_preset);
         image.classList.add(className);
         insertOrReplaceSVG(image, className, targetSelector, insertBefore);
     };

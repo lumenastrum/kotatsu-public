@@ -43,6 +43,12 @@ const IGNORED_SELECTORS = [
     '.avatar',
     '.code-copy',
     'summary',
+    // Readouts whose tap shows their tooltip (model-info.js): the model icon (model + preset)
+    // and, on touch screens, the metrics chips, the generation timer and the ghost mark.
+    '.timestamp-icon',
+    '.k-metrics__chip',
+    '.mes_timer',
+    '.mes_ghost',
 ].join(', ');
 
 let installed = false;

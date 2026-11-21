@@ -40,6 +40,7 @@ import { closeSettings, openSettings, settingsState } from '../settings/k-settin
 import { initPromptReceipts } from '../prompts/receipts.js';
 import { initMetadataReveal } from '../renderer/metadata-reveal.js';
 import { initSwipeCountMarker } from '../renderer/swipe-count.js';
+import { initModelInfo } from '../renderer/model-info.js';
 import { applyResolvedVariants, setVariantAxis } from '../theme/loader.js';
 import { initPresetDock } from './components/k-preset-pages.js';
 import { classicLayout } from './layouts/classic.js';
@@ -250,6 +251,9 @@ export async function initKotatsuShell() {
     // Reader-polish v0 finding 5: marks each row with its swipe total so the sheet can hide
     // the "1/1" counters. Same seam, same one-registration shape as the reveal above.
     initSwipeCountMarker();
+    // Tapping a row's model icon shows which model + preset wrote it (Targren, 1.0 post): the
+    // icon's hover tooltip never shows on a phone. Same seam, same one-registration shape.
+    initModelInfo();
 
     eventSource.on(event_types.SETTINGS_LOADED, reconcileWithSettings);
     eventSource.on(event_types.SETTINGS_LOADED, reconcileVariantAxes);
