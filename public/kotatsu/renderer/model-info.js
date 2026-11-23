@@ -59,6 +59,11 @@ const NOT_A_READOUT = [
  * Walks up from the target to the nearest element carrying a non-empty `title` (an injected SVG
  * keeps its tooltip as a `<title>` child instead), stopping at the row. Pure DOM reads, so the
  * policy is unit-testable with fake nodes.
+ *
+ * Only taps INSIDE a message row count. The welcome panel also lives in `#chat`, and its recent
+ * chats carry the chat's last message as a `title` (welcomePanel.html `.chatMessage`), so without
+ * a row the walk climbed out and toasted that preview on every tap that opened a chat (Targren,
+ * 1.0 thread, 2026-11-23).
  * @param {Element|null|undefined} target The tapped element.
  * @returns {string|null}
  */
@@ -66,6 +71,7 @@ export function readoutText(target) {
     if (!target || typeof target.closest !== 'function') return null;
     if (target.closest(NOT_A_READOUT)) return null;
     const row = target.closest('.mes');
+    if (!row) return null;
     /** @type {Element|null} */
     let el = target;
     while (el && el !== row) {
