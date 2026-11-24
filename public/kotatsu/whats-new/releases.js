@@ -16,9 +16,9 @@ export const WIKI_BASE = 'https://github.com/lumenastrum/kotatsu-public/wiki/';
 export const RELEASES = Object.freeze([
     // 1.0: Wrapped and the Pictures polish. Stills, not clips (Andres, 2026-11-18: "No need for video on
     // these, we can use our captures"), composed by playwright-rig/scripts/kotatsu-whatsnew-stills-1.0.mjs.
-    // Each 1.0.x carries 1.0.0's cards and stills (media moved along, now 1.0.2/) with its own lines on top.
+    // Each 1.0.x carries 1.0.0's cards and stills (media moved along, now 1.0.3/) with its own lines on top.
     Object.freeze({
-        version: '1.0.2',
+        version: '1.0.3',
         title: 'Wrapped',
         cards: [
             {
@@ -55,6 +55,7 @@ export const RELEASES = Object.freeze([
             },
         ],
         notes: [
+            'New sauces: Sola V5 · Flame and Sola · Kindling V3 by Pyrxpia, regex included. Already playing with Sola V4? Your copy stays where it is.',
             'On phones, opening a chat from the welcome screen no longer pops up that chat’s last reply. Thanks to Targren for spotting it.',
             'Tap the model icon on a reply to see the model, the API and the preset that wrote it. Thanks to Targren, who asked where to find it.',
             'On phones, tap a reply’s small readouts (context, cache, output, the timer) to read what a mouse would see on hover. Also Targren’s ask.',
